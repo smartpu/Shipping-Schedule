@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>维运网 船期解析工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .instructions {
+            padding: 25px 40px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            margin: 20px 40px;
+            border-radius: 8px;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #856404;
+            line-height: 1.8;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .instructions strong {
+            color: #856404;
+        }
+
+        .content {
+            padding: 20px 40px 30px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .file-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .file-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-btn input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn[disabled] {
+            background: #d2d2d7;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #summary {
+            color: #6c757d;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .log {
+            margin-top: 15px;
+            background: #fafafa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #preview {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #e9ecef;
+            padding: 10px 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f7f7f9;
+            z-index: 1;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .footer {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>维运网 船期解析工具</h1>
+            <p>自动解析维运网船期网页，提取船期信息并导出为 CSV 文件</p>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li><strong>准备工作</strong>：首先需要使用"维运网 船期网页手动下载工具"下载并保存所有船期网页到 <strong>001-view-source</strong> 文件夹中</li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-source 文件夹"按钮，选择包含所有 HTML 文件的 <strong>001-view-source</strong> 文件夹</li>
+                <li><strong>开始解析</strong>：选择文件夹后，点击"开始解析"按钮，工具会自动解析所有 HTML 文件中的船期信息</li>
+                <li><strong>查看结果</strong>：解析完成后，可以在下方预览表格中查看解析结果（最多显示前50条）</li>
+                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"按钮，将数据保存为 CSV 文件</li>
+                <li><strong>结果说明</strong>：CSV 文件包含以下列：启运港、目的港、航线ID、港口ID、开航日、航程、共舱船公司、船名、航次、船型、计划开航、实际离港、预计到港、启运港码头、目的港码头</li>
+                <li><strong>注意事项</strong>：工具会自动合并重复的船期记录（相同启运港+目的港+航线ID+港口ID+船名+航次），共舱船公司信息会从网页中自动提取</li>
+            </ol>
+        </div>
+
+        <div class="content">
+            <div class="card">
+                <div class="controls">
+                    <label class="file-btn">
+                        选择 view-source 文件夹
+                        <input id="picker" type="file" webkitdirectory multiple accept=".html,.htm">
+                    </label>
+                    <button id="run" class="btn" disabled>开始解析</button>
+                    <button id="download" class="btn" disabled>下载 CSV</button>
+                    <span id="summary"></span>
+                </div>
+                <div id="log" class="log" aria-live="polite"></div>
+                <div id="preview" class="hidden">
+                    <table id="table"></table>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>提示：解析过程中请勿关闭页面，解析完成后会自动显示统计信息</p>
+        </div>
+    </div>
+
+<script>
+(function(){
+    const $ = (s) => document.querySelector(s);
+    const logBox = $('#log');
+    function log(m, cls){ const d=document.createElement('div'); if(cls) d.style.color=cls; d.textContent=m; logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight; }
+
+    function toCsvCell(v){ if(v==null) return ''; const s=String(v); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+    function rowsToCsv(rows){ return rows.map(r=>r.map(toCsvCell).join(',')).join('\n'); }
+    function downloadBlob(content, name, type){ const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),5e3); }
+
+    function text(el){ return el? (el.textContent||'').trim():''; }
+
+    // 统一清洗：去除前后空白，压缩内部空白到单空格，移除换行与制表
+    function clean(v){
+        if(v==null) return '';
+        const s = String(v).replace(/[\r\n\t]+/g,' ').replace(/\s+/g,' ').trim();
+        return s;
+    }
+
+    // 码头名清洗：修复被错误断开的缩写/单词，如 "QQ CT" -> "QQCT", "TERMINA L" -> "TERMINAL"
+    function normalizeWharfTokens(name){
+        let s = clean(name);
+        if(!s) return s;
+        const parts = s.split(' ');
+        const out = [];
+        for(let i=0;i<parts.length;i++){
+            const cur = parts[i];
+            if(!cur){ continue; }
+            // 若下一个是单个大写字母，且当前为全大写字母（如 TERMINA + L）-> 合并
+            if(i+1<parts.length){
+                const next = parts[i+1];
+                if(/^[A-Z]+$/.test(cur) && /^[A-Z]$/.test(next)){
+                    out.push(cur + next);
+                    i++; continue;
+                }
+                // 若两边均为 1-2 位的大写字母缩写（如 QQ + CT）-> 合并
+                if(/^[A-Z]{1,2}$/.test(cur) && /^[A-Z]{1,2}$/.test(next)){
+                    out.push(cur + next);
+                    i++; continue;
+                }
+            }
+            out.push(cur);
+        }
+        s = out.join(' ');
+        // 特定词修正：TER MINAL、SEA PORT、PANJA NG、GUDA NG
+        s = s.replace(/\bTER MINAL\b/g, 'TERMINAL')
+             .replace(/\bSEA PORT\b/g, 'SEAPORT')
+             .replace(/\bPANJA NG\b/g, 'PANJANG')
+             .replace(/\bGUDA NG\b/g, 'GUDANG');
+        return s;
+    }
+
+    // 根据"_航线ID_港口ID"后缀精准定位 <a ... title="...">
+    // 要求：href 必须以 "_航线ID_港口ID" 结尾（可能前面有 #1_ 等前缀）
+    function findCosTitle(decodedHtml, fleetId, fleetIdPort, originalHtml){
+        const suffix = `_${fleetId}_${fleetIdPort}`;
+        const sufEsc = suffix.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        
+        // 在多个文本源中搜索
+        const searchTexts = [decodedHtml];
+        if(originalHtml && originalHtml !== decodedHtml){
+            searchTexts.push(originalHtml);
+        }
+        
+        for(const searchText of searchTexts){
+            // 策略1：先找到所有包含该 suffix 的 href 位置
+            const hrefPattern = new RegExp(`href=["']([^"']*${sufEsc})["']`, 'gi');
+            let hrefMatch;
+            while((hrefMatch = hrefPattern.exec(searchText)) !== null){
+                const hrefValue = hrefMatch[1];
+                if(!hrefValue || !hrefValue.endsWith(suffix)) continue;
+                
+                const hrefStart = hrefMatch.index;
+                const hrefEnd = hrefMatch.index + hrefMatch[0].length;
+                
+                // 向前查找 <a 标签的开始（最多向前500字符）
+                const searchStart = Math.max(0, hrefStart - 500);
+                const beforeHref = searchText.substring(searchStart, hrefStart);
+                const tagStart = beforeHref.lastIndexOf('<a');
+                if(tagStart === -1) continue;
+                const actualTagStart = searchStart + tagStart;
+                
+                // 向后查找 > 标签的结束（最多向后1000字符，因为title可能很长）
+                const searchEnd = Math.min(searchText.length, hrefEnd + 1000);
+                const afterHref = searchText.substring(hrefEnd, searchEnd);
+                const tagEnd = afterHref.indexOf('>');
+                if(tagEnd === -1) continue;
+                const actualTagEnd = hrefEnd + tagEnd;
+                
+                // 提取整个标签内容
+                const tagContent = searchText.substring(actualTagStart, actualTagEnd + 1);
+                
+                // 在标签内容中查找 title（支持各种格式）
+                // 尝试多种模式
+                const titlePatterns = [
+                    /title=(["'])((?:(?!\1)[\s\S])*?)\1/i,  // title="..." 或 title='...'
+                    /title\s*=\s*(["'])((?:(?!\1)[\s\S])*?)\1/i,  // title = "..." (有空格)
+                    /title\s*:\s*(["'])((?:(?!\1)[\s\S])*?)\1/i   // title: "..." (JSON格式)
+                ];
+                
+                for(const titleRe of titlePatterns){
+                    const titleMatch = tagContent.match(titleRe);
+                    if(titleMatch && titleMatch[2]){
+                        let titleValue = titleMatch[2];
+                        // 处理各种转义
+                        titleValue = titleValue.replace(/\\"/g, '"')
+                                             .replace(/\\'/g, "'")
+                                             .replace(/\\n/g, ' ')
+                                             .replace(/\\t/g, ' ')
+                                             .replace(/\\r/g, '');
+                        const cleaned = clean(titleValue);
+                        if(cleaned) return cleaned;
+                    }
+                }
+            }
+            
+            // 策略2：使用正则表达式直接匹配（单行模式，作为补充）
+            const pattern1 = new RegExp(`<a[\\s\\S]{0,2000}?href=["']([^"']*${sufEsc})["'][\\s\\S]{0,2000}?title=(["'])([\\s\\S]*?)\\2`, 'i');
+            const pattern2 = new RegExp(`<a[\\s\\S]{0,2000}?title=(["'])([\\s\\S]*?)\\1[\\s\\S]{0,2000}?href=["']([^"']*${sufEsc})["']`, 'i');
+            
+            for(const re of [pattern1, pattern2]){
+                let m;
+                while((m = re.exec(searchText)) !== null){
+                    if(m && m.length >= 4){
+                        let hrefValue, titleValue;
+                        if(re === pattern1){
+                            hrefValue = m[1];
+                            titleValue = m[3];
+                        }else{
+                            titleValue = m[2];
+                            hrefValue = m[3];
+                        }
+                        if(hrefValue && titleValue && hrefValue.endsWith(suffix)){
+                            let cleaned = titleValue.replace(/\\"/g, '"')
+                                                   .replace(/\\'/g, "'")
+                                                   .replace(/\\n/g, ' ')
+                                                   .replace(/\\t/g, ' ')
+                                                   .replace(/\\r/g, '');
+                            cleaned = clean(cleaned);
+                            if(cleaned) return cleaned;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 策略3：更激进的搜索 - 直接搜索包含 suffix 的文本片段
+        // 找到所有包含 suffix 的位置，验证它在 href 中，然后在其前后搜索 title
+        for(const searchText of searchTexts){
+            let searchIndex = 0;
+            while(true){
+                const suffixIndex = searchText.indexOf(suffix, searchIndex);
+                if(suffixIndex === -1) break;
+                searchIndex = suffixIndex + 1;
+                
+                // 验证 suffix 在 href 属性中（向前查找 href=，向后查找引号）
+                const beforeSuffix = searchText.substring(Math.max(0, suffixIndex - 100), suffixIndex);
+                const afterSuffix = searchText.substring(suffixIndex, Math.min(searchText.length, suffixIndex + suffix.length + 50));
+                
+                // 检查是否在 href 属性中
+                const hrefMatch = beforeSuffix.match(/href\s*=\s*["']/i);
+                if(!hrefMatch) continue;
+                
+                // 在 suffix 前后各2000字符范围内搜索
+                const searchStart = Math.max(0, suffixIndex - 2000);
+                const searchEnd = Math.min(searchText.length, suffixIndex + suffix.length + 2000);
+                const context = searchText.substring(searchStart, searchEnd);
+                
+                // 在这个上下文中查找 <a> 标签和 title
+                const aTagMatch = context.match(/<a[\s\S]{0,3000}?>/i);
+                if(aTagMatch){
+                    const aTagStartInContext = context.indexOf(aTagMatch[0]);
+                    const aTagEnd = searchStart + aTagStartInContext + aTagMatch[0].length;
+                    // 在 <a> 标签后查找 title（最多向后1500字符）
+                    const afterTag = searchText.substring(aTagEnd, Math.min(searchText.length, aTagEnd + 1500));
+                    const titleMatch = afterTag.match(/title\s*=\s*(["'])((?:(?!\1)[\s\S])*?)\1/i);
+                    if(titleMatch && titleMatch[2]){
+                        let titleValue = titleMatch[2];
+                        titleValue = titleValue.replace(/\\"/g, '"')
+                                             .replace(/\\'/g, "'")
+                                             .replace(/\\n/g, ' ')
+                                             .replace(/\\t/g, ' ')
+                                             .replace(/\\r/g, '');
+                        const cleaned = clean(titleValue);
+                        if(cleaned) return cleaned;
+                    }
+                }
+            }
+        }
+        
+        // 策略4：DOM 回退（只在解码后的HTML中尝试）
+        try{
+            const doc = new DOMParser().parseFromString(decodedHtml, 'text/html');
+            const links = Array.from(doc.querySelectorAll('a[href]'));
+            for(const link of links){
+                const href = link.getAttribute('href') || '';
+                if(href && href.endsWith(suffix) && link.hasAttribute('title')){
+                    return clean(link.getAttribute('title'));
+                }
+            }
+        }catch(e){}
+        return '';
+    }
+
+    // 把 self.__next_f.push([1,"..."]) 里的字符串解码拼接，得到可解析文本
+    function extractDecodedPayload(html){
+        let out = '';
+        const re = /self\.__next_f\.push\(\[\d+\s*,\s*(["'])([\s\S]*?)\1\]\)/g;
+        let m;
+        while((m=re.exec(html))){
+            try{
+                // 利用 JSON.parse 解码转义序列
+                out += JSON.parse('"'+m[2].replace(/\\"/g,'\\\"')+'"');
+            }catch(e){
+                // 退化处理常见转义
+                out += m[2].replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\"/g,'"');
+            }
+            out += '\n';
+        }
+        // 如果没抓到 push 片段，就直接用原 html
+        return out || html;
+    }
+
+    // 构建 label -> 对象/数组 的索引（全页）
+    function buildLabelIndex(html){
+        const objects = new Map();
+        const arrays = new Map();
+        const objRe = /([A-Za-z0-9_]+)\s*:\s*\{([\s\S]*?)\}\s*(?=\n|\r|\]|,|<|$)/g; let m;
+        while((m=objRe.exec(html))){
+            const label=m[1]; const raw='{'+m[2].replace(/,\s*\}/g,'}')+'}';
+            try{ const o=JSON.parse(raw); objects.set(label,o);}catch(e){}
+        }
+        const arrRe = /([A-Za-z0-9_]+)\s*:\s*\[([\s\S]*?)\]\s*(?=\n|\r|\}|,|<|$)/g; let m2;
+        while((m2=arrRe.exec(html))){
+            const label=m2[1]; const body=m2[2]; const items=[];
+            const itemRe=/"\$?([A-Za-z0-9_]+)"/g; let t; while((t=itemRe.exec(body))){ items.push(t[1]); }
+            arrays.set(label, items);
+        }
+        return {objects, arrays};
+    }
+
+    // 解引用 notices/scheduleNotices/scheduleNoticeShare -> 船期对象数组
+    function derefList(labelIndex, label){
+        if(!label) return [];
+        const key=String(label).replace(/^\$/,'');
+        const labs=labelIndex.arrays.get(key)||[];
+        const out=[]; for(const lb of labs){ const o=labelIndex.objects.get(lb); if(o && (o.vslName||o.voyNo)) out.push(o); }
+        return out;
+    }
+
+    // 从整页提取"fleet块 + 对应船期"对
+    function extractFleetAndVessels(html, labelIndex){
+        const out=[];
+        const re=/\{[^}]*?"fleetId"\s*:\s*(\d+)[^}]*?"fleetIdPort"\s*:\s*(\d+)[^}]*?\}/g; let m;
+        while((m=re.exec(html))){
+            const seg=m[0];
+            const fleetId=m[1]; const fleetIdPort=m[2];
+            const cs=/("carrierShortName"\s*:\s*"([^"]*)")/.exec(seg); const carrierShortName=cs? cs[2]:'';
+            const sc=/("svcCode"\s*:\s*"([^"]*)")/.exec(seg); const svcCode=sc? sc[2]:'';
+            const wd=/("weekdayOfETDFormatter"\s*:\s*"([^"]*)")/.exec(seg); const weekday=wd? wd[2]:'';
+            const sd=/("shipdays"\s*:\s*(\d+))/.exec(seg); const shipdays=sd? sd[2]:'';
+            const pol=/("wharfName"\s*:\s*"([^"]*)")/.exec(seg); let polWharf=pol? pol[2]:'';
+            // 启运港码头更多兼容字段
+            if(!polWharf){ const spS=/("startPortWharfEnShortName"\s*:\s*"([^"]*)")/.exec(seg); const spF=/("startPortWharfEnFullName"\s*:\s*"([^"]*)")/.exec(seg); if(spS||spF){ polWharf = spS? spS[2] : (spF? spF[2] : ''); } }
+            let podShort=(/("destPortWharfEnShortName"\s*:\s*"([^"]*)")/.exec(seg)||[])[2]||'';
+            let podFull=(/("destPortWharfEnFullName"\s*:\s*"([^"]*)")/.exec(seg)||[])[2]||'';
+            // 应用码头名规范化
+            polWharf = normalizeWharfTokens(polWharf);
+            podShort = normalizeWharfTokens(podShort);
+            podFull = normalizeWharfTokens(podFull);
+            const spE=/("startPortEnName"\s*:\s*"([^"]*)")/.exec(seg); const spC=/("startPortCnName"\s*:\s*"([^"]*)")/.exec(seg);
+            const dpE=/("destPortEnName"\s*:\s*"([^"]*)")/.exec(seg); const dpC=/("destPortCnName"\s*:\s*"([^"]*)")/.exec(seg);
+            const sn=/("scheduleNotices"\s*:\s*"\$?([A-Za-z0-9_]+)")/.exec(seg); const lab1=sn? sn[2]:'';
+            const an=/("notices"\s*:\s*"\$?([A-Za-z0-9_]+)")/.exec(seg); const lab2=an? an[2]:'';
+            const sh=/("scheduleNoticeShare"\s*:\s*"\$?([A-Za-z0-9_]+)")/.exec(seg); const lab3=sh? sh[2]:'';
+
+            let vessels=[]; 
+            vessels = derefList(labelIndex, lab1);
+            if(!vessels.length) vessels = derefList(labelIndex, lab2);
+            if(!vessels.length) vessels = derefList(labelIndex, lab3);
+
+            const origin = spE && spC ? `${spE[2]}(${spC[2]})` : '';
+            const dest = dpE && dpC ? `${dpE[2]}(${dpC[2]})` : '';
+            out.push({fleetId, fleetIdPort, carrierShortName, svcCode, weekday, shipdays, polWharf, podShort, podFull, origin, dest, vessels});
+        }
+        return out;
+    }
+
+    // 顶部"由 XXX 发往 YYY ..."
+    // 优先：在任意对象片段中查找 start/dest 四个字段（适配 fc:{...} 结构）
+    // 次级：DOM 上方提示条
+    // 兜底：正则匹配"由...发往..."
+    function extractOriginDest(html){
+        const mJson = html.match(/"startPortEnName"\s*:\s*"([^"]+)"[\s\S]*?"startPortCnName"\s*:\s*"([^"]+)"[\s\S]*?"destPortEnName"\s*:\s*"([^"]+)"[\s\S]*?"destPortCnName"\s*:\s*"([^"]+)"/);
+        if(mJson){
+            const origin = `${mJson[1]}(${mJson[2]})`;
+            const dest = `${mJson[3]}(${mJson[4]})`;
+            return {origin, dest};
+        }
+        try{
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const bar = doc.querySelector('span.flex.items-center.text-\\[12px\\]');
+            if(bar){
+                const strongs = Array.from(bar.querySelectorAll('span.font-bold'));
+                const o = strongs[0]? (strongs[0].textContent||'').trim():'';
+                const d = strongs[1]? (strongs[1].textContent||'').trim():'';
+                if(o && d) return {origin:o, dest:d};
+            }
+        }catch(e){}
+        const mText=html.match(/>\s*([A-Z][A-Z\s]+)<!-- -->\(<!-- -->([\u4e00-\u9fa5]+)<!-- -->\)<\/span>发往<\span[^>]*>\s*([A-Z][A-Z\s]+)<!-- -->\(<!-- -->([\u4e00-\u9fa5]+)<!-- -->\)\s*<\/span>/);
+        if(mText) return {origin:`${mText[1].trim()}(${mText[2]})`, dest:`${mText[3].trim()}(${mText[4]})`};
+        return {origin:'',dest:''};
+    }
+
+    function datePart(s){ if(!s) return ''; const m=String(s).match(/(\d{4}\/\d{2}\/\d{2})/); return m? m[1]:''; }
+
+    function parseFile(name, html){
+        const decoded = extractDecodedPayload(html);
+        // 截断：出现"中转"或"接二程"后面的内容忽略
+        const cutMarkers = [
+            'text-[14px] font-bold">中转',
+            'lineTypeShowName":"接二程"'
+        ];
+        let cutPos = -1;
+        for(const mk of cutMarkers){ const p = decoded.indexOf(mk); if(p>=0 && (cutPos===-1 || p<cutPos)) cutPos = p; }
+        const mainText = cutPos>0 ? decoded.slice(0, cutPos) : decoded;
+
+        const labelIndex = buildLabelIndex(mainText);
+        const fleets = extractFleetAndVessels(mainText, labelIndex);
+        const odTop = extractOriginDest(decoded);
+
+        const rows=[];
+        for(const f of fleets){
+            const lineId=f.fleetId; const portId=f.fleetIdPort;
+            // 共舱船公司：在完整解码文本和原始HTML中查找 _lineId_portId 对应的 <a> 的 title
+            let cos = findCosTitle(decoded, lineId, portId, html);
+            if(!cos){ cos = [f.carrierShortName && f.svcCode? `${f.carrierShortName}(${f.svcCode})`:f.carrierShortName].filter(Boolean).join(''); }
+            const podCombined = f.podShort? `${f.podShort}/${f.podFull||''}`: (f.podFull||'');
+            const origin = f.origin || odTop.origin || '';
+            const dest = f.dest || odTop.dest || '';
+            for(const v of f.vessels){
+                const vsl=v.vslName||''; const voy=v.voyNo||''; const st=v.shipCapacity||'';
+                const plan=datePart(v.etdFormatter||v.portSailingDateFormatter||'');
+                const atd=datePart(v.atdFormatter||'');
+                const eta=datePart(v.etaFormatter||'');
+                rows.push([
+                    clean(origin),                      // 启运港
+                    clean(dest),                        // 目的港
+                    clean(lineId),                      // 航线ID
+                    clean(portId),                      // 港口ID
+                    clean(f.weekday||''),               // 开航日
+                    clean(f.shipdays||''),              // 航程
+                    clean(cos),                         // 共舱船公司
+                    clean(vsl),                         // 船名
+                    clean(voy),                         // 航次
+                    clean(st),                          // 船型
+                    clean(plan),                        // 计划开航
+                    clean(atd),                         // 实际离港
+                    clean(eta),                         // 预计到港
+                    clean(f.polWharf||''),              // 启运港码头
+                    clean(podCombined)                  // 目的港码头
+                ]);
+            }
+        }
+        // 全局兜底：若仍无船期，从整页直接抓取含 vslName 的对象
+        if(rows.length===0){
+            const re=/\{[^{}]*?"vslName"\s*:\s*"[^"]+"[\s\S]*?\}/g; let m;
+            while((m=re.exec(mainText))){
+                const objText=m[0].replace(/,\s*\}/g,'}');
+                try{
+                    const v=JSON.parse(objText);
+                    if(!v.vslName && !v.voyNo) continue;
+                    const vsl=v.vslName||''; const voy=v.voyNo||''; const st=v.shipCapacity||'';
+                    const plan=datePart(v.etdFormatter||v.portSailingDateFormatter||'');
+                    const atd=datePart(v.atdFormatter||'');
+                    const eta=datePart(v.etaFormatter||'');
+                    rows.push([clean(odTop.origin||''), clean(odTop.dest||''), '', '', '', '', '', clean(vsl), clean(voy), clean(st), clean(plan), clean(atd), clean(eta), '', '']);
+                }catch(e){ /* ignore */ }
+            }
+        }
+        return rows;
+    }
+
+    function renderPreview(rows){
+        const headers=['启运港','目的港','航线ID','港口ID','开航日','航程','共舱船公司','船名','航次','船型','计划开航','实际离港','预计到港','启运港码头','目的港码头'];
+        const table=$('#table'); const container=$('#preview');
+        table.innerHTML='';
+        const thead=document.createElement('thead'); const trh=document.createElement('tr');
+        headers.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trh.appendChild(th); }); thead.appendChild(trh); table.appendChild(thead);
+        const tbody=document.createElement('tbody');
+        for(let i=0;i<Math.min(rows.length,50);i++){
+            const tr=document.createElement('tr'); rows[i].forEach(c=>{ const td=document.createElement('td'); td.textContent=c||''; tr.appendChild(td); }); tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        container.classList.toggle('hidden', rows.length===0);
+    }
+
+    const picker=$('#picker'); const runBtn=$('#run'); const downloadBtn=$('#download'); const summary=$('#summary');
+    let files=[]; let output=[];
+
+    picker.addEventListener('change', ()=>{
+        logBox.innerHTML=''; output=[]; summary.textContent='';
+        files = Array.from(picker.files).filter(f=>/\.html?$/i.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name));
+        if(!files.length){ log('未选择到 HTML 文件，请重新选择 view-source。', '#b00020'); runBtn.disabled=true; downloadBtn.disabled=true; return; }
+        log(`已选择 ${files.length} 个 HTML 文件。`, '#0a7d33');
+        runBtn.disabled=false; downloadBtn.disabled=true; $('#preview').classList.add('hidden');
+    });
+
+    runBtn.addEventListener('click', async ()=>{
+        runBtn.disabled=true; downloadBtn.disabled=true; output=[]; $('#preview').classList.add('hidden');
+        const header=['启运港','目的港','航线ID','港口ID','开航日','航程','共舱船公司','船名','航次','船型','计划开航','实际离港','预计到港','启运港码头','目的港码头'];
+        const rows=[header];
+        let ok=0, warn=0;
+        for(const f of files){
+            try{
+                const html = await f.text();
+                const r = parseFile(f.name, html);
+                if(!r.length){ warn++; log(`[无船期] ${f.name}`, '#b36b00'); }
+                else { ok++; log(`[OK] ${f.name} -> ${r.length} 行`, '#0a7d33'); rows.push(...r); }
+            }catch(e){ warn++; log(`[失败] ${f.name}: ${e && e.message? e.message: e}`, '#b00020'); }
+        }
+        // 去重合并：键 = 启运港 + 目的港 + 航线ID + 港口ID + 船名 + 航次；共舱船公司合并去重
+        const map = new Map();
+        for(let i=1;i<rows.length;i++){
+            const [o,d,lineId,portId,day,sd,cos,vsl,voy,stype,plan,atd,eta,polW,podW] = rows[i].map(clean);
+            const key = [o,d,lineId,portId,vsl,voy].join('|');
+            if(!map.has(key)){
+                map.set(key, [o,d,lineId,portId,day,sd,cos,vsl,voy,stype,plan,atd,eta,polW,podW]);
+            }else{
+                const ex = map.get(key);
+                // 合并开航日/航程（保留已有，若空则补）
+                if(!ex[4] && day) ex[4]=day;
+                if(!ex[5] && sd) ex[5]=sd;
+                // 共舱：按需求使用 <a title> 的文本，不再拼接合并；优先保留已存在的非空值
+                if(!ex[6] && cos) ex[6] = cos;
+                // 其他字段以首条为准，如计划/ATD/ETA/码头一般一致
+            }
+        }
+        const merged = [header, ...Array.from(map.values())];
+        output = merged;
+        renderPreview(merged.slice(1));
+        downloadBtn.disabled = merged.length<=1;
+        summary.textContent = `完成：${ok} 文件，${warn} 提醒，合并后 ${merged.length-1} 条。`;
+    });
+
+    downloadBtn.addEventListener('click', ()=>{
+        if(!output || output.length<=1) return;
+        const csv='\uFEFF'+rowsToCsv(output);
+        const ts=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        downloadBlob(csv, `weiyun-schedule-${ts}.csv`, 'text/csv;charset=utf-8');
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明日数航 船期网页手动下载工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-number.clear-link {
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            transition: all 0.2s ease;
+        }
+
+        .stat-number.clear-link:hover {
+            color: #dc3545;
+            text-decoration-color: #dc3545;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .instructions {
+            padding: 25px 40px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            margin: 20px 40px;
+            border-radius: 8px;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #856404;
+            line-height: 1.8;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .url-list {
+            padding: 20px 40px 30px;
+        }
+
+        .url-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .url-item:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .url-number {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .url-content {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .url-link {
+            color: #495057;
+            text-decoration: none;
+            font-size: 14px;
+            word-break: break-all;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .url-link:hover {
+            color: #667eea;
+            text-decoration: underline;
+        }
+
+        .url-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-open {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-open:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-saved {
+            background: #28a745;
+            color: white;
+            cursor: default;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .status-saved {
+            background: #28a745;
+            color: white;
+        }
+
+        .footer {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin: 20px 40px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .url-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .url-number {
+                margin-bottom: 10px;
+            }
+
+            .url-content {
+                margin: 10px 0;
+                width: 100%;
+            }
+
+            .url-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>明日数航 船期网页手动下载工具</h1>
+            <p>共46个网页需要保存</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalCount">46</div>
+                <div class="stat-label">总计</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number clear-link" id="savedCount" onclick="clearAllSaved()" title="点击清除所有已保存状态">0</div>
+                <div class="stat-label">已保存</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="pendingCount">46</div>
+                <div class="stat-label">待处理</div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li>点击"打开网页"按钮，会在新标签页中打开对应的网页</li>
+                <li>等待页面完全加载（约10秒）</li>
+                <li>在浏览器中按 <strong>Ctrl+S</strong>（Windows）或 <strong>Cmd+S</strong>（Mac）保存网页</li>
+                <li>保存位置选择：<strong>365-view-source</strong> 文件夹</li>
+                <li>文件名格式：<strong>pol_code-pod_code.html</strong>（例如：<strong>CNTAO-HKHKG.html</strong>）</li>
+                <li>如果文件已存在，选择覆盖即可</li>
+                <li>保存完成后，点击"标记为已保存"按钮更新进度</li>
+                <li>如需重新开始下载，点击顶部统计区域中"已保存"数字（带下划线），确认后即可清除所有已保存状态，将所有网页恢复为未保存状态</li>
+            </ol>
+        </div>
+
+        <div class="url-list" id="urlList">
+            <!-- URL列表将通过JavaScript动态生成 -->
+        </div>
+
+        <div class="footer">
+            <p>提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快</p>
+        </div>
+    </div>
+
+    <script>
+        // URL列表
+        const urls = [
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=SADMM',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=AEJEA',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=AUBNE',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MXZLO',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=PABLB',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=DOCAU',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=KEMBA',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=BRSSZ',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=GBFXT',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=NLRTM',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=INMAA',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=BDCGP',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=LKCMB',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=INNSA',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=TRIST',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=ESBCN',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=ESVLC',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=USLGB',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=USLAX',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=USNYC',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=CAVAN',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=HKHKG',
+            'https://www.hangyun365.com/Shipping?pol_code=CNRZH&pod_code=TWKHH',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=SAJED',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=ZADUR',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNTOT',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNDNA',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNHPH',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNSGN',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=IDJKT',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=THLCH',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=PHMNN',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=PHMNS',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYPGU',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYPEN',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYLPK',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYWSP',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=KHKOS',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=SGSIN',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=IDSUB',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYTPP',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=CGPNR',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=GHTEM',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=GTPRQ',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=COBUN',
+            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=CLSAI'
+        ];
+
+        // 从localStorage加载保存状态
+        let savedStatus = JSON.parse(localStorage.getItem('365_savedStatus') || '{}');
+
+        // 初始化页面
+        function init() {
+            renderUrlList();
+            updateStats();
+        }
+
+        // 渲染URL列表
+        function renderUrlList() {
+            const urlList = document.getElementById('urlList');
+            urlList.innerHTML = '';
+
+            urls.forEach((url, index) => {
+                const isSaved = savedStatus[index] || false;
+                const urlItem = document.createElement('div');
+                urlItem.className = 'url-item';
+                urlItem.innerHTML = `
+                    <div class="url-number">${index + 1}</div>
+                    <div class="url-content">
+                        <a href="${url}" target="_blank" class="url-link">${url}</a>
+                        <span class="status-badge ${isSaved ? 'status-saved' : 'status-pending'}">
+                            ${isSaved ? '✓ 已保存' : '待处理'}
+                        </span>
+                    </div>
+                    <div class="url-actions">
+                        <a href="${url}" target="_blank" class="btn btn-open">打开网页</a>
+                        <button class="btn ${isSaved ? 'btn-saved' : 'btn-open'}" onclick="markAsSaved(${index})" ${isSaved ? 'disabled' : ''}>
+                            ${isSaved ? '✓ 已保存' : '标记为已保存'}
+                        </button>
+                    </div>
+                `;
+                urlList.appendChild(urlItem);
+            });
+        }
+
+        // 标记为已保存
+        function markAsSaved(index) {
+            savedStatus[index] = true;
+            localStorage.setItem('365_savedStatus', JSON.stringify(savedStatus));
+            renderUrlList();
+            updateStats();
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const savedCount = Object.values(savedStatus).filter(v => v).length;
+            const pendingCount = urls.length - savedCount;
+            const progress = (savedCount / urls.length) * 100;
+
+            document.getElementById('savedCount').textContent = savedCount;
+            document.getElementById('pendingCount').textContent = pendingCount;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // 清除所有已保存状态
+        function clearAllSaved() {
+            if (confirm('确定要清除所有已保存状态吗？这将重置所有进度。')) {
+                savedStatus = {};
+                localStorage.setItem('365_savedStatus', JSON.stringify(savedStatus));
+                renderUrlList();
+                updateStats();
+            }
+        }
+
+        // 页面加载时初始化
+        init();
+    </script>
+</body>
+</html>
+

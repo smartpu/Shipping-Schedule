@@ -1,0 +1,31 @@
+# 数据文件（CSV、Excel 数据文件）
+Data/**/*.csv
+Data/**/*.xlsx
+!Data/Hangyun Port.xlsx
+!Data/Weiyun Port.xlsx
+!Data/Vessel.xlsx
+
+# 下载的网页文件（view-source 和 view-full 文件夹）
+001-view-source/**/*.html
+365-view-source/**/*.html
+365-view-full/**/*.html
+365-view-full/**/*.css
+365-view-full/**/*.jpg
+365-view-full/**/*.下载
+
+# 临时文件
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+desktop.ini
+

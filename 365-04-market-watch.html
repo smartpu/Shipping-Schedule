@@ -1180,7 +1180,7 @@
                 <ol>
                     <li>使用四级筛选（区域 → 子区域 → 国家/地区 → 港口）与航线搜索锁定目标市场。</li>
                     <li>“全部 / 运力 / 派船”视图用于聚焦不同指标；表格支持即输即筛。</li>
-                    <li>选择目的港后自动绘制堆积柱（运力）+ 折线（派船）趋势，便于观察未来四周变化。</li>
+                    <li>选择目的港后自动绘制堆积柱（运力）+ 折线（派船）趋势，便于观察上周+本周+未来三周变化。</li>
                 </ol>
             </div>
             <div class="instruction-section">
@@ -1285,7 +1285,7 @@
                     <span class="module-badge">MODULE 02</span>
                     <div>
                         <h2 class="section-title">航线运力分析 <span>SAILING SCHEDULE PULSE</span></h2>
-                        <p class="module-desc">四级筛选联动运力、派船与趋势，精准锁定未来四周供给</p>
+                        <p class="module-desc">四级筛选联动运力、派船与趋势，精准锁定上周+本周+未来三周供给</p>
                     </div>
                 </div>
                 <div class="card module-card hidden" data-module="capacity">
@@ -2451,10 +2451,11 @@
             ports: []
         };
         let currentView = 'all'; // 'all', 'capacity', 'ships'
-        let weekColumns = []; // 5周的周别
+        let weekColumns = []; // 上周+本周+未来三周（共5周）
         let capacityChart = null; // Chart.js实例
         let routeFilterValue = '';
         let routeLabelMap = {};
+        let routePathMap = {}; // 存储routeId -> routePath的映射
 
         const infoBox = document.getElementById('infoBox');
         const infoText = document.getElementById('infoText');
@@ -2693,6 +2694,7 @@
             );
         }
 
+
         function getCurrentGroupLevel() {
             if (destinationFilters.ports.length > 0) return 4;
             if (destinationFilters.countries.length > 0) return 3;
@@ -2703,11 +2705,13 @@
 
         function getFilteredRecords() {
             const routeFilterText = routeFilterValue.trim().toLowerCase();
+            const weekCodes = getWeekRange();
             return processedRecords.filter(record => {
                 if (destinationFilters.areas.length && !destinationFilters.areas.includes(record.area)) return false;
                 if (destinationFilters.subAreas.length && !destinationFilters.subAreas.includes(record.subArea)) return false;
                 if (destinationFilters.countries.length && !destinationFilters.countries.includes(record.country)) return false;
                 if (destinationFilters.ports.length && !destinationFilters.ports.includes(record.port)) return false;
+                if (!weekCodes.includes(record.weekCode)) return false;
                 if (routeFilterText) {
                     const routeText = String(record.routeLabel || record.route || '').toLowerCase();
                     if (!routeText.includes(routeFilterText)) return false;
@@ -2746,32 +2750,23 @@
         }
 
         function groupRecords(records) {
-            const groupLevel = Math.max(getCurrentGroupLevel(), 1);
             const groups = new Map();
 
             records.forEach(record => {
-                const area = record.area || '未分配';
-                const subArea = record.subArea || '未分配';
-                const country = record.country || '未分配';
-                const port = record.port || '未分配';
                 const routeLabel = record.routeLabel || record.route || '未知航线';
                 const routeKey = record.routeId || routeLabel;
+                const routeRemark = record.routeRemark || '';
+                const routePath = record.routePath || routePathMap[record.routeId] || '';
 
-                const keyParts = [area];
-                keyParts.push(groupLevel >= 2 ? subArea : '');
-                keyParts.push(groupLevel >= 3 ? country : '');
-                keyParts.push(groupLevel >= 4 ? port : '');
-                keyParts.push(routeKey);
-                const key = keyParts.join('|');
+                // 使用routeId作为唯一key
+                const key = routeKey;
 
                 if (!groups.has(key)) {
                     groups.set(key, {
-                        area,
-                        subArea: groupLevel >= 2 ? subArea : '',
-                        country: groupLevel >= 3 ? country : '',
-                        port: groupLevel >= 4 ? port : '',
                         routeLabel,
                         routeId: record.routeId || '',
+                        routeRemark,
+                        routePath,
                         weeks: {}
                     });
                 }
@@ -2782,7 +2777,7 @@
                 }
 
                 const entries = group.weeks[record.weekCode];
-                const dedupKey = buildDedupKey(record, groupLevel);
+                const dedupKey = `${record.shipName}|${record.shipDate}|${record.capacity}`;
                 const exists = entries.some(item => item.dedupKey === dedupKey);
                 if (exists) {
                     return;
@@ -2797,16 +2792,12 @@
             });
 
             const sorted = Array.from(groups.values()).sort((a, b) => {
-                if (a.area !== b.area) return a.area.localeCompare(b.area);
-                if ((a.subArea || '') !== (b.subArea || '')) return (a.subArea || '').localeCompare(b.subArea || '');
-                if ((a.country || '') !== (b.country || '')) return (a.country || '').localeCompare(b.country || '');
-                if ((a.port || '') !== (b.port || '')) return (a.port || '').localeCompare(b.port || '');
                 return (a.routeLabel || '').localeCompare(b.routeLabel || '');
             });
 
             return {
                 data: sorted,
-                level: groupLevel
+                level: 0
             };
         }
 
@@ -2962,33 +2953,41 @@
             return null;
         }
 
-        // 获取周别范围（未来四周，共5周）
-        function getWeekRange() {
+        // 获取当前周的周别代码
+        function getCurrentWeekCode() {
             const today = new Date();
+            const year = today.getFullYear();
+            const weekNo = getWeekNumber(today);
+            return String(year) + String(weekNo).padStart(2, '0');
+        }
+
+        // 获取上周+本周+未来3周（共5周）
+        function getWeekRange() {
             const weeks = [];
+            const currentWeekCode = getCurrentWeekCode();
             
-            // 未来四周（共5周）
-            for (let i = 0; i < 5; i++) {
-                const weekDate = new Date(today);
-                weekDate.setDate(today.getDate() + (i * 7));
-                const year = weekDate.getFullYear();
-                const weekNo = getWeekNumber(weekDate);
+            // 解析当前周
+            const currentYear = parseInt(currentWeekCode.substring(0, 4));
+            const currentWeekNo = parseInt(currentWeekCode.substring(4));
+            
+            // 生成上周+本周+未来3周（共5周）
+            for (let i = -1; i < 4; i++) {
+                let year = currentYear;
+                let weekNo = currentWeekNo + i;
                 
-                // 处理跨年：如果周数超过52/53，需要调整年份
-                let finalYear = year;
-                let finalWeek = weekNo;
-                
+                // 处理跨年
                 if (weekNo > 53) {
-                    finalYear = year + 1;
-                    finalWeek = 1;
+                    year = year + 1;
+                    weekNo = weekNo - 53;
                 } else if (weekNo < 1) {
-                    finalYear = year - 1;
-                    // 需要计算上一年的最后一周
-                    const lastDayOfYear = new Date(year - 1, 11, 31);
-                    finalWeek = getWeekNumber(lastDayOfYear);
+                    year = year - 1;
+                    // 计算上一年的最后一周
+                    const lastDayOfYear = new Date(year, 11, 31);
+                    const lastWeekNo = getWeekNumber(lastDayOfYear);
+                    weekNo = lastWeekNo + weekNo;
                 }
                 
-                const weekStr = String(finalYear) + String(finalWeek).padStart(2, '0');
+                const weekStr = String(year) + String(weekNo).padStart(2, '0');
                 weeks.push(weekStr);
             }
             
@@ -3109,16 +3108,19 @@
                 columnKeys.find(col => matchesKeyword(col, '航线') && !matchesKeyword(col, 'id')) ||
                 columnKeys.find(col => matchesKeyword(col, 'route')) ||
                 (columnKeys[9] || null);
+            const routeRemarkCol = columnKeys[10] || null; // K列（索引10）
+            const routePathCol = columnKeys[24] || null; // Y列（索引24）
             const areaCol = findColumnKey(['区域', '大区', 'region']);
             const subAreaCol = findColumnKey(['子区域', '次区域', 'sub'], null);
             const countryCol = findColumnKey(['国家地区', '国家/地区', '国家', 'country'], null);
             const portCol = findColumnKey(['港口', '目的港', 'pod'], 1);
 
-            if (!weekCol || !capacityCol || !shipNameCol || !shipDateCol || !routeCol || !areaCol || !subAreaCol || !countryCol || !portCol) {
+            if (!weekCol || !capacityCol || !shipNameCol || !shipDateCol || !routeCol) {
                 alert('无法找到必要的列。请检查Excel文件格式。\n\n找到的列：' + columnKeys.join(', '));
                 return;
             }
 
+            // 固定显示上周+本周+未来3周（共5周）
             const weekCodes = getWeekRange();
             weekColumns = weekCodes.map(code => {
                 const year = code.substring(0, 4);
@@ -3126,7 +3128,7 @@
                 const dateRange = getWeekDateRange(code);
                 return {
                     code,
-                    label: `${year}/${weekNo}`,
+                    label: `${year}/${String(weekNo).padStart(2, '0')}`,
                     range: dateRange.range
                 };
             });
@@ -3140,7 +3142,7 @@
             data.forEach(row => {
                 const weekText = String(row[weekCol] ?? '').trim();
                 const weekCode = parseWeekText(weekText);
-                if (!weekCode || !weekCodes.includes(weekCode)) {
+                if (!weekCode) {
                     return;
                 }
 
@@ -3150,6 +3152,8 @@
                 const port = normalizeDestinationValue(row[portCol]);
                 let route = String(row[routeCol] ?? '').trim();
                 const routeId = routeIdCol ? String(row[routeIdCol] ?? '').trim() : '';
+                const routeRemark = routeRemarkCol ? String(row[routeRemarkCol] ?? '').trim() : '';
+                const routePath = routePathCol ? String(row[routePathCol] ?? '').trim() : '';
                 const capacity = parseFloat(row[capacityCol]) || 0;
                 const shipName = String(row[shipNameCol] ?? '').trim();
                 const shipDate = String(row[shipDateCol] ?? '').trim();
@@ -3163,6 +3167,10 @@
                         registerRouteLabel(routeId, route);
                     }
                     route = getRouteLabel(routeId, route);
+                    // 存储路径信息
+                    if (routePath) {
+                        routePathMap[routeId] = routePath;
+                    }
                 }
 
                 const record = {
@@ -3172,6 +3180,8 @@
                     port,
                     route,
                     routeId,
+                    routeRemark,
+                    routePath,
                     weekCode,
                     capacity,
                     shipName,
@@ -3204,24 +3214,31 @@
                 return;
             }
 
+            // 固定显示上周+本周+未来3周（共5周）
+            const weekCodes = getWeekRange();
+            weekColumns = weekCodes.map(code => {
+                const year = code.substring(0, 4);
+                const weekNo = parseInt(code.substring(4), 10);
+                const dateRange = getWeekDateRange(code);
+                return {
+                    code,
+                    label: `${year}/${String(weekNo).padStart(2, '0')}`,
+                    range: dateRange.range
+                };
+            });
+
             const filteredRecords = getFilteredRecords();
             latestFilteredRecords = filteredRecords;
             const groupedResult = groupRecords(filteredRecords);
             const groupedData = groupedResult.data;
-            const groupLevel = groupedResult.level;
             groupedTableData = groupedData;
             const hasAreaSelected = destinationFilters.areas.length > 0;
-            const hasSubAreaSelected = destinationFilters.subAreas.length > 0;
-            const hasCountrySelected = destinationFilters.countries.length > 0;
 
             const safeRouteValue = (routeFilterValue || '').replace(/"/g, '&quot;');
 
             tableHead.innerHTML = `
                 <tr>
-                    <th class="filter-header">区域</th>
-                    <th class="filter-header">子区域</th>
-                    <th class="filter-header">国家 / 地区</th>
-                    <th class="filter-header">港口</th>
+                    <th class="filter-header" style="width: 200px;">航线备注</th>
                     <th class="filter-header">
                         共舱船公司
                         <input type="text" class="filter-input" id="routeFilter" placeholder="筛选共舱船公司..." value="${safeRouteValue}" autocomplete="off">
@@ -3264,15 +3281,12 @@
             tableBody.innerHTML = '';
             groupedData.forEach(item => {
                 const row = document.createElement('tr');
-                const subAreaFallback = hasAreaSelected ? '全部子区域' : '—';
-                const countryFallback = hasSubAreaSelected ? '全部国家/地区' : '—';
-                const portFallback = hasCountrySelected ? '全部港口' : '—';
+                const routePath = item.routePath || routePathMap[item.routeId] || '';
+                const routePathAttr = routePath ? `data-tooltip="${routePath.replace(/"/g, '&quot;')}"` : '';
+                const routeCellClass = routePath ? 'hover-cell' : '';
                 const cells = [
-                    `<td>${item.area || '未分配'}</td>`,
-                    `<td>${groupLevel >= 2 ? (item.subArea || '未分配') : subAreaFallback}</td>`,
-                    `<td>${groupLevel >= 3 ? (item.country || '未分配') : countryFallback}</td>`,
-                    `<td>${groupLevel >= 4 ? (item.port || '未分配') : portFallback}</td>`,
-                    `<td>${item.routeLabel || '未知航线'}</td>`
+                    `<td>${item.routeRemark || '—'}</td>`,
+                    `<td class="${routeCellClass}" ${routePathAttr}>${item.routeLabel || '未知航线'}</td>`
                 ];
 
                 weekColumns.forEach(week => {
@@ -3382,9 +3396,6 @@
                 summaryRow.className = 'summary-row';
                 const summaryCells = [
                     '<td><strong>合计</strong></td>',
-                    '<td></td>',
-                    '<td></td>',
-                    '<td></td>',
                     '<td></td>'
                 ];
 
@@ -3429,7 +3440,7 @@
                 tableBody.appendChild(summaryRow);
             }
 
-            // 添加tooltip事件监听
+            // 添加tooltip事件监听（包括周别单元格和共舱船公司单元格）
             const hoverCells = tableBody.querySelectorAll('.hover-cell');
             hoverCells.forEach(cell => {
                 const tooltipText = cell.getAttribute('data-tooltip');
@@ -3440,17 +3451,13 @@
                 cell.addEventListener('mouseenter', (e) => {
                     tooltip = document.createElement('div');
                     tooltip.className = 'tooltip';
-                    // 将每行内容包装在span中，确保不换行
-                    const lines = tooltipText.split('\n');
-                    lines.forEach((line, index) => {
-                        const span = document.createElement('span');
-                        span.className = 'tooltip-line';
-                        span.textContent = line;
-                        tooltip.appendChild(span);
-                        if (index < lines.length - 1) {
-                            tooltip.appendChild(document.createElement('br'));
-                        }
-                    });
+                    // 对于路径信息，直接显示完整文本
+                    const displayText = tooltipText;
+                    const span = document.createElement('span');
+                    span.className = 'tooltip-line';
+                    span.textContent = displayText;
+                    span.style.whiteSpace = 'pre-wrap';
+                    tooltip.appendChild(span);
                     document.body.appendChild(tooltip);
                     
                     // 使用鼠标位置来定位tooltip，这样滚动时也能正确显示
@@ -3552,14 +3559,15 @@
             const datasets = [];
             const podRoutePairs = [];
             
-            // 收集所有目的港+航线组合
+            // 收集所有航线备注+共舱船公司组合
             groupedData.forEach(item => {
-                const labelText = item.routeLabel || '未知航线';
+                const routeLabel = item.routeLabel || '未知航线';
+                const routeRemark = item.routeRemark || '—';
                 podRoutePairs.push({
-                    label: `${item.port || item.country || item.area || '未分配'} - ${labelText}`,
-                    routeLabel: labelText,
+                    label: `${routeRemark} - ${routeLabel}`,
+                    routeLabel: routeLabel,
                     routeId: item.routeId || '',
-                    port: item.port
+                    routeRemark: routeRemark
                 });
             });
             
@@ -3748,7 +3756,7 @@
 - 运力充足 + 订舱低迷 =“淡季/供过于求”，需检视报价是否偏离市场，并给出让利幅度或新增需求建议。
 - 运力短缺 + 订舱火爆 =“结构性爆舱”，指出卡位航次、联盟动作、加班船及甩柜风险。
 - 运力短缺 + 订舱低迷 =“错配/定价偏离”，要求分析目标客户结构、竞争对手策略。
-所有判断需逐周对比未来四周有效运力（TEU/班次）与用户提供的订舱/现行报价，明确供需属于哪一象限。
+所有判断需逐周对比上周+本周+未来三周有效运力（TEU/班次）与用户提供的订舱/现行报价，明确供需属于哪一象限。
 
 【自动数据获取与引用规则】
 当用户资料不足时，按以下优先级补充并注明来源（如“基于网页运力模块统计”“基于用户上传 PDF”“基于公开资料”）：
@@ -3776,7 +3784,7 @@
   2. 季节性因素（8%）：结合青岛/济南海关及当年春节、欧美签约季、黑五/圣诞等。
   3. 宏观需求（5%）：PMI、库存、消费信心等。
 二、供给面（32%）
-  1. 市场有效运力（20%）：逐周列出未来四周可用运力/班次，结合空班、挤压、绕航、跳靠、船型切换、联盟调舱等驱动，判断宽松/吃紧/分化。
+  1. 市场有效运力（20%）：逐周列出上周+本周+未来三周可用运力/班次，结合空班、挤压、绕航、跳靠、船型切换、联盟调舱等驱动，判断宽松/吃紧/分化。
   2. 竞争对手策略（12%）：联盟动作、Promo、GRI、空班或重柜限制，区分头部/中小船公司影响。
 三、突发事件（20%）
   1. 黑天鹅（10%）：红海、地缘、制裁、罢工及最新复航预期。
@@ -4402,7 +4410,7 @@
 
             const analysisWeekCodes = weekCodes.length > 1 ? weekCodes.slice(1) : weekCodes;
             if (!analysisWeekCodes.length) {
-                alert('未来四周数据不足，请检查 Excel 是否包含最新船期');
+                alert('上周+本周+未来三周数据不足，请检查 Excel 是否包含最新船期');
                 return null;
             }
             const analysisWeekLabels = analysisWeekCodes.map(code => labelByCode[code] || code);
@@ -4454,7 +4462,7 @@
 分析目的港路径：${destinationSummary}
 分析航线数量：${analysisData.length}条
 
-【未来四周数据汇总】
+【上周+本周+未来三周数据汇总】
 `;
 
             analysisWeekCodes.forEach((weekCode, index) => {
@@ -4721,6 +4729,8 @@ ${snippet}
                 target.style.padding = '0 24px';
                 target.style.margin = '0 auto';
                 const captureScale = Math.min(1.2, window.devicePixelRatio || 1.2);
+                // 注意：html2canvas 内部可能会触发 Canvas2D 的 willReadFrequently 警告
+                // 这是浏览器性能提示，不影响功能，可以安全忽略
                 const canvas = await html2canvas(target, {
                     scale: captureScale,
                     useCORS: true,
@@ -4751,10 +4761,13 @@ ${snippet}
                 let position = margin;
                 const pageContentHeight = pageHeight - margin * 2;
 
+                // 添加第一页
                 pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
                 heightLeft -= pageContentHeight;
 
-                while (heightLeft > -pageContentHeight) {
+                // 如果还有内容需要显示，继续添加页面
+                // 只有当剩余高度大于0时才需要新页面（避免添加空白页）
+                while (heightLeft > 0) {
                     pdf.addPage();
                     position = margin - (imgHeight - heightLeft);
                     pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');

@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明日数航 船期完整解析工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .instructions {
+            padding: 25px 40px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            margin: 20px 40px;
+            border-radius: 8px;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #856404;
+            line-height: 1.8;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .instructions strong {
+            color: #856404;
+        }
+
+        .content {
+            padding: 20px 40px 30px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .file-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .file-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-btn input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn[disabled] {
+            background: #d2d2d7;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #summary {
+            color: #6c757d;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .log {
+            margin-top: 15px;
+            background: #fafafa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #preview {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #e9ecef;
+            padding: 10px 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f7f7f9;
+            z-index: 1;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .footer {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
+    <meta name="color-scheme" content="light dark">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>明日数航 船期完整解析工具</h1>
+            <p>自动解析明日数航船期网页，提取AI船期和历史开航船期信息并导出为 CSV 文件</p>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li><strong>准备工作</strong>：首先需要使用"明日数航 船期网页手动下载工具"下载并保存所有船期网页到 <strong>365-view-full</strong> 文件夹中</li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择包含所有 HTML 文件的 <strong>365-view-full</strong> 文件夹</li>
+                <li><strong>开始解析</strong>：选择文件夹后，点击"开始解析"按钮，工具会自动解析所有 HTML 文件中的船期信息（仅解析AI船期和历史开航船期）</li>
+                <li><strong>查看结果</strong>：解析完成后，可以在下方预览表格中查看解析结果（最多显示前50条）</li>
+                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"按钮，将数据保存为 CSV 文件</li>
+                <li><strong>结果说明</strong>：CSV 文件包含以下列：启运港、目的港、航线ID、开航日、航程(计划)、共舱船公司、航线备注、船名航次、年份、船型、船期、启运港码头、目的港码头、航程(当次)</li>
+                <li><strong>注意事项</strong>：工具会自动根据船名航次去重复，保留最后抓取的记录。如果船期为空，会从历史开航船期中补全实际开航日期。年份和船型信息会通过搜索相同船名的记录自动补全。日期格式会自动转换为 YYYY/MM/DD 格式</li>
+            </ol>
+        </div>
+
+        <div class="content">
+            <div class="card">
+                <div class="controls">
+                    <label class="file-btn">
+                        选择 view-full 文件夹
+                        <input id="picker" type="file" webkitdirectory multiple accept=".html,.htm">
+                    </label>
+                    <button id="run" class="btn" disabled>开始解析</button>
+                    <button id="download" class="btn" disabled>下载 CSV</button>
+                    <span id="summary"></span>
+                </div>
+                <div id="log" class="log" aria-live="polite"></div>
+                <div id="preview" class="hidden">
+                    <table id="table"></table>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>提示：解析过程中请勿关闭页面，解析完成后会自动显示统计信息</p>
+        </div>
+    </div>
+
+<script>
+    (function() {
+        /** Utility: log area */
+        const $ = (sel) => document.querySelector(sel);
+        const logBox = $('#log');
+        function log(msg, cls) {
+            const line = document.createElement('div');
+            if (cls) line.style.color = cls;
+            line.textContent = msg;
+            logBox.appendChild(line);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        /** CSV utils */
+        function toCsvCell(v) {
+            if (v == null) return '';
+            const s = String(v);
+            if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        }
+        function rowsToCsv(rows) {
+            return rows.map(r => r.map(toCsvCell).join(',')).join('\n');
+        }
+        function downloadBlob(content, name, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+
+        /** Parse helpers */
+        function text(el) { return el ? (el.textContent || '').trim() : ''; }
+        function find(el, sel) { return el ? el.querySelector(sel) : null; }
+        function findAll(el, sel) { return el ? Array.from(el.querySelectorAll(sel)) : []; }
+
+        /** Extract year, IMO, shipType from Route_notice_item5 */
+        function parseYearImoType(scope) {
+            let year = '', imo = '', shipType = '';
+            
+            // Search all Route_notice_item5 containers in the scope
+            const allContainers = findAll(scope, '.Route_notice_item5');
+            
+            for (const container of allContainers) {
+                // Skip ETD log containers (they don't have year/shipType)
+                const containerText = text(container);
+                if (containerText.includes('ETD更新历史') || containerText.includes('操作时间')) {
+                    continue;
+                }
+                
+                const blocks = findAll(container, 'div');
+                for (const b of blocks) {
+                    const k = text(find(b, 'h3'));
+                    const v = text(find(b, 'h6'));
+                    if (!k || !v) continue;
+                    if (k.includes('年份') && !year) year = v;
+                    if (k.toUpperCase().includes('IMO') && !imo) imo = v;
+                    if (k.includes('船型') && !shipType) shipType = v;
+                }
+                
+                // If we found all, break early
+                if (year && shipType) break;
+            }
+            
+            return { year, imo, shipType };
+        }
+
+        /** Convert date format from "11/21(周五)" to "2025/11/21" */
+        function convertDateFormat(dateStr) {
+            if (!dateStr) return '';
+            
+            // If already in YYYY-MM-DD format, convert to YYYY/MM/DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                return dateStr.replace(/-/g, '/');
+            }
+            
+            // Parse format like "11/21(周五)" or "实际开航：11/21(周五)"
+            const match = dateStr.match(/(\d{1,2})\/(\d{1,2})\(([^)]+)\)/);
+            if (!match) return dateStr;
+            
+            const month = parseInt(match[1], 10);
+            const day = parseInt(match[2], 10);
+            const weekday = match[3];
+            
+            // Weekday mapping
+            const weekdayMap = { '周一': 1, '周二': 2, '周三': 3, '周四': 4, '周五': 5, '周六': 6, '周日': 0 };
+            const targetWeekday = weekdayMap[weekday];
+            if (targetWeekday === undefined) return dateStr;
+            
+            // Try current year and previous/next year
+            const currentYear = new Date().getFullYear();
+            for (const year of [currentYear, currentYear - 1, currentYear + 1]) {
+                const date = new Date(year, month - 1, day);
+                if (date.getMonth() === month - 1 && date.getDate() === day && date.getDay() === targetWeekday) {
+                    return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+                }
+            }
+            
+            // Fallback: use current year
+            return `${currentYear}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+        }
+
+        /** Extract vessel name from vessel/voyage string like "REN JIAN 6/2515S" */
+        function extractVesselName(vesselVoyage) {
+            if (!vesselVoyage) return '';
+            const parts = vesselVoyage.split('/');
+            return parts[0] ? parts[0].trim() : '';
+        }
+
+        /** Extract departure date from Route_notice_item2 */
+        function extractEtdFromItem2(box) {
+            if (!box) return '';
+            
+            // Find all Route_notice_item2 elements in the box
+            const item2s = findAll(box, '.Route_notice_item2');
+            
+            for (const item2 of item2s) {
+                const h4s = findAll(item2, 'h4');
+                
+                // First check for "实际开航：11/21(周五)" format (history voyages)
+                for (const h4 of h4s) {
+                    const t = text(h4);
+                    if (t.includes('实际开航：')) {
+                        const match = t.match(/实际开航：\s*(\d{1,2}\/\d{1,2}\([^)]+\))/);
+                        if (match) return match[1];
+                    }
+                }
+                
+                // Then check for regular ETD format like "11/28(周五)" (AI voyages)
+                // Get the first h4 that matches the pattern (usually the first one)
+                for (const h4 of h4s) {
+                    const t = text(h4);
+                    // Match pattern like "11/28(周五)" but exclude "实际开航" and "预计开航" and "实际到港" and "预计到港"
+                    if (t.includes('实际开航') || t.includes('预计开航') || t.includes('实际到港') || t.includes('预计到港')) {
+                        continue;
+                    }
+                    const match = t.match(/^(\d{1,2}\/\d{1,2}\([^)]+\))/);
+                    if (match) {
+                        return match[1];
+                    }
+                }
+            }
+            
+            return '';
+        }
+
+        /** Parse one voyage li (same as schedule-parser) */
+        function parseVoyageLi(li, groupId, openDay, planDuration, coLoad, remark, pagePol, pagePod) {
+            const etd = (li.getAttribute('data-etd') || '').trim();
+            const polTerminal = (li.getAttribute('data-terminal') || '').trim();
+            const podTerminal = (li.getAttribute('data-pod-terminal') || '').trim();
+
+            const box = find(li, '.Route_notice_box');
+            const item1 = find(box, '.Route_notice_item1');
+            const copy = text(find(item1, '.copy-content'));   // 船名航次
+            
+            // Extract year, shipType from Route_notice_item5
+            const { year, imo, shipType } = parseYearImoType(box);
+            
+            // Extract ETD from Route_notice_item2 (for history voyages or when data-etd is empty)
+            // Pass the whole box to search all Route_notice_item2 elements
+            let item2Etd = extractEtdFromItem2(box);
+            
+            // Use item2Etd if etd is empty, otherwise use etd
+            let finalEtd = etd || item2Etd;
+            
+            // Convert date format
+            finalEtd = convertDateFormat(finalEtd);
+            
+            const voyageDuration = text(find(li, '.Route_notice_item3 h4'));
+
+            return {
+                pagePol,
+                pagePod,
+                groupId,
+                openDay,
+                planDuration,
+                coLoad,
+                remark,
+                copy,
+                vesselName: extractVesselName(copy),
+                year,
+                shipType,
+                etd: finalEtd,
+                polTerminal,
+                podTerminal,
+                voyageDuration
+            };
+        }
+
+        /** Parse notice group (only AI and history notices) */
+        function parseNoticeGroup(group, fileName, pagePol, pagePod) {
+            // Only parse nonstop (直航) blocks
+            const nonstop = find(group, '.Route_list.nonstop-div');
+            if (!nonstop) return [];
+
+            const groupId = group.getAttribute('group_id') || '';
+            const routeItem = find(nonstop, '.Route_item');
+            const openDay = text(find(routeItem, 'h1'));           // 开航日
+            const planDuration = text(find(routeItem, 'h3'));      // 航程(计划)
+            const coSpan = find(nonstop, '.Route_notice_item11 span');
+            const coLoad = text(coSpan);                            // 共舱船公司
+
+            // 航线备注：优先取 .notice_scroll h4 span 且不含"天"字样
+            let remark = '';
+            const remarkCandidates = findAll(nonstop, '.notice_scroll h4 span, .Route_item h4 span');
+            for (const s of remarkCandidates) {
+                const t = text(s);
+                if (t && !/\d+\s*天/.test(t)) { remark = t; break; }
+            }
+
+            const rows = [];
+            
+            // Only parse AI_notice and history_notice (not single_carrier_notice)
+            const aiNotice = find(group, 'ul.Route_notice.Route_notice_dd.AI_notice');
+            const historyNotice = find(group, 'ul.Route_notice.Route_notice_dd.history_notice');
+            
+            const noticeLists = [];
+            if (aiNotice) noticeLists.push(aiNotice);
+            if (historyNotice) noticeLists.push(historyNotice);
+            
+            for (const voyageList of noticeLists) {
+                const voyageLis = findAll(voyageList, 'li[cur-toggle]');
+                for (const li of voyageLis) {
+                    const voyage = parseVoyageLi(li, groupId, openDay, planDuration, coLoad, remark, pagePol, pagePod);
+                    rows.push(voyage);
+                }
+            }
+
+            return rows;
+        }
+
+        /** Extract year/shipType info from all voyage lists (including single_carrier_notice) for enrichment */
+        function extractYearShipTypeInfo(doc) {
+            const vesselNameMap = new Map(); // Store year/shipType by vessel name
+            
+            // Search all voyage lists including single_carrier_notice
+            const allVoyageLists = findAll(doc, 'ul.Route_notice.Route_notice_dd');
+            for (const voyageList of allVoyageLists) {
+                const voyageLis = findAll(voyageList, 'li[cur-toggle]');
+                for (const li of voyageLis) {
+                    const box = find(li, '.Route_notice_box');
+                    const item1 = find(box, '.Route_notice_item1');
+                    const copy = text(find(item1, '.copy-content')); // 船名航次
+                    
+                    if (!copy) continue;
+                    
+                    const vesselName = extractVesselName(copy);
+                    if (!vesselName) continue;
+                    
+                    const { year, shipType } = parseYearImoType(box);
+                    
+                    if (year || shipType) {
+                        if (!vesselNameMap.has(vesselName)) {
+                            vesselNameMap.set(vesselName, { year: '', shipType: '' });
+                        }
+                        const existing = vesselNameMap.get(vesselName);
+                        if (year && !existing.year) existing.year = year;
+                        if (shipType && !existing.shipType) existing.shipType = shipType;
+                    }
+                }
+            }
+            
+            return vesselNameMap;
+        }
+
+        /** Parse HTML file */
+        function parseHtml(fileName, htmlText) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+
+            // Extract page-level POL/POD
+            let pagePol = '';
+            const polEl = doc.querySelector('.Route_index_title_pol .Route_index_title_on');
+            if (polEl) pagePol = (polEl.textContent || '').trim();
+
+            let pagePod = '';
+            const bcnEl = doc.querySelector('.Route_index_title_bcn');
+            if (bcnEl) {
+                const t = (bcnEl.textContent || '')
+                    .replace(/当前位置：/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                const matches = t.match(/[\u4e00-\u9fa5A-Za-z]+/g);
+                if (matches && matches.length) {
+                    const blacklist = new Set(['当前位置', '明日数航', '船期查询']);
+                    const parts = matches.filter(w => !blacklist.has(w));
+                    if (parts.length >= 1) {
+                        pagePod = parts.join('/');
+                    } else {
+                        pagePod = matches[matches.length - 1];
+                    }
+                }
+            }
+
+            const groups = Array.from(doc.querySelectorAll('div.dd-notice-div'));
+            if (groups.length === 0) {
+                log(`[跳过] 未找到航线组: ${fileName}`, '#b36b00');
+                return { rows: [], vesselNameMap: new Map() };
+            }
+
+            const allRows = [];
+            for (const g of groups) {
+                const rows = parseNoticeGroup(g, fileName, pagePol, pagePod);
+                allRows.push(...rows);
+            }
+            
+            // Extract year/shipType info from all voyage lists (including single_carrier_notice)
+            const vesselNameMap = extractYearShipTypeInfo(doc);
+            
+            return { rows: allRows, vesselNameMap };
+        }
+
+        /** Deduplicate by destination port + vessel/voyage, keep last record, and enrich missing data */
+        function deduplicateAndEnrich(rows, allVesselNameMaps) {
+            // Map to store latest record for each destination port + vessel/voyage combination
+            const keyMap = new Map();
+            
+            // First pass: collect all records, keep last one for each destination port + vessel/voyage
+            for (const row of rows) {
+                const pagePod = row[1]; // 目的港 column
+                const vesselVoyage = row[7]; // 船名航次 column
+                if (pagePod && vesselVoyage) {
+                    const key = `${pagePod}|${vesselVoyage}`; // Use destination port + vessel/voyage as key
+                    keyMap.set(key, row);
+                }
+            }
+            
+            // Merge all vesselNameMaps from all files
+            const mergedVesselNameMap = new Map();
+            for (const vesselNameMap of allVesselNameMaps) {
+                for (const [vesselName, yearShipType] of vesselNameMap.entries()) {
+                    if (!mergedVesselNameMap.has(vesselName)) {
+                        mergedVesselNameMap.set(vesselName, { year: '', shipType: '' });
+                    }
+                    const existing = mergedVesselNameMap.get(vesselName);
+                    if (yearShipType.year && !existing.year) existing.year = yearShipType.year;
+                    if (yearShipType.shipType && !existing.shipType) existing.shipType = yearShipType.shipType;
+                }
+            }
+            
+            // Also build from current rows (this ensures we have the most complete data)
+            for (const row of rows) {
+                const vesselVoyage = row[7];
+                const vesselName = extractVesselName(vesselVoyage);
+                const year = row[8];
+                const shipType = row[9];
+                
+                if (vesselName && (year || shipType)) {
+                    if (!mergedVesselNameMap.has(vesselName)) {
+                        mergedVesselNameMap.set(vesselName, { year: '', shipType: '' });
+                    }
+                    const existing = mergedVesselNameMap.get(vesselName);
+                    // Always update if we have a value (prefer more recent data)
+                    if (year) existing.year = year;
+                    if (shipType) existing.shipType = shipType;
+                }
+            }
+            
+            // Build ETD map by vessel name for enrichment
+            const vesselEtdMap = new Map();
+            for (const row of rows) {
+                const vesselVoyage = row[7];
+                const vesselName = extractVesselName(vesselVoyage);
+                const etd = row[10];
+                
+                if (vesselName && etd) {
+                    if (!vesselEtdMap.has(vesselName)) {
+                        vesselEtdMap.set(vesselName, []);
+                    }
+                    vesselEtdMap.get(vesselName).push(etd);
+                }
+            }
+            
+            // Enrich records with missing year/shipType and ETD
+            const enrichedRows = [];
+            let enrichedCount = 0;
+            let yearFilled = 0, shipTypeFilled = 0, etdFilled = 0;
+            
+            for (const [key, row] of keyMap.entries()) {
+                const enriched = [...row];
+                const pagePod = row[1]; // 目的港
+                const vesselVoyage = row[7]; // 船名航次
+                const vesselName = extractVesselName(vesselVoyage);
+                let wasEnriched = false;
+                
+                // First try to find by destination port + vessel/voyage (exact match) from all rows
+                for (const r of rows) {
+                    if (r[1] === pagePod && r[7] === vesselVoyage) {
+                        // Fill year if missing
+                        if (r[8] && !enriched[8]) {
+                            enriched[8] = r[8];
+                            yearFilled++;
+                            wasEnriched = true;
+                        }
+                        // Fill shipType if missing
+                        if (r[9] && !enriched[9]) {
+                            enriched[9] = r[9];
+                            shipTypeFilled++;
+                            wasEnriched = true;
+                        }
+                        // Fill ETD if missing
+                        if (r[10] && !enriched[10]) {
+                            enriched[10] = r[10];
+                            etdFilled++;
+                            wasEnriched = true;
+                        }
+                    }
+                }
+                
+                // Also try to find from other records with same vessel name (same destination port preferred)
+                if (vesselName) {
+                    for (const r of rows) {
+                        const rVesselName = extractVesselName(r[7]);
+                        if (rVesselName === vesselName && (r[1] === pagePod || r[7] !== vesselVoyage)) {
+                            // Fill year if missing
+                            if (r[8] && !enriched[8]) {
+                                enriched[8] = r[8];
+                                yearFilled++;
+                                wasEnriched = true;
+                            }
+                            // Fill shipType if missing
+                            if (r[9] && !enriched[9]) {
+                                enriched[9] = r[9];
+                                shipTypeFilled++;
+                                wasEnriched = true;
+                            }
+                            // Fill ETD if missing (only if current ETD is empty)
+                            if (r[10] && !enriched[10]) {
+                                enriched[10] = r[10];
+                                etdFilled++;
+                                wasEnriched = true;
+                            }
+                        }
+                    }
+                }
+                
+                // If still missing year/shipType, search by vessel name from all sources (including single_carrier_notice)
+                if (vesselName) {
+                    const yearShipType = mergedVesselNameMap.get(vesselName);
+                    if (yearShipType) {
+                        if (!enriched[8] && yearShipType.year) {
+                            enriched[8] = yearShipType.year;
+                            yearFilled++;
+                            wasEnriched = true;
+                        }
+                        if (!enriched[9] && yearShipType.shipType) {
+                            enriched[9] = yearShipType.shipType;
+                            shipTypeFilled++;
+                            wasEnriched = true;
+                        }
+                    }
+                    
+                    // Also try to fill ETD from other records with same vessel name
+                    if (!enriched[10]) {
+                        const etdList = vesselEtdMap.get(vesselName);
+                        if (etdList && etdList.length > 0) {
+                            // Use the first available ETD
+                            enriched[10] = etdList[0];
+                            etdFilled++;
+                            wasEnriched = true;
+                        }
+                    }
+                }
+                
+                if (wasEnriched) enrichedCount++;
+                enrichedRows.push(enriched);
+            }
+            
+            return { rows: enrichedRows, stats: { enrichedCount, yearFilled, shipTypeFilled, etdFilled } };
+        }
+
+        /** Table preview */
+        function renderPreview(rows, container, table) {
+            const headers = [
+                '启运港', '目的港', '航线ID', '开航日', '航程(计划)', '共舱船公司', '航线备注',
+                '船名航次', '年份', '船型', '船期', '启运港码头', '目的港码头', '航程(当次)'
+            ];
+            table.innerHTML = '';
+            const thead = document.createElement('thead');
+            const trh = document.createElement('tr');
+            headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; trh.appendChild(th); });
+            thead.appendChild(trh);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            const maxRows = Math.min(rows.length, 50); // limit preview
+            for (let i = 0; i < maxRows; i++) {
+                const tr = document.createElement('tr');
+                rows[i].forEach(c => { const td = document.createElement('td'); td.textContent = c || ''; tr.appendChild(td); });
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody);
+            container.classList.toggle('hidden', rows.length === 0);
+        }
+
+        /** Main flow */
+        const picker = $('#picker');
+        const runBtn = $('#run');
+        const downloadBtn = $('#download');
+        const summary = $('#summary');
+        const preview = $('#preview');
+        const table = $('#table');
+
+        let selectedFiles = [];
+        let outputRows = [];
+
+        picker.addEventListener('change', () => {
+            logBox.innerHTML = '';
+            outputRows = [];
+            preview.classList.add('hidden');
+            selectedFiles = Array.from(picker.files).filter(f => /\.html?$/i.test(f.name));
+            if (selectedFiles.length === 0) {
+                log('未选择到 HTML 文件，请重新选择 view-full 文件夹。', '#b00020');
+                runBtn.disabled = true;
+                downloadBtn.disabled = true;
+                summary.textContent = '';
+                return;
+            }
+            selectedFiles.sort((a, b) => a.name.localeCompare(b.name));
+            log(`已选择 ${selectedFiles.length} 个 HTML 文件。`, '#0a7d33');
+            runBtn.disabled = false;
+            downloadBtn.disabled = true;
+            summary.textContent = '';
+        });
+
+        runBtn.addEventListener('click', async () => {
+            runBtn.disabled = true;
+            downloadBtn.disabled = true;
+            outputRows = [];
+            preview.classList.add('hidden');
+            table.innerHTML = '';
+            summary.textContent = '';
+            log('开始解析...', '');
+
+            // Header row
+            const header = ['启运港', '目的港', '航线ID', '开航日', '航程(计划)', '共舱船公司', '航线备注', '船名航次', '年份', '船型', '船期', '启运港码头', '目的港码头', '航程(当次)'];
+            const all = [];
+            const allVesselNameMaps = [];
+
+            let fileOk = 0, fileWarn = 0;
+            for (const f of selectedFiles) {
+                try {
+                    const txt = await f.text();
+                    const result = parseHtml(f.name, txt);
+                    const rows = result.rows;
+                    const vesselNameMap = result.vesselNameMap;
+                    
+                    if (rows.length === 0) { fileWarn++; log(`[无数据] ${f.name}`, '#b36b00'); }
+                    else { fileOk++; log(`[OK] ${f.name} -> ${rows.length} 行`, '#0a7d33'); }
+                    
+                    for (const r of rows) {
+                        all.push([
+                            r.pagePol,
+                            r.pagePod,
+                            r.groupId,
+                            r.openDay,
+                            r.planDuration,
+                            r.coLoad,
+                            r.remark,
+                            r.copy,
+                            r.year,
+                            r.shipType,
+                            r.etd,
+                            r.polTerminal,
+                            r.podTerminal,
+                            r.voyageDuration
+                        ]);
+                    }
+                    
+                    // Collect vesselNameMap from all files for enrichment
+                    if (vesselNameMap.size > 0) {
+                        allVesselNameMaps.push(vesselNameMap);
+                    }
+                } catch (e) {
+                    fileWarn++;
+                    log(`[失败] ${f.name}: ${e && e.message ? e.message : e}`, '#b00020');
+                }
+            }
+
+            log('开始去重复和补全数据...', '');
+            const result = deduplicateAndEnrich(all, allVesselNameMaps);
+            const deduplicated = result.rows;
+            const stats = result.stats;
+            
+            outputRows = [header, ...deduplicated];
+            renderPreview(deduplicated, preview, table);
+            downloadBtn.disabled = deduplicated.length === 0;
+            
+            let statsMsg = `完成：${fileOk} 个文件，${fileWarn} 个提醒，原始 ${all.length} 条，去重后 ${deduplicated.length} 条。`;
+            if (stats.enrichedCount > 0) {
+                statsMsg += ` 补全：${stats.enrichedCount} 条记录（年份 ${stats.yearFilled}，船型 ${stats.shipTypeFilled}，船期 ${stats.etdFilled}）。`;
+            }
+            summary.textContent = statsMsg;
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!outputRows || outputRows.length <= 1) return;
+            const csv = '\uFEFF' + rowsToCsv(outputRows); // BOM for Excel UTF-8
+            const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            downloadBlob(csv, `shipping-schedule-full-${ts}.csv`, 'text/csv;charset=utf-8');
+        });
+    })();
+</script>
+</body>
+</html>
+

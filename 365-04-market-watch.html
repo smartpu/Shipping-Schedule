@@ -1180,7 +1180,7 @@
                 <ol>
                     <li>使用四级筛选（区域 → 子区域 → 国家/地区 → 港口）与航线搜索锁定目标市场。</li>
                     <li>“全部 / 运力 / 派船”视图用于聚焦不同指标；表格支持即输即筛。</li>
-                    <li>选择目的港后自动绘制堆积柱（运力）+ 折线（派船）趋势，便于观察上周+本周+未来三周变化。</li>
+                    <li>选择目的港后自动绘制堆积柱（运力）+ 折线（派船）趋势，便于观察当周+未来四周变化。</li>
                 </ol>
             </div>
             <div class="instruction-section">
@@ -1285,7 +1285,7 @@
                     <span class="module-badge">MODULE 02</span>
                     <div>
                         <h2 class="section-title">航线运力分析 <span>SAILING SCHEDULE PULSE</span></h2>
-                        <p class="module-desc">四级筛选联动运力、派船与趋势，精准锁定上周+本周+未来三周供给</p>
+                        <p class="module-desc">四级筛选联动运力、派船与趋势，精准锁定当周+未来四周供给</p>
                     </div>
                 </div>
                 <div class="card module-card hidden" data-module="capacity">
@@ -2451,7 +2451,7 @@
             ports: []
         };
         let currentView = 'all'; // 'all', 'capacity', 'ships'
-        let weekColumns = []; // 上周+本周+未来三周（共5周）
+        let weekColumns = []; // 当周+未来四周（共5周）
         let capacityChart = null; // Chart.js实例
         let routeFilterValue = '';
         let routeLabelMap = {};
@@ -2777,7 +2777,8 @@
                 }
 
                 const entries = group.weeks[record.weekCode];
-                const dedupKey = `${record.shipName}|${record.shipDate}|${record.capacity}`;
+                // 去重时只考虑船名航次+运力+日期，不考虑港口，这样多选港口时同一船名航次会合并显示
+                const dedupKey = buildShipSignature(record);
                 const exists = entries.some(item => item.dedupKey === dedupKey);
                 if (exists) {
                     return;
@@ -2961,7 +2962,7 @@
             return String(year) + String(weekNo).padStart(2, '0');
         }
 
-        // 获取上周+本周+未来3周（共5周）
+        // 获取当周+未来4周（共5周）
         function getWeekRange() {
             const weeks = [];
             const currentWeekCode = getCurrentWeekCode();
@@ -2970,8 +2971,8 @@
             const currentYear = parseInt(currentWeekCode.substring(0, 4));
             const currentWeekNo = parseInt(currentWeekCode.substring(4));
             
-            // 生成上周+本周+未来3周（共5周）
-            for (let i = -1; i < 4; i++) {
+            // 生成当周+未来4周（共5周）
+            for (let i = 0; i < 5; i++) {
                 let year = currentYear;
                 let weekNo = currentWeekNo + i;
                 
@@ -2979,12 +2980,6 @@
                 if (weekNo > 53) {
                     year = year + 1;
                     weekNo = weekNo - 53;
-                } else if (weekNo < 1) {
-                    year = year - 1;
-                    // 计算上一年的最后一周
-                    const lastDayOfYear = new Date(year, 11, 31);
-                    const lastWeekNo = getWeekNumber(lastDayOfYear);
-                    weekNo = lastWeekNo + weekNo;
                 }
                 
                 const weekStr = String(year) + String(weekNo).padStart(2, '0');
@@ -3120,7 +3115,7 @@
                 return;
             }
 
-            // 固定显示上周+本周+未来3周（共5周）
+            // 固定显示当周+未来4周（共5周）
             const weekCodes = getWeekRange();
             weekColumns = weekCodes.map(code => {
                 const year = code.substring(0, 4);
@@ -3214,7 +3209,7 @@
                 return;
             }
 
-            // 固定显示上周+本周+未来3周（共5周）
+            // 固定显示当周+未来4周（共5周）
             const weekCodes = getWeekRange();
             weekColumns = weekCodes.map(code => {
                 const year = code.substring(0, 4);
@@ -3756,7 +3751,7 @@
 - 运力充足 + 订舱低迷 =“淡季/供过于求”，需检视报价是否偏离市场，并给出让利幅度或新增需求建议。
 - 运力短缺 + 订舱火爆 =“结构性爆舱”，指出卡位航次、联盟动作、加班船及甩柜风险。
 - 运力短缺 + 订舱低迷 =“错配/定价偏离”，要求分析目标客户结构、竞争对手策略。
-所有判断需逐周对比上周+本周+未来三周有效运力（TEU/班次）与用户提供的订舱/现行报价，明确供需属于哪一象限。
+所有判断需逐周对比当周+未来四周有效运力（TEU/班次）与用户提供的订舱/现行报价，明确供需属于哪一象限。
 
 【自动数据获取与引用规则】
 当用户资料不足时，按以下优先级补充并注明来源（如“基于网页运力模块统计”“基于用户上传 PDF”“基于公开资料”）：
@@ -3784,7 +3779,7 @@
   2. 季节性因素（8%）：结合青岛/济南海关及当年春节、欧美签约季、黑五/圣诞等。
   3. 宏观需求（5%）：PMI、库存、消费信心等。
 二、供给面（32%）
-  1. 市场有效运力（20%）：逐周列出上周+本周+未来三周可用运力/班次，结合空班、挤压、绕航、跳靠、船型切换、联盟调舱等驱动，判断宽松/吃紧/分化。
+  1. 市场有效运力（20%）：逐周列出当周+未来四周可用运力/班次，结合空班、挤压、绕航、跳靠、船型切换、联盟调舱等驱动，判断宽松/吃紧/分化。
   2. 竞争对手策略（12%）：联盟动作、Promo、GRI、空班或重柜限制，区分头部/中小船公司影响。
 三、突发事件（20%）
   1. 黑天鹅（10%）：红海、地缘、制裁、罢工及最新复航预期。
@@ -4410,7 +4405,7 @@
 
             const analysisWeekCodes = weekCodes.length > 1 ? weekCodes.slice(1) : weekCodes;
             if (!analysisWeekCodes.length) {
-                alert('上周+本周+未来三周数据不足，请检查 Excel 是否包含最新船期');
+                alert('当周+未来四周数据不足，请检查 Excel 是否包含最新船期');
                 return null;
             }
             const analysisWeekLabels = analysisWeekCodes.map(code => labelByCode[code] || code);
@@ -4462,7 +4457,7 @@
 分析目的港路径：${destinationSummary}
 分析航线数量：${analysisData.length}条
 
-【上周+本周+未来三周数据汇总】
+【当周+未来四周数据汇总】
 `;
 
             analysisWeekCodes.forEach((weekCode, index) => {

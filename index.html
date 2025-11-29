@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipping Schedule Tools · 船期工具集</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+            letter-spacing: 0.3px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            padding: 12px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .tool-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .tool-icon.blue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .tool-icon.green {
+            background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        }
+
+        .tool-icon.orange {
+            background: linear-gradient(135deg, #ff6b6b 0%, #f9a826 100%);
+        }
+
+        .tool-icon.purple {
+            background: linear-gradient(135deg, #845ef7 0%, #6f42c1 100%);
+        }
+
+        .tool-title {
+            flex: 1;
+        }
+
+        .tool-title h3 {
+            font-size: 18px;
+            color: #1f2d3d;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .tool-title .tool-id {
+            font-size: 12px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .tool-description {
+            color: #495057;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            flex: 1;
+        }
+
+        .tool-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        .tool-link {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .tool-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .tool-link.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .tool-link.secondary:hover {
+            background: #f0f0ff;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .section-intro {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-intro h2 {
+            font-size: 24px;
+            color: #1f2d3d;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .section-intro p {
+            color: #495057;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 60px;
+            padding: 30px 20px;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .tab-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Shipping Schedule Tools</h1>
+            <p>船期工具集 · 一站式船期数据解析与分析平台</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('tools001')">001 系列工具</button>
+            <button class="tab-btn" onclick="switchTab('tools365')">365 系列工具</button>
+        </div>
+
+        <!-- 001 系列工具 -->
+        <div id="tools001" class="tab-content active">
+            <div class="section-intro">
+                <h2>001 系列工具</h2>
+                <p>基于维运网（weiyun001.com）数据的船期解析与分析工具集。包含网页下载、数据解析和市场分析功能，适用于从维运网获取船期信息并进行深度分析。</p>
+            </div>
+
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon blue">📥</div>
+                        <div class="tool-title">
+                            <h3>网页手动下载工具</h3>
+                            <div class="tool-id">001-01</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        辅助从维运网手动下载船期网页的工具。提供进度跟踪、状态管理等功能，让手动下载过程更加高效。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="001-01-manual-download.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="001-01-manual-download-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon green">🔍</div>
+                        <div class="tool-title">
+                            <h3>船期解析工具</h3>
+                            <div class="tool-id">001-02</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        将维运网 HTML 船期网页批量解析成 CSV 文件。自动提取船期信息，包括启运港、目的港、航线、船名航次、开航日期等，并自动去重合并。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="001-02-schedule-parser.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="001-02-schedule-parser-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon purple">📊</div>
+                        <div class="tool-title">
+                            <h3>市场分析工具</h3>
+                            <div class="tool-id">001-04</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        航线运力分析工具，支持多港口筛选、运力趋势图、派船统计等功能。自动提取当周+未来四周数据，提供智能合并和可视化分析。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="001-04-market-analysis.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="001-04-market-analysis-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 365 系列工具 -->
+        <div id="tools365" class="tab-content">
+            <div class="section-intro">
+                <h2>365 系列工具</h2>
+                <p>基于明日数航（hangyun365.com）数据的船期解析与分析工具集。包含网页下载、数据解析、航线路径提取和市场观察功能，提供更全面的船期数据分析。</p>
+            </div>
+
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon blue">📥</div>
+                        <div class="tool-title">
+                            <h3>网页手动下载工具</h3>
+                            <div class="tool-id">365-01</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        辅助从明日数航手动下载船期网页的工具。提供进度跟踪、状态管理等功能，支持标准版和完整版两种下载模式。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="365-01-manual-download.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="365-01-manual-download-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon green">🔍</div>
+                        <div class="tool-title">
+                            <h3>船期解析工具</h3>
+                            <div class="tool-id">365-02</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        解析明日数航标准版船期网页，提取直航船期信息。支持批量解析，自动提取航线、船名、开航日期、运力等关键信息。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="365-02-schedule-parser.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon green">🔬</div>
+                        <div class="tool-title">
+                            <h3>完整船期解析工具</h3>
+                            <div class="tool-id">365-02</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        解析明日数航完整版船期网页，支持 AI 船期和历史船期解析。自动去重、数据补全和日期格式转换，提供更完整的数据集。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="365-02-schedule-full-parser.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon orange">🗺️</div>
+                        <div class="tool-title">
+                            <h3>航线路径解析工具</h3>
+                            <div class="tool-id">365-02</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        从完整版船期网页中提取航线路径信息。自动解析正向路径、反向路径、中间时间等，并提取航线ID和共舱船公司信息。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="365-02-rotation-parser.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon orange">💰</div>
+                        <div class="tool-title">
+                            <h3>市场运价解析工具</h3>
+                            <div class="tool-id">365-02</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        解析明日数航网页中的价格信息。提取各港口的 20GP/40GP 报价，支持批量解析和 CSV 导出，用于价格趋势分析。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="365-02-market-rate-parser.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon purple">📈</div>
+                        <div class="tool-title">
+                            <h3>市场观察工具</h3>
+                            <div class="tool-id">365-04</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        综合市场分析平台，整合运费走势图、航线运力分析和 AI 趋势分析三大模块。支持多模型 AI 分析（DeepSeek/KIMI/通义千问），自动抓取燃油价格和运价指数，提供 PDF 导出功能。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="365-04-market-watch.html" class="tool-link" target="_blank">
+                            打开工具 →
+                        </a>
+                        <a href="365-04-market-watch-README.md" class="tool-link secondary" target="_blank">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>所有工具均为零安装、离线运行，数据安全可控</p>
+            <p style="margin-top: 8px; opacity: 0.8;">如有问题或建议，请查看各工具的 README 文档</p>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            // 隐藏所有选项卡内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // 移除所有按钮的激活状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 显示选中的选项卡内容
+            document.getElementById(tabId).classList.add('active');
+
+            // 激活对应的按钮
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
+

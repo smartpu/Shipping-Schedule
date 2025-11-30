@@ -1,11 +1,8 @@
 # 下载的网页文件（view-source 和 view-full 文件夹）
 # 这些文件是用户手动下载的，不需要版本控制
-001-view-source/**/*.html
-365-view-source/**/*.html
-365-view-full/**/*.html
-365-view-full/**/*.css
-365-view-full/**/*.jpg
-365-view-full/**/*.下载
+001-view-source/
+365-view-source/
+365-view-full/
 
 # 临时文件
 *.tmp

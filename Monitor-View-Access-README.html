@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Watch · 市场观察 使用说明</title>
+    <title>Monitor · 访问记录查看使用说明</title>
     <style>
         * {
             margin: 0;
@@ -94,13 +94,6 @@
             color: #495057;
         }
 
-        .content h4 {
-            font-size: 18px;
-            margin-top: 25px;
-            margin-bottom: 12px;
-            color: #6c757d;
-        }
-
         .content p {
             margin-bottom: 15px;
             color: #343a40;
@@ -125,25 +118,6 @@
             color: #e83e8c;
         }
 
-        .content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        .content table th,
-        .content table td {
-            border: 1px solid #dee2e6;
-            padding: 12px;
-            text-align: left;
-        }
-
-        .content table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #495057;
-        }
-
         .content hr {
             border: none;
             border-top: 2px solid #e9ecef;
@@ -151,9 +125,7 @@
         }
 
         .page-footer {
-            width: 100vw;
-            margin-left: calc(-50vw + 50%);
-            margin-right: calc(-50vw + 50%);
+            width: 100%;
             background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
             color: white;
             padding: 32px 30px 36px;
@@ -323,166 +295,77 @@
             </form>
         </div>
     </div>
+
     <div class="container">
         <div class="header">
-            <a href="index.html?tab=tools365" class="back-home-btn">← 返回首页</a>
-            <h1>Market Watch · 市场观察 使用说明</h1>
+            <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+            <h1>Monitor · 访问记录查看使用说明</h1>
         </div>
 
         <div class="content">
             <h2>工具简介</h2>
-            <p><strong>Market Watch · 市场观察</strong> 是一款集成的海运市场分析工具，通过一份 Excel 文件即可联动运价趋势、航线供给与 AI 决策，轻松完成跨板块洞察。工具整合了运费走势可视化、航线运力分析和 AI 智能分析三大核心模块，为海运定价与航线决策提供数据支持。</p>
+            <p>访问记录查看工具用于查看所有工具的使用情况和访问记录。该工具会自动记录用户访问各个工具页面的信息，包括访问时间、用户姓名、邮箱和访问的页面，并提供统计分析和数据导出功能。</p>
 
             <hr>
 
-            <h2>快速开始</h2>
-            <h3>前置准备</h3>
+            <h2>功能特点</h2>
+            <ul>
+                <li><strong>自动记录访问</strong>：当用户访问任何工具页面时，系统会自动记录访问信息（需要用户先完成姓名和邮箱验证）</li>
+                <li><strong>统计分析</strong>：显示总访问次数、独立用户数和访问页面数等统计信息</li>
+                <li><strong>访问记录查看</strong>：以表格形式展示所有访问记录，包括时间、姓名、邮箱和访问页面</li>
+                <li><strong>数据导出</strong>：支持将访问记录导出为 CSV 文件，方便进行进一步分析</li>
+                <li><strong>数据管理</strong>：支持清空所有访问记录（需确认操作）</li>
+            </ul>
+
+            <hr>
+
+            <h2>使用步骤</h2>
             <ol>
-                <li><strong>Excel 数据文件</strong>：准备包含 <code>market</code> 和 <code>schedule</code> 两个工作表的 Excel 文件（<code>.xlsx</code> 或 <code>.xls</code> 格式）</li>
-                <li><strong>市场周报（可选）</strong>：准备 PDF 格式的市场周报（如 Alphaliner Newsletter、Linerlytica Weekly 等）</li>
-                <li><strong>AI API 密钥（可选）</strong>：如需使用 AI 分析功能，需准备 DeepSeek / KIMI (Moonshot) / 通义千问 (Qwen) API 密钥</li>
+                <li>在浏览器中打开 <code>Monitor-View-Access.html</code>（推荐 Chrome / Edge / Safari）</li>
+                <li>输入访问密码（首次访问需要密码验证）</li>
+                <li>查看统计信息：页面顶部显示总访问次数、独立用户数和访问页面数</li>
+                <li>查看访问记录：在表格中查看详细的访问记录</li>
+                <li>刷新记录：点击"刷新记录"按钮更新最新的访问数据</li>
+                <li>导出数据：点击"导出 CSV"按钮将访问记录导出为 CSV 文件</li>
+                <li>清空记录：如需清空所有记录，点击"清空记录"按钮（操作不可恢复）</li>
             </ol>
 
-            <h3>基本使用流程</h3>
-            <ol>
-                <li>双击打开 <code>365-04-market-watch.html</code></li>
-                <li>在顶部上传区域：
-                    <ul>
-                        <li>点击"选择Excel文件"，选择包含 <code>market</code> 和 <code>schedule</code> 工作表的 Excel 文件</li>
-                        <li>点击"上传市场周报 (PDF)"，可一次选择多份 PDF 报告（可选）</li>
-                    </ul>
-                </li>
-                <li>等待数据加载完成后，三个模块的筛选控件将自动显示</li>
-                <li>根据需求使用各模块功能进行分析</li>
-                <li>如需导出报告，点击"导出整页 PDF"按钮</li>
-            </ol>
-
             <hr>
 
-            <h2>核心功能模块</h2>
-            <h3>Module 01 · 运费走势图 (RATE TRENDS CHART)</h3>
-            <p><strong>功能定位</strong>：多港口报价、区间提示与时段筛选，一屏掌握市场温度</p>
-            <h4>主要功能</h4>
+            <h2>数据说明</h2>
             <ul>
-                <li><strong>多选筛选</strong>：
+                <li><strong>总访问次数</strong>：所有工具页面的访问总次数</li>
+                <li><strong>独立用户数</strong>：根据邮箱地址统计的独立用户数量</li>
+                <li><strong>访问页面数</strong>：被访问的不同页面数量</li>
+                <li><strong>访问记录字段</strong>：
                     <ul>
-                        <li>支持多选区域和港口</li>
-                        <li>系统自动匹配 20GP / 40GP 报价</li>
-                        <li>自动显示每个选中港口的价格区间（格式：港口名：20GP 最小值 ~ 最大值，40GP 最小值 ~ 最大值）</li>
-                    </ul>
-                </li>
-                <li><strong>时间范围筛选</strong>：
-                    <ul>
-                        <li>可设定开始时间和结束时间</li>
-                        <li>查看特定周期的价格走势</li>
-                        <li>时间控件与图表标题同行显示</li>
-                    </ul>
-                </li>
-                <li><strong>可视化展示</strong>：
-                    <ul>
-                        <li>交互式折线图，清晰展示价格趋势</li>
-                        <li>同时显示 20GP（实线）和 40GP（虚线）价格走势</li>
-                        <li>支持多港口对比，不同港口使用不同颜色区分</li>
-                    </ul>
-                </li>
-            </ul>
-
-            <h3>Module 02 · 航线运力分析 (SAILING SCHEDULE PULSE)</h3>
-            <p><strong>功能定位</strong>：四级筛选联动运力、派船与趋势，精准锁定当周+未来四周供给</p>
-            <h4>主要功能</h4>
-            <ul>
-                <li><strong>四级筛选体系</strong>：
-                    <ul>
-                        <li><strong>区域</strong> → <strong>子区域</strong> → <strong>国家/地区</strong> → <strong>港口</strong></li>
-                        <li>支持多选，筛选条件逐级联动</li>
-                        <li>筛选后自动更新表格和图表</li>
-                        <li><strong>智能合并</strong>：多选港口时，系统会自动按航线分组，同一船名航次在不同港口出现时会合并显示，避免重复统计</li>
-                    </ul>
-                </li>
-                <li><strong>航线搜索</strong>：在表头"共舱船公司"列输入关键词，支持中文输入，实时过滤</li>
-                <li><strong>三种视图模式</strong>：<code>全部 / 运力 / 派船</code> 三种显示模式，快速聚焦指标</li>
-                <li><strong>周别统计</strong>：固定显示当周+未来四周（共5周），表头显示 YYYY/WW + 日期范围</li>
-                <li><strong>趋势图表</strong>：选择区域后自动显示运力与派船趋势图，堆积柱形图展示各航线运力分布，折线图展示派船总数变化</li>
-            </ul>
-
-            <h3>Module 03 · AI 趋势分析 (AI TREND ANALYSIS)</h3>
-            <p><strong>功能定位</strong>：DeepSeek × KIMI × 通义千问 三模型交叉验证航线策略、供需与价格建议</p>
-            <h4>主要功能</h4>
-            <ul>
-                <li><strong>三模型支持</strong>：
-                    <ul>
-                        <li><strong>DeepSeek</strong>：支持 deepseek-chat、deepseek-v3、deepseek-reasoner、deepseek-r1、deepseek-coder 等模型</li>
-                        <li><strong>KIMI (Moonshot)</strong>：支持 moonshot-v1-8k、moonshot-v1-32k、moonshot-v1-128k、moonshot-v1-k2 等模型</li>
-                        <li><strong>通义千问 (Qwen)</strong>：支持 qwen-turbo、qwen-plus、qwen-max、qwen-max-longcontext 等模型</li>
-                        <li>可切换对比不同模型的分析结论</li>
-                        <li>配置自动保存到浏览器本地存储</li>
-                    </ul>
-                </li>
-                <li><strong>其他影响因素输入</strong>：收货情况、码头情况、额外运力、市场运费、其他事件</li>
-                <li><strong>外部数据抓取</strong>：
-                    <ul>
-                        <li>Ship & Bunker：VLSFO / MGO / IFO380（含 WoW）</li>
-                        <li>CCFI：综合 + 12 条航线指数（含 WoW）</li>
-                        <li>WCI：全球综合 + 8 条航线现货价（含 WoW）</li>
-                        <li>FBX：FBX 综合 + 13 条航线指数（含 WoW）</li>
+                        <li>时间：访问发生的时间</li>
+                        <li>姓名：访问用户的姓名（来自用户验证信息）</li>
+                        <li>邮箱：访问用户的邮箱（来自用户验证信息）</li>
+                        <li>访问页面：被访问的工具页面名称</li>
                     </ul>
                 </li>
             </ul>
 
             <hr>
 
-            <h2>数据格式说明</h2>
-            <h3>Excel 文件结构</h3>
-            <h4><code>market</code> 工作表</h4>
-            <p>用于运费走势图模块，需包含以下列：</p>
+            <h2>注意事项</h2>
             <ul>
-                <li><strong>日期列</strong>：日期格式（A列或包含"日期"、"date"、"时间"等关键词）</li>
-                <li><strong>目的港列</strong>：港口名称（D列或包含"港口"、"port"、"目的港"等关键词）</li>
-                <li><strong>区域列</strong>：区域分类（I列或包含"区域"、"region"、"地区"等关键词）</li>
-                <li><strong>20GP 列</strong>：20GP 价格（列名包含 "20GP"、"20gp"、"GP20"）</li>
-                <li><strong>40GP 列</strong>：40GP 价格（列名包含 "40GP"、"40gp"、"GP40"）</li>
-            </ul>
-
-            <h4><code>schedule</code> 工作表</h4>
-            <p>用于航线运力分析模块，需包含以下列：</p>
-            <ul>
-                <li><strong>目的港列</strong>：港口名称（第2列或包含"港口"、"目的港"、"pod"等关键词）</li>
-                <li><strong>区域列</strong>：区域分类（包含"区域"、"大区"、"region"等关键词）</li>
-                <li><strong>子区域列</strong>：子区域分类（包含"子区域"、"次区域"、"sub"等关键词）</li>
-                <li><strong>国家/地区列</strong>：国家或地区名称（包含"国家地区"、"国家/地区"、"国家"、"country"等关键词）</li>
-                <li><strong>航线列</strong>：共舱船公司或航线名称（F列或包含"共舱"、"船公司"、"航线"、"route"等关键词）</li>
-                <li><strong>周别列</strong>：周别代码（N列或包含"周别"、"周次"、"周数"、"week"等关键词，格式如：202547 或 2025年第47周）</li>
-                <li><strong>运力列</strong>：运力（TEU）（O列或包含"运力"、"teu"、"舱位"等关键词）</li>
+                <li>所有访问记录数据存储在本地浏览器的 <code>localStorage</code> 中，不会上传至任何服务器</li>
+                <li>访问记录最多保存 100 条，超过限制会自动删除最旧的记录</li>
+                <li>用户验证信息有效期为 7 天，过期后需要重新验证</li>
+                <li>清空记录操作不可恢复，请谨慎操作</li>
+                <li>导出 CSV 文件使用 UTF-8 编码，包含 BOM 标记，可在 Excel 中正确显示中文</li>
+                <li>建议使用最新版本的 Chrome、Edge 或 Safari 浏览器以获得最佳体验</li>
             </ul>
 
             <hr>
 
-            <h2>常见问题</h2>
-            <h3>Excel 文件加载失败怎么办？</h3>
-            <p>请检查：</p>
+            <h2>隐私保护</h2>
             <ul>
-                <li>Excel 文件是否包含 <code>market</code> 和 <code>schedule</code> 两个工作表</li>
-                <li>工作表名称是否正确（不区分大小写，但需包含关键词）</li>
-                <li>数据列是否包含必要的关键词</li>
-                <li>浏览器控制台是否有错误信息</li>
-            </ul>
-
-            <h3>AI 分析失败怎么办？</h3>
-            <p>请检查：</p>
-            <ul>
-                <li>API Key 是否正确</li>
-                <li>网络连接是否正常</li>
-                <li>API 配额是否充足</li>
-                <li>API URL 和模型 ID 是否正确</li>
-                <li>是否选择了至少一个区域（第一级筛选）</li>
-            </ul>
-
-            <h3>PDF 导出失败怎么办？</h3>
-            <p>请检查：</p>
-            <ul>
-                <li>网络连接是否正常（需要加载 html2canvas 和 jsPDF 库）</li>
-                <li>浏览器是否支持相关功能</li>
-                <li>页面内容是否过长（建议先收起使用说明）</li>
+                <li>所有数据仅存储在本地浏览器中，不会上传到任何服务器</li>
+                <li>访问记录仅供内部使用，请遵守相关法律法规和隐私保护规定</li>
+                <li>如需保护隐私，可以定期清空访问记录</li>
             </ul>
         </div>
     </div>
@@ -564,7 +447,7 @@
                 if (checkAuth()) {
                     authOverlay.classList.add('hidden');
                     document.body.classList.remove('auth-locked');
-                    logAccess('365-04-market-watch-README.html');
+                    logAccess('Monitor-View-Access-README.html');
                     return;
                 }
 
@@ -605,7 +488,7 @@
                     }
 
                     saveAuth(name, phone, email);
-                    logAccess('365-04-market-watch-README.html');
+                    logAccess('Monitor-View-Access-README.html');
                     authOverlay.classList.add('hidden');
                     document.body.classList.remove('auth-locked');
                 });
@@ -638,9 +521,9 @@
     </script>
 
     <div class="page-footer">
-        <h2>Market Watch · 市场观察使用声明</h2>
-        <p>资料整合自用户 Excel、用户上传市场周报、Ship & Bunker、上海航运交易所、Drewry、Freightos 等公开渠道，仅供内部研判，不构成对外报价或投资建议。</p>
-        <p>AI 服务由 DeepSeek / KIMI / 通义千问 API 驱动，所有调用费用与合规责任由使用者自担，涉及客户或敏感数据时请先完成脱敏处理。</p>
+        <h2>Monitor · 访问记录查看使用声明</h2>
+        <p>本工具用于查看所有工具的使用情况和访问记录，所有数据均存储在本地浏览器中，不会上传至任何服务器。</p>
+        <p>访问记录仅供内部使用，请遵守相关法律法规和隐私保护规定。</p>
     </div>
 </body>
 </html>

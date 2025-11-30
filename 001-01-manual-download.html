@@ -300,9 +300,155 @@
                 justify-content: flex-end;
             }
         }
+
+        /* 用户验证模态框样式 */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+
+        .auth-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .auth-modal h2 {
+            font-size: 24px;
+            color: #1f2d3d;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .auth-modal p {
+            color: #6c757d;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-form-group {
+            margin-bottom: 20px;
+        }
+
+        .auth-form-group label {
+            display: block;
+            color: #495057;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .auth-form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .auth-form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .auth-submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .auth-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .auth-submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .auth-error {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .auth-overlay.hidden {
+            display: none;
+        }
+
+        body.auth-locked {
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
+    <!-- 用户验证模态框 -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-modal">
+            <h2>🔐 访问验证</h2>
+            <p>为了了解工具使用情况，请填写以下信息</p>
+            <form id="authForm">
+                <div class="auth-form-group">
+                    <label for="userName">姓名 *</label>
+                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
+                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+                </div>
+                <div class="auth-form-group">
+                    <label for="userPhone">手机号 *</label>
+                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
+                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+                </div>
+                <div class="auth-form-group">
+                    <label for="userEmail">邮箱 *</label>
+                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
+                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+                </div>
+                <button type="submit" class="auth-submit-btn">确认并继续</button>
+            </form>
+        </div>
+    </div>
     <div class="container">
         <div class="header">
             <a href="index.html?tab=tools001" class="back-home-btn">← 返回首页</a>
@@ -353,6 +499,154 @@
     </div>
 
     <script>
+        // 用户验证系统
+        (function() {
+            const AUTH_STORAGE_KEY = 'shipping_tools_auth';
+            const AUTH_EXPIRY_DAYS = 7;
+            const ACCESS_LOG_KEY = 'shipping_tools_access_log';
+            const MAX_LOG_ENTRIES = 100;
+
+            function checkAuth() {
+                try {
+                    const authData = localStorage.getItem(AUTH_STORAGE_KEY);
+                    if (!authData) return false;
+                    const data = JSON.parse(authData);
+                    const now = Date.now();
+                    if (data.expiry && now > data.expiry) {
+                        localStorage.removeItem(AUTH_STORAGE_KEY);
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function saveAuth(name, phone, email) {
+                const expiry = Date.now() + (AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+                const authData = {
+                    name: name.trim(),
+                    phone: phone.trim(),
+                    email: email.trim().toLowerCase(),
+                    timestamp: Date.now(),
+                    expiry: expiry
+                };
+                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+            }
+
+            function logAccess(pageName) {
+                try {
+                    const authData = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
+                    const logEntry = {
+                        page: pageName,
+                        name: authData.name || '未知',
+                        phone: authData.phone || '未知',
+                        email: authData.email || '未知',
+                        timestamp: Date.now(),
+                        date: new Date().toLocaleString('zh-CN')
+                    };
+                    let logs = [];
+                    try {
+                        const existingLogs = localStorage.getItem(ACCESS_LOG_KEY);
+                        if (existingLogs) logs = JSON.parse(existingLogs);
+                    } catch (e) {
+                        logs = [];
+                    }
+                    logs.unshift(logEntry);
+                    if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
+                    localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
+                } catch (e) {
+                    console.warn('记录访问日志失败', e);
+                }
+            }
+
+            function initAuth() {
+                const authOverlay = document.getElementById('authOverlay');
+                const authForm = document.getElementById('authForm');
+                const nameInput = document.getElementById('userName');
+                const phoneInput = document.getElementById('userPhone');
+                const emailInput = document.getElementById('userEmail');
+                const nameError = document.getElementById('nameError');
+                const phoneError = document.getElementById('phoneError');
+                const emailError = document.getElementById('emailError');
+
+                if (!authOverlay || !authForm) return;
+
+                if (checkAuth()) {
+                    authOverlay.classList.add('hidden');
+                    document.body.classList.remove('auth-locked');
+                    logAccess('001-01-manual-download.html');
+                    return;
+                }
+
+                document.body.classList.add('auth-locked');
+                authOverlay.classList.remove('hidden');
+                if (nameInput) nameInput.focus();
+
+                authForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const name = nameInput.value.trim();
+                    const phone = phoneInput.value.trim();
+                    const email = emailInput.value.trim().toLowerCase();
+                    
+                    if (!name) {
+                        nameError.classList.add('show');
+                        nameInput.focus();
+                        return;
+                    } else {
+                        nameError.classList.remove('show');
+                    }
+
+                    const phoneRegex = /^1[3-9]\d{9}$/;
+                    if (!phone || !phoneRegex.test(phone)) {
+                        phoneError.classList.add('show');
+                        phoneInput.focus();
+                        return;
+                    } else {
+                        phoneError.classList.remove('show');
+                    }
+
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!email || !emailRegex.test(email)) {
+                        emailError.classList.add('show');
+                        emailInput.focus();
+                        return;
+                    } else {
+                        emailError.classList.remove('show');
+                    }
+
+                    saveAuth(name, phone, email);
+                    logAccess('001-01-manual-download.html');
+                    authOverlay.classList.add('hidden');
+                    document.body.classList.remove('auth-locked');
+                });
+
+                nameInput.addEventListener('input', () => {
+                    if (nameInput.value.trim()) nameError.classList.remove('show');
+                });
+
+                phoneInput.addEventListener('input', () => {
+                    const phone = phoneInput.value.trim();
+                    if (phone && /^1[3-9]\d{9}$/.test(phone)) {
+                        phoneError.classList.remove('show');
+                    }
+                });
+
+                emailInput.addEventListener('input', () => {
+                    const email = emailInput.value.trim();
+                    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        emailError.classList.remove('show');
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initAuth);
+            } else {
+                initAuth();
+            }
+        })();
+
         // URL列表
         const urls = [
             'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=avCPiTfdl2v%252BuDHEPYQkLw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=nIJ3Uyv%252Bm7qB2PS5QvkN1A%253D%253D',

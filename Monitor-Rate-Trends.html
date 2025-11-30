@@ -1,0 +1,2140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitor · 运价趋势面板</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 0;
+        margin: 0;
+        color: #333;
+      }
+
+      .container {
+        width: 100%;
+        margin: 0;
+        background: white;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+        min-height: 100vh;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+        color: white;
+        padding: 48px 30px;
+        text-align: center;
+        position: relative;
+      }
+
+      .back-home-btn {
+        position: absolute;
+        top: 20px;
+        left: 30px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      .back-home-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .header h1 {
+        font-size: 30px;
+        margin-bottom: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .header p {
+        opacity: 0.92;
+        font-size: 15px;
+        letter-spacing: 0.4px;
+      }
+
+      .content {
+        padding: 20px 40px 30px;
+      }
+
+      section.panel {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .upload-area {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(240px, 1fr));
+        gap: 20px;
+        align-items: stretch;
+      }
+
+      @media (max-width: 840px) {
+        .upload-area {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .upload-card {
+        background: rgba(102, 126, 234, 0.15);
+        border-radius: 10px;
+        padding: 20px 24px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        cursor: pointer;
+        border: 2px dashed rgba(102, 126, 234, 0.3);
+        transition: all 0.2s ease;
+      }
+
+      .upload-card:hover {
+        background: rgba(102, 126, 234, 0.2);
+        border-color: rgba(102, 126, 234, 0.5);
+      }
+
+      label span {
+        display: block;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .status-card {
+        border-radius: 10px;
+        padding: 20px 24px;
+        border: 1px solid #e9ecef;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+      }
+
+      .status-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6c757d;
+      }
+
+      .status-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+      }
+
+      .status-detail {
+        font-size: 0.85rem;
+        color: #6c757d;
+      }
+
+      .filters {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(240px, 1fr));
+        gap: 18px;
+        margin-top: 20px;
+        align-items: stretch;
+      }
+
+      @media (max-width: 960px) {
+        .filters {
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+      }
+
+      .date-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .date-stack .date-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .filter-block {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .filter-block label {
+        font-weight: 500;
+        color: #495057;
+      }
+
+      input[type="date"],
+      select {
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        padding: 10px 12px;
+        font: inherit;
+        background: white;
+        color: #333;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      input[type="date"]:focus,
+      select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      select[multiple] {
+        min-height: 170px;
+      }
+
+      .hint {
+        font-size: 0.8rem;
+        color: #6c757d;
+      }
+
+      .port-block {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .port-block select {
+        flex: 1;
+      }
+
+      .action-block {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .toggle-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 12px 0 20px;
+      }
+
+      .toggle-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 2px solid #e9ecef;
+        background: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+      }
+
+      .toggle-chip:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.05);
+      }
+
+      .toggle-chip input {
+        accent-color: #667eea;
+      }
+
+      .action-block button {
+        width: 100%;
+      }
+
+      .record-pill {
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .record-pill strong {
+        font-size: 1.2rem;
+        color: #667eea;
+      }
+
+      .ghost-btn {
+        border-radius: 8px;
+        border: 2px solid #667eea;
+        background: white;
+        color: #667eea;
+        padding: 10px 18px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+      }
+
+      .ghost-btn:hover:not(:disabled) {
+        background: #f0f0ff;
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.2);
+      }
+
+      .ghost-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      button.reset {
+        border: none;
+        border-radius: 8px;
+        padding: 10px 18px;
+        background: #667eea;
+        color: #fff;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+      }
+
+      button.reset:hover:not(:disabled) {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      button.reset:disabled {
+        background: #d2d2d7;
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .metric-card {
+        border-radius: 10px;
+        padding: 20px;
+        background: white;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .metric-card h3 {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #6c757d;
+      }
+
+      .metric-card p {
+        margin: 12px 0 0;
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .metric-card small {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.85rem;
+        color: #6c757d;
+      }
+
+      .metric-card small.metric-extra {
+        font-size: 0.78rem;
+        opacity: 0.8;
+      }
+
+      .metric-group-stack {
+        margin-top: 16px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .metric-group {
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        padding: 16px;
+        background: white;
+      }
+
+      .metric-group-title {
+        margin: 0 0 12px;
+        font-weight: 600;
+        color: #495057;
+      }
+
+      canvas {
+        width: 100%;
+        max-height: 420px;
+      }
+
+      .chart-stack {
+        display: grid;
+        gap: 24px;
+      }
+
+      .chart-panel {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 16px;
+        background: white;
+      }
+
+      .yearly-port-panel {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 16px;
+        background: white;
+      }
+
+      .yearly-port-header {
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #495057;
+      }
+
+      .yearly-type-stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .chart-panel-title {
+        margin: 0 0 12px;
+        font-weight: 600;
+        color: #495057;
+      }
+
+      .chart-empty {
+        padding: 32px;
+        text-align: center;
+        color: #6c757d;
+        border: 1px dashed #e9ecef;
+        border-radius: 10px;
+      }
+
+      .panel h2 {
+        margin: 0 0 16px;
+        font-size: 1.35rem;
+        font-weight: 600;
+        color: #1f2d3d;
+      }
+
+      .table-wrap {
+        margin-top: 24px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #e9ecef;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 12px 16px;
+      }
+
+      th {
+        background: #667eea;
+        color: white;
+        font-weight: 600;
+      }
+
+      tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+
+      tbody tr:hover {
+        background: #e9ecef;
+      }
+
+      tbody tr:not(:last-child) {
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      details {
+        margin-top: 24px;
+      }
+
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .trend-table-wrap {
+        margin-top: 8px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+      }
+
+      .trend-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+
+      .trend-table th,
+      .trend-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        vertical-align: top;
+      }
+
+      .trend-table thead th {
+        background: #667eea;
+        color: white;
+        font-weight: 600;
+      }
+
+      .trend-table thead th small {
+        display: block;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.9);
+        margin-top: 4px;
+      }
+
+      .trend-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .trend-value {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        line-height: 1.3;
+      }
+
+      .trend-value span {
+        display: block;
+      }
+
+      .trend-range {
+        font-size: 0.75rem;
+        color: #6c757d;
+      }
+
+      .trend-change {
+        display: block;
+        font-size: 0.85rem;
+        margin-top: 4px;
+      }
+
+      .trend-up {
+        color: #dc3545;
+      }
+
+      .trend-down {
+        color: #28a745;
+      }
+
+      .trend-flat {
+        color: #6c757d;
+      }
+
+      .empty-row {
+        text-align: center;
+        color: #6c757d;
+        padding: 24px 0;
+      }
+
+      .page-footer {
+        width: 100%;
+        background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+        color: white;
+        padding: 32px 30px 36px;
+        text-align: center;
+        margin-top: 0;
+        box-sizing: border-box;
+      }
+      .page-footer h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+        font-weight: 600;
+      }
+      .page-footer p {
+        margin: 6px 0;
+        font-size: 13px;
+        color: rgba(255,255,255,0.82);
+        line-height: 1.5;
+      }
+
+      @media (max-width: 640px) {
+        .content {
+          padding: 20px 20px 30px;
+        }
+
+        section.panel {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+        <h1>Monitor · 运价趋势面板</h1>
+        <p>上传 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。</p>
+      </div>
+
+      <div class="content">
+      <section class="panel">
+        <div class="upload-area">
+          <label class="upload-card">
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 36 36"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="4"
+                y="4"
+                width="28"
+                height="28"
+                rx="8"
+                fill="url(#grad)"
+              ></rect>
+              <path
+                d="M18 11v14M11 18h14"
+                stroke="#fff"
+                stroke-width="2.2"
+                stroke-linecap="round"
+              ></path>
+              <defs>
+                <linearGradient
+                  id="grad"
+                  x1="4"
+                  y1="4"
+                  x2="32"
+                  y2="32"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stop-color="#0071e3" />
+                  <stop offset="1" stop-color="#54a4ff" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span>
+              <strong>上传 Excel</strong><br />
+              <small>支持 .xlsx / .xls，数据仅在本地浏览器解析</small>
+            </span>
+            <input id="file-input" type="file" accept=".xlsx,.xls" />
+          </label>
+          <div class="status-card">
+            <span class="status-label">数据状态</span>
+            <span class="status-value" id="status-value">尚未载入数据</span>
+            <small class="status-detail" id="status-detail" style="display: none">—</small>
+          </div>
+        </div>
+
+        <div class="filters">
+          <div class="filter-block date-stack">
+            <div class="date-field">
+              <label for="start-date">开始时间</label>
+              <input type="date" id="start-date" />
+            </div>
+            <div class="date-field">
+              <label for="end-date">结束时间</label>
+              <input type="date" id="end-date" />
+            </div>
+          </div>
+          <div class="filter-block port-block">
+            <label for="port-select">港口（可多选）</label>
+            <select id="port-select" multiple></select>
+            <span class="hint">按住 Ctrl / ⌘ 键可多选，清空选择即为全部港口</span>
+          </div>
+          <div class="filter-block action-block">
+            <label>&nbsp;</label>
+            <button class="reset" id="reset-btn" disabled>重置筛选</button>
+            <div class="record-pill" id="record-pill">
+              <span>记录条数</span>
+              <strong id="record-count">0</strong>
+            </div>
+            <button class="ghost-btn" id="export-btn" disabled>导出 PDF</button>
+          </div>
+        </div>
+
+        <div class="metrics" id="metric-base">
+          <div class="metric-card">
+            <h3>最新 2SD</h3>
+            <p id="latest-2sd">—</p>
+            <small id="latest-2sd-meta">—</small>
+            <small class="metric-extra" id="latest-2sd-ports" style="display: none">—</small>
+          </div>
+          <div class="metric-card">
+            <h3>最新 4SH</h3>
+            <p id="latest-4sh">—</p>
+            <small id="latest-4sh-meta">—</small>
+            <small class="metric-extra" id="latest-4sh-ports" style="display: none">—</small>
+          </div>
+          <div class="metric-card">
+            <h3>最高 2SD</h3>
+            <p id="high-2sd">—</p>
+            <small id="high-2sd-meta">—</small>
+            <small class="metric-extra" id="high-2sd-ports" style="display: none">—</small>
+          </div>
+          <div class="metric-card">
+            <h3>最高 4SH</h3>
+            <p id="high-4sh">—</p>
+            <small id="high-4sh-meta">—</small>
+            <small class="metric-extra" id="high-4sh-ports" style="display: none">—</small>
+          </div>
+          <div class="metric-card">
+            <h3>最低 2SD</h3>
+            <p id="low-2sd">—</p>
+            <small id="low-2sd-meta">—</small>
+            <small class="metric-extra" id="low-2sd-ports" style="display: none">—</small>
+          </div>
+          <div class="metric-card">
+            <h3>最低 4SH</h3>
+            <p id="low-4sh">—</p>
+            <small id="low-4sh-meta">—</small>
+            <small class="metric-extra" id="low-4sh-ports" style="display: none">—</small>
+          </div>
+        </div>
+        <div id="port-metric-groups" class="metric-group-stack"></div>
+      </section>
+
+      <section class="panel">
+        <h2>筛选区间 · 趋势曲线</h2>
+        <div class="chart-stack" id="range-chart-stack">
+          <div class="chart-empty">尚无数据</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>周（C列）</th>
+                <th>日期（D列）</th>
+                <th>港口（F列）</th>
+                <th>类型（G列）</th>
+                <th>运费（H列）</th>
+              </tr>
+            </thead>
+            <tbody id="data-body">
+              <tr>
+                <td colspan="5" style="text-align: center; color: #6c757d">
+                  尚无数据，请先上传 Excel。
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>全历史 · 周度走势</h2>
+        <div class="chart-stack" id="history-chart-stack">
+          <div class="chart-empty">尚无数据</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>年度对比 · 同期观察</h2>
+        <div class="toggle-group" id="yearly-toggle">
+          <label class="toggle-chip">
+            <input type="checkbox" value="2SD" />
+            只看 2SD
+          </label>
+          <label class="toggle-chip">
+            <input type="checkbox" value="4SH" checked />
+            只看 4SH
+          </label>
+        </div>
+        <div class="chart-stack" id="yearly-chart-stack">
+          <div class="chart-empty">尚无数据</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>周度涨跌统计</h2>
+        <div class="trend-table-wrap">
+          <table class="trend-table">
+            <thead>
+              <tr>
+                <th>港口</th>
+                <th id="trend-h-prev2">上上周 2SD/4SH</th>
+                <th>对比上上上周</th>
+                <th id="trend-h-prev1">上周 2SD/4SH</th>
+                <th>对比上上周</th>
+                <th id="trend-h-current">本周 2SD/4SH</th>
+                <th>对比上周</th>
+              </tr>
+            </thead>
+            <tbody id="trend-table-body">
+              <tr>
+                <td colspan="7" class="empty-row">数据载入后自动生成</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+    </div>
+    <div class="page-footer">
+      <h2>Monitor · 运价趋势面板使用声明</h2>
+      <p>资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+      <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+    </div>
+
+    <script>
+      // 动态加载 XLSX 库
+      if (typeof window.XLSX === "undefined") {
+        const xlsxScript = document.createElement("script");
+        xlsxScript.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+        document.head.appendChild(xlsxScript);
+      }
+      // 动态加载 Chart.js 库
+      if (typeof window.Chart === "undefined") {
+        const chartScript = document.createElement("script");
+        chartScript.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js";
+        document.head.appendChild(chartScript);
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script>
+      const TARGET_TYPES = ["2SD", "4SH"];
+      const YEAR_COLORS = ["#0071e3", "#ff3b30", "#34c759", "#ff9500", "#af52de", "#ff2d55", "#64d2ff"];
+      const PORT_COLORS = [
+        "#0071e3",
+        "#ff3b30",
+        "#34c759",
+        "#ff9500",
+        "#af52de",
+        "#ff2d55",
+        "#64d2ff",
+        "#ffd60a",
+        "#ff375f",
+        "#5856d6",
+      ];
+
+      const state = {
+        rows: [],
+        ports: [],
+        lastFiltered: [],
+        stats: {
+          eligible: 0,
+          dropped: {
+            missingDate: 0,
+            missingPort: 0,
+            missingRate: 0,
+          },
+        },
+        filters: {
+          start: "",
+          end: "",
+          ports: [],
+        },
+        yearlyToggle: {
+          "2SD": false,
+          "4SH": true,
+        },
+      };
+
+      const dom = {
+        fileInput: document.getElementById("file-input"),
+        statusValue: document.getElementById("status-value"),
+        statusDetail: document.getElementById("status-detail"),
+        startDate: document.getElementById("start-date"),
+        endDate: document.getElementById("end-date"),
+        portSelect: document.getElementById("port-select"),
+        resetBtn: document.getElementById("reset-btn"),
+        exportBtn: document.getElementById("export-btn"),
+        latest2sd: document.getElementById("latest-2sd"),
+        latest4sh: document.getElementById("latest-4sh"),
+        latest2sdMeta: document.getElementById("latest-2sd-meta"),
+        latest4shMeta: document.getElementById("latest-4sh-meta"),
+        latest2sdPorts: document.getElementById("latest-2sd-ports"),
+        latest4shPorts: document.getElementById("latest-4sh-ports"),
+        high2sd: document.getElementById("high-2sd"),
+        high2sdMeta: document.getElementById("high-2sd-meta"),
+        high4sh: document.getElementById("high-4sh"),
+        high4shMeta: document.getElementById("high-4sh-meta"),
+        low2sd: document.getElementById("low-2sd"),
+        low2sdMeta: document.getElementById("low-2sd-meta"),
+        low4sh: document.getElementById("low-4sh"),
+        low4shMeta: document.getElementById("low-4sh-meta"),
+        high2sdPorts: document.getElementById("high-2sd-ports"),
+        high4shPorts: document.getElementById("high-4sh-ports"),
+        low2sdPorts: document.getElementById("low-2sd-ports"),
+        low4shPorts: document.getElementById("low-4sh-ports"),
+        portMetricGroups: document.getElementById("port-metric-groups"),
+        rangeStack: document.getElementById("range-chart-stack"),
+        historyStack: document.getElementById("history-chart-stack"),
+        yearlyStack: document.getElementById("yearly-chart-stack"),
+        yearlyToggle: document.getElementById("yearly-toggle"),
+        trendTableBody: document.getElementById("trend-table-body"),
+        trendHeaders: {
+          prev2: document.getElementById("trend-h-prev2"),
+          prev1: document.getElementById("trend-h-prev1"),
+          current: document.getElementById("trend-h-current"),
+        },
+        recordCount: document.getElementById("record-count"),
+        tableBody: document.getElementById("data-body"),
+      };
+
+      const chartRegistry = {
+        range: [],
+        history: [],
+        yearly: [],
+      };
+
+      dom.fileInput.addEventListener("change", handleFileUpload);
+      dom.startDate.addEventListener("change", () => updateFilters("start", dom.startDate.value));
+      dom.endDate.addEventListener("change", () => updateFilters("end", dom.endDate.value));
+      dom.portSelect.addEventListener("change", handlePortChange);
+      dom.resetBtn.addEventListener("click", resetFilters);
+      dom.exportBtn.addEventListener("click", exportFilteredData);
+      dom.yearlyToggle?.addEventListener("change", handleYearlyToggle);
+
+      async function handleFileUpload(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        dom.statusValue.textContent = "解析中...";
+        state.stats = {
+          eligible: 0,
+          dropped: { missingDate: 0, missingPort: 0, missingRate: 0 },
+        };
+
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[firstSheetName];
+
+        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        const parsedRows = matrix
+          .slice(1) // 跳过标题行
+          .map(convertRow)
+          .filter(Boolean);
+
+        state.rows = parsedRows;
+        state.ports = Array.from(new Set(parsedRows.map((row) => row.port))).sort((a, b) =>
+          a.localeCompare(b, "zh-CN")
+        );
+
+        populatePortSelect();
+        setDefaultPortSelection();
+        setDefaultDateWindow();
+        const eligible = state.stats.eligible;
+        const used = state.rows.length;
+        dom.statusValue.textContent =
+          eligible && eligible !== used
+            ? `已载入 ${file.name} · ${used}/${eligible} 条有效记录`
+            : `已载入 ${file.name} · ${used} 条有效记录`;
+        updateStatusDetail();
+        syncYearlyToggleUI();
+        refreshOutputs();
+      }
+
+      function convertRow(row) {
+        const weekCode = safeString(row[1]);
+        const displayLabel = safeString(row[2]);
+        const startCell = row[3];
+        const filterDate = coerceDate(startCell);
+        const startLabel = formatCellLabel(startCell, filterDate);
+        const endCell = row[4];
+        const endDate = coerceDate(endCell);
+        const endLabel = formatCellLabel(endCell, endDate);
+        const port = safeString(row[5]);
+        const rateTypeRaw = safeString(row[6]).toUpperCase();
+        const rateValue = parseNumber(row[7]);
+
+        if (!TARGET_TYPES.includes(rateTypeRaw)) {
+          return null;
+        }
+
+        state.stats.eligible++;
+
+        if (!filterDate) {
+          state.stats.dropped.missingDate++;
+          return null;
+        }
+
+        if (!port) {
+          state.stats.dropped.missingPort++;
+          return null;
+        }
+
+        if (rateValue === null) {
+          state.stats.dropped.missingRate++;
+          return null;
+        }
+
+        const rateType = rateTypeRaw;
+
+        return {
+          weekCode,
+          displayLabel,
+          filterDate,
+          startLabel,
+          endLabel,
+          port,
+          rateType,
+          rateValue,
+        };
+      }
+
+      function populatePortSelect() {
+        dom.portSelect.innerHTML = "";
+        state.ports.forEach((port) => {
+          const option = document.createElement("option");
+          option.value = port;
+          option.textContent = port;
+          dom.portSelect.appendChild(option);
+        });
+      }
+
+      function setDefaultPortSelection() {
+        if (!state.ports.length) {
+          state.filters.ports = [];
+          return;
+        }
+        const defaultPort = state.ports[0];
+        setPortSelection([defaultPort]);
+      }
+
+      function setPortSelection(ports) {
+        state.filters.ports = ports;
+        const selectedSet = new Set(ports);
+        Array.from(dom.portSelect.options).forEach((option) => {
+          option.selected = selectedSet.has(option.value);
+        });
+      }
+
+      function handlePortChange() {
+        const selected = Array.from(dom.portSelect.selectedOptions).map((option) => option.value);
+        state.filters.ports = selected;
+        dom.resetBtn.disabled = !hasActiveFilters();
+        refreshOutputs();
+      }
+
+      function handleYearlyToggle(event) {
+        const input = event.target.closest('input[type="checkbox"]');
+        if (!input) return;
+        const type = input.value.toUpperCase();
+        state.yearlyToggle[type] = input.checked;
+        if (!state.yearlyToggle["2SD"] && !state.yearlyToggle["4SH"]) {
+          state.yearlyToggle[type] = true;
+          input.checked = true;
+        }
+        syncYearlyToggleUI();
+        if (!state.yearlyToggle["2SD"] && !state.yearlyToggle["4SH"]) return;
+        updateYearlyChart(filterRowsByPorts(state.rows));
+      }
+
+      function syncYearlyToggleUI() {
+        if (!dom.yearlyToggle) return;
+        dom.yearlyToggle.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+          const type = input.value.toUpperCase();
+          input.checked = !!state.yearlyToggle[type];
+        });
+      }
+
+      function updateFilters(key, value) {
+        state.filters[key] = value;
+        dom.resetBtn.disabled = !hasActiveFilters();
+        refreshOutputs();
+      }
+
+      function hasActiveFilters() {
+        return Boolean(
+          state.filters.start ||
+            state.filters.end ||
+            (state.filters.ports && state.filters.ports.length)
+        );
+      }
+
+      function resetFilters() {
+        state.filters = { start: "", end: "", ports: [] };
+        dom.startDate.value = "";
+        dom.endDate.value = "";
+        Array.from(dom.portSelect.options).forEach((option) => (option.selected = false));
+        dom.resetBtn.disabled = true;
+        refreshOutputs();
+      }
+
+      function setDefaultDateWindow() {
+        const dateValues = state.rows
+          .map((row) => row.filterDate)
+          .filter((date) => date instanceof Date && !isNaN(date));
+
+        if (!dateValues.length) {
+          resetFilters();
+          return;
+        }
+
+        const latest = new Date(Math.max(...dateValues.map((d) => d.getTime())));
+        const earliest = new Date(Math.min(...dateValues.map((d) => d.getTime())));
+        const eightWeeksAgo = new Date(latest);
+        eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 7 * 8);
+        const effectiveStart = eightWeeksAgo < earliest ? earliest : eightWeeksAgo;
+
+        state.filters.start = formatDate(effectiveStart);
+        state.filters.end = formatDate(latest);
+
+        dom.startDate.value = state.filters.start;
+        dom.endDate.value = state.filters.end;
+        dom.resetBtn.disabled = false;
+      }
+
+      function refreshOutputs() {
+        if (!state.rows.length) {
+          state.lastFiltered = [];
+          dom.recordCount.textContent = "0";
+          dom.tableBody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center;color:#6c757d">尚无数据，请上传 Excel。</td></tr>';
+          updateRangeChart([]);
+          updateHistoryChart([]);
+          updateYearlyChart([]);
+          updateMetrics([]);
+          dom.exportBtn.disabled = true;
+          return;
+        }
+
+        const filtered = getFilteredRows();
+        state.lastFiltered = filtered;
+        const portScopedRows = filterRowsByPorts(state.rows);
+        dom.recordCount.textContent = filtered.length;
+        dom.resetBtn.disabled = !hasActiveFilters();
+        dom.exportBtn.disabled = !filtered.length;
+        updateMetrics(filtered);
+        updateTable(filtered);
+        updateRangeChart(filtered);
+        updateHistoryChart(portScopedRows);
+        updateYearlyChart(portScopedRows);
+        updateTrendTable(state.rows);
+      }
+
+      async function exportFilteredData() {
+        if (!state.rows.length || !window.html2canvas || !window.jspdf) return;
+        try {
+          dom.exportBtn.disabled = true;
+          dom.exportBtn.textContent = "导出中...";
+          const target = document.querySelector("main");
+          const previousScroll = window.scrollY;
+          window.scrollTo(0, 0);
+          const canvas = await html2canvas(target, {
+            scale: Math.min(window.devicePixelRatio || 1, 1.5),
+            useCORS: true,
+            backgroundColor: "#ffffff",
+          });
+          window.scrollTo(0, previousScroll);
+
+          const maxBytes = 2 * 1024 * 1024;
+          let quality = 0.8;
+          let dataUrl = canvas.toDataURL("image/jpeg", quality);
+          let byteSize = dataUrl.length * 0.75;
+          while (byteSize > maxBytes && quality > 0.4) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL("image/jpeg", quality);
+            byteSize = dataUrl.length * 0.75;
+          }
+
+          const pdf = new window.jspdf.jsPDF("p", "pt", "a4");
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const imgWidth = pageWidth;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+
+          pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+          heightLeft -= pageHeight;
+
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+            heightLeft -= pageHeight;
+          }
+
+          pdf.save(`rate-trend-${Date.now()}.pdf`);
+        } catch (error) {
+          console.error("Export failed:", error);
+        } finally {
+          dom.exportBtn.textContent = "导出 PDF";
+          dom.exportBtn.disabled = !state.lastFiltered.length;
+        }
+      }
+
+      function getFilteredRows() {
+        return filterRowsByPorts(state.rows)
+          .filter((row) => {
+            const start = state.filters.start ? new Date(state.filters.start) : null;
+            const end = state.filters.end ? new Date(state.filters.end) : null;
+            if (start && row.filterDate < start) return false;
+            if (end && row.filterDate > end) return false;
+            return true;
+          })
+          .sort((a, b) => a.filterDate - b.filterDate);
+      }
+
+      function updateMetrics(rows) {
+        const summary = summarizeMetricRows(rows);
+        const multiLabel = state.filters.ports.length > 1 ? formatPortSummary() : "";
+
+        dom.latest2sd.textContent = summary.latest2sd ? formatNumber(summary.latest2sd.rateValue) : "—";
+        dom.latest2sdMeta.textContent = summary.latest2sd ? formatMetricMeta(summary.latest2sd) : "—";
+        dom.latest4sh.textContent = summary.latest4sh ? formatNumber(summary.latest4sh.rateValue) : "—";
+        dom.latest4shMeta.textContent = summary.latest4sh ? formatMetricMeta(summary.latest4sh) : "—";
+        updatePortLine(dom.latest2sdPorts, summary.latest2sd, multiLabel);
+        updatePortLine(dom.latest4shPorts, summary.latest4sh, multiLabel);
+
+        dom.high2sd.textContent = summary.high2sd ? formatNumber(summary.high2sd.rateValue) : "—";
+        dom.high2sdMeta.textContent = summary.high2sd ? formatMetricMeta(summary.high2sd) : "—";
+        dom.high4sh.textContent = summary.high4sh ? formatNumber(summary.high4sh.rateValue) : "—";
+        dom.high4shMeta.textContent = summary.high4sh ? formatMetricMeta(summary.high4sh) : "—";
+        updatePortLine(dom.high2sdPorts, summary.high2sd, multiLabel);
+        updatePortLine(dom.high4shPorts, summary.high4sh, multiLabel);
+
+        dom.low2sd.textContent = summary.low2sd ? formatNumber(summary.low2sd.rateValue) : "—";
+        dom.low2sdMeta.textContent = summary.low2sd ? formatMetricMeta(summary.low2sd) : "—";
+        dom.low4sh.textContent = summary.low4sh ? formatNumber(summary.low4sh.rateValue) : "—";
+        dom.low4shMeta.textContent = summary.low4sh ? formatMetricMeta(summary.low4sh) : "—";
+        updatePortLine(dom.low2sdPorts, summary.low2sd, multiLabel);
+        updatePortLine(dom.low4shPorts, summary.low4sh, multiLabel);
+
+        renderPortMetricGroups(rows);
+      }
+
+      function summarizeMetricRows(rows) {
+        const grouped = { "2SD": [], "4SH": [] };
+        rows.forEach((row) => {
+          if (grouped[row.rateType]) grouped[row.rateType].push(row);
+        });
+        return {
+          latest2sd: pickLatest(grouped["2SD"]),
+          latest4sh: pickLatest(grouped["4SH"]),
+          high2sd: pickExtreme(grouped["2SD"], (current, candidate) => candidate.rateValue > current.rateValue),
+          high4sh: pickExtreme(grouped["4SH"], (current, candidate) => candidate.rateValue > current.rateValue),
+          low2sd: pickExtreme(grouped["2SD"], (current, candidate) => candidate.rateValue < current.rateValue),
+          low4sh: pickExtreme(grouped["4SH"], (current, candidate) => candidate.rateValue < current.rateValue),
+        };
+      }
+
+      function renderPortMetricGroups(rows) {
+        if (!dom.portMetricGroups) return;
+        dom.portMetricGroups.innerHTML = "";
+        if (!state.filters.ports.length || state.filters.ports.length === 1) {
+          dom.portMetricGroups.style.display = "none";
+          return;
+        }
+        dom.portMetricGroups.style.display = "grid";
+        state.filters.ports.forEach((port) => {
+          const subset = rows.filter((row) => row.port === port);
+          if (!subset.length) return;
+          const summary = summarizeMetricRows(subset);
+          const group = document.createElement("div");
+          group.className = "metric-group";
+          group.innerHTML = `
+            <p class="metric-group-title">${port}</p>
+            ${buildMetricCardRow(summary)}
+          `;
+          dom.portMetricGroups.appendChild(group);
+        });
+        if (!dom.portMetricGroups.children.length) {
+          dom.portMetricGroups.style.display = "none";
+        }
+      }
+
+      function buildMetricCardRow(summary) {
+        const cards = [
+          ["最新 2SD", summary.latest2sd],
+          ["最新 4SH", summary.latest4sh],
+          ["最高 2SD", summary.high2sd],
+          ["最高 4SH", summary.high4sh],
+          ["最低 2SD", summary.low2sd],
+          ["最低 4SH", summary.low4sh],
+        ];
+        return `
+          <div class="metrics">
+            ${cards
+              .map(
+                ([label, row]) => `
+                  <div class="metric-card">
+                    <h3>${label}</h3>
+                    <p>${row ? formatNumber(row.rateValue) : "—"}</p>
+                    <small>${row ? formatMetricMeta(row) : "—"}</small>
+                    <small class="metric-extra">${row ? `港口：${row.port || "—"}` : ""}</small>
+                  </div>
+                `
+              )
+              .join("")}
+          </div>
+        `;
+      }
+
+      function updateTable(rows) {
+        if (!rows.length) {
+          dom.tableBody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center;color:#6c757d">筛选无结果</td></tr>';
+          return;
+        }
+
+        dom.tableBody.innerHTML = rows
+          .slice(-40)
+          .map(
+            (row) => `
+            <tr>
+              <td>${row.displayLabel || "—"}</td>
+              <td>${formatDate(row.filterDate)}</td>
+              <td>${row.port}</td>
+              <td>${row.rateType}</td>
+              <td>${formatNumber(row.rateValue)}</td>
+            </tr>`
+          )
+          .join("");
+      }
+
+      function updateRangeChart(rows) {
+        const ports = state.filters.ports.length > 1 ? state.filters.ports : [null];
+        renderChartStack("range", rows, ports, 8);
+      }
+
+      function updateHistoryChart(rows) {
+        const ports = state.filters.ports.length > 1 ? state.filters.ports : [null];
+        renderChartStack("history", rows, ports, 12);
+      }
+
+      function renderChartStack(type, rows, ports, maxTicks) {
+        const stackEl = type === "range" ? dom.rangeStack : dom.historyStack;
+        if (!stackEl) return;
+        destroyCharts(type);
+        stackEl.innerHTML = "";
+        const sources = ports && ports.length ? ports : [null];
+        sources.forEach((port) => {
+          const subset = port ? rows.filter((row) => row.port === port) : rows;
+          const entries = buildTimelineEntries(subset);
+          if (!entries.length) return;
+          const labelPrefix = port || formatPortSummary();
+          const series = buildAggregatedSeries(entries, port, labelPrefix);
+          if (!series.datasets.length) return;
+          const panel = document.createElement("div");
+          panel.className = "chart-panel";
+          const title = document.createElement("p");
+          title.className = "chart-panel-title";
+          title.textContent = labelPrefix;
+          panel.appendChild(title);
+          const canvas = document.createElement("canvas");
+          panel.appendChild(canvas);
+          stackEl.appendChild(panel);
+          const chart = createLineChart(canvas, series, { maxTicks, isYearly: false });
+          chartRegistry[type].push(chart);
+        });
+        if (!stackEl.children.length) {
+          stackEl.innerHTML = '<div class="chart-empty">暂无可绘制的港口数据</div>';
+        }
+      }
+
+      function updateTrendTable(allRows) {
+        if (!dom.trendTableBody) return;
+        if (!allRows.length) {
+          dom.trendTableBody.innerHTML =
+            '<tr><td colspan="7" class="empty-row">尚无可用数据</td></tr>';
+          return;
+        }
+
+        const portIndex = buildPortWeekIndex(allRows);
+        const timeline = buildWeekTimeline(allRows);
+        if (timeline.order.length < 2) {
+          dom.trendTableBody.innerHTML =
+            '<tr><td colspan="7" class="empty-row">周度数据不足，无法计算涨跌</td></tr>';
+          return;
+        }
+
+        const columns = buildTrendColumns(timeline.order, timeline.info);
+        updateTrendHeaders(columns);
+        const rowsHtml = Array.from(portIndex.entries())
+          .map(([port, weeks]) => renderTrendRow(port, weeks, columns))
+          .filter(Boolean)
+          .join("");
+
+        dom.trendTableBody.innerHTML =
+          rowsHtml || '<tr><td colspan="7" class="empty-row">暂无可用港口</td></tr>';
+      }
+
+      function buildPortWeekIndex(rows) {
+        const map = new Map();
+        rows.forEach((row) => {
+          if (!row.filterDate) return;
+          const port = row.port || "—";
+          if (!map.has(port)) {
+            map.set(port, new Map());
+          }
+          const weeks = map.get(port);
+          const key = row.filterDate.getTime();
+          if (!weeks.has(key)) {
+            weeks.set(key, {
+              label: row.weekCode || row.displayLabel || formatDate(row.filterDate),
+              range: extractRangeFromRow(row),
+              values: { "2SD": null, "4SH": null },
+            });
+          }
+          const weekEntry = weeks.get(key);
+          if (!weekEntry.range) {
+            weekEntry.range = extractRangeFromRow(row);
+          }
+          weekEntry.values[row.rateType] = row.rateValue;
+        });
+        return map;
+      }
+
+      function buildWeekTimeline(rows) {
+        const info = new Map();
+        rows.forEach((row) => {
+          if (!row.filterDate) return;
+          const key = row.filterDate.getTime();
+          if (!info.has(key)) {
+            info.set(key, {
+              label: row.weekCode || row.displayLabel || formatDate(row.filterDate),
+              range: extractRangeFromRow(row),
+            });
+          } else if (!info.get(key).range) {
+            info.get(key).range = extractRangeFromRow(row);
+          }
+        });
+        const order = Array.from(info.keys()).sort((a, b) => b - a);
+        return { order, info };
+      }
+
+      function buildTrendColumns(order, info) {
+        const labelOr = (key, fallback) =>
+          typeof key === "number" ? info.get(key)?.label || fallback : fallback;
+        const rangeOr = (key) =>
+          typeof key === "number" ? info.get(key)?.range || "" : "";
+        return [
+          { key: order[2], compare: order[3], label: labelOr(order[2], "上上周"), range: rangeOr(order[2]) },
+          { key: order[1], compare: order[2], label: labelOr(order[1], "上周"), range: rangeOr(order[1]) },
+          { key: order[0], compare: order[1], label: labelOr(order[0], "本周"), range: rangeOr(order[0]) },
+        ];
+      }
+
+      function updateTrendHeaders(columns) {
+        if (!dom.trendHeaders) return;
+        const defaults = ["上上周", "上周", "本周"];
+        ["prev2", "prev1", "current"].forEach((key, index) => {
+          const header = dom.trendHeaders[key];
+          if (!header) return;
+          const col = columns[index];
+          const label = col && col.label ? col.label : defaults[index];
+          const range = col && col.range ? col.range : "";
+          header.innerHTML = range
+            ? `<div>${label}</div><small>${range}</small>`
+            : `${label}`;
+        });
+      }
+
+      function renderTrendRow(port, weeks, columns) {
+        if (!columns.length) return "";
+        const cells = columns
+          .map((col) => {
+            const current =
+              col && typeof col.key === "number" ? weeks.get(col.key) : null;
+            const compareEntry =
+              col && typeof col.compare === "number" ? weeks.get(col.compare) : null;
+            return `
+              <td>${formatTrendValue(current)}</td>
+              <td>${formatTrendChange(current, compareEntry)}</td>
+            `;
+          })
+          .join("");
+        return `<tr><td>${port}</td>${cells}</tr>`;
+      }
+
+      function formatTrendValue(entry) {
+        if (!entry || (!entry.values["2SD"] && !entry.values["4SH"])) return "—";
+        const sd = entry.values["2SD"] != null ? formatNumber(entry.values["2SD"]) : "—";
+        const sh = entry.values["4SH"] != null ? formatNumber(entry.values["4SH"]) : "—";
+        const range = entry.range ? `<small class="trend-range">${entry.range}</small>` : "";
+        return `
+          <div class="trend-value">
+            ${range}
+            <span>2SD ${sd}</span>
+            <span>4SH ${sh}</span>
+          </div>
+        `;
+      }
+
+      function formatTrendChange(current, previous) {
+        if (!current || !previous) return "—";
+        const sdLine = buildChangeLine("2SD", current.values["2SD"], previous.values["2SD"]);
+        const shLine = buildChangeLine("4SH", current.values["4SH"], previous.values["4SH"]);
+        if (!sdLine && !shLine) return "—";
+        return [sdLine, shLine].filter(Boolean).join("<br />");
+      }
+
+      function buildChangeLine(label, current, previous) {
+        if (current == null || previous == null) return "";
+        const diff = current - previous;
+        if (!diff) {
+          return `<span class="trend-change trend-flat">${label} 持平</span>`;
+        }
+        const pct = previous ? ((diff / previous) * 100).toFixed(2) : "—";
+        const cls = diff > 0 ? "trend-up" : "trend-down";
+        const sign = diff > 0 ? "↑" : "↓";
+        const diffText = formatNumber(Math.abs(diff));
+        const pctText = pct === "—" ? "—" : `${Math.abs(pct)}%`;
+        return `<span class="trend-change ${cls}">${label} ${sign} ${diffText} (${pctText})</span>`;
+      }
+
+      function extractRangeFromRow(row) {
+        const meta = {
+          startLabel: row.startLabel || "",
+          endLabel: row.endLabel || "",
+        };
+        return formatRange(meta);
+      }
+
+      function getActiveYearlyTypes() {
+        const active = Object.entries(state.yearlyToggle)
+          .filter(([, enabled]) => enabled)
+          .map(([type]) => type);
+        return active.length ? active : ["4SH"];
+      }
+
+      function updateYearlyChart(rows) {
+        const stackEl = dom.yearlyStack;
+        if (!stackEl) return;
+        destroyCharts("yearly");
+        stackEl.innerHTML = "";
+        const activeTypes = getActiveYearlyTypes();
+        const ports =
+          state.filters.ports.length > 1
+            ? state.filters.ports
+            : [state.filters.ports[0] || null];
+
+        ports.forEach((port) => {
+          const subset = port ? rows.filter((row) => row.port === port) : rows;
+          if (!subset.length) return;
+          const labelPrefix = port || formatPortSummary();
+          const fullSeries = buildYearlySeries(subset, labelPrefix);
+          if (!fullSeries.labels.length) return;
+
+          const panel = document.createElement("div");
+          panel.className = "yearly-port-panel";
+          const header = document.createElement("div");
+          header.className = "yearly-port-header";
+          header.textContent = labelPrefix;
+          panel.appendChild(header);
+
+          const typeStack = document.createElement("div");
+          typeStack.className = "yearly-type-stack";
+
+          activeTypes.forEach((type) => {
+            const filtered = {
+              labels: fullSeries.labels,
+              datasets: fullSeries.datasets.filter((ds) => ds.label.endsWith(`· ${type}`)),
+            };
+            if (!filtered.datasets.length) return;
+            const block = document.createElement("div");
+            block.className = "chart-panel";
+            const title = document.createElement("p");
+            title.className = "chart-panel-title";
+            title.textContent = `${type} 历年走势`;
+            block.appendChild(title);
+            const canvas = document.createElement("canvas");
+            block.appendChild(canvas);
+            typeStack.appendChild(block);
+          const chart = createLineChart(canvas, filtered, { maxTicks: 12, isYearly: true });
+            chartRegistry.yearly.push(chart);
+          });
+
+          if (!typeStack.children.length) return;
+          panel.appendChild(typeStack);
+          stackEl.appendChild(panel);
+        });
+
+        if (!stackEl.children.length) {
+          stackEl.innerHTML = '<div class="chart-empty">暂无可绘制的港口数据</div>';
+        }
+      }
+
+      function destroyCharts(type) {
+        chartRegistry[type].forEach((chart) => chart.destroy());
+        chartRegistry[type] = [];
+      }
+
+      function createLineChart(canvas, series, { maxTicks, isYearly }) {
+        const ctx = canvas.getContext("2d");
+        return new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: series.labels,
+            datasets: series.datasets,
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: "top",
+                labels: { usePointStyle: true },
+              },
+              tooltip: {
+                mode: "index",
+                intersect: false,
+                displayColors: false,
+                callbacks: isYearly ? createYearlyTooltipCallbacks() : createTooltipCallbacks(),
+              },
+            },
+            interaction: {
+              mode: "index",
+              intersect: false,
+            },
+            scales: {
+              x: {
+                ticks: { autoSkip: true, maxTicksLimit: maxTicks || 8 },
+              },
+              y: {
+                beginAtZero: false,
+                ticks: {
+                  callback: (value) => value.toLocaleString(),
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function buildTimelineEntries(rows) {
+        const map = new Map();
+        rows.forEach((row) => {
+          const key = formatDate(row.filterDate);
+          if (!key) return;
+          if (!map.has(key)) {
+            map.set(key, {
+              sortKey: row.filterDate.getTime(),
+              label: row.displayLabel || key,
+              ports: new Map(),
+            });
+          }
+          const entry = map.get(key);
+          const portKey = row.port || "—";
+          if (!entry.ports.has(portKey)) {
+            entry.ports.set(portKey, {
+              port: row.port || "—",
+              meta: createMetaSnapshot(row, entry.label),
+              values: { "2SD": null, "4SH": null },
+            });
+          }
+          const portEntry = entry.ports.get(portKey);
+          portEntry.values[row.rateType] = row.rateValue;
+          portEntry.meta = mergeMetaSnapshot(portEntry.meta, row, entry.label);
+        });
+
+        return Array.from(map.values()).sort((a, b) => a.sortKey - b.sortKey);
+      }
+
+      function buildAggregatedSeries(entries, lockedPort, labelPrefix) {
+        const labels = entries.map((entry) => entry.label);
+        const dataset2sd = {
+          label: `${labelPrefix || "全部港口"} · 2SD`,
+          data: [],
+          meta: [],
+          borderColor: "#0071e3",
+          backgroundColor: "rgba(0, 113, 227, 0.15)",
+          tension: 0.35,
+          pointRadius: 2.5,
+          spanGaps: true,
+        };
+        const dataset4sh = {
+          label: `${labelPrefix || "全部港口"} · 4SH`,
+          data: [],
+          meta: [],
+          borderColor: "#ff3b30",
+          backgroundColor: "rgba(255, 59, 48, 0.15)",
+          tension: 0.35,
+          pointRadius: 2.5,
+          spanGaps: true,
+        };
+
+        entries.forEach((entry) => {
+          const portEntries = Array.from(entry.ports.values());
+          const aggregated = aggregateEntry(portEntries, entry.label, lockedPort);
+          dataset2sd.data.push(aggregated["2SD"].value);
+          dataset2sd.meta.push(aggregated["2SD"].meta);
+          dataset4sh.data.push(aggregated["4SH"].value);
+          dataset4sh.meta.push(aggregated["4SH"].meta);
+        });
+
+        return {
+          labels,
+          datasets: [dataset2sd, dataset4sh],
+        };
+      }
+
+      function aggregateEntry(portEntries, label, lockedPort) {
+        const result = {
+          "2SD": { value: null, meta: null },
+          "4SH": { value: null, meta: null },
+        };
+        ["2SD", "4SH"].forEach((type) => {
+          const values = [];
+          let metaSource = null;
+          portEntries.forEach((entry) => {
+            const value = entry.values[type];
+            if (typeof value === "number" && !Number.isNaN(value)) {
+              if (!lockedPort || entry.port === lockedPort) {
+                values.push(value);
+                if (!metaSource) metaSource = entry.meta;
+              }
+            }
+          });
+          if (!values.length) {
+            result[type] = { value: null, meta: null };
+          } else {
+            const avg = lockedPort ? values[values.length - 1] : values.reduce((a, b) => a + b, 0) / values.length;
+            const metaSnapshot = metaSource
+              ? finalizeMetaSnapshot(metaSource, label)
+              : { displayLabel: label, port: lockedPort || "多港口", startLabel: "", endLabel: "" };
+            if (!lockedPort && portEntries.length > 1) {
+              metaSnapshot.port = "多港口";
+            }
+            result[type] = { value: avg, meta: metaSnapshot };
+          }
+        });
+        return result;
+      }
+
+      function buildYearlySeries(rows, labelPrefix = "全部港口") {
+        if (!rows.length) return { labels: [], datasets: [] };
+
+        const sequence = [];
+        const labelMap = {};
+        const buckets = {};
+
+        rows.forEach((row) => {
+          if (!row.filterDate) return;
+          const year = row.filterDate.getFullYear();
+          const key = row.weekCode || row.displayLabel || formatDate(row.filterDate);
+          if (!key) return;
+          if (!labelMap[key]) {
+            labelMap[key] = key;
+            sequence.push(key);
+          }
+
+          if (!buckets[year]) {
+            buckets[year] = {
+              "2SD": new Map(),
+              "4SH": new Map(),
+            };
+          }
+          const slot = buckets[year][row.rateType];
+          if (!slot) return;
+          if (!slot.has(key)) {
+            slot.set(key, {
+              value: row.rateValue,
+              meta: createMetaSnapshot(row, row.displayLabel || key),
+            });
+          } else {
+            const existing = slot.get(key);
+            existing.value = row.rateValue;
+            existing.meta = mergeMetaSnapshot(existing.meta, row, row.displayLabel || key);
+          }
+        });
+
+        const labels = sequence.map((key) => labelMap[key]);
+        const years = Object.keys(buckets).sort();
+        const datasets = [];
+
+        years.forEach((year, index) => {
+          const color = YEAR_COLORS[index % YEAR_COLORS.length];
+          ["2SD", "4SH"].forEach((type) => {
+            const values = [];
+            const metaSeries = [];
+            sequence.forEach((key) => {
+              const entry = buckets[year][type]?.get(key);
+              values.push(entry ? entry.value : null);
+              metaSeries.push(entry ? finalizeMetaSnapshot(entry.meta, entry.meta?.displayLabel || labelMap[key]) : null);
+            });
+            datasets.push({
+              label: `${labelPrefix} · ${year} · ${type}`,
+              data: values,
+              borderColor: color,
+              backgroundColor: hexToRgba(color, type === "4SH" ? 0.12 : 0.2),
+              borderWidth: 2,
+              tension: 0.35,
+              spanGaps: true,
+              borderDash: type === "4SH" ? [6, 4] : undefined,
+              pointRadius: 0,
+              meta: metaSeries,
+            });
+          });
+        });
+
+        return { labels, datasets };
+      }
+
+      function filterRowsByPorts(rows) {
+        if (!state.filters.ports.length) return rows;
+        const set = new Set(state.filters.ports);
+        return rows.filter((row) => set.has(row.port));
+      }
+
+      function pickLatest(list) {
+        if (!list || !list.length) return null;
+        return list[list.length - 1];
+      }
+
+      function pickExtreme(list, compareFn) {
+        if (!list || !list.length) return null;
+        return list.reduce(
+          (best, candidate) => (compareFn(best, candidate) ? candidate : best),
+          list[0]
+        );
+      }
+
+      function formatMetricMeta(row) {
+        if (!row) return "—";
+        return `${formatDate(row.filterDate)} · ${row.port || "—"}`;
+      }
+
+      function updateStatusDetail() {
+        if (!dom.statusDetail) return;
+        const eligible = state.stats.eligible || 0;
+        const droppedTotals = state.stats.dropped || { missingDate: 0, missingPort: 0, missingRate: 0 };
+        const dropped =
+          (droppedTotals.missingDate || 0) +
+          (droppedTotals.missingPort || 0) +
+          (droppedTotals.missingRate || 0);
+        if (!eligible) {
+          dom.statusDetail.style.display = "none";
+          dom.statusDetail.textContent = "—";
+          return;
+        }
+        if (!dropped) {
+          dom.statusDetail.style.display = "block";
+          dom.statusDetail.textContent = `共 ${eligible} 条 2SD/4SH 记录全部可用`;
+          return;
+        }
+        const parts = [];
+        if (droppedTotals.missingDate) parts.push(`缺时间 ${droppedTotals.missingDate} 条`);
+        if (droppedTotals.missingPort) parts.push(`缺港口 ${droppedTotals.missingPort} 条`);
+        if (droppedTotals.missingRate) parts.push(`缺运费 ${droppedTotals.missingRate} 条`);
+        dom.statusDetail.style.display = "block";
+        dom.statusDetail.textContent = `共 ${eligible} 条 2SD/4SH 记录，其中 ${dropped} 条数据不完整（${parts.join("、")}）已自动跳过`;
+      }
+
+      function updatePortLine(element, row, overridePort) {
+        if (!element) return;
+        const portLabel = overridePort || (row ? row.port : "");
+        const shouldShow = shouldShowPortLine(portLabel);
+        element.style.display = shouldShow ? "block" : "none";
+        element.textContent = shouldShow ? `港口：${portLabel || "—"}` : "";
+      }
+
+      function shouldShowPortLine(portLabel) {
+        if (state.filters.ports.length > 1) return true;
+        if (!state.filters.ports.length && portLabel && portLabel !== "—") return false;
+        return false;
+      }
+
+      function formatPortSummary() {
+        if (!state.filters.ports.length) return "全部港口";
+        if (state.filters.ports.length === 1) return state.filters.ports[0];
+        if (state.filters.ports.length <= 3) return state.filters.ports.join(" / ");
+        const preview = state.filters.ports.slice(0, 3).join(" / ");
+        return `${preview} 等 ${state.filters.ports.length} 个港口`;
+      }
+
+      function createMetaSnapshot(row, fallbackLabel) {
+        return {
+          displayLabel: row.displayLabel || fallbackLabel || "",
+          startLabel: row.startLabel || "",
+          endLabel: row.endLabel || "",
+          ports: new Set(row.port ? [row.port] : []),
+        };
+      }
+
+      function mergeMetaSnapshot(snapshot, row, fallbackLabel) {
+        if (!snapshot) return createMetaSnapshot(row, fallbackLabel);
+        if (row.port) snapshot.ports.add(row.port);
+        if (!snapshot.startLabel && row.startLabel) snapshot.startLabel = row.startLabel;
+        if (!snapshot.endLabel && row.endLabel) snapshot.endLabel = row.endLabel;
+        if (!snapshot.displayLabel && (row.displayLabel || fallbackLabel)) {
+          snapshot.displayLabel = row.displayLabel || fallbackLabel;
+        }
+        return snapshot;
+      }
+
+      function finalizeMetaSnapshot(snapshot, fallbackLabel) {
+        if (!snapshot) return null;
+        const ports =
+          snapshot.ports && snapshot.ports.size
+            ? Array.from(snapshot.ports).join(" / ")
+            : "—";
+        return {
+          displayLabel: snapshot.displayLabel || fallbackLabel || "—",
+          startLabel: snapshot.startLabel || "—",
+          endLabel: snapshot.endLabel || "—",
+          port: ports,
+        };
+      }
+
+      function coerceDate(value) {
+        if (value instanceof Date && !isNaN(value)) return value;
+        if (typeof value === "number") {
+          return new Date(Math.round((value - 25569) * 86400 * 1000));
+        }
+        if (typeof value === "string") {
+          const normalized = value
+            .toString()
+            .trim()
+            .replace(/\./g, "/")
+            .replace(/年|月/g, "/")
+            .replace("日", "");
+          const parsed = new Date(normalized);
+          if (!isNaN(parsed)) return parsed;
+        }
+        return null;
+      }
+
+      function parseNumber(value) {
+        if (typeof value === "number" && Number.isFinite(value)) return value;
+        if (typeof value === "string") {
+          const numeric = parseFloat(value.replace(/[^0-9.-]/g, ""));
+          return Number.isFinite(numeric) ? numeric : null;
+        }
+        return null;
+      }
+
+      function formatNumber(value) {
+        return value === null || value === undefined
+          ? "—"
+          : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+      }
+
+      function formatDate(date) {
+        if (!date) return "—";
+        return date.toISOString().split("T")[0];
+      }
+
+      function safeString(value) {
+        return value === undefined || value === null ? "" : value.toString().trim();
+      }
+
+      function formatCellLabel(cellValue, parsedDate) {
+        if (parsedDate) return formatDate(parsedDate);
+        const raw = safeString(cellValue);
+        return raw || "—";
+      }
+
+      function normalizeLabel(value) {
+        if (!value || value === "—") return "";
+        return value;
+      }
+
+      function formatRange(meta) {
+        if (!meta) return "";
+        const start = normalizeLabel(meta.startLabel);
+        const end = normalizeLabel(meta.endLabel);
+        if (!start && !end) return "";
+        if (!end || end === start) return start;
+        return `${start} ~ ${end}`;
+      }
+
+      function createTooltipCallbacks() {
+        return {
+          title() {
+            return [];
+          },
+          beforeBody(items) {
+            return buildSharedTooltipBlocks(items);
+          },
+          label() {
+            return null;
+          },
+          afterBody() {
+            return [];
+          },
+        };
+      }
+
+      function buildSharedTooltipBlocks(items) {
+        if (!items || !items.length) return [];
+        const groups = new Map();
+        items.forEach((item) => {
+          const meta = getMetaForItem(item);
+          const portLabel =
+            (meta && meta.port) || extractDatasetPort(item.dataset);
+          const key = portLabel || "—";
+          if (!groups.has(key)) {
+            groups.set(key, {
+              meta,
+              values: { "2SD": "—", "4SH": "—" },
+            });
+          }
+          const type = extractDatasetType(item.dataset);
+          const value =
+            item.raw ?? (item.parsed && typeof item.parsed.y === "number" ? item.parsed.y : null);
+          groups.get(key).values[type] = formatTooltipValue(value);
+          if (!groups.get(key).meta && meta) {
+            groups.get(key).meta = meta;
+          }
+        });
+
+        const lines = [];
+        const order = Array.from(groups.keys());
+        order.forEach((key, index) => {
+          const group = groups.get(key);
+          const meta = group.meta || {};
+          const weekLabel = meta.displayLabel || (items[0] && items[0].label) || "";
+          const firstLine =
+            weekLabel + (key && key !== "—" ? ` · ${key}` : key && key === "—" ? "" : "");
+          if (firstLine.trim()) lines.push(firstLine.trim());
+          const range = formatRange(meta);
+          if (range) lines.push(range);
+          lines.push(`2SD ${group.values["2SD"] || "—"} / 4SH ${group.values["4SH"] || "—"}`);
+          if (index < order.length - 1) {
+            lines.push("");
+          }
+        });
+        if (lines.length && lines[lines.length - 1] === "") lines.pop();
+        return lines;
+      }
+
+      function createYearlyTooltipCallbacks() {
+        return {
+          title() {
+            return [];
+          },
+          beforeBody(items) {
+            return buildYearlyTooltipLines(items);
+          },
+          label() {
+            return null;
+          },
+          afterBody() {
+            return [];
+          },
+        };
+      }
+
+      function buildYearlyTooltipLines(items) {
+        if (!items || !items.length) return [];
+        const groups = new Map();
+        items.forEach((item) => {
+          const parsed = parseYearDatasetLabel(item.dataset?.label);
+          if (!parsed) return;
+          const meta = getMetaForItem(item);
+          if (!groups.has(parsed.year)) {
+            groups.set(parsed.year, {
+              meta,
+              value: "—",
+            });
+          }
+          const entry = groups.get(parsed.year);
+          if (!entry.meta && meta) entry.meta = meta;
+          entry.value = formatTooltipValue(
+            item.parsed && typeof item.parsed.y === "number" ? item.parsed.y : item.raw
+          );
+        });
+
+        const portLabel =
+          (items[0] && parseYearDatasetLabel(items[0].dataset?.label)?.port) || "";
+        const typeLabel = (items[0] && parseYearDatasetLabel(items[0].dataset?.label)?.type) || "";
+        const lines = [];
+        Array.from(groups.keys())
+          .sort()
+          .forEach((year) => {
+            const entry = groups.get(year);
+            const meta = entry.meta || {};
+            const header =
+              meta.displayLabel || items[0]?.label || portLabel
+                ? `${meta.displayLabel || items[0]?.label || portLabel} · ${year}`
+                : `${year}`;
+            lines.push(header);
+            const range = formatRange(meta);
+            if (range) lines.push(range);
+            lines.push(`${typeLabel || ""} ${entry.value || "—"}`);
+            lines.push("");
+          });
+        if (lines.length && lines[lines.length - 1] === "") lines.pop();
+        return lines;
+      }
+
+      function extractDatasetPort(dataset) {
+        const parsed = parseYearDatasetLabel(dataset?.label);
+        return parsed ? parsed.port : dataset?.label || "";
+      }
+
+      function extractDatasetType(dataset) {
+        const parsed = parseYearDatasetLabel(dataset?.label);
+        if (parsed) return parsed.type;
+        if (!dataset || !dataset.label) return "2SD";
+        return dataset.label.toUpperCase().includes("4SH") ? "4SH" : "2SD";
+      }
+
+      function formatTooltipValue(value) {
+        if (value === null || value === undefined || Number.isNaN(value)) return "—";
+        return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+      }
+
+      function getMetaForItem(context) {
+        if (!context || !context.dataset || !context.dataset.meta) return null;
+        return context.dataset.meta[context.dataIndex] || null;
+      }
+
+      function hexToRgba(hex, alpha = 1) {
+        const cleaned = hex.replace("#", "");
+        const bigint = parseInt(cleaned, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+
+      function parseYearDatasetLabel(label) {
+        if (!label) return null;
+        const parts = label.split("·").map((part) => part.trim());
+        if (parts.length < 3) return null;
+        return {
+          port: parts[0],
+          year: parts[1],
+          type: parts[2],
+        };
+      }
+
+    </script>
+  </body>
+</html>
+

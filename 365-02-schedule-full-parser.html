@@ -35,6 +35,33 @@
             color: white;
             padding: 40px 30px;
             text-align: center;
+            position: relative;
+        }
+
+        .back-home-btn {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-home-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .header h1 {
@@ -214,12 +241,34 @@
             font-size: 12px;
             border-top: 1px solid #e9ecef;
         }
+
+        .page-footer {
+            width: 100%;
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 32px 30px 36px;
+            text-align: center;
+            margin-top: 0;
+            box-sizing: border-box;
+        }
+        .page-footer h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .page-footer p {
+            margin: 6px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.82);
+            line-height: 1.5;
+        }
     </style>
     <meta name="color-scheme" content="light dark">
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <a href="index.html?tab=tools365" class="back-home-btn">← 返回首页</a>
             <h1>明日数航 船期完整解析工具</h1>
             <p>自动解析明日数航船期网页，提取AI船期和历史开航船期信息并导出为 CSV 文件</p>
         </div>
@@ -864,6 +913,12 @@
         });
     })();
 </script>
+    </div>
+    <div class="page-footer">
+        <h2>明日数航 船期完整解析工具使用声明</h2>
+        <p>本工具用于解析从明日数航（hangyun365.com）下载的完整船期网页，提取 AI 船期和历史开航船期信息并导出为 CSV 文件。</p>
+        <p>所有数据来源于明日数航公开信息，解析结果仅供内部使用，请遵守明日数航的使用条款和版权规定。</p>
+    </div>
 </body>
 </html>
 

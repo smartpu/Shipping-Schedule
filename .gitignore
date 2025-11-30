@@ -1,10 +1,3 @@
-# 数据文件（CSV、Excel 数据文件）
-Data/**/*.csv
-Data/**/*.xlsx
-!Data/Hangyun Port.xlsx
-!Data/Weiyun Port.xlsx
-!Data/Vessel.xlsx
-
 # 下载的网页文件（view-source 和 view-full 文件夹）
 # 这些文件是用户手动下载的，不需要版本控制
 001-view-source/**/*.html

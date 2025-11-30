@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shipping Schedule Tools · 船期工具集</title>
+    <title>Shipping Tools · 航运工具集</title>
     <style>
         * {
             margin: 0;
@@ -255,6 +255,27 @@
             text-decoration: underline;
         }
 
+        .page-footer {
+            width: 100%;
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 32px 30px 36px;
+            text-align: center;
+            margin-top: 0;
+            box-sizing: border-box;
+        }
+        .page-footer h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .page-footer p {
+            margin: 6px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.82);
+            line-height: 1.5;
+        }
+
         @media (max-width: 768px) {
             .tools-grid {
                 grid-template-columns: 1fr;
@@ -274,13 +295,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Shipping Schedule Tools</h1>
-            <p>船期工具集 · 一站式船期数据解析与分析平台</p>
+            <h1>Shipping Tools</h1>
+            <p>航运工具集 · 一站式船期运费数据解析与分析平台</p>
         </div>
 
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('tools001')">001 系列工具</button>
             <button class="tab-btn" onclick="switchTab('tools365')">365 系列工具</button>
+            <button class="tab-btn" onclick="switchTab('rateTrends')">Monitor 系列工具</button>
         </div>
 
         <!-- 001 系列工具 -->
@@ -303,10 +325,10 @@
                         辅助从维运网手动下载船期网页的工具。提供进度跟踪、状态管理等功能，让手动下载过程更加高效。
                     </div>
                     <div class="tool-actions">
-                        <a href="001-01-manual-download.html" class="tool-link" target="_blank">
+                        <a href="001-01-manual-download.html?from=tools001" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="001-01-manual-download-README.md" class="tool-link secondary" target="_blank">
+                        <a href="001-01-manual-download-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -324,10 +346,10 @@
                         将维运网 HTML 船期网页批量解析成 CSV 文件。自动提取船期信息，包括启运港、目的港、航线、船名航次、开航日期等，并自动去重合并。
                     </div>
                     <div class="tool-actions">
-                        <a href="001-02-schedule-parser.html" class="tool-link" target="_blank">
+                        <a href="001-02-schedule-parser.html?from=tools001" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="001-02-schedule-parser-README.md" class="tool-link secondary" target="_blank">
+                        <a href="001-02-schedule-parser-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -345,10 +367,10 @@
                         航线运力分析工具，支持多港口筛选、运力趋势图、派船统计等功能。自动提取当周+未来四周数据，提供智能合并和可视化分析。
                     </div>
                     <div class="tool-actions">
-                        <a href="001-04-market-analysis.html" class="tool-link" target="_blank">
+                        <a href="001-04-market-analysis.html?from=tools001" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="001-04-market-analysis-README.md" class="tool-link secondary" target="_blank">
+                        <a href="001-04-market-analysis-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -376,10 +398,10 @@
                         辅助从明日数航手动下载船期网页的工具。提供进度跟踪、状态管理等功能，支持标准版和完整版两种下载模式。
                     </div>
                     <div class="tool-actions">
-                        <a href="365-01-manual-download.html" class="tool-link" target="_blank">
+                        <a href="365-01-manual-download.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-01-manual-download-README.md" class="tool-link secondary" target="_blank">
+                        <a href="365-01-manual-download-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -397,10 +419,10 @@
                         解析明日数航标准版船期网页，提取直航船期信息。支持批量解析，自动提取航线、船名、开航日期、运力等关键信息。
                     </div>
                     <div class="tool-actions">
-                        <a href="365-02-schedule-parser.html" class="tool-link" target="_blank">
+                        <a href="365-02-schedule-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -418,10 +440,10 @@
                         解析明日数航完整版船期网页，支持 AI 船期和历史船期解析。自动去重、数据补全和日期格式转换，提供更完整的数据集。
                     </div>
                     <div class="tool-actions">
-                        <a href="365-02-schedule-full-parser.html" class="tool-link" target="_blank">
+                        <a href="365-02-schedule-full-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -439,10 +461,10 @@
                         从完整版船期网页中提取航线路径信息。自动解析正向路径、反向路径、中间时间等，并提取航线ID和共舱船公司信息。
                     </div>
                     <div class="tool-actions">
-                        <a href="365-02-rotation-parser.html" class="tool-link" target="_blank">
+                        <a href="365-02-rotation-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -460,10 +482,10 @@
                         解析明日数航网页中的价格信息。提取各港口的 20GP/40GP 报价，支持批量解析和 CSV 导出，用于价格趋势分析。
                     </div>
                     <div class="tool-actions">
-                        <a href="365-02-market-rate-parser.html" class="tool-link" target="_blank">
+                        <a href="365-02-market-rate-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary" target="_blank">
+                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -481,10 +503,62 @@
                         综合市场分析平台，整合运费走势图、航线运力分析和 AI 趋势分析三大模块。支持多模型 AI 分析（DeepSeek/KIMI/通义千问），自动抓取燃油价格和运价指数，提供 PDF 导出功能。
                     </div>
                     <div class="tool-actions">
-                        <a href="365-04-market-watch.html" class="tool-link" target="_blank">
+                        <a href="365-04-market-watch.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-04-market-watch-README.md" class="tool-link secondary" target="_blank">
+                        <a href="365-04-market-watch-README.md" class="tool-link secondary">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitor 系列工具 -->
+        <div id="rateTrends" class="tab-content">
+            <div class="section-intro">
+                <h2>Monitor 系列工具</h2>
+                <p>专业的市场趋势分析工具集，支持运价趋势和 SCFI 历史趋势查看。提供 Excel 数据上传、多维度筛选、大尺寸趋势图表展示等功能，便于进行市场分析和决策支持。</p>
+            </div>
+
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon purple">📊</div>
+                        <div class="tool-title">
+                            <h3>运价趋势面板</h3>
+                            <div class="tool-id">Monitor-Rate-Trends</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        上传 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。支持筛选区间趋势曲线、全历史周度走势、年度对比同期观察和周度涨跌统计。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="Monitor-Rate-Trends.html?from=monitor" class="tool-link">
+                            打开工具 →
+                        </a>
+                        <a href="Monitor-Rate-Trends-README.md" class="tool-link secondary">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon purple">📈</div>
+                        <div class="tool-title">
+                            <h3>SCFI 历史趋势</h3>
+                            <div class="tool-id">Monitor-SCFI</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势。默认显示最近3年数据，支持自定义日期范围筛选。图表高度为两倍，便于查看详细趋势。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="Monitor-SCFI-Trends.html?from=monitor" class="tool-link">
+                            打开工具 →
+                        </a>
+                        <a href="Monitor-SCFI-Trends-README.md" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -514,9 +588,43 @@
             document.getElementById(tabId).classList.add('active');
 
             // 激活对应的按钮
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // 如果没有 event，通过 tabId 找到对应的按钮
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.textContent.includes('001') && tabId === 'tools001') {
+                        btn.classList.add('active');
+                    } else if (btn.textContent.includes('365') && tabId === 'tools365') {
+                        btn.classList.add('active');
+                    } else if (btn.textContent.includes('Monitor') && tabId === 'rateTrends') {
+                        btn.classList.add('active');
+                    } else if (btn.textContent.includes('运价趋势') && tabId === 'rateTrends') {
+                        btn.classList.add('active');
+                    }
+                });
+            }
         }
+
+        // 页面加载时检查 URL 参数
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            if (tab === 'tools001' || tab === 'tools365' || tab === 'rateTrends' || tab === 'monitor') {
+                // 如果 tab 是 monitor，切换到 rateTrends
+                if (tab === 'monitor') {
+                    switchTab('rateTrends');
+                } else {
+                    switchTab(tab);
+                }
+            }
+        });
     </script>
+    <div class="page-footer">
+        <h2>Shipping Tools · 航运工具集使用声明</h2>
+        <p>本工具集整合了基于维运网（weiyun.com）和明日数航（hangyun365.com）数据的船期解析与分析工具。</p>
+        <p>所有数据来源于公开信息，解析结果仅供内部使用，请遵守各数据源的使用条款和版权规定。</p>
+    </div>
 </body>
 </html>
 

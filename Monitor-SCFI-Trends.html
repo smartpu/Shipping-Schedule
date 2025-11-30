@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitor · SCFI 历史趋势</title>
+    <script>
+      (function ensureXlsx() {
+        const remoteSources = [
+          'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+          'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+        ];
+
+        async function loadXlsxViaBlob(url) {
+          try {
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(response.statusText);
+            const code = await response.text();
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const blobUrl = URL.createObjectURL(blob);
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = blobUrl;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+            console.log('XLSX loaded via fetch:', url);
+            return true;
+          } catch (error) {
+            console.error('XLSX fetch fallback failed:', url, error);
+            return false;
+          }
+        }
+
+        async function loadXlsx() {
+          for (const url of remoteSources) {
+            try {
+              await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+              });
+              console.log('XLSX loaded from', url);
+              return true;
+            } catch (error) {
+              console.warn('XLSX direct load failed:', url, error);
+            }
+          }
+          for (const url of remoteSources) {
+            if (await loadXlsxViaBlob(url)) return true;
+          }
+          return false;
+        }
+
+        if (typeof XLSX === 'undefined') {
+          loadXlsx().then(success => {
+            if (!success) {
+              console.error('XLSX 无法加载，请检查网络或手动刷新后重试');
+            }
+          });
+        }
+      })();
+    </script>
+    <script>
+      (function ensureChartJs() {
+        const remoteSources = [
+          'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+          'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
+        ];
+
+        async function loadChartViaBlob(url) {
+          try {
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(response.statusText);
+            const code = await response.text();
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const blobUrl = URL.createObjectURL(blob);
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = blobUrl;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+            console.log('Chart.js loaded via fetch:', url);
+            return true;
+          } catch (error) {
+            console.error('Chart.js fetch fallback failed:', url, error);
+            return false;
+          }
+        }
+
+        async function loadChartJs() {
+          for (const url of remoteSources) {
+            try {
+              await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+              });
+              console.log('Chart.js loaded from', url);
+              return true;
+            } catch (error) {
+              console.warn('Chart.js direct load failed:', url, error);
+            }
+          }
+          for (const url of remoteSources) {
+            if (await loadChartViaBlob(url)) return true;
+          }
+          return false;
+        }
+
+        if (typeof Chart === 'undefined') {
+          loadChartJs().then(success => {
+            if (!success) {
+              alert('Chart.js 无法加载，请检查网络或手动刷新后重试');
+            }
+          });
+        }
+      })();
+    </script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 0;
+        margin: 0;
+        color: #333;
+      }
+
+      .container {
+        width: 100%;
+        margin: 0;
+        background: white;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+        min-height: 100vh;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+        color: white;
+        padding: 48px 30px;
+        text-align: center;
+        position: relative;
+      }
+
+      .back-home-btn {
+        position: absolute;
+        top: 20px;
+        left: 30px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      .back-home-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .header h1 {
+        font-size: 30px;
+        margin-bottom: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .header p {
+        opacity: 0.92;
+        font-size: 15px;
+        letter-spacing: 0.4px;
+      }
+
+      .content {
+        padding: 20px 40px 30px;
+      }
+
+      section.panel {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .upload-area {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 10px;
+        border: 2px dashed rgba(102, 126, 234, 0.3);
+      }
+
+      .file-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+
+      .file-btn:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .file-btn input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .status-info {
+        color: #6c757d;
+        font-size: 14px;
+      }
+
+      .chart-container {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        margin-top: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-wrapper {
+        position: relative;
+        height: 800px;
+        margin-top: 20px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .control-group label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #495057;
+      }
+
+      .control-group input[type="date"] {
+        padding: 8px 12px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .control-group input[type="date"]:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .legend-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+
+      .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .page-footer {
+        width: 100%;
+        background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+        color: white;
+        padding: 32px 30px 36px;
+        text-align: center;
+        margin-top: 0;
+        box-sizing: border-box;
+      }
+
+      .page-footer h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+        font-weight: 600;
+      }
+
+      .page-footer p {
+        margin: 6px 0;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.82);
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+        <h1>Monitor · SCFI 历史趋势</h1>
+        <p>读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势（默认最近3年）</p>
+      </div>
+
+      <div class="content">
+        <section class="panel">
+          <div class="upload-area">
+            <label class="file-btn">
+              选择 SCFI.xlsx 文件
+              <input id="fileInput" type="file" accept=".xlsx,.xls">
+            </label>
+            <span class="status-info" id="statusInfo">请选择 SCFI 文件</span>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="chartSection">
+          <div class="controls">
+            <div class="control-group">
+              <label>开始日期：</label>
+              <input type="date" id="startDate">
+            </div>
+            <div class="control-group">
+              <label>结束日期：</label>
+              <input type="date" id="endDate">
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3 style="margin-bottom: 20px; color: #495057;">SCFI 历史趋势图</h3>
+            <div class="chart-wrapper">
+              <canvas id="trendChart"></canvas>
+            </div>
+            <div class="legend-container" id="legendContainer"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <h2>Monitor · SCFI 历史趋势使用声明</h2>
+      <p>资料整合自 SCFI 数据文件，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+      <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+    </div>
+
+    <script>
+      let scfiChart = null;
+      let scfiData = [];
+      let columnNames = [];
+
+      const fileInput = document.getElementById('fileInput');
+      const statusInfo = document.getElementById('statusInfo');
+      const chartSection = document.getElementById('chartSection');
+      const startDate = document.getElementById('startDate');
+      const endDate = document.getElementById('endDate');
+      const legendContainer = document.getElementById('legendContainer');
+
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (typeof XLSX === 'undefined') {
+          alert('XLSX 库尚未加载完成，请稍候几秒后重试。\n\n如果问题持续，请检查网络连接或刷新页面。');
+          return;
+        }
+
+        try {
+          statusInfo.textContent = '正在读取文件...';
+          const data = await readExcelFile(file);
+          
+          if (!data.length) {
+            alert('Excel 文件为空或格式不正确');
+            return;
+          }
+
+          scfiData = data;
+          processData();
+          statusInfo.textContent = `已加载 ${data.length} 条数据`;
+          chartSection.classList.remove('hidden');
+        } catch (error) {
+          alert('读取文件失败：' + error.message);
+          console.error(error);
+          statusInfo.textContent = '文件读取失败';
+        }
+      });
+
+      async function readExcelFile(file) {
+        return new Promise((resolve, reject) => {
+          if (typeof XLSX === 'undefined') {
+            reject(new Error('XLSX 库未加载，请刷新页面重试'));
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+              
+              const sheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[sheetName];
+              
+              // 读取第一行作为列名
+              const firstRow = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' })[0];
+              
+              // B列到Q列对应索引1到16
+              columnNames = [];
+              for (let i = 1; i <= 16; i++) {
+                if (firstRow[i] !== undefined && firstRow[i] !== '') {
+                  columnNames.push({
+                    index: i,
+                    name: String(firstRow[i]).trim()
+                  });
+                }
+              }
+
+              // 读取数据（从第二行开始）
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+                header: 1, 
+                defval: null,
+                range: 1 // 跳过第一行
+              });
+
+              // 处理数据：A列是日期，B-Q列是指数值
+              const processedData = [];
+              jsonData.forEach((row, rowIndex) => {
+                if (!row[0]) return; // 跳过没有日期的行
+                
+                const dateValue = row[0];
+                let date = null;
+                
+                // 处理日期
+                if (dateValue instanceof Date) {
+                  date = dateValue;
+                } else if (typeof dateValue === 'number') {
+                  // Excel日期序列号
+                  const excelEpoch = new Date(1899, 11, 30);
+                  date = new Date(excelEpoch.getTime() + dateValue * 24 * 60 * 60 * 1000);
+                } else if (typeof dateValue === 'string') {
+                  date = new Date(dateValue);
+                }
+
+                if (!date || isNaN(date.getTime())) return;
+
+                const record = {
+                  date: date,
+                  values: {}
+                };
+
+                // 读取B-Q列的值（索引1-16）
+                columnNames.forEach(col => {
+                  const value = row[col.index];
+                  if (value !== null && value !== undefined && value !== '') {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      record.values[col.name] = numValue;
+                    }
+                  }
+                });
+
+                if (Object.keys(record.values).length > 0) {
+                  processedData.push(record);
+                }
+              });
+
+              resolve(processedData);
+            } catch (error) {
+              reject(error);
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      function processData() {
+        if (!scfiData.length) return;
+
+        // 按日期排序
+        scfiData.sort((a, b) => a.date - b.date);
+
+        // 设置默认日期范围：最新数据往前3年
+        const latestDate = scfiData[scfiData.length - 1].date;
+        const threeYearsAgo = new Date(latestDate);
+        threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+
+        startDate.value = formatDateForInput(threeYearsAgo);
+        endDate.value = formatDateForInput(latestDate);
+
+        // 设置日期输入框的范围
+        const minDate = scfiData[0].date;
+        const maxDate = scfiData[scfiData.length - 1].date;
+        startDate.min = formatDateForInput(minDate);
+        startDate.max = formatDateForInput(maxDate);
+        endDate.min = formatDateForInput(minDate);
+        endDate.max = formatDateForInput(maxDate);
+
+        updateChart();
+      }
+
+      function formatDateForInput(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      startDate.addEventListener('change', updateChart);
+      endDate.addEventListener('change', updateChart);
+
+      function updateChart() {
+        if (!scfiData.length || typeof Chart === 'undefined') return;
+
+        const startValue = startDate.value;
+        const endValue = endDate.value;
+        const startDateObj = startValue ? new Date(startValue + 'T00:00:00') : null;
+        const endDateObj = endValue ? new Date(endValue + 'T23:59:59') : null;
+
+        // 筛选数据
+        const filteredData = scfiData.filter(record => {
+          if (startDateObj && record.date < startDateObj) return false;
+          if (endDateObj && record.date > endDateObj) return false;
+          return true;
+        });
+
+        if (!filteredData.length) {
+          alert('所选日期范围内没有数据');
+          return;
+        }
+
+        // 准备图表数据
+        const labels = filteredData.map(record => {
+          const year = record.date.getFullYear();
+          const month = String(record.date.getMonth() + 1).padStart(2, '0');
+          const day = String(record.date.getDate()).padStart(2, '0');
+          return `${year}/${month}/${day}`;
+        });
+
+        const datasets = [];
+        const colors = [
+          '#667eea', '#ff6b6b', '#20c997', '#f9a826', '#845ef7', '#17a2b8',
+          '#ff9f43', '#6f42c1', '#51cf66', '#ffd43b', '#ff8787', '#339af0',
+          '#ff922b', '#20c997', '#845ef7', '#ff6b6b'
+        ];
+
+        columnNames.forEach((col, index) => {
+          const values = filteredData.map(record => record.values[col.name] || null);
+          
+          datasets.push({
+            label: col.name,
+            data: values,
+            borderColor: colors[index % colors.length],
+            backgroundColor: colors[index % colors.length] + '20',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            spanGaps: true
+          });
+        });
+
+        // 销毁旧图表
+        if (scfiChart) {
+          scfiChart.destroy();
+        }
+
+        // 创建新图表
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        scfiChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false // 使用自定义图例
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                title: {
+                  display: true,
+                  text: 'SCFI 指数'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: '日期'
+                },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45
+                }
+              }
+            }
+          }
+        });
+
+        // 更新自定义图例
+        updateLegend(datasets);
+      }
+
+      function updateLegend(datasets) {
+        legendContainer.innerHTML = '';
+        datasets.forEach(dataset => {
+          const legendItem = document.createElement('div');
+          legendItem.className = 'legend-item';
+          legendItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${dataset.borderColor};"></div>
+            <span>${dataset.label}</span>
+          `;
+          legendContainer.appendChild(legendItem);
+        });
+      }
+    </script>
+  </body>
+</html>
+

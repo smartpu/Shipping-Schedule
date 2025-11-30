@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>船期与行情解析工具使用说明</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 48px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-home-btn {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-home-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 30px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .content h2 {
+            font-size: 24px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #1f2d3d;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .content h3 {
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .content h4 {
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            color: #6c757d;
+        }
+
+        .content p {
+            margin-bottom: 15px;
+            color: #343a40;
+        }
+
+        .content ul, .content ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+            color: #343a40;
+        }
+
+        .content code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+
+        .content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .content table th,
+        .content table td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .content table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .content hr {
+            border: none;
+            border-top: 2px solid #e9ecef;
+            margin: 30px 0;
+        }
+
+        .page-footer {
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 32px 30px 36px;
+            text-align: center;
+            margin-top: 0;
+            box-sizing: border-box;
+        }
+
+        .page-footer h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .page-footer p {
+            margin: 6px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.82);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html?tab=tools365" class="back-home-btn">← 返回首页</a>
+            <h1>船期与行情解析工具使用说明</h1>
+        </div>
+
+        <div class="content">
+            <h2>工具简介</h2>
+            <p><strong>船期与行情解析工具</strong> 是一套零安装、离线运行的数据解析工具，用于将 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具包含四个独立的解析器：</p>
+            <ol>
+                <li><strong>船期解析工具</strong>：解析 <code>365-view-source</code> 目录下的直航船期信息</li>
+                <li><strong>港口行情解析工具</strong>：解析 <code>365-view-source</code> 目录下的价格信息</li>
+                <li><strong>完整船期解析工具</strong>：解析 <code>365-view-full</code> 目录下的 AI 船期和历史船期，支持去重和补全</li>
+                <li><strong>航线路径解析工具</strong>：解析 <code>365-view-full</code> 目录下的航线路径信息</li>
+            </ol>
+
+            <hr>
+
+            <h2>工具列表</h2>
+            <h3>工具 1：船期解析工具 (<code>365-02-schedule-parser.html</code>)</h3>
+            <p><strong>功能</strong>：自动解析明日数航船期网页，提取船期信息并导出为 CSV 文件</p>
+            <h4>主要特点</h4>
+            <ul>
+                <li>🚢 <strong>仅解析直航</strong>：自动过滤中转船期，只提取直航数据</li>
+                <li>📊 <strong>实时预览</strong>：解析完成后可立即预览前50条数据</li>
+                <li>💾 <strong>Excel兼容</strong>：CSV文件使用UTF-8带BOM编码，Excel可直接打开</li>
+                <li>🎨 <strong>现代化界面</strong>：全屏宽度设计，美观易用</li>
+            </ul>
+
+            <h3>工具 2：港口行情解析工具 (<code>365-02-market-rate-parser.html</code>)</h3>
+            <p><strong>功能</strong>：自动解析明日数航港口行情网页，提取价格信息并导出为 CSV 文件</p>
+            <h4>主要特点</h4>
+            <ul>
+                <li>💰 <strong>价格提取</strong>：自动提取"同航线其他港口行情"模块的价格信息</li>
+                <li>🔄 <strong>自动去重</strong>：自动合并完全相同的记录</li>
+                <li>📊 <strong>实时预览</strong>：解析完成后可立即预览前50条数据</li>
+                <li>💾 <strong>Excel兼容</strong>：CSV文件使用UTF-8带BOM编码，Excel可直接打开</li>
+            </ul>
+
+            <h3>工具 3：完整船期解析工具 (<code>365-02-schedule-full-parser.html</code>)</h3>
+            <p><strong>功能</strong>：自动解析明日数航船期网页，提取 AI 船期和历史开航船期，支持数据去重和补全</p>
+            <h4>主要特点</h4>
+            <ul>
+                <li>🚢 <strong>多类型解析</strong>：同时解析 AI 船期（<code>AI_notice</code>）和历史开航船期（<code>history_notice</code>）</li>
+                <li>🔄 <strong>智能去重</strong>：根据"目的港 + 船名航次"自动去重，保留最后抓取的记录</li>
+                <li>✨ <strong>数据补全</strong>：
+                    <ul>
+                        <li>历史船期缺失的船期日期，自动从"实际开航"字段补全</li>
+                        <li>缺失的年份和船型，自动从同船名的其他记录中补全（包括官方船期数据）</li>
+                        <li>日期格式自动转换（如：<code>11/21(周五)</code> → <code>2025/11/21</code>）</li>
+                    </ul>
+                </li>
+                <li>📊 <strong>实时预览</strong>：解析完成后可立即预览前50条数据</li>
+                <li>💾 <strong>Excel兼容</strong>：CSV文件使用UTF-8带BOM编码，Excel可直接打开</li>
+                <li>📈 <strong>统计信息</strong>：显示去重和补全的详细统计信息</li>
+            </ul>
+
+            <h3>工具 4：航线路径解析工具 (<code>365-02-rotation-parser.html</code>)</h3>
+            <p><strong>功能</strong>：自动解析明日数航航线网页，提取航线信息和官方路径并导出为 CSV 文件</p>
+            <h4>主要特点</h4>
+            <ul>
+                <li>🗺️ <strong>路径提取</strong>：提取每个航线的正向路径、反向路径和中间时间</li>
+                <li>🏢 <strong>共舱信息</strong>：提取航线ID和共舱船公司（包含航线代码）</li>
+                <li>📊 <strong>实时预览</strong>：解析完成后可立即预览前50条数据</li>
+                <li>💾 <strong>Excel兼容</strong>：CSV文件使用UTF-8带BOM编码，Excel可直接打开</li>
+            </ul>
+
+            <hr>
+
+            <h2>快速开始</h2>
+            <h3>工具 1：船期解析工具</h3>
+            <ol>
+                <li><strong>打开工具</strong>：双击打开 <code>365-02-schedule-parser.html</code></li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-source 文件夹"按钮，选择 <code>365-view-source</code> 目录</li>
+                <li><strong>开始解析</strong>：点击"开始解析"按钮，等待进度完成</li>
+                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"保存全部结果</li>
+            </ol>
+
+            <h3>工具 2：港口行情解析工具</h3>
+            <ol>
+                <li><strong>打开工具</strong>：双击打开 <code>365-02-market-rate-parser.html</code></li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-source 文件夹"按钮，选择 <code>365-view-source</code> 目录</li>
+                <li><strong>开始解析</strong>：点击"开始解析"按钮，工具会自动解析所有 HTML 文件中"同航线其他港口行情"模块</li>
+                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"保存全部结果</li>
+            </ol>
+
+            <h3>工具 3：完整船期解析工具</h3>
+            <ol>
+                <li><strong>打开工具</strong>：双击打开 <code>365-02-schedule-full-parser.html</code></li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择 <code>365-view-full</code> 目录（注意：不是 <code>365-view-source</code>）</li>
+                <li><strong>开始解析</strong>：点击"开始解析"按钮，等待进度完成</li>
+                <li><strong>查看结果</strong>：预览下方会显示前 50 行样例，并显示去重和补全统计信息</li>
+                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"保存全部结果</li>
+            </ol>
+
+            <h3>工具 4：航线路径解析工具</h3>
+            <ol>
+                <li><strong>打开工具</strong>：双击打开 <code>365-02-rotation-parser.html</code></li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择 <code>365-view-full</code> 目录</li>
+                <li><strong>开始解析</strong>：点击"开始解析"按钮，等待进度完成</li>
+                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"保存全部结果</li>
+            </ol>
+
+            <hr>
+
+            <h2>输出列说明</h2>
+            <h3>船期解析工具输出列（14列）</h3>
+            <p>启运港、目的港、航线ID、开航日、航程(计划)、共舱船公司、航线备注、船名航次、年份、船型、船期、启运港码头、目的港码头、航程(当次)</p>
+
+            <h3>港口行情解析工具输出列（6列）</h3>
+            <p>启运港、目的港、20GP、20GP涨跌、40GP、40GP涨跌</p>
+
+            <h3>完整船期解析工具输出列（14列）</h3>
+            <p>与船期解析工具相同，但支持数据去重和补全</p>
+
+            <h3>航线路径解析工具输出列（7列）</h3>
+            <p>启运港、目的港、航线ID、共舱船公司、正向路径、反向路径、中间时间</p>
+
+            <hr>
+
+            <h2>工具功能对比</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>功能</th>
+                        <th>船期解析工具</th>
+                        <th>港口行情解析工具</th>
+                        <th>完整船期解析工具</th>
+                        <th>航线路径解析工具</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>解析内容</td>
+                        <td>船期信息（直航）</td>
+                        <td>价格信息（行情）</td>
+                        <td>AI船期+历史船期</td>
+                        <td>航线路径信息</td>
+                    </tr>
+                    <tr>
+                        <td>输出列数</td>
+                        <td>14 列</td>
+                        <td>6 列</td>
+                        <td>14 列</td>
+                        <td>7 列</td>
+                    </tr>
+                    <tr>
+                        <td>数据去重</td>
+                        <td>否</td>
+                        <td>是（自动去重）</td>
+                        <td>是（目的港+船名航次）</td>
+                        <td>否</td>
+                    </tr>
+                    <tr>
+                        <td>数据补全</td>
+                        <td>否</td>
+                        <td>否</td>
+                        <td>是（年份/船型/船期）</td>
+                        <td>否</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <hr>
+
+            <h2>常见问题</h2>
+            <h3>Q1: 解析过程中显示"无数据"或"跳过"</h3>
+            <p><strong>A</strong>: 这是正常现象，工具会继续解析其他文件，不会中断整个解析过程。</p>
+
+            <h3>Q2: CSV 文件在 Excel 中打开中文乱码</h3>
+            <p><strong>A</strong>: 工具生成的 CSV 文件使用 UTF-8 带 BOM 编码，应该可以在 Excel 中正常打开。如果仍然出现乱码，请尝试使用 Excel 的"数据" → "从文本/CSV"功能导入，并选择 UTF-8 编码。</p>
+
+            <h3>Q3: 可以只解析部分文件吗？</h3>
+            <p><strong>A</strong>: 可以。有两种方式：</p>
+            <ol>
+                <li><strong>临时方式</strong>：在文件夹中临时移动不需要解析的文件到其他位置，解析完成后再移回</li>
+                <li><strong>分批解析</strong>：可以多次运行解析工具，每次解析不同的文件</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <h2>船期与行情解析工具使用声明</h2>
+        <p>本工具仅用于辅助解析本地 HTML 文件，所有操作均在本地完成，不会上传任何数据到服务器。</p>
+        <p>解析的内容仅供内部使用，请遵守相关法律法规和网站使用条款。</p>
+    </div>
+</body>
+</html>
+

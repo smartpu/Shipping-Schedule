@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>维运网 船期解析工具使用说明</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 48px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-home-btn {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-home-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 30px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .content h2 {
+            font-size: 24px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #1f2d3d;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .content h3 {
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .content h4 {
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            color: #6c757d;
+        }
+
+        .content p {
+            margin-bottom: 15px;
+            color: #343a40;
+        }
+
+        .content ul, .content ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+            color: #343a40;
+        }
+
+        .content code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+
+        .content pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        .content pre code {
+            background: none;
+            padding: 0;
+            color: #333;
+        }
+
+        .content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .content table th,
+        .content table td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .content table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .content hr {
+            border: none;
+            border-top: 2px solid #e9ecef;
+            margin: 30px 0;
+        }
+
+        .content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .page-footer {
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 32px 30px 36px;
+            text-align: center;
+            margin-top: 0;
+            box-sizing: border-box;
+        }
+
+        .page-footer h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .page-footer p {
+            margin: 6px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.82);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html?tab=tools001" class="back-home-btn">← 返回首页</a>
+            <h1>维运网 船期解析工具使用说明</h1>
+        </div>
+
+        <div class="content">
+            <h2>工具简介</h2>
+            <p><strong>维运网 船期解析工具</strong> 是一个零安装、离线运行的数据解析工具，用于将 <code>001-view-source</code> 目录下的 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具会自动提取船期信息，包括启运港、目的港、航线信息、船名航次、开航日期、码头信息等，并自动去重合并重复记录。</p>
+
+            <hr>
+
+            <h2>快速开始</h2>
+            <ol>
+                <li><strong>准备工作</strong>：首先需要使用"维运网 船期网页手动下载工具"（<code>001-01-manual-download.html</code>）下载并保存所有船期网页到 <code>001-view-source</code> 文件夹中</li>
+                <li><strong>打开工具</strong>：双击打开 <code>001-02-schedule-parser.html</code>（或在浏览器中打开）</li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-source 文件夹"按钮，选择项目中的 <code>001-view-source</code> 目录</li>
+                <li><strong>开始解析</strong>：点击"开始解析"按钮，等待进度完成</li>
+                <li><strong>查看结果</strong>：预览下方会显示前 50 行样例</li>
+                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"保存全部结果</li>
+            </ol>
+
+            <hr>
+
+            <h2>详细操作步骤</h2>
+            <h3>步骤 1：打开工具</h3>
+            <p>双击打开 <code>001-02-schedule-parser.html</code> 文件，会在浏览器中打开工具页面。</p>
+
+            <h3>步骤 2：选择文件夹</h3>
+            <ol>
+                <li>点击"选择 view-source 文件夹"按钮</li>
+                <li>在文件选择对话框中选择 <code>001-view-source</code> 文件夹</li>
+                <li>选择后，工具会自动识别文件夹中的所有 HTML 文件</li>
+                <li>"开始解析"按钮将变为可用状态</li>
+                <li>工具会显示已选择的文件数量</li>
+            </ol>
+
+            <h3>步骤 3：开始解析</h3>
+            <ol>
+                <li>点击"开始解析"按钮</li>
+                <li>工具会自动解析所有 HTML 文件中的船期信息</li>
+                <li><strong>重要</strong>：仅解析直航船期，遇到"中转"或"接二程"标记时停止解析</li>
+                <li>解析过程中会显示实时日志，包括：
+                    <ul>
+                        <li>正在解析的文件名</li>
+                        <li>解析到的数据条数</li>
+                        <li>错误或警告信息（如有）</li>
+                        <li>"无船期"提示（如果某个网页中没有船期数据）</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3>步骤 4：查看结果</h3>
+            <ol>
+                <li>解析完成后，可以在下方预览表格中查看解析结果</li>
+                <li>预览表格最多显示前 50 条数据</li>
+                <li>可以滚动查看所有列的数据</li>
+                <li>统计信息会显示总文件数、成功解析数、总数据条数等</li>
+            </ol>
+
+            <h3>步骤 5：下载 CSV</h3>
+            <ol>
+                <li>确认解析结果无误后，点击"下载 CSV"按钮</li>
+                <li>CSV 文件会自动下载到浏览器的默认下载文件夹</li>
+                <li>文件名格式：<code>weiyun-schedule-YYYY-MM-DD-HH-MM-SS.csv</code>（包含当前日期和时间）</li>
+            </ol>
+
+            <hr>
+
+            <h2>输出列说明（按顺序）</h2>
+            <p>CSV 文件包含以下 15 列数据：</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>列名</th>
+                        <th>说明</th>
+                        <th>示例</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>启运港</td><td>页面顶部"由...发往..."或 JSON 中的 <code>startPortEnName/startPortCnName</code></td><td><code>QINGDAO(青岛)</code></td></tr>
+                    <tr><td>2</td><td>目的港</td><td>页面顶部或 JSON 中的 <code>destPortEnName/destPortCnName</code></td><td><code>JEBEL ALI(杰贝阿里)</code></td></tr>
+                    <tr><td>3</td><td>航线ID</td><td>来自 JSON 中的 <code>fleetId</code></td><td><code>2533</code></td></tr>
+                    <tr><td>4</td><td>港口ID</td><td>来自 JSON 中的 <code>fleetIdPort</code></td><td><code>19</code></td></tr>
+                    <tr><td>5</td><td>开航日</td><td>来自 JSON 中的 <code>weekdayOfETDFormatter</code></td><td><code>周一</code></td></tr>
+                    <tr><td>6</td><td>航程</td><td>来自 JSON 中的 <code>shipdays</code></td><td><code>22天</code></td></tr>
+                    <tr><td>7</td><td>共舱船公司</td><td>从 <code>&lt;a href="#1_航线ID_港口ID"&gt;</code> 的 <code>title</code> 属性提取，或从 JSON 中的 <code>carrierShortName/svcCode</code></td><td><code>ARVIA（JFX） | CUL 中联航运（JFX） | ECONSHIP（JFX）...</code></td></tr>
+                    <tr><td>8</td><td>船名</td><td>来自 JSON 中的 <code>vslName</code></td><td><code>MUMBAI BRIDGE</code></td></tr>
+                    <tr><td>9</td><td>航次</td><td>来自 JSON 中的 <code>voyNo</code></td><td><code>2507W</code></td></tr>
+                    <tr><td>10</td><td>船型</td><td>来自 JSON 中的 <code>shipCapacity</code></td><td><code>8030TEU</code></td></tr>
+                    <tr><td>11</td><td>计划开航</td><td>来自 JSON 中的 <code>etdFormatter</code> 或 <code>portSailingDateFormatter</code>，提取日期部分</td><td><code>2025/11/07</code></td></tr>
+                    <tr><td>12</td><td>实际离港</td><td>来自 JSON 中的 <code>atdFormatter</code>，若为空则留空</td><td><code>2025/11/08</code></td></tr>
+                    <tr><td>13</td><td>预计到港</td><td>来自 JSON 中的 <code>etaFormatter</code>，提取日期部分</td><td><code>2025/11/29</code></td></tr>
+                    <tr><td>14</td><td>启运港码头</td><td>来自 JSON 中的 <code>wharfName</code> 或 <code>startPortWharfEnShortName/startPortWharfEnFullName</code></td><td><code>QQCT</code></td></tr>
+                    <tr><td>15</td><td>目的港码头</td><td>来自 JSON 中的 <code>destPortWharfEnShortName/destPortWharfEnFullName</code></td><td><code>JEBEL ALI CONTAINER TERMINAL 3</code></td></tr>
+                </tbody>
+            </table>
+            <blockquote>
+                <p><strong>说明</strong>：</p>
+                <ul>
+                    <li>程序会自动处理数据清洗，包括去除多余空格、修复断开的单词（如 <code>QQ CT</code> → <code>QQCT</code>、<code>TERMINA L</code> → <code>TERMINAL</code>）等</li>
+                    <li>有的页面可能资料不完整（无年份/IMO/船型），程序会自动留空，不会中断解析</li>
+                    <li>共舱船公司信息会从网页中的 <code>&lt;a&gt;</code> 标签 <code>title</code> 属性自动提取，如果提取失败，会使用 JSON 中的 <code>carrierShortName</code> 和 <code>svcCode</code></li>
+                </ul>
+            </blockquote>
+
+            <hr>
+
+            <h2>工具特点</h2>
+            <ul>
+                <li>🎨 <strong>现代化界面</strong>：全屏宽度设计，美观易用</li>
+                <li>📋 <strong>详细说明</strong>：页面内置完整的使用说明，无需查看文档</li>
+                <li>🔄 <strong>自动去重</strong>：自动合并重复的船期记录（相同启运港+目的港+航线ID+港口ID+船名+航次）</li>
+                <li>📊 <strong>实时预览</strong>：解析完成后可立即预览前50条数据</li>
+                <li>💾 <strong>Excel兼容</strong>：CSV文件使用UTF-8带BOM编码，Excel可直接打开</li>
+                <li>🧹 <strong>数据清洗</strong>：自动清洗数据，修复断开的单词和格式问题</li>
+                <li>🚢 <strong>仅解析直航</strong>：自动过滤中转船期，只提取直航数据</li>
+            </ul>
+
+            <hr>
+
+            <h2>常见问题</h2>
+            <h3>Q1: 解析过程中显示"无船期"或"跳过"</h3>
+            <p><strong>A</strong>: 可能的原因：</p>
+            <ol>
+                <li>网页中没有直航船期数据（只有中转船期）</li>
+                <li>网页格式不符合预期</li>
+                <li>网页数据不完整</li>
+                <li>网页结构发生变化</li>
+            </ol>
+            <p><strong>解决</strong>：这是正常现象，工具会继续解析其他文件，不会中断整个解析过程。如果多个文件都显示"无船期"，请检查：</p>
+            <ol>
+                <li>HTML 文件是否正确下载</li>
+                <li>网页结构是否发生变化</li>
+                <li>是否包含船期数据</li>
+            </ol>
+
+            <h3>Q2: CSV 文件在 Excel 中打开中文乱码</h3>
+            <p><strong>A</strong>: 工具生成的 CSV 文件使用 UTF-8 带 BOM 编码，应该可以在 Excel 中正常打开。如果仍然出现乱码，请尝试：</p>
+            <ol>
+                <li>使用 Excel 的"数据" → "从文本/CSV"功能导入</li>
+                <li>在导入时选择 UTF-8 编码</li>
+                <li>或者使用其他支持 UTF-8 的软件（如 WPS、LibreOffice）打开</li>
+            </ol>
+
+            <h3>Q3: 解析速度很慢</h3>
+            <p><strong>A</strong>: 解析速度取决于：</p>
+            <ol>
+                <li><strong>文件数量</strong>：文件越多，解析时间越长</li>
+                <li><strong>文件大小</strong>：文件越大，解析时间越长</li>
+                <li><strong>浏览器性能</strong>：建议使用 Chrome 或 Edge 浏览器</li>
+            </ol>
+            <p><strong>优化建议</strong>：</p>
+            <ul>
+                <li>可以分批解析，不需要一次性解析所有文件</li>
+                <li>关闭其他占用资源的程序</li>
+                <li>使用性能较好的浏览器</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <h2>维运网 船期解析工具使用声明</h2>
+        <p>本工具仅用于辅助解析本地 HTML 文件，所有操作均在本地完成，不会上传任何数据到服务器。</p>
+        <p>解析的内容仅供内部使用，请遵守相关法律法规和网站使用条款。</p>
+    </div>
+</body>
+</html>
+

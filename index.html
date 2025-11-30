@@ -300,9 +300,9 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('tools001')">001 系列工具</button>
-            <button class="tab-btn" onclick="switchTab('tools365')">365 系列工具</button>
-            <button class="tab-btn" onclick="switchTab('rateTrends')">Monitor 系列工具</button>
+            <button class="tab-btn active" onclick="switchTab('tools001', event)">001 系列工具</button>
+            <button class="tab-btn" onclick="switchTab('tools365', event)">365 系列工具</button>
+            <button class="tab-btn" onclick="switchTab('rateTrends', event)">Monitor 系列工具</button>
         </div>
 
         <!-- 001 系列工具 -->
@@ -328,7 +328,7 @@
                         <a href="001-01-manual-download.html?from=tools001" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="001-01-manual-download-README.md" class="tool-link secondary">
+                        <a href="001-01-manual-download-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -349,7 +349,7 @@
                         <a href="001-02-schedule-parser.html?from=tools001" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="001-02-schedule-parser-README.md" class="tool-link secondary">
+                        <a href="001-02-schedule-parser-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -370,7 +370,7 @@
                         <a href="001-04-market-analysis.html?from=tools001" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="001-04-market-analysis-README.md" class="tool-link secondary">
+                        <a href="001-04-market-analysis-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -401,7 +401,7 @@
                         <a href="365-01-manual-download.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-01-manual-download-README.md" class="tool-link secondary">
+                        <a href="365-01-manual-download-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -422,7 +422,7 @@
                         <a href="365-02-schedule-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
+                        <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -443,7 +443,7 @@
                         <a href="365-02-schedule-full-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
+                        <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -464,7 +464,7 @@
                         <a href="365-02-rotation-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
+                        <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -485,7 +485,7 @@
                         <a href="365-02-market-rate-parser.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-02-market-rate-schedule-README.md" class="tool-link secondary">
+                        <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -506,7 +506,7 @@
                         <a href="365-04-market-watch.html?from=tools365" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="365-04-market-watch-README.md" class="tool-link secondary">
+                        <a href="365-04-market-watch-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -537,7 +537,7 @@
                         <a href="Monitor-Rate-Trends.html?from=monitor" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="Monitor-Rate-Trends-README.md" class="tool-link secondary">
+                        <a href="Monitor-Rate-Trends-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -558,7 +558,7 @@
                         <a href="Monitor-SCFI-Trends.html?from=monitor" class="tool-link">
                             打开工具 →
                         </a>
-                        <a href="Monitor-SCFI-Trends-README.md" class="tool-link secondary">
+                        <a href="Monitor-SCFI-Trends-README.html" class="tool-link secondary">
                             使用说明
                         </a>
                     </div>
@@ -573,7 +573,7 @@
     </div>
 
     <script>
-        function switchTab(tabId) {
+        function switchTab(tabId, event) {
             // 隐藏所有选项卡内容
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
@@ -585,7 +585,10 @@
             });
 
             // 显示选中的选项卡内容
-            document.getElementById(tabId).classList.add('active');
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
 
             // 激活对应的按钮
             if (event && event.target) {
@@ -597,9 +600,9 @@
                         btn.classList.add('active');
                     } else if (btn.textContent.includes('365') && tabId === 'tools365') {
                         btn.classList.add('active');
-                    } else if (btn.textContent.includes('Monitor') && tabId === 'rateTrends') {
+                    } else if ((btn.textContent.includes('Monitor') || btn.textContent.includes('运价趋势')) && tabId === 'rateTrends') {
                         btn.classList.add('active');
-                    } else if (btn.textContent.includes('运价趋势') && tabId === 'rateTrends') {
+                    } else if (btn.textContent.includes('Monitor') && tabId === 'monitor') {
                         btn.classList.add('active');
                     }
                 });

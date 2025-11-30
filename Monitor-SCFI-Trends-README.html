@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor · SCFI 历史趋势使用说明</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 48px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-home-btn {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-home-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 30px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .content h2 {
+            font-size: 24px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #1f2d3d;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .content h3 {
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .content p {
+            margin-bottom: 15px;
+            color: #343a40;
+        }
+
+        .content ul, .content ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+            color: #343a40;
+        }
+
+        .content code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+
+        .content hr {
+            border: none;
+            border-top: 2px solid #e9ecef;
+            margin: 30px 0;
+        }
+
+        .page-footer {
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
+            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            color: white;
+            padding: 32px 30px 36px;
+            text-align: center;
+            margin-top: 0;
+            box-sizing: border-box;
+        }
+
+        .page-footer h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .page-footer p {
+            margin: 6px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.82);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+            <h1>Monitor · SCFI 历史趋势使用说明</h1>
+        </div>
+
+        <div class="content">
+            <h2>工具简介</h2>
+            <p>这个工具用于快速查看 SCFI（上海出口集装箱运价指数）的历史趋势，方便直接在浏览器中上传 Excel 文件并观察各指数走势，无需安装任何额外环境。</p>
+
+            <hr>
+
+            <h2>功能特点</h2>
+            <ul>
+                <li><strong>自动读取数据</strong>：支持上传 SCFI Excel 文件，自动识别 B 列到 Q 列的综合指数及分 trade 指数</li>
+                <li><strong>默认时间范围</strong>：自动显示最近 3 年的数据趋势</li>
+                <li><strong>自定义筛选</strong>：支持手动调整开始和结束日期，查看不同时间段的数据</li>
+                <li><strong>大尺寸图表</strong>：图表高度为两倍，便于查看详细趋势和对比分析</li>
+                <li><strong>多指数展示</strong>：同时展示多个指数的趋势线，支持自定义图例</li>
+            </ul>
+
+            <hr>
+
+            <h2>使用步骤</h2>
+            <ol>
+                <li>在浏览器中打开 <code>Monitor-SCFI-Trends.html</code>（推荐 Chrome / Edge / Safari）</li>
+                <li>点击"选择 SCFI 文件"按钮，选择 SCFI Excel 文件</li>
+                <li>工具会自动加载数据并显示最近 3 年的趋势图</li>
+                <li>如需查看其他时间段，可通过日期选择器调整开始和结束日期</li>
+                <li>图表下方显示所有指数的图例，便于识别不同指数</li>
+            </ol>
+
+            <hr>
+
+            <h2>数据格式要求</h2>
+            <ul>
+                <li>Excel 文件第一行为列名</li>
+                <li><strong>A 列</strong>：日期（支持 Excel 日期序列号和标准日期格式）</li>
+                <li><strong>B 列到 Q 列</strong>：各指数数值（综合指数及分 trade 指数）</li>
+                <li>数据按日期升序排列</li>
+            </ul>
+
+            <hr>
+
+            <h2>注意事项</h2>
+            <ul>
+                <li>所有数据仅在本地浏览器解析，不会上传至任何服务器</li>
+                <li>解析结果仅供内部研判，不构成对外报价或投资建议</li>
+                <li>建议使用最新版本的 Chrome、Edge 或 Safari 浏览器以获得最佳体验</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <h2>Monitor · SCFI 历史趋势使用声明</h2>
+        <p>资料整合自 SCFI 数据文件，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+        <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+    </div>
+</body>
+</html>
+

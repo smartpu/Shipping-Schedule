@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor · 访问记录查看</title>
+    <link rel="stylesheet" href="vendor/auth.css">
     <style>
         * {
             margin: 0;
@@ -233,128 +234,6 @@
             margin-bottom: 10px;
         }
 
-
-        /* 密码验证模态框样式 */
-        .auth-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            backdrop-filter: blur(5px);
-        }
-
-        .auth-modal {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 480px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .auth-modal h2 {
-            font-size: 24px;
-            color: #1f2d3d;
-            margin-bottom: 8px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .auth-modal p {
-            color: #6c757d;
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .auth-form-group {
-            margin-bottom: 20px;
-        }
-
-        .auth-form-group label {
-            display: block;
-            color: #495057;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .auth-form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        .auth-form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .auth-submit-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 10px;
-        }
-
-        .auth-submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .auth-submit-btn:active {
-            transform: translateY(0);
-        }
-
-        .auth-error {
-            color: #dc3545;
-            font-size: 13px;
-            margin-top: 8px;
-            display: none;
-        }
-
-        .auth-error.show {
-            display: block;
-        }
-
-        .auth-overlay.hidden {
-            display: none;
-        }
-
-        body.auth-locked {
-            overflow: hidden;
-        }
-
         .page-footer {
             width: 100%;
             background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
@@ -379,13 +258,39 @@
         }
     </style>
 </head>
-<body>
-    <!-- 密码验证模态框 -->
+<body data-page="Monitor-View-Access.html">
+    <!-- 用户验证模态框（第一步） -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-modal">
             <h2>🔐 访问验证</h2>
-            <p>此页面需要密码验证才能访问</p>
+            <p>为了了解工具使用情况，请填写以下信息</p>
             <form id="authForm">
+                <div class="auth-form-group">
+                    <label for="userName">姓名 *</label>
+                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
+                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+                </div>
+                <div class="auth-form-group">
+                    <label for="userPhone">手机号 *</label>
+                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
+                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+                </div>
+                <div class="auth-form-group">
+                    <label for="userEmail">邮箱 *</label>
+                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
+                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+                </div>
+                <button type="submit" class="auth-submit-btn">确认并继续</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 密码验证模态框（第二步） -->
+    <div id="passwordAuthOverlay" class="auth-overlay hidden">
+        <div class="auth-modal">
+            <h2>🔐 密码验证</h2>
+            <p>此页面需要密码验证才能访问</p>
+            <form id="passwordAuthForm">
                 <div class="auth-form-group">
                     <label for="passwordInput">密码 *</label>
                     <input type="password" id="passwordInput" name="passwordInput" placeholder="请输入访问密码" required autocomplete="off">
@@ -457,85 +362,227 @@
         </div>
     </div>
 
+    <script src="vendor/auth.js"></script>
+    <script src="vendor/auth-password.js"></script>
     <script>
-        // 密码验证系统
+        // 双重验证系统：先用户验证，通过后再密码验证
         (function() {
-            const PASSWORD_STORAGE_KEY = 'monitor_view_access_password';
             const CORRECT_PASSWORD = 'Aa18653202580';
-            const SESSION_EXPIRY_HOURS = 24;
+            
+            // 用户验证成功后的回调
+            function onUserAuthSuccess() {
+                // 用户验证通过后，显示密码验证
+                initPasswordAuth(CORRECT_PASSWORD, onPasswordAuthSuccess);
+            }
 
-            function checkPassword() {
-                try {
-                    const passwordData = sessionStorage.getItem(PASSWORD_STORAGE_KEY);
-                    if (!passwordData) return false;
-                    const data = JSON.parse(passwordData);
-                    const now = Date.now();
-                    // 检查是否在24小时内
-                    if (data.timestamp && (now - data.timestamp) > (SESSION_EXPIRY_HOURS * 60 * 60 * 1000)) {
-                        sessionStorage.removeItem(PASSWORD_STORAGE_KEY);
-                        return false;
-                    }
-                    return data.verified === true;
-                } catch (e) {
-                    return false;
+            // 密码验证成功后的回调
+            function onPasswordAuthSuccess() {
+                // 双重验证都通过，加载日志
+                loadLogs();
+            }
+
+            // 初始化用户验证（第一步）
+            // 修改auth.js的默认行为，使其在验证成功后调用我们的回调
+            const originalInit = window.initUserAuth;
+            window.initUserAuth = function(pageName) {
+                // 保存原始函数
+                const originalCheckAuth = window.checkAuth;
+                
+                // 重写initUserAuth以支持回调
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setupUserAuth(pageName);
+                    });
+                } else {
+                    setupUserAuth(pageName);
                 }
-            }
+            };
 
-            function savePasswordVerification() {
-                const passwordData = {
-                    verified: true,
-                    timestamp: Date.now()
-                };
-                sessionStorage.setItem(PASSWORD_STORAGE_KEY, JSON.stringify(passwordData));
-            }
-
-            function initPasswordAuth() {
+            function setupUserAuth(pageName) {
                 const authOverlay = document.getElementById('authOverlay');
                 const authForm = document.getElementById('authForm');
-                const passwordInput = document.getElementById('passwordInput');
-                const passwordError = document.getElementById('passwordError');
+                const nameInput = document.getElementById('userName');
+                const phoneInput = document.getElementById('userPhone');
+                const emailInput = document.getElementById('userEmail');
+                const nameError = document.getElementById('nameError');
+                const phoneError = document.getElementById('phoneError');
+                const emailError = document.getElementById('emailError');
 
                 if (!authOverlay || !authForm) return;
 
-                if (checkPassword()) {
+                // 检查是否已通过用户验证
+                const AUTH_STORAGE_KEY = 'shipping_tools_auth';
+                const AUTH_EXPIRY_DAYS = 7;
+                function checkAuth() {
+                    try {
+                        const authData = localStorage.getItem(AUTH_STORAGE_KEY);
+                        if (!authData) return false;
+                        const data = JSON.parse(authData);
+                        const now = Date.now();
+                        if (data.expiry && now > data.expiry) {
+                            localStorage.removeItem(AUTH_STORAGE_KEY);
+                            return false;
+                        }
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+
+                if (checkAuth()) {
                     authOverlay.classList.add('hidden');
                     document.body.classList.remove('auth-locked');
-                    loadLogs();
+                    if (pageName) {
+                        // 记录访问日志
+                        const ACCESS_LOG_KEY = 'shipping_tools_access_log';
+                        const MAX_LOG_ENTRIES = 100;
+                        try {
+                            const authData = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
+                            const logEntry = {
+                                page: pageName,
+                                name: authData.name || '未知',
+                                phone: authData.phone || '未知',
+                                email: authData.email || '未知',
+                                timestamp: Date.now(),
+                                date: new Date().toLocaleString('zh-CN')
+                            };
+                            let logs = [];
+                            try {
+                                const existingLogs = localStorage.getItem(ACCESS_LOG_KEY);
+                                if (existingLogs) logs = JSON.parse(existingLogs);
+                            } catch (e) {
+                                logs = [];
+                            }
+                            logs.unshift(logEntry);
+                            if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
+                            localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
+                        } catch (e) {
+                            console.warn('记录访问日志失败', e);
+                        }
+                    }
+                    // 用户验证通过，继续密码验证
+                    onUserAuthSuccess();
                     return;
                 }
 
+                // 显示用户验证模态框
                 document.body.classList.add('auth-locked');
                 authOverlay.classList.remove('hidden');
-                if (passwordInput) passwordInput.focus();
+                if (nameInput) nameInput.focus();
 
+                // 表单提交处理
                 authForm.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    const password = passwordInput.value.trim();
+                    const name = nameInput.value.trim();
+                    const phone = phoneInput.value.trim();
+                    const email = emailInput.value.trim().toLowerCase();
                     
-                    if (password === CORRECT_PASSWORD) {
-                        passwordError.classList.remove('show');
-                        savePasswordVerification();
-                        authOverlay.classList.add('hidden');
-                        document.body.classList.remove('auth-locked');
-                        loadLogs();
+                    // 验证姓名
+                    if (!name) {
+                        nameError.classList.add('show');
+                        nameInput.focus();
+                        return;
                     } else {
-                        passwordError.classList.add('show');
-                        passwordInput.value = '';
-                        passwordInput.focus();
+                        nameError.classList.remove('show');
                     }
+
+                    // 验证手机号
+                    const phoneRegex = /^1[3-9]\d{9}$/;
+                    if (!phone || !phoneRegex.test(phone)) {
+                        phoneError.classList.add('show');
+                        phoneInput.focus();
+                        return;
+                    } else {
+                        phoneError.classList.remove('show');
+                    }
+
+                    // 验证邮箱
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!email || !emailRegex.test(email)) {
+                        emailError.classList.add('show');
+                        emailInput.focus();
+                        return;
+                    } else {
+                        emailError.classList.remove('show');
+                    }
+
+                    // 保存用户信息
+                    const expiry = Date.now() + (AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+                    const authData = {
+                        name: name.trim(),
+                        phone: phone.trim(),
+                        email: email.trim().toLowerCase(),
+                        timestamp: Date.now(),
+                        expiry: expiry
+                    };
+                    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+
+                    // 记录访问日志
+                    if (pageName) {
+                        const ACCESS_LOG_KEY = 'shipping_tools_access_log';
+                        const MAX_LOG_ENTRIES = 100;
+                        try {
+                            const logEntry = {
+                                page: pageName,
+                                name: authData.name || '未知',
+                                phone: authData.phone || '未知',
+                                email: authData.email || '未知',
+                                timestamp: Date.now(),
+                                date: new Date().toLocaleString('zh-CN')
+                            };
+                            let logs = [];
+                            try {
+                                const existingLogs = localStorage.getItem(ACCESS_LOG_KEY);
+                                if (existingLogs) logs = JSON.parse(existingLogs);
+                            } catch (e) {
+                                logs = [];
+                            }
+                            logs.unshift(logEntry);
+                            if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
+                            localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
+                        } catch (e) {
+                            console.warn('记录访问日志失败', e);
+                        }
+                    }
+
+                    // 用户验证通过，隐藏用户验证模态框，显示密码验证
+                    authOverlay.classList.add('hidden');
+                    onUserAuthSuccess();
                 });
 
-                passwordInput.addEventListener('input', () => {
-                    if (passwordInput.value.trim()) {
-                        passwordError.classList.remove('show');
-                    }
-                });
+                // 实时验证提示
+                if (nameInput) {
+                    nameInput.addEventListener('input', () => {
+                        if (nameInput.value.trim()) nameError.classList.remove('show');
+                    });
+                }
+
+                if (phoneInput) {
+                    phoneInput.addEventListener('input', () => {
+                        const phone = phoneInput.value.trim();
+                        if (phone && /^1[3-9]\d{9}$/.test(phone)) {
+                            phoneError.classList.remove('show');
+                        }
+                    });
+                }
+
+                if (emailInput) {
+                    emailInput.addEventListener('input', () => {
+                        const email = emailInput.value.trim();
+                        if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                            emailError.classList.remove('show');
+                        }
+                    });
+                }
             }
 
+            // 初始化
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initPasswordAuth);
+                document.addEventListener('DOMContentLoaded', function() {
+                    setupUserAuth('Monitor-View-Access.html');
+                });
             } else {
-                initPasswordAuth();
+                setupUserAuth('Monitor-View-Access.html');
             }
         })();
 

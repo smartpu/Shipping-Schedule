@@ -14,10 +14,10 @@
 
     // ========== 配置区域 ==========
     // GitHub Issues 配置
-    // 方式1：直接在代码中填写 token（推荐，方便使用）
-    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
-    // 方式2：从 localStorage 获取（如果上面留空，会尝试从 localStorage 获取）
-    // const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || '';
+    // ⚠️ 重要：Token 不再硬编码在代码中，改为从 localStorage 读取
+    // 首次使用时，请在浏览器控制台运行：
+    // localStorage.setItem('shipping_tools_github_token', '你的token')
+    const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || '';
     const GITHUB_OWNER = 'smartpu'; // GitHub 用户名或组织名
     const GITHUB_REPO = 'Shipping-Schedule'; // 仓库名
     const ISSUE_TITLE = 'Shipping Tools 访问日志'; // Issue 标题
@@ -68,6 +68,7 @@
         const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
         if (!token || token === 'YOUR_GITHUB_TOKEN_HERE' || token === '') {
             console.warn('⚠️ GitHub Token 未配置');
+            console.warn('📝 请在浏览器控制台运行：setGitHubToken("你的GitHub Token")');
             return null;
         }
         
@@ -509,6 +510,37 @@ ${JSON.stringify(existingLogs, null, 2)}
         } else {
             console.log('📋 还没有创建 Issue，首次发送日志时会自动创建');
             return null;
+        }
+    };
+
+    // 设置 Token 的便捷函数
+    window.setGitHubToken = function(token) {
+        if (!token || token.trim() === '') {
+            console.error('❌ Token 不能为空');
+            return false;
+        }
+        localStorage.setItem('shipping_tools_github_token', token.trim());
+        console.log('✅ Token 已保存到 localStorage');
+        console.log('💡 提示：刷新页面后新 Token 才会生效');
+        return true;
+    };
+
+    // 检查 Token 是否已配置
+    window.checkTokenConfig = function() {
+        const token = localStorage.getItem('shipping_tools_github_token');
+        if (token) {
+            console.log('✅ Token 已配置');
+            console.log('Token 长度:', token.length);
+            console.log('Token 前缀:', token.substring(0, 10) + '...');
+            console.log('💡 如需更新 Token，运行：setGitHubToken("你的新token")');
+            return true;
+        } else {
+            console.warn('⚠️ Token 未配置');
+            console.log('📝 请运行以下命令设置 Token：');
+            console.log('   setGitHubToken("你的GitHub Token")');
+            console.log('💡 创建 Token: https://github.com/settings/tokens');
+            console.log('💡 需要勾选 "repo" 权限');
+            return false;
         }
     };
 

@@ -1,24 +1,27 @@
 /**
  * 服务器端访问日志记录系统
- * 使用 GitHub Gist 存储访问记录
+ * 使用 GitHub Issues 存储访问记录
  * 
  * 配置说明：
  * 1. 创建 GitHub Personal Access Token (https://github.com/settings/tokens)
- * 2. 勾选 gist 权限
+ * 2. 勾选 repo 权限（比 gist 权限更常见）
  * 3. 填入下面的 GITHUB_TOKEN
+ * 4. 设置仓库信息：GITHUB_OWNER 和 GITHUB_REPO
  */
 
 (function() {
     'use strict';
 
     // ========== 配置区域 ==========
-    // GitHub Gist 配置
+    // GitHub Issues 配置
     // 方式1：直接在代码中填写 token（推荐，方便使用）
     const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
     // 方式2：从 localStorage 获取（如果上面留空，会尝试从 localStorage 获取）
     // const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || '';
-    const GITHUB_GIST_ID = localStorage.getItem('shipping_tools_gist_id') || ''; // Gist ID（留空会自动创建）
-    const GITHUB_USERNAME = 'smartpu'; // 你的 GitHub 用户名
+    const GITHUB_OWNER = 'smartpu'; // GitHub 用户名或组织名
+    const GITHUB_REPO = 'Shipping-Schedule'; // 仓库名
+    const ISSUE_TITLE = 'Shipping Tools 访问日志'; // Issue 标题
+    const ISSUE_LABEL = 'access-log'; // Issue 标签（可选）
     
     // 是否启用服务器端日志
     const ENABLE_SERVER_LOG = true;
@@ -26,10 +29,10 @@
     // 待发送队列的存储键名
     const PENDING_LOGS_KEY = 'shipping_tools_pending_logs';
     const MAX_PENDING_LOGS = 100;
+    
+    // 存储 Issue ID 的键名（用于记住创建的 Issue）
+    const ISSUE_ID_STORAGE_KEY = 'shipping_tools_issue_id';
     // ==============================
-
-    // 存储 Gist ID 的键名（用于记住自动创建的 Gist）
-    const GIST_ID_STORAGE_KEY = 'shipping_tools_gist_id';
 
     /**
      * 将日志添加到待发送队列
@@ -59,17 +62,95 @@
     }
 
     /**
-     * 使用 GitHub Gist 存储日志
+     * 获取或创建日志 Issue
      */
-    async function sendToGitHubGist(logEntry) {
-        // 优先使用代码中配置的 token，如果没有则从 localStorage 获取
+    async function getOrCreateLogIssue() {
+        const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
+        if (!token || token === 'YOUR_GITHUB_TOKEN_HERE' || token === '') {
+            console.warn('⚠️ GitHub Token 未配置');
+            return null;
+        }
+
+        // 检查是否已有 Issue ID
+        let issueId = localStorage.getItem(ISSUE_ID_STORAGE_KEY);
+        
+        // 如果有 Issue ID，验证它是否还存在
+        if (issueId) {
+            try {
+                const authHeader = token.startsWith('github_pat_') 
+                    ? `Bearer ${token}`
+                    : `token ${token}`;
+                
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueId}`, {
+                    headers: {
+                        'Authorization': authHeader,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const issue = await response.json();
+                    console.log('✅ 找到现有 Issue:', issue.number, issue.title);
+                    return issue;
+                } else if (response.status === 404) {
+                    // Issue 不存在，需要创建新的
+                    console.log('ℹ️ Issue 不存在，将创建新的');
+                    localStorage.removeItem(ISSUE_ID_STORAGE_KEY);
+                }
+            } catch (e) {
+                console.warn('验证 Issue 失败，将创建新的:', e);
+            }
+        }
+
+        // 创建新的 Issue
+        try {
+            const authHeader = token.startsWith('github_pat_') 
+                ? `Bearer ${token}`
+                : `token ${token}`;
+            
+            const issueData = {
+                title: ISSUE_TITLE,
+                body: '此 Issue 用于存储 Shipping Tools 的访问日志。\n\n日志以 JSON 格式存储在 Issue 的 body 中。',
+                labels: ISSUE_LABEL ? [ISSUE_LABEL] : []
+            };
+
+            const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': authHeader,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(issueData)
+            });
+
+            if (response.ok) {
+                const issue = await response.json();
+                localStorage.setItem(ISSUE_ID_STORAGE_KEY, issue.number.toString());
+                console.log('✅ 新 Issue 已创建:', issue.number, issue.html_url);
+                return issue;
+            } else {
+                const errorText = await response.text();
+                console.error('❌ 创建 Issue 失败:', response.status, errorText);
+                return null;
+            }
+        } catch (error) {
+            console.error('❌ 创建 Issue 请求失败:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 使用 GitHub Issues 存储日志
+     */
+    async function sendToGitHubIssue(logEntry) {
         const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
         if (!token || token === 'YOUR_GITHUB_TOKEN_HERE' || token === '') {
             console.warn('⚠️ GitHub Token 未配置，请填写 GITHUB_TOKEN 或运行：localStorage.setItem("shipping_tools_github_token", "YOUR_TOKEN")');
             return false;
         }
         
-        // 验证 token 格式（GitHub token 通常以 ghp_ 开头）
+        // 验证 token 格式
         if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
             console.warn('⚠️ Token 格式可能不正确，GitHub token 通常以 ghp_ 或 github_pat_ 开头');
             console.warn('当前 token 前10个字符:', token.substring(0, 10) + '...');
@@ -80,169 +161,115 @@
         console.log(`🔑 使用 Token (来源: ${tokenSource}, 长度: ${token.length}, 前缀: ${token.substring(0, 4)})`);
 
         try {
-            // 获取或创建 Gist ID
-            let gistId = GITHUB_GIST_ID;
-            if (!gistId || gistId === 'YOUR_GIST_ID_HERE') {
-                // 尝试从本地存储获取之前创建的 Gist ID
-                gistId = localStorage.getItem(GIST_ID_STORAGE_KEY) || '';
+            // 获取或创建 Issue
+            const issue = await getOrCreateLogIssue();
+            if (!issue) {
+                console.error('❌ 无法获取或创建 Issue');
+                return false;
             }
 
-            let existingContent = '';
-            
-            // 如果已有 Gist ID，尝试获取现有内容
-            if (gistId) {
-                try {
-                    const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
-                    // 对于 Personal Access Token (classic)，使用 token 前缀
-                    const authHeader = token.startsWith('github_pat_') 
-                        ? `Bearer ${token}`  // fine-grained token
-                        : `token ${token}`;   // classic token
-                    
-                    const getResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
-                        headers: {
-                            'Authorization': authHeader,
-                            'Accept': 'application/vnd.github.v3+json'
+            const issueId = issue.number;
+            const authHeader = token.startsWith('github_pat_') 
+                ? `Bearer ${token}`
+                : `token ${token}`;
+
+            // 获取现有 Issue 内容
+            let existingLogs = [];
+            try {
+                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueId}`, {
+                    headers: {
+                        'Authorization': authHeader,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (getResponse.ok) {
+                    const issueData = await getResponse.json();
+                    // 尝试从 body 中解析 JSON 日志
+                    const body = issueData.body || '';
+                    // 查找 JSON 部分（可能在代码块中）
+                    const jsonMatch = body.match(/```json\s*([\s\S]*?)\s*```/) || body.match(/```\s*([\s\S]*?)\s*```/);
+                    if (jsonMatch) {
+                        try {
+                            existingLogs = JSON.parse(jsonMatch[1]);
+                            if (!Array.isArray(existingLogs)) {
+                                existingLogs = [];
+                            }
+                        } catch (e) {
+                            console.warn('解析现有日志失败，将重新开始:', e);
+                            existingLogs = [];
                         }
-                    });
-                    
-                    if (getResponse.ok) {
-                        const gist = await getResponse.json();
-                        const filename = Object.keys(gist.files)[0];
-                        existingContent = gist.files[filename].content || '';
-                        console.log('✅ 成功获取现有 Gist 内容');
-                    } else if (getResponse.status === 401) {
-                        // Token 认证失败
-                        console.error('❌ Token 认证失败，请检查 Token 是否有效');
-                        console.error('💡 提示：访问 https://github.com/settings/tokens 创建新 Token，确保勾选 gist 权限');
-                        return false;
-                    } else if (getResponse.status === 404) {
-                        // Gist 不存在，需要创建新的
-                        console.log('ℹ️ Gist 不存在，将创建新的');
-                        gistId = '';
                     }
-                } catch (e) {
-                    console.warn('获取 Gist 失败，将创建新的:', e);
-                    gistId = '';
                 }
-            }
-
-            // 解析现有内容
-            let logs = [];
-            if (existingContent) {
-                try {
-                    logs = JSON.parse(existingContent);
-                    if (!Array.isArray(logs)) {
-                        logs = [];
-                    }
-                } catch (e) {
-                    console.warn('解析现有日志失败，将重新开始:', e);
-                    logs = [];
-                }
+            } catch (e) {
+                console.warn('获取 Issue 内容失败，将创建新的日志数组:', e);
             }
 
             // 添加新日志（避免重复）
-            const existingIndex = logs.findIndex(log => 
+            const existingIndex = existingLogs.findIndex(log => 
                 log.timestamp === logEntry.timestamp && 
                 log.email === logEntry.email && 
                 log.page === logEntry.page
             );
             
             if (existingIndex === -1) {
-                logs.unshift(logEntry);
-                if (logs.length > 1000) {
-                    logs = logs.slice(0, 1000); // 限制最多1000条
+                existingLogs.unshift(logEntry);
+                if (existingLogs.length > 1000) {
+                    existingLogs = existingLogs.slice(0, 1000); // 限制最多1000条
                 }
             } else {
                 console.log('ℹ️ 日志已存在，跳过重复记录');
                 return true;
             }
 
-            // 更新 Gist
-            const gistData = {
-                description: 'Shipping Tools 访问日志',
-                public: false, // 私有 Gist
-                files: {
-                    'access-logs.json': {
-                        content: JSON.stringify(logs, null, 2)
-                    }
-                }
-            };
+            // 更新 Issue body
+            const issueBody = `此 Issue 用于存储 Shipping Tools 的访问日志。
 
-            const url = gistId 
-                ? `https://api.github.com/gists/${gistId}`
-                : 'https://api.github.com/gists';
+## 访问日志
 
-            const method = gistId ? 'PATCH' : 'POST';
+\`\`\`json
+${JSON.stringify(existingLogs, null, 2)}
+\`\`\`
 
-            console.log(`📤 ${method === 'POST' ? '创建' : '更新'} Gist...`);
+> 最后更新：${new Date().toLocaleString('zh-CN')}
+> 总记录数：${existingLogs.length}`;
 
-            // 使用从 localStorage 获取的 token（这里重新获取确保使用最新值）
-            const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
-            
-            // 调试：验证 token 是否正确
-            if (!token) {
-                console.error('❌ Token 为空，无法发送请求');
-                return false;
-            }
-            
-            // 详细调试信息
-            console.log(`📡 发送请求到: ${url}`);
-            console.log(`🔑 Token 来源: ${GITHUB_TOKEN ? '代码中配置' : 'localStorage'}`);
-            console.log(`🔑 Token 值: ${token.substring(0, 10)}...${token.substring(token.length - 4)}`);
-            console.log(`🔑 Token 长度: ${token.length}`);
-            console.log(`🔑 Token 完整值:`, token); // 临时显示完整 token 用于调试
-            
-            // 对于 Personal Access Token (classic)，使用 token 前缀
-            // 对于 fine-grained tokens，使用 Bearer 前缀
-            // 这里先尝试 token 格式（classic token的标准格式）
-            const authHeader = token.startsWith('github_pat_') 
-                ? `Bearer ${token}`  // fine-grained token
-                : `token ${token}`;   // classic token
-            
-            console.log(`🔐 使用认证格式: ${authHeader.substring(0, 20)}...`);
-            
-            const response = await fetch(url, {
-                method: method,
+            const updateResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueId}`, {
+                method: 'PATCH',
                 headers: {
                     'Authorization': authHeader,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(gistData)
+                body: JSON.stringify({
+                    body: issueBody
+                })
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                const newGistId = result.id;
-                
-                // 保存 Gist ID 到本地存储
-                if (!gistId) {
-                    localStorage.setItem(GIST_ID_STORAGE_KEY, newGistId);
-                    console.log('✅ 新 Gist 已创建，ID 已保存:', newGistId);
-                }
-                
-                console.log('✅ 日志已保存到 GitHub Gist');
-                console.log('🔗 Gist 地址:', result.html_url);
+            if (updateResponse.ok) {
+                const result = await updateResponse.json();
+                console.log('✅ 日志已保存到 GitHub Issue');
+                console.log('🔗 Issue 地址:', result.html_url);
                 return true;
             } else {
-                const errorText = await response.text();
-                let errorMessage = `❌ GitHub Gist 保存失败: ${response.status}`;
+                const errorText = await updateResponse.text();
+                let errorMessage = `❌ GitHub Issue 保存失败: ${updateResponse.status}`;
                 
                 // 处理常见的错误情况
-                if (response.status === 401) {
+                if (updateResponse.status === 401) {
                     errorMessage += '\n\n🔐 Token 认证失败，可能的原因：';
                     errorMessage += '\n1. Token 已过期或被撤销';
-                    errorMessage += '\n2. Token 权限不足（需要勾选 gist 权限）';
+                    errorMessage += '\n2. Token 权限不足（需要勾选 repo 权限）';
                     errorMessage += '\n3. Token 格式错误';
                     errorMessage += '\n\n📝 解决方法：';
                     errorMessage += '\n1. 访问 https://github.com/settings/tokens 创建新 Token';
-                    errorMessage += '\n2. 勾选 "gist" 权限';
+                    errorMessage += '\n2. 勾选 "repo" 权限（比 gist 权限更常见）';
                     errorMessage += '\n3. 复制新 Token 并更新到代码中的 GITHUB_TOKEN';
                     errorMessage += '\n4. 或运行：localStorage.setItem("shipping_tools_github_token", "YOUR_NEW_TOKEN")';
-                } else if (response.status === 403) {
-                    errorMessage += '\n\n🚫 权限不足，请检查 Token 是否勾选了 gist 权限';
-                } else if (response.status === 404) {
-                    errorMessage += '\n\n❓ Gist 不存在，将尝试创建新的';
+                } else if (updateResponse.status === 403) {
+                    errorMessage += '\n\n🚫 权限不足，请检查 Token 是否勾选了 repo 权限';
+                } else if (updateResponse.status === 404) {
+                    errorMessage += '\n\n❓ Issue 不存在，将尝试创建新的';
                 }
                 
                 console.error(errorMessage);
@@ -250,7 +277,7 @@
                 return false;
             }
         } catch (error) {
-            console.error('❌ GitHub Gist 请求失败:', error);
+            console.error('❌ GitHub Issue 请求失败:', error);
             return false;
         }
     }
@@ -264,20 +291,20 @@
             return;
         }
 
-        console.log('📤 准备发送日志到 GitHub Gist:', logEntry);
+        console.log('📤 准备发送日志到 GitHub Issue:', logEntry);
 
         // 先添加到待发送队列（确保不会丢失）
         addToPendingQueue(logEntry);
         console.log('✅ 日志已添加到待发送队列');
 
-        // 发送到 GitHub Gist
-        sendToGitHubGist(logEntry).then(success => {
+        // 发送到 GitHub Issue
+        sendToGitHubIssue(logEntry).then(success => {
             if (success) {
                 // 发送成功，从队列中移除
                 removeFromPendingQueue(logEntry);
             }
         }).catch(err => {
-            console.error('GitHub Gist 发送失败:', err);
+            console.error('GitHub Issue 发送失败:', err);
         });
     }
 
@@ -344,7 +371,7 @@
                 console.log(`📤 重试发送日志 (第${logEntry.retryCount + 1}次):`, logEntry);
 
                 try {
-                    const success = await sendToGitHubGist(logEntry);
+                    const success = await sendToGitHubIssue(logEntry);
                     if (success) {
                         console.log('✅ 待发送日志已成功发送');
                         // 不添加到 remainingLogs，表示已成功
@@ -375,23 +402,22 @@
     }
 
     /**
-     * 从 GitHub Gist 获取日志
+     * 从 GitHub Issue 获取日志
      */
     async function fetchLogsFromServer() {
-        const gistId = GITHUB_GIST_ID || localStorage.getItem(GIST_ID_STORAGE_KEY);
+        const issueId = localStorage.getItem(ISSUE_ID_STORAGE_KEY);
         const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
-        if (!gistId || !token || token === 'YOUR_GITHUB_TOKEN_HERE') {
-            console.warn('GitHub Gist 未配置');
+        if (!issueId || !token || token === 'YOUR_GITHUB_TOKEN_HERE') {
+            console.warn('⚠️ GitHub Issue 未配置');
             return [];
         }
 
         try {
-            // 对于 Personal Access Token (classic)，使用 token 前缀
             const authHeader = token.startsWith('github_pat_') 
-                ? `Bearer ${token}`  // fine-grained token
-                : `token ${token}`;   // classic token
+                ? `Bearer ${token}`
+                : `token ${token}`;
             
-            const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+            const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueId}`, {
                 headers: {
                     'Authorization': authHeader,
                     'Accept': 'application/vnd.github.v3+json'
@@ -402,13 +428,19 @@
                 throw new Error(`HTTP ${response.status}`);
             }
 
-            const gist = await response.json();
-            const filename = Object.keys(gist.files)[0];
-            const content = gist.files[filename].content;
-            const logs = JSON.parse(content);
-            return Array.isArray(logs) ? logs : [];
+            const issue = await response.json();
+            const body = issue.body || '';
+            
+            // 从 body 中解析 JSON 日志
+            const jsonMatch = body.match(/```json\s*([\s\S]*?)\s*```/) || body.match(/```\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+                const logs = JSON.parse(jsonMatch[1]);
+                return Array.isArray(logs) ? logs : [];
+            }
+            
+            return [];
         } catch (error) {
-            console.warn('从 GitHub Gist 获取日志失败:', error);
+            console.warn('从 GitHub Issue 获取日志失败:', error);
             return [];
         }
     }
@@ -461,14 +493,14 @@
         }
     };
 
-    window.getGistId = function() {
-        const gistId = localStorage.getItem(GIST_ID_STORAGE_KEY);
-        if (gistId) {
-            console.log('📋 Gist ID:', gistId);
-            console.log('🔗 Gist 地址: https://gist.github.com/' + GITHUB_USERNAME + '/' + gistId);
-            return gistId;
+    window.getIssueId = function() {
+        const issueId = localStorage.getItem(ISSUE_ID_STORAGE_KEY);
+        if (issueId) {
+            console.log('📋 Issue ID:', issueId);
+            console.log('🔗 Issue 地址: https://github.com/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/issues/' + issueId);
+            return issueId;
         } else {
-            console.log('📋 还没有创建 Gist，首次发送日志时会自动创建');
+            console.log('📋 还没有创建 Issue，首次发送日志时会自动创建');
             return null;
         }
     };
@@ -513,9 +545,9 @@
                 return false;
             }
             
-            // 测试2: 测试 Gist 权限
-            console.log('📡 测试2: 测试 Gist 权限...');
-            const gistResponse = await fetch('https://api.github.com/gists', {
+            // 测试2: 测试仓库访问权限
+            console.log('📡 测试2: 测试仓库访问权限...');
+            const repoResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': authHeader,
@@ -523,14 +555,16 @@
                 }
             });
             
-            if (gistResponse.ok) {
-                console.log('✅ Gist API 访问成功');
+            if (repoResponse.ok) {
+                const repoData = await repoResponse.json();
+                console.log('✅ 仓库访问成功:', repoData.full_name);
+                console.log('✅ Token 有效，可以创建和更新 Issues');
                 return true;
             } else {
-                const errorText = await gistResponse.text();
-                console.error('❌ Gist API 访问失败:', gistResponse.status, errorText);
-                if (gistResponse.status === 403) {
-                    console.error('💡 提示: Token 可能没有 gist 权限，请检查 Token 权限设置');
+                const errorText = await repoResponse.text();
+                console.error('❌ 仓库访问失败:', repoResponse.status, errorText);
+                if (repoResponse.status === 403) {
+                    console.error('💡 提示: Token 可能没有 repo 权限，请检查 Token 权限设置');
                 }
                 return false;
             }

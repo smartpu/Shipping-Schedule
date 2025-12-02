@@ -70,6 +70,13 @@
             console.warn('⚠️ GitHub Token 未配置');
             return null;
         }
+        
+        // 调试：显示实际使用的 token 信息
+        console.log('🔍 getOrCreateLogIssue - Token 信息:');
+        console.log('  - 来源:', GITHUB_TOKEN ? '代码中配置' : 'localStorage');
+        console.log('  - 长度:', token.length);
+        console.log('  - 前缀:', token.substring(0, 10) + '...');
+        console.log('  - 完整值:', token); // 临时显示完整 token 用于调试
 
         // 检查是否已有 Issue ID
         let issueId = localStorage.getItem(ISSUE_ID_STORAGE_KEY);

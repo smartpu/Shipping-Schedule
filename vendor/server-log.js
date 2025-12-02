@@ -1,19 +1,19 @@
 /**
  * 服务器端访问日志记录系统
- * 使用飞书 Webhook 存储访问记录
+ * 使用钉钉 Webhook 存储访问记录
  * 
  * 配置说明：
- * 1. 在飞书群聊中添加"自定义机器人"
+ * 1. 在钉钉群聊中添加"自定义机器人"
  * 2. 获取 Webhook URL
- * 3. 填入下面的 FEISHU_WEBHOOK_URL
+ * 3. 填入下面的 DINGTALK_WEBHOOK_URL
  */
 
 (function() {
     'use strict';
 
     // ========== 配置区域 ==========
-    // 飞书 Webhook 配置
-    const FEISHU_WEBHOOK_URL = ''; // 飞书 Webhook URL（从飞书群聊机器人获取）
+    // 钉钉 Webhook 配置
+    const DINGTALK_WEBHOOK_URL = ''; // 钉钉 Webhook URL（从钉钉群聊机器人获取）
     
     // 是否启用服务器端日志
     const ENABLE_SERVER_LOG = true;
@@ -51,98 +51,35 @@
     }
 
     /**
-     * 发送日志到飞书 Webhook
+     * 发送日志到钉钉 Webhook
      */
-    async function sendToFeishuWebhook(logEntry) {
-        const webhookUrl = FEISHU_WEBHOOK_URL || localStorage.getItem('shipping_tools_feishu_webhook') || '';
+    async function sendToDingtalkWebhook(logEntry) {
+        const webhookUrl = DINGTALK_WEBHOOK_URL || localStorage.getItem('shipping_tools_dingtalk_webhook') || '';
         
         if (!webhookUrl || webhookUrl.trim() === '') {
-            console.warn('⚠️ 飞书 Webhook URL 未配置');
-            console.warn('📝 请在代码中设置 FEISHU_WEBHOOK_URL 或运行：');
-            console.warn('   localStorage.setItem("shipping_tools_feishu_webhook", "你的Webhook URL")');
+            console.warn('⚠️ 钉钉 Webhook URL 未配置');
+            console.warn('📝 请在代码中设置 DINGTALK_WEBHOOK_URL 或运行：');
+            console.warn('   localStorage.setItem("shipping_tools_dingtalk_webhook", "你的Webhook URL")');
             return false;
         }
 
         try {
             // 格式化日志消息
             const timestamp = new Date(logEntry.timestamp).toLocaleString('zh-CN');
+            
+            // 钉钉 Markdown 格式消息
             const message = {
-                msg_type: "interactive",
-                card: {
-                    config: {
-                        wide_screen_mode: true
-                    },
-                    header: {
-                        title: {
-                            tag: "plain_text",
-                            content: "📊 Shipping Tools 访问记录"
-                        },
-                        template: "blue"
-                    },
-                    elements: [
-                        {
-                            tag: "div",
-                            fields: [
-                                {
-                                    is_short: true,
-                                    text: {
-                                        tag: "lark_md",
-                                        content: "**👤 姓名：**\n" + (logEntry.name || '未知')
-                                    }
-                                },
-                                {
-                                    is_short: true,
-                                    text: {
-                                        tag: "lark_md",
-                                        content: "**📱 手机：**\n" + (logEntry.phone || '未知')
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            tag: "div",
-                            fields: [
-                                {
-                                    is_short: true,
-                                    text: {
-                                        tag: "lark_md",
-                                        content: "**📧 邮箱：**\n" + (logEntry.email || '未知')
-                                    }
-                                },
-                                {
-                                    is_short: true,
-                                    text: {
-                                        tag: "lark_md",
-                                        content: "**📄 页面：**\n" + (logEntry.page || '未知')
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            tag: "div",
-                            fields: [
-                                {
-                                    is_short: false,
-                                    text: {
-                                        tag: "lark_md",
-                                        content: "**🕐 时间：**\n" + timestamp
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            tag: "hr"
-                        },
-                        {
-                            tag: "note",
-                            elements: [
-                                {
-                                    tag: "plain_text",
-                                    content: "访问记录已自动记录"
-                                }
-                            ]
-                        }
-                    ]
+                msgtype: "markdown",
+                markdown: {
+                    title: "📊 Shipping Tools 访问记录",
+                    text: `## 📊 Shipping Tools 访问记录\n\n` +
+                          `**👤 姓名：** ${logEntry.name || '未知'}\n\n` +
+                          `**📱 手机：** ${logEntry.phone || '未知'}\n\n` +
+                          `**📧 邮箱：** ${logEntry.email || '未知'}\n\n` +
+                          `**📄 页面：** ${logEntry.page || '未知'}\n\n` +
+                          `**🕐 时间：** ${timestamp}\n\n` +
+                          `---\n\n` +
+                          `*访问记录已自动记录*`
                 }
             };
 
@@ -156,20 +93,20 @@
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.code === 0) {
-                    console.log('✅ 日志已发送到飞书');
+                if (result.errcode === 0) {
+                    console.log('✅ 日志已发送到钉钉');
                     return true;
                 } else {
-                    console.error('❌ 飞书返回错误:', result.msg);
+                    console.error('❌ 钉钉返回错误:', result.errmsg);
                     return false;
                 }
             } else {
                 const errorText = await response.text();
-                console.error('❌ 飞书 Webhook 请求失败:', response.status, errorText);
+                console.error('❌ 钉钉 Webhook 请求失败:', response.status, errorText);
                 return false;
             }
         } catch (error) {
-            console.error('❌ 发送到飞书失败:', error);
+            console.error('❌ 发送到钉钉失败:', error);
             return false;
         }
     }
@@ -183,20 +120,20 @@
             return;
         }
 
-        console.log('📤 准备发送日志到飞书:', logEntry);
+        console.log('📤 准备发送日志到钉钉:', logEntry);
 
         // 先添加到待发送队列（确保不会丢失）
         addToPendingQueue(logEntry);
         console.log('✅ 日志已添加到待发送队列');
 
-        // 发送到飞书 Webhook
-        sendToFeishuWebhook(logEntry).then(success => {
+        // 发送到钉钉 Webhook
+        sendToDingtalkWebhook(logEntry).then(success => {
             if (success) {
                 // 发送成功，从队列中移除
                 removeFromPendingQueue(logEntry);
             }
         }).catch(err => {
-            console.error('飞书 Webhook 发送失败:', err);
+            console.error('钉钉 Webhook 发送失败:', err);
         });
     }
 
@@ -263,7 +200,7 @@
                 console.log(`📤 重试发送日志 (第${logEntry.retryCount + 1}次):`, logEntry);
 
                 try {
-                    const success = await sendToFeishuWebhook(logEntry);
+                    const success = await sendToDingtalkWebhook(logEntry);
                     if (success) {
                         console.log('✅ 待发送日志已成功发送');
                         // 不添加到 remainingLogs，表示已成功
@@ -294,11 +231,11 @@
     }
 
     /**
-     * 从飞书获取日志（此功能需要飞书 API，暂时不支持）
+     * 从钉钉获取日志（此功能需要钉钉 API，暂时不支持）
      */
     async function fetchLogsFromServer() {
-        console.warn('⚠️ 飞书 Webhook 方案不支持从服务器获取日志');
-        console.warn('💡 日志会直接发送到飞书群聊，请在群聊中查看');
+        console.warn('⚠️ 钉钉 Webhook 方案不支持从服务器获取日志');
+        console.warn('💡 日志会直接发送到钉钉群聊，请在群聊中查看');
         return [];
     }
 
@@ -350,24 +287,28 @@
         }
     };
 
-    // 测试飞书 Webhook 是否配置
-    window.testFeishuWebhook = async function() {
-        const webhookUrl = FEISHU_WEBHOOK_URL || localStorage.getItem('shipping_tools_feishu_webhook') || '';
+    // 测试钉钉 Webhook 是否配置
+    window.testDingtalkWebhook = async function() {
+        const webhookUrl = DINGTALK_WEBHOOK_URL || localStorage.getItem('shipping_tools_dingtalk_webhook') || '';
         
         if (!webhookUrl) {
-            console.error('❌ 飞书 Webhook URL 未配置');
-            console.log('📝 请设置 FEISHU_WEBHOOK_URL 或运行：');
-            console.log('   localStorage.setItem("shipping_tools_feishu_webhook", "你的Webhook URL")');
+            console.error('❌ 钉钉 Webhook URL 未配置');
+            console.log('📝 请设置 DINGTALK_WEBHOOK_URL 或运行：');
+            console.log('   localStorage.setItem("shipping_tools_dingtalk_webhook", "你的Webhook URL")');
+            console.log('💡 创建步骤：');
+            console.log('   1. 打开钉钉，进入目标群聊');
+            console.log('   2. 点击群设置 → 智能群助手 → 添加机器人 → 自定义');
+            console.log('   3. 设置机器人名称，复制 Webhook 地址');
             return false;
         }
 
-        console.log('🧪 测试飞书 Webhook...');
+        console.log('🧪 测试钉钉 Webhook...');
         
         try {
             const testMessage = {
-                msg_type: "text",
-                content: {
-                    text: "🧪 测试消息：飞书 Webhook 配置成功！"
+                msgtype: "text",
+                text: {
+                    content: "🧪 测试消息：钉钉 Webhook 配置成功！"
                 }
             };
 
@@ -381,17 +322,17 @@
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.code === 0) {
-                    console.log('✅ 飞书 Webhook 测试成功！');
-                    console.log('💡 请检查飞书群聊是否收到测试消息');
+                if (result.errcode === 0) {
+                    console.log('✅ 钉钉 Webhook 测试成功！');
+                    console.log('💡 请检查钉钉群聊是否收到测试消息');
                     return true;
                 } else {
-                    console.error('❌ 飞书返回错误:', result.msg);
+                    console.error('❌ 钉钉返回错误:', result.errmsg);
                     return false;
                 }
             } else {
                 const errorText = await response.text();
-                console.error('❌ 飞书 Webhook 请求失败:', response.status, errorText);
+                console.error('❌ 钉钉 Webhook 请求失败:', response.status, errorText);
                 return false;
             }
         } catch (error) {

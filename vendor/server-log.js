@@ -14,7 +14,7 @@
     // ========== 配置区域 ==========
     // GitHub Gist 配置
     // 方式1：直接在代码中填写 token（推荐，方便使用）
-    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
+    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
     // 方式2：从 localStorage 获取（如果上面留空，会尝试从 localStorage 获取）
     // const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || '';
     const GITHUB_GIST_ID = localStorage.getItem('shipping_tools_gist_id') || ''; // Gist ID（留空会自动创建）
@@ -95,6 +95,11 @@
                         const filename = Object.keys(gist.files)[0];
                         existingContent = gist.files[filename].content || '';
                         console.log('✅ 成功获取现有 Gist 内容');
+                    } else if (getResponse.status === 401) {
+                        // Token 认证失败
+                        console.error('❌ Token 认证失败，请检查 Token 是否有效');
+                        console.error('💡 提示：访问 https://github.com/settings/tokens 创建新 Token，确保勾选 gist 权限');
+                        return false;
                     } else if (getResponse.status === 404) {
                         // Gist 不存在，需要创建新的
                         console.log('ℹ️ Gist 不存在，将创建新的');
@@ -183,7 +188,27 @@
                 return true;
             } else {
                 const errorText = await response.text();
-                console.error('❌ GitHub Gist 保存失败:', response.status, errorText);
+                let errorMessage = `❌ GitHub Gist 保存失败: ${response.status}`;
+                
+                // 处理常见的错误情况
+                if (response.status === 401) {
+                    errorMessage += '\n\n🔐 Token 认证失败，可能的原因：';
+                    errorMessage += '\n1. Token 已过期或被撤销';
+                    errorMessage += '\n2. Token 权限不足（需要勾选 gist 权限）';
+                    errorMessage += '\n3. Token 格式错误';
+                    errorMessage += '\n\n📝 解决方法：';
+                    errorMessage += '\n1. 访问 https://github.com/settings/tokens 创建新 Token';
+                    errorMessage += '\n2. 勾选 "gist" 权限';
+                    errorMessage += '\n3. 复制新 Token 并更新到代码中的 GITHUB_TOKEN';
+                    errorMessage += '\n4. 或运行：localStorage.setItem("shipping_tools_github_token", "YOUR_NEW_TOKEN")';
+                } else if (response.status === 403) {
+                    errorMessage += '\n\n🚫 权限不足，请检查 Token 是否勾选了 gist 权限';
+                } else if (response.status === 404) {
+                    errorMessage += '\n\n❓ Gist 不存在，将尝试创建新的';
+                }
+                
+                console.error(errorMessage);
+                console.error('详细错误信息:', errorText);
                 return false;
             }
         } catch (error) {

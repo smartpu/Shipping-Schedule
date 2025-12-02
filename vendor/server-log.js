@@ -68,6 +68,12 @@
             console.warn('⚠️ GitHub Token 未配置，请填写 GITHUB_TOKEN 或运行：localStorage.setItem("shipping_tools_github_token", "YOUR_TOKEN")');
             return false;
         }
+        
+        // 验证 token 格式（GitHub token 通常以 ghp_ 开头）
+        if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+            console.warn('⚠️ Token 格式可能不正确，GitHub token 通常以 ghp_ 或 github_pat_ 开头');
+            console.warn('当前 token 前10个字符:', token.substring(0, 10) + '...');
+        }
 
         try {
             // 获取或创建 Gist ID
@@ -85,7 +91,7 @@
                     const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
                     const getResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
                         headers: {
-                            'Authorization': `token ${token}`,
+                            'Authorization': `Bearer ${token}`,
                             'Accept': 'application/vnd.github.v3+json'
                         }
                     });
@@ -166,7 +172,7 @@
             const response = await fetch(url, {
                 method: method,
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json'
                 },
@@ -350,7 +356,7 @@
         try {
             const response = await fetch(`https://api.github.com/gists/${gistId}`, {
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });

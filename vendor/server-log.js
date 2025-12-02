@@ -13,7 +13,7 @@
 
     // ========== 配置区域 ==========
     // 钉钉 Webhook 配置
-    const DINGTALK_WEBHOOK_URL = ''; // 钉钉 Webhook URL（从钉钉群聊机器人获取）
+    const DINGTALK_WEBHOOK_URL = 'https://oapi.dingtalk.com/robot/send?access_token=5e6f88c29281bc410f9a902f9f1d63cee4d3590a4b4fb28aaa88f6115f5a6e63'; // 钉钉 Webhook URL（从钉钉群聊机器人获取）
     
     // 是否启用服务器端日志
     const ENABLE_SERVER_LOG = true;

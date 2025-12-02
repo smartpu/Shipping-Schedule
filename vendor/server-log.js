@@ -13,9 +13,10 @@
 
     // ========== 配置区域 ==========
     // GitHub Gist 配置
-    // 注意：GitHub Token 不应硬编码在代码中，应从 localStorage 获取
-    // 用户需要在浏览器控制台运行：localStorage.setItem('shipping_tools_github_token', 'YOUR_TOKEN')
-    const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || ''; // 从 localStorage 获取，不硬编码
+    // 方式1：直接在代码中填写 token（推荐，方便使用）
+    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
+    // 方式2：从 localStorage 获取（如果上面留空，会尝试从 localStorage 获取）
+    // const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || '';
     const GITHUB_GIST_ID = localStorage.getItem('shipping_tools_gist_id') || ''; // Gist ID（留空会自动创建）
     const GITHUB_USERNAME = 'smartpu'; // 你的 GitHub 用户名
     
@@ -61,10 +62,10 @@
      * 使用 GitHub Gist 存储日志
      */
     async function sendToGitHubGist(logEntry) {
-        // 优先使用代码中的 token，如果没有则从 localStorage 获取
+        // 优先使用代码中配置的 token，如果没有则从 localStorage 获取
         const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
-        if (!token || token === 'YOUR_GITHUB_TOKEN_HERE') {
-            console.warn('⚠️ GitHub Token 未配置');
+        if (!token || token === 'YOUR_GITHUB_TOKEN_HERE' || token === '') {
+            console.warn('⚠️ GitHub Token 未配置，请填写 GITHUB_TOKEN 或运行：localStorage.setItem("shipping_tools_github_token", "YOUR_TOKEN")');
             return false;
         }
 

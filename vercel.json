@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/dingtalk-webhook.js": {
+      "maxDuration": 10
+    }
+  }
+}
+

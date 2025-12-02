@@ -13,14 +13,13 @@
     'use strict';
 
     // ========== 配置区域 ==========
-    // 钉钉 Webhook 配置
-    const DINGTALK_WEBHOOK_URL = 'https://oapi.dingtalk.com/robot/send?access_token=5e6f88c29281bc410f9a902f9f1d63cee4d3590a4b4fb28aaa88f6115f5a6e63'; // 钉钉 Webhook URL（从钉钉群聊机器人获取）
+    // Vercel Serverless Function 代理地址
+    // 部署到 Vercel 后，将下面的 URL 替换为你的 Vercel 部署地址
+    // 例如：https://your-project.vercel.app/api/dingtalk-webhook
+    const PROXY_API_URL = 'https://shipping-schedule.vercel.app/api/dingtalk-webhook'; // Vercel 函数地址
     
-    // CORS 代理配置（可选，如果钉钉直接调用失败时使用）
-    // 可以使用公开的 CORS 代理服务，如：https://cors-anywhere.herokuapp.com/
-    // 注意：公开代理可能不稳定，建议使用自己的代理服务器
-    const USE_CORS_PROXY = false; // 是否使用 CORS 代理
-    const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; // CORS 代理地址（可选）
+    // 如果 Vercel 代理未配置，可以尝试直接使用钉钉 Webhook（会失败，但会尝试表单提交）
+    const DINGTALK_WEBHOOK_URL = 'https://oapi.dingtalk.com/robot/send?access_token=5e6f88c29281bc410f9a902f9f1d63cee4d3590a4b4fb28aaa88f6115f5a6e63';
     
     // 是否启用服务器端日志
     const ENABLE_SERVER_LOG = true;
@@ -59,15 +58,16 @@
 
     /**
      * 发送日志到钉钉 Webhook
-     * 使用 JSONP 或表单提交绕过 CORS 限制
+     * 通过 Vercel Serverless Function 代理，解决 CORS 问题
      */
     async function sendToDingtalkWebhook(logEntry) {
-        const webhookUrl = DINGTALK_WEBHOOK_URL || localStorage.getItem('shipping_tools_dingtalk_webhook') || '';
+        const proxyUrl = PROXY_API_URL || localStorage.getItem('shipping_tools_proxy_url') || '';
         
-        if (!webhookUrl || webhookUrl.trim() === '') {
-            console.warn('⚠️ 钉钉 Webhook URL 未配置');
-            console.warn('📝 请在代码中设置 DINGTALK_WEBHOOK_URL 或运行：');
-            console.warn('   localStorage.setItem("shipping_tools_dingtalk_webhook", "你的Webhook URL")');
+        if (!proxyUrl || proxyUrl.trim() === '') {
+            console.warn('⚠️ Vercel 代理 URL 未配置');
+            console.warn('📝 请在代码中设置 PROXY_API_URL 或运行：');
+            console.warn('   localStorage.setItem("shipping_tools_proxy_url", "你的Vercel函数URL")');
+            console.warn('💡 部署说明：将 api/dingtalk-webhook.js 部署到 Vercel');
             return false;
         }
 
@@ -91,41 +91,28 @@
                 }
             };
 
-            // 构建请求 URL（如果需要 CORS 代理）
-            let requestUrl = webhookUrl;
-            if (USE_CORS_PROXY && CORS_PROXY_URL) {
-                requestUrl = CORS_PROXY_URL + webhookUrl;
-            }
+            // 通过 Vercel 代理发送（支持 CORS）
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(message)
+            });
 
-            // 尝试使用 fetch 发送（如果支持 CORS）
-            try {
-                const response = await fetch(requestUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(message)
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.errcode === 0) {
-                        console.log('✅ 日志已发送到钉钉');
-                        return true;
-                    } else {
-                        console.error('❌ 钉钉返回错误:', result.errmsg);
-                        // 如果返回错误，尝试使用表单提交
-                        return await sendViaForm(webhookUrl, message);
-                    }
+            if (response.ok) {
+                const result = await response.json();
+                if (result.errcode === 0) {
+                    console.log('✅ 日志已发送到钉钉（通过 Vercel 代理）');
+                    return true;
                 } else {
-                    // 如果 fetch 失败（可能是 CORS），尝试表单提交
-                    console.warn('⚠️ Fetch 请求失败，尝试使用表单提交...');
-                    return await sendViaForm(webhookUrl, message);
+                    console.error('❌ 钉钉返回错误:', result.errmsg);
+                    return false;
                 }
-            } catch (fetchError) {
-                // Fetch 失败（通常是 CORS 错误），使用表单提交
-                console.warn('⚠️ Fetch 请求被阻止（CORS），使用表单提交绕过...');
-                return await sendViaForm(webhookUrl, message);
+            } else {
+                const errorText = await response.text();
+                console.error('❌ 代理请求失败:', response.status, errorText);
+                return false;
             }
         } catch (error) {
             console.error('❌ 发送到钉钉失败:', error);
@@ -374,59 +361,53 @@
         }
     };
 
-    // 测试钉钉 Webhook 是否配置
+    // 测试 Vercel 代理是否配置
     window.testDingtalkWebhook = async function() {
-        const webhookUrl = DINGTALK_WEBHOOK_URL || localStorage.getItem('shipping_tools_dingtalk_webhook') || '';
+        const proxyUrl = PROXY_API_URL || localStorage.getItem('shipping_tools_proxy_url') || '';
         
-        if (!webhookUrl) {
-            console.error('❌ 钉钉 Webhook URL 未配置');
-            console.log('📝 请设置 DINGTALK_WEBHOOK_URL 或运行：');
-            console.log('   localStorage.setItem("shipping_tools_dingtalk_webhook", "你的Webhook URL")');
-            console.log('💡 创建步骤：');
-            console.log('   1. 打开钉钉，进入目标群聊');
-            console.log('   2. 点击群设置 → 智能群助手 → 添加机器人 → 自定义');
-            console.log('   3. 设置机器人名称，复制 Webhook 地址');
+        if (!proxyUrl) {
+            console.error('❌ Vercel 代理 URL 未配置');
+            console.log('📝 请设置 PROXY_API_URL 或运行：');
+            console.log('   localStorage.setItem("shipping_tools_proxy_url", "你的Vercel函数URL")');
+            console.log('💡 部署说明：');
+            console.log('   1. 将 api/dingtalk-webhook.js 部署到 Vercel');
+            console.log('   2. 获取部署后的函数 URL（如：https://your-project.vercel.app/api/dingtalk-webhook）');
+            console.log('   3. 更新代码中的 PROXY_API_URL');
             return false;
         }
 
-        console.log('🧪 测试钉钉 Webhook...');
+        console.log('🧪 测试 Vercel 代理...');
         
         try {
             const testMessage = {
                 msgtype: "text",
                 text: {
-                    content: "🧪 测试消息：钉钉 Webhook 配置成功！"
+                    content: "🧪 测试消息：Vercel 代理配置成功！"
                 }
             };
 
-            // 先尝试 fetch
-            try {
-                const response = await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(testMessage)
-                });
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(testMessage)
+            });
 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.errcode === 0) {
-                        console.log('✅ 钉钉 Webhook 测试成功！');
-                        console.log('💡 请检查钉钉群聊是否收到测试消息');
-                        return true;
-                    } else {
-                        console.error('❌ 钉钉返回错误:', result.errmsg);
-                        console.log('💡 尝试使用表单提交...');
-                        return await sendViaForm(webhookUrl, testMessage);
-                    }
+            if (response.ok) {
+                const result = await response.json();
+                if (result.errcode === 0) {
+                    console.log('✅ Vercel 代理测试成功！');
+                    console.log('💡 请检查钉钉群聊是否收到测试消息');
+                    return true;
                 } else {
-                    console.warn('⚠️ Fetch 请求失败，尝试表单提交...');
-                    return await sendViaForm(webhookUrl, testMessage);
+                    console.error('❌ 钉钉返回错误:', result.errmsg);
+                    return false;
                 }
-            } catch (fetchError) {
-                console.warn('⚠️ Fetch 被 CORS 阻止，使用表单提交...');
-                return await sendViaForm(webhookUrl, testMessage);
+            } else {
+                const errorText = await response.text();
+                console.error('❌ 代理请求失败:', response.status, errorText);
+                return false;
             }
         } catch (error) {
             console.error('❌ 测试失败:', error);

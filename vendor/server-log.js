@@ -13,10 +13,7 @@
 
     // ========== 配置区域 ==========
     // GitHub Gist 配置
-    // 注意：GitHub Token 已从代码中移除，请通过以下方式配置：
-    // 1. 在浏览器控制台运行：localStorage.setItem('shipping_tools_github_token', 'YOUR_TOKEN_HERE')
-    // 2. 或者修改此文件，将下面的 GITHUB_TOKEN 设置为你的 token（不推荐，因为会暴露在公开仓库）
-    const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || ''; // 从 localStorage 获取或留空
+    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
     const GITHUB_GIST_ID = localStorage.getItem('shipping_tools_gist_id') || ''; // Gist ID（留空会自动创建）
     const GITHUB_USERNAME = 'smartpu'; // 你的 GitHub 用户名
     
@@ -62,11 +59,10 @@
      * 使用 GitHub Gist 存储日志
      */
     async function sendToGitHubGist(logEntry) {
-        // 从 localStorage 获取 token（如果代码中没有）
+        // 优先使用代码中的 token，如果没有则从 localStorage 获取
         const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
         if (!token || token === 'YOUR_GITHUB_TOKEN_HERE') {
-            console.warn('⚠️ GitHub Token 未配置，请运行：localStorage.setItem("shipping_tools_github_token", "YOUR_TOKEN")');
-            // 将日志添加到待发送队列，等待配置后重试
+            console.warn('⚠️ GitHub Token 未配置');
             return false;
         }
 
@@ -319,7 +315,7 @@
         const gistId = GITHUB_GIST_ID || localStorage.getItem(GIST_ID_STORAGE_KEY);
         const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
         if (!gistId || !token || token === 'YOUR_GITHUB_TOKEN_HERE') {
-            console.warn('GitHub Gist 未配置，请运行：localStorage.setItem("shipping_tools_github_token", "YOUR_TOKEN")');
+            console.warn('GitHub Gist 未配置');
             return [];
         }
 

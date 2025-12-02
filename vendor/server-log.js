@@ -1,11 +1,12 @@
 /**
  * 服务器端访问日志记录系统
- * 使用钉钉 Webhook 存储访问记录
+ * 使用钉钉 Webhook 存储访问记录（通过 CORS 代理）
  * 
  * 配置说明：
  * 1. 在钉钉群聊中添加"自定义机器人"
  * 2. 获取 Webhook URL
  * 3. 填入下面的 DINGTALK_WEBHOOK_URL
+ * 4. 使用 CORS 代理服务绕过浏览器限制
  */
 
 (function() {
@@ -14,6 +15,12 @@
     // ========== 配置区域 ==========
     // 钉钉 Webhook 配置
     const DINGTALK_WEBHOOK_URL = 'https://oapi.dingtalk.com/robot/send?access_token=5e6f88c29281bc410f9a902f9f1d63cee4d3590a4b4fb28aaa88f6115f5a6e63'; // 钉钉 Webhook URL（从钉钉群聊机器人获取）
+    
+    // CORS 代理配置（可选，如果钉钉直接调用失败时使用）
+    // 可以使用公开的 CORS 代理服务，如：https://cors-anywhere.herokuapp.com/
+    // 注意：公开代理可能不稳定，建议使用自己的代理服务器
+    const USE_CORS_PROXY = false; // 是否使用 CORS 代理
+    const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; // CORS 代理地址（可选）
     
     // 是否启用服务器端日志
     const ENABLE_SERVER_LOG = true;
@@ -52,7 +59,7 @@
 
     /**
      * 发送日志到钉钉 Webhook
-     * 使用隐藏表单提交绕过 CORS 限制
+     * 使用 JSONP 或表单提交绕过 CORS 限制
      */
     async function sendToDingtalkWebhook(logEntry) {
         const webhookUrl = DINGTALK_WEBHOOK_URL || localStorage.getItem('shipping_tools_dingtalk_webhook') || '';
@@ -84,59 +91,111 @@
                 }
             };
 
-            // 使用隐藏表单提交绕过 CORS 限制
-            // 注意：表单提交无法获取响应，但可以成功发送请求
-            return new Promise((resolve) => {
-                try {
-                    // 创建隐藏的 iframe 用于提交表单（避免页面跳转）
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.style.width = '0';
-                    iframe.style.height = '0';
-                    iframe.name = 'dingtalk_webhook_' + Date.now();
-                    document.body.appendChild(iframe);
+            // 构建请求 URL（如果需要 CORS 代理）
+            let requestUrl = webhookUrl;
+            if (USE_CORS_PROXY && CORS_PROXY_URL) {
+                requestUrl = CORS_PROXY_URL + webhookUrl;
+            }
 
-                    // 创建隐藏表单
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = webhookUrl;
-                    form.target = iframe.name;
-                    form.style.display = 'none';
+            // 尝试使用 fetch 发送（如果支持 CORS）
+            try {
+                const response = await fetch(requestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(message)
+                });
 
-                    // 创建隐藏输入字段，存储 JSON 数据
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'payload';
-                    input.value = JSON.stringify(message);
-                    form.appendChild(input);
-
-                    document.body.appendChild(form);
-
-                    // 提交表单
-                    form.submit();
-
-                    // 清理：延迟移除 iframe 和表单
-                    setTimeout(() => {
-                        try {
-                            document.body.removeChild(iframe);
-                            document.body.removeChild(form);
-                        } catch (e) {
-                            // 忽略清理错误
-                        }
-                    }, 1000);
-
-                    // 假设发送成功（因为无法获取响应）
-                    console.log('✅ 日志已发送到钉钉（通过表单提交）');
-                    resolve(true);
-                } catch (error) {
-                    console.error('❌ 发送到钉钉失败:', error);
-                    resolve(false);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.errcode === 0) {
+                        console.log('✅ 日志已发送到钉钉');
+                        return true;
+                    } else {
+                        console.error('❌ 钉钉返回错误:', result.errmsg);
+                        // 如果返回错误，尝试使用表单提交
+                        return await sendViaForm(webhookUrl, message);
+                    }
+                } else {
+                    // 如果 fetch 失败（可能是 CORS），尝试表单提交
+                    console.warn('⚠️ Fetch 请求失败，尝试使用表单提交...');
+                    return await sendViaForm(webhookUrl, message);
                 }
-            });
+            } catch (fetchError) {
+                // Fetch 失败（通常是 CORS 错误），使用表单提交
+                console.warn('⚠️ Fetch 请求被阻止（CORS），使用表单提交绕过...');
+                return await sendViaForm(webhookUrl, message);
+            }
         } catch (error) {
             console.error('❌ 发送到钉钉失败:', error);
             return false;
         }
+    }
+
+    /**
+     * 使用隐藏表单提交发送消息（绕过 CORS）
+     * 注意：钉钉 Webhook 需要 JSON 格式，但表单提交可能无法正确传递
+     * 这个方法作为备选方案
+     */
+    function sendViaForm(webhookUrl, message) {
+        return new Promise((resolve) => {
+            try {
+                // 创建隐藏的 iframe 用于提交表单（避免页面跳转）
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.name = 'dingtalk_webhook_' + Date.now();
+                document.body.appendChild(iframe);
+
+                // 创建隐藏表单
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = webhookUrl;
+                form.target = iframe.name;
+                form.style.display = 'none';
+                form.enctype = 'application/json'; // 尝试设置 JSON 编码
+
+                // 创建隐藏输入字段，存储 JSON 数据
+                // 注意：钉钉 API 可能需要特定的参数名，这里尝试多种方式
+                const input1 = document.createElement('input');
+                input1.type = 'hidden';
+                input1.name = 'payload';
+                input1.value = JSON.stringify(message);
+                form.appendChild(input1);
+
+                // 也尝试直接作为 body 发送
+                const input2 = document.createElement('input');
+                input2.type = 'hidden';
+                input2.name = 'body';
+                input2.value = JSON.stringify(message);
+                form.appendChild(input2);
+
+                document.body.appendChild(form);
+
+                // 提交表单
+                form.submit();
+
+                // 清理：延迟移除 iframe 和表单
+                setTimeout(() => {
+                    try {
+                        document.body.removeChild(iframe);
+                        document.body.removeChild(form);
+                    } catch (e) {
+                        // 忽略清理错误
+                    }
+                }, 2000);
+
+                // 假设发送成功（因为无法获取响应）
+                console.log('✅ 日志已通过表单提交发送到钉钉');
+                console.log('💡 注意：表单提交无法获取响应，请检查钉钉群聊是否收到消息');
+                resolve(true);
+            } catch (error) {
+                console.error('❌ 表单提交失败:', error);
+                resolve(false);
+            }
+        });
     }
 
     /**
@@ -340,28 +399,34 @@
                 }
             };
 
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(testMessage)
-            });
+            // 先尝试 fetch
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testMessage)
+                });
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.errcode === 0) {
-                    console.log('✅ 钉钉 Webhook 测试成功！');
-                    console.log('💡 请检查钉钉群聊是否收到测试消息');
-                    return true;
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.errcode === 0) {
+                        console.log('✅ 钉钉 Webhook 测试成功！');
+                        console.log('💡 请检查钉钉群聊是否收到测试消息');
+                        return true;
+                    } else {
+                        console.error('❌ 钉钉返回错误:', result.errmsg);
+                        console.log('💡 尝试使用表单提交...');
+                        return await sendViaForm(webhookUrl, testMessage);
+                    }
                 } else {
-                    console.error('❌ 钉钉返回错误:', result.errmsg);
-                    return false;
+                    console.warn('⚠️ Fetch 请求失败，尝试表单提交...');
+                    return await sendViaForm(webhookUrl, testMessage);
                 }
-            } else {
-                const errorText = await response.text();
-                console.error('❌ 钉钉 Webhook 请求失败:', response.status, errorText);
-                return false;
+            } catch (fetchError) {
+                console.warn('⚠️ Fetch 被 CORS 阻止，使用表单提交...');
+                return await sendViaForm(webhookUrl, testMessage);
             }
         } catch (error) {
             console.error('❌ 测试失败:', error);

@@ -13,7 +13,9 @@
 
     // ========== 配置区域 ==========
     // GitHub Gist 配置
-    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
+    // 注意：GitHub Token 不应硬编码在代码中，应从 localStorage 获取
+    // 用户需要在浏览器控制台运行：localStorage.setItem('shipping_tools_github_token', 'YOUR_TOKEN')
+    const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || ''; // 从 localStorage 获取，不硬编码
     const GITHUB_GIST_ID = localStorage.getItem('shipping_tools_gist_id') || ''; // Gist ID（留空会自动创建）
     const GITHUB_USERNAME = 'smartpu'; // 你的 GitHub 用户名
     

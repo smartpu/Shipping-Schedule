@@ -5,128 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Market Analysis · 市场分析</title>
     <link rel="stylesheet" href="vendor/auth.css">
+    <script src="vendor/lib-loader.js"></script>
     <script>
-        (function ensureXlsx() {
-            const remoteSources = [
-                'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-                'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
-            ];
-
-            async function loadXlsxViaBlob(url) {
-                try {
-                    const response = await fetch(url, { cache: 'no-store' });
-                    if (!response.ok) throw new Error(response.statusText);
-                    const code = await response.text();
-                    const blob = new Blob([code], { type: 'text/javascript' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    await new Promise((resolve, reject) => {
-                        const script = document.createElement('script');
-                        script.src = blobUrl;
-                        script.onload = resolve;
-                        script.onerror = reject;
-                        document.head.appendChild(script);
-                    });
-                    console.log('XLSX loaded via fetch:', url);
-                    return true;
-                } catch (error) {
-                    console.error('XLSX fetch fallback failed:', url, error);
-                    return false;
+        // 自动加载XLSX和Chart.js（立即执行，不等待DOM）
+        (function() {
+            function loadLibraries() {
+                if (typeof ensureXlsx !== 'undefined') {
+                    ensureXlsx();
+                }
+                if (typeof ensureChartJs !== 'undefined') {
+                    ensureChartJs();
                 }
             }
-
-            async function loadXlsx() {
-                // 先尝试直接加载
-                for (const url of remoteSources) {
-                    try {
-                        await new Promise((resolve, reject) => {
-                            const script = document.createElement('script');
-                            script.src = url;
-                            script.onload = resolve;
-                            script.onerror = reject;
-                            document.head.appendChild(script);
-                        });
-                        console.log('XLSX loaded from', url);
-                        return true;
-                    } catch (error) {
-                        console.warn('XLSX direct load failed:', url, error);
-                    }
-                }
-                // 如果直接加载失败，使用 fetch + Blob 方式
-                for (const url of remoteSources) {
-                    if (await loadXlsxViaBlob(url)) return true;
-                }
-                return false;
-            }
-
-            if (typeof XLSX === 'undefined') {
-                loadXlsx().then(success => {
-                    if (!success) {
-                        console.error('XLSX 无法加载，请检查网络或手动刷新后重试');
-                    }
-                });
-            }
-        })();
-    </script>
-    <script>
-        (function ensureChartJs() {
-            const remoteSources = [
-                'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-                'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js',
-                'https://storage.googleapis.com/chartjs-4-4/chart.umd.min.js'
-            ];
-
-            async function loadChartViaBlob(url) {
-                try {
-                    const response = await fetch(url, { cache: 'no-store' });
-                    if (!response.ok) throw new Error(response.statusText);
-                    const code = await response.text();
-                    const blob = new Blob([code], { type: 'text/javascript' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    await new Promise((resolve, reject) => {
-                        const script = document.createElement('script');
-                        script.src = blobUrl;
-                        script.onload = resolve;
-                        script.onerror = reject;
-                        document.head.appendChild(script);
-                    });
-                    console.log('Chart.js loaded via fetch:', url);
-                    return true;
-                } catch (error) {
-                    console.error('Chart.js fetch fallback failed:', url, error);
-                    return false;
-                }
-            }
-
-            async function loadChartJs() {
-                for (const url of remoteSources) {
-                    try {
-                        await new Promise((resolve, reject) => {
-                            const script = document.createElement('script');
-                            script.src = url;
-                            script.onload = resolve;
-                            script.onerror = reject;
-                            document.head.appendChild(script);
-                        });
-                        console.log('Chart.js loaded from', url);
-                        return true;
-                    } catch (error) {
-                        console.warn('Chart.js direct load failed:', url, error);
-                    }
-                }
-                for (const url of remoteSources) {
-                    if (await loadChartViaBlob(url)) return true;
-                }
-                return false;
-            }
-
-            if (typeof Chart === 'undefined') {
-                loadChartJs().then(success => {
-                    if (!success) {
-                        alert('Chart.js 无法加载，请检查网络或手动刷新后重试');
-                    }
-                });
+            
+            // 立即尝试加载
+            loadLibraries();
+            
+            // 如果lib-loader.js还没加载完，等待一下再试
+            if (typeof ensureXlsx === 'undefined' || typeof ensureChartJs === 'undefined') {
+                setTimeout(loadLibraries, 100);
             }
         })();
     </script>

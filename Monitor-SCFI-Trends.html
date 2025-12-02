@@ -5,125 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monitor · SCFI 历史趋势</title>
     <link rel="stylesheet" href="vendor/auth.css">
+    <script src="vendor/lib-loader.js"></script>
     <script>
-      (function ensureXlsx() {
-        const remoteSources = [
-          'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-          'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
-          'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
-        ];
-
-        async function loadXlsxViaBlob(url) {
-          try {
-            const response = await fetch(url, { cache: 'no-store' });
-            if (!response.ok) throw new Error(response.statusText);
-            const code = await response.text();
-            const blob = new Blob([code], { type: 'text/javascript' });
-            const blobUrl = URL.createObjectURL(blob);
-            await new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = blobUrl;
-              script.onload = resolve;
-              script.onerror = reject;
-              document.head.appendChild(script);
-            });
-            console.log('XLSX loaded via fetch:', url);
-            return true;
-          } catch (error) {
-            console.error('XLSX fetch fallback failed:', url, error);
-            return false;
+      // 自动加载XLSX和Chart.js（立即执行，不等待DOM）
+      (function() {
+        function loadLibraries() {
+          if (typeof ensureXlsx !== 'undefined') {
+            ensureXlsx();
+          }
+          if (typeof ensureChartJs !== 'undefined') {
+            ensureChartJs();
           }
         }
-
-        async function loadXlsx() {
-          for (const url of remoteSources) {
-            try {
-              await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = url;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-              });
-              console.log('XLSX loaded from', url);
-              return true;
-            } catch (error) {
-              console.warn('XLSX direct load failed:', url, error);
-            }
-          }
-          for (const url of remoteSources) {
-            if (await loadXlsxViaBlob(url)) return true;
-          }
-          return false;
-        }
-
-        if (typeof XLSX === 'undefined') {
-          loadXlsx().then(success => {
-            if (!success) {
-              console.error('XLSX 无法加载，请检查网络或手动刷新后重试');
-            }
-          });
-        }
-      })();
-    </script>
-    <script>
-      (function ensureChartJs() {
-        const remoteSources = [
-          'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-          'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js',
-          'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
-        ];
-
-        async function loadChartViaBlob(url) {
-          try {
-            const response = await fetch(url, { cache: 'no-store' });
-            if (!response.ok) throw new Error(response.statusText);
-            const code = await response.text();
-            const blob = new Blob([code], { type: 'text/javascript' });
-            const blobUrl = URL.createObjectURL(blob);
-            await new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = blobUrl;
-              script.onload = resolve;
-              script.onerror = reject;
-              document.head.appendChild(script);
-            });
-            console.log('Chart.js loaded via fetch:', url);
-            return true;
-          } catch (error) {
-            console.error('Chart.js fetch fallback failed:', url, error);
-            return false;
-          }
-        }
-
-        async function loadChartJs() {
-          for (const url of remoteSources) {
-            try {
-              await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = url;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-              });
-              console.log('Chart.js loaded from', url);
-              return true;
-            } catch (error) {
-              console.warn('Chart.js direct load failed:', url, error);
-            }
-          }
-          for (const url of remoteSources) {
-            if (await loadChartViaBlob(url)) return true;
-          }
-          return false;
-        }
-
-        if (typeof Chart === 'undefined') {
-          loadChartJs().then(success => {
-            if (!success) {
-              alert('Chart.js 无法加载，请检查网络或手动刷新后重试');
-            }
-          });
+        
+        // 立即尝试加载
+        loadLibraries();
+        
+        // 如果lib-loader.js还没加载完，等待一下再试
+        if (typeof ensureXlsx === 'undefined' || typeof ensureChartJs === 'undefined') {
+          setTimeout(loadLibraries, 100);
         }
       })();
     </script>
@@ -422,6 +322,37 @@
             <div class="legend-container" id="legendContainer"></div>
           </div>
         </section>
+
+        <section class="panel hidden" id="comparisonSection">
+          <h3 style="margin-bottom: 20px; color: #495057;">指数对比分析</h3>
+          <div class="controls" style="margin-bottom: 20px;">
+            <div class="control-group">
+              <label>选择对比日期：</label>
+              <input type="date" id="comparisonDate">
+            </div>
+          </div>
+          <div class="table-container" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); overflow-x: auto;">
+            <table id="comparisonTable" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <thead>
+                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                  <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">指数名称</th>
+                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">选定日期</th>
+                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">1周前</th>
+                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">1个月前<br>(4周前)</th>
+                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">3个月前<br>(12周前)</th>
+                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">1年前<br>(52周前)</th>
+                </tr>
+              </thead>
+              <tbody id="comparisonTableBody">
+                <tr>
+                  <td colspan="6" style="padding: 40px; text-align: center; color: #6c757d;">
+                    请选择对比日期以查看指数对比
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -442,9 +373,12 @@
       const fileInput = document.getElementById('fileInput');
       const statusInfo = document.getElementById('statusInfo');
       const chartSection = document.getElementById('chartSection');
+      const comparisonSection = document.getElementById('comparisonSection');
       const startDate = document.getElementById('startDate');
       const endDate = document.getElementById('endDate');
+      const comparisonDate = document.getElementById('comparisonDate');
       const legendContainer = document.getElementById('legendContainer');
+      const comparisonTableBody = document.getElementById('comparisonTableBody');
 
       fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -468,6 +402,16 @@
           processData();
           statusInfo.textContent = `已加载 ${data.length} 条数据`;
           chartSection.classList.remove('hidden');
+          comparisonSection.classList.remove('hidden');
+          
+          // 设置对比日期默认为最新日期
+          if (scfiData.length > 0) {
+            const latestDate = scfiData[scfiData.length - 1].date;
+            comparisonDate.value = formatDateForInput(latestDate);
+            comparisonDate.max = formatDateForInput(latestDate);
+            comparisonDate.min = formatDateForInput(scfiData[0].date);
+            updateComparisonTable();
+          }
         } catch (error) {
           alert('读取文件失败：' + error.message);
           console.error(error);
@@ -486,7 +430,9 @@
           reader.onload = (e) => {
             try {
               const data = new Uint8Array(e.target.result);
-              const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+              // 使用 cellDates: true 来获取日期对象，而不是序列号
+              // 注意：XLSX库在cellDates模式下，Date对象的时间部分通常是00:00:00 UTC
+              const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: false });
               
               const sheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[sheetName];
@@ -506,10 +452,12 @@
               }
 
               // 读取数据（从第二行开始）
+              // 使用raw: true来获取原始值，然后手动处理日期
               const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
                 header: 1, 
                 defval: null,
-                range: 1 // 跳过第一行
+                range: 1, // 跳过第一行
+                raw: true // 获取原始值，手动处理日期
               });
 
               // 处理数据：A列是日期，B-Q列是指数值
@@ -520,15 +468,79 @@
                 const dateValue = row[0];
                 let date = null;
                 
-                // 处理日期
+                // 处理日期（避免时区问题）
+                // 由于使用了raw: true，dateValue通常是数字（Excel日期序列号）
                 if (dateValue instanceof Date) {
-                  date = dateValue;
+                  // 如果XLSX返回Date对象，使用UTC方法获取日期部分
+                  // 因为Excel日期没有时区概念，应该被视为本地日期
+                  const year = dateValue.getUTCFullYear();
+                  const month = dateValue.getUTCMonth();
+                  const day = dateValue.getUTCDate();
+                  date = new Date(year, month, day);
                 } else if (typeof dateValue === 'number') {
-                  // Excel日期序列号
-                  const excelEpoch = new Date(1899, 11, 30);
-                  date = new Date(excelEpoch.getTime() + dateValue * 24 * 60 * 60 * 1000);
+                  // Excel日期序列号处理（这是最常见的情况）
+                  // Excel日期序列号：从1900-01-01开始（序列号1）
+                  // Excel错误地认为1900是闰年，所以实际上：
+                  // - 序列号1 = 1900-01-01
+                  // - 序列号60 = 1900-02-29（这个日期不存在，但Excel认为存在）
+                  // - 序列号61 = 1900-03-01
+                  // 所以对于序列号>=61的日期，需要减1天
+                  
+                  // 优先使用XLSX的parse_date_code方法（最准确）
+                  if (typeof XLSX !== 'undefined' && XLSX.SSF && XLSX.SSF.parse_date_code) {
+                    try {
+                      const parsed = XLSX.SSF.parse_date_code(dateValue);
+                      if (parsed && parsed.y && parsed.m && parsed.d) {
+                        // XLSX的parse_date_code返回的日期是UTC时间
+                        // 我们需要将其转换为本地日期
+                        // 直接使用年月日创建本地日期对象，避免时区转换
+                        date = new Date(parsed.y, parsed.m - 1, parsed.d);
+                        // 验证日期是否正确
+                        if (isNaN(date.getTime())) {
+                          date = null;
+                        } else {
+                          // 日期创建成功，跳过备用方法
+                          // 不需要做任何处理，直接使用
+                        }
+                      }
+                    } catch (error) {
+                      console.warn('XLSX日期解析失败，使用备用方法', error);
+                    }
+                  }
+                  
+                  // 如果XLSX解析失败或不可用，使用备用方法
+                  if (!date) {
+                    // Excel的基准日期是1899-12-30（序列号0），但序列号1对应1900-01-01
+                    // 所以我们需要从1899-12-30开始，加上dateValue天
+                    // 但要注意Excel的1900年闰年bug
+                    
+                    // 使用UTC时间创建基准日期，避免时区问题
+                    const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // 1899年12月30日 00:00:00 UTC
+                    
+                    // 计算目标日期（毫秒数）
+                    // 序列号1应该对应1900-01-01，所以是1899-12-30 + 2天
+                    // 但Excel认为1900是闰年，所以序列号60是1900-02-29（实际不存在）
+                    // 对于序列号>=61的日期，需要减1天
+                    let daysToAdd = dateValue;
+                    if (dateValue >= 61) {
+                      daysToAdd = dateValue - 1; // 修正Excel的1900年闰年bug
+                    }
+                    
+                    const targetTime = excelEpoch.getTime() + daysToAdd * 24 * 60 * 60 * 1000;
+                    const tempDate = new Date(targetTime);
+                    
+                    // 使用UTC方法获取日期部分，然后创建本地日期对象
+                    const year = tempDate.getUTCFullYear();
+                    const month = tempDate.getUTCMonth();
+                    const day = tempDate.getUTCDate();
+                    date = new Date(year, month, day);
+                  }
                 } else if (typeof dateValue === 'string') {
-                  date = new Date(dateValue);
+                  // 解析字符串日期，使用本地时区
+                  const tempDate = new Date(dateValue);
+                  if (!isNaN(tempDate.getTime())) {
+                    date = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
+                  }
                 }
 
                 if (!date || isNaN(date.getTime())) return;
@@ -598,6 +610,7 @@
 
       startDate.addEventListener('change', updateChart);
       endDate.addEventListener('change', updateChart);
+      comparisonDate.addEventListener('change', updateComparisonTable);
 
       function updateChart() {
         if (!scfiData.length || typeof Chart === 'undefined') return;
@@ -711,6 +724,227 @@
           `;
           legendContainer.appendChild(legendItem);
         });
+      }
+
+      /**
+       * 更新对比表格
+       */
+      function updateComparisonTable() {
+        if (!scfiData.length || !comparisonDate.value) {
+          comparisonTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" style="padding: 40px; text-align: center; color: #6c757d;">
+                请选择对比日期以查看指数对比
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        // 解析选定日期，使用本地时区避免时区问题
+        const dateParts = comparisonDate.value.split('-');
+        const selectedDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+        
+        // 找到最接近选定日期的数据
+        const selectedRecord = findClosestRecord(selectedDate);
+        if (!selectedRecord) {
+          comparisonTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" style="padding: 40px; text-align: center; color: #ff6b6b;">
+                未找到选定日期的数据
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        // 计算各个时间点的数据
+        const oneWeekAgo = findClosestRecordByWeeks(selectedDate, 1);
+        const oneMonthAgo = findClosestRecordByWeeks(selectedDate, 4);
+        const threeMonthsAgo = findClosestRecordByWeeks(selectedDate, 12);
+        const oneYearAgo = findClosestRecordByWeeks(selectedDate, 52);
+
+        // 生成表格
+        comparisonTableBody.innerHTML = '';
+        columnNames.forEach(col => {
+          const selectedValue = selectedRecord.values[col.name];
+          const oneWeekValue = oneWeekAgo?.values[col.name];
+          const oneMonthValue = oneMonthAgo?.values[col.name];
+          const threeMonthsValue = threeMonthsAgo?.values[col.name];
+          const oneYearValue = oneYearAgo?.values[col.name];
+
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid #e9ecef';
+          tr.innerHTML = `
+            <td style="padding: 12px; font-weight: 500;">${col.name}</td>
+            <td style="padding: 12px; text-align: right;">${formatSelectedDate(selectedValue, selectedRecord.date)}</td>
+            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, oneWeekValue, oneWeekAgo?.date)}</td>
+            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, oneMonthValue, oneMonthAgo?.date)}</td>
+            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, threeMonthsValue, threeMonthsAgo?.date)}</td>
+            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, oneYearValue, oneYearAgo?.date)}</td>
+          `;
+          comparisonTableBody.appendChild(tr);
+        });
+      }
+
+      /**
+       * 比较两个日期是否相同（只比较年月日）
+       */
+      function isSameDate(date1, date2) {
+        if (!date1 || !date2) return false;
+        return date1.getFullYear() === date2.getFullYear() &&
+               date1.getMonth() === date2.getMonth() &&
+               date1.getDate() === date2.getDate();
+      }
+
+      /**
+       * 计算两个日期之间的天数差（只考虑日期部分）
+       */
+      function getDateDiff(date1, date2) {
+        const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+        const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+        return Math.abs(d1 - d2) / (1000 * 60 * 60 * 24);
+      }
+
+      /**
+       * 找到最接近指定日期的记录
+       */
+      function findClosestRecord(targetDate) {
+        // 先尝试精确匹配
+        const exactMatch = scfiData.find(record => isSameDate(record.date, targetDate));
+        if (exactMatch) {
+          return exactMatch;
+        }
+
+        // 如果没有精确匹配，找最接近的
+        let closest = null;
+        let minDiff = Infinity;
+
+        scfiData.forEach(record => {
+          const diff = getDateDiff(record.date, targetDate);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closest = record;
+          }
+        });
+
+        return closest;
+      }
+
+      /**
+       * 根据周数找到对应的记录（往前推N周）
+       */
+      function findClosestRecordByWeeks(targetDate, weeks) {
+        // 计算目标日期（往前推N周）
+        const targetWeekDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+        targetWeekDate.setDate(targetWeekDate.getDate() - (weeks * 7));
+        
+        // 先尝试精确匹配
+        const exactMatch = scfiData.find(record => isSameDate(record.date, targetWeekDate));
+        if (exactMatch) {
+          return exactMatch;
+        }
+
+        // 允许前后3天的误差范围
+        const minDate = new Date(targetWeekDate);
+        minDate.setDate(minDate.getDate() - 3);
+        const maxDate = new Date(targetWeekDate);
+        maxDate.setDate(maxDate.getDate() + 3);
+
+        // 找到在这个范围内的记录（只比较日期部分）
+        const candidates = scfiData.filter(record => {
+          const recordDate = new Date(record.date.getFullYear(), record.date.getMonth(), record.date.getDate());
+          const min = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+          const max = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
+          return recordDate >= min && recordDate <= max;
+        });
+
+        if (candidates.length === 0) {
+          // 如果没找到，找最接近的
+          return findClosestRecord(targetWeekDate);
+        }
+
+        // 找到最接近的
+        let closest = null;
+        let minDiff = Infinity;
+        candidates.forEach(record => {
+          const diff = getDateDiff(record.date, targetWeekDate);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closest = record;
+          }
+        });
+
+        return closest;
+      }
+
+      /**
+       * 格式化数值
+       */
+      function formatValue(value) {
+        if (value === null || value === undefined || isNaN(value)) {
+          return '-';
+        }
+        return value.toFixed(2);
+      }
+
+      /**
+       * 格式化选定日期的显示（3行格式：指数值、涨跌、日期）
+       */
+      function formatSelectedDate(value, date) {
+        if (value === null || value === undefined || isNaN(value)) {
+          return '<span style="color: #999;">-</span>';
+        }
+
+        const dateStr = date ? formatDateForDisplay(date) : '';
+
+        return `
+          <div>
+            <div style="font-weight: 500;">${formatValue(value)}</div>
+            <div style="font-size: 12px; color: #999;">-</div>
+            ${dateStr ? `<div style="font-size: 11px; color: #999; margin-top: 2px;">${dateStr}</div>` : ''}
+          </div>
+        `;
+      }
+
+      /**
+       * 格式化对比数据（显示数值和变化幅度）
+       */
+      function formatComparison(currentValue, pastValue, pastDate) {
+        if (pastValue === null || pastValue === undefined || isNaN(pastValue)) {
+          return '<span style="color: #999;">-</span>';
+        }
+
+        const change = currentValue - pastValue;
+        const changePercent = ((change / pastValue) * 100).toFixed(2);
+        const isPositive = change >= 0;
+        const color = isPositive ? '#20c997' : '#ff6b6b';
+        const symbol = isPositive ? '+' : '';
+
+        const dateStr = pastDate ? formatDateForDisplay(pastDate) : '';
+
+        return `
+          <div>
+            <div style="font-weight: 500;">${formatValue(pastValue)}</div>
+            <div style="font-size: 12px; color: ${color};">
+              ${symbol}${change.toFixed(2)} (${symbol}${changePercent}%)
+            </div>
+            ${dateStr ? `<div style="font-size: 11px; color: #999; margin-top: 2px;">${dateStr}</div>` : ''}
+          </div>
+        `;
+      }
+
+      /**
+       * 格式化日期显示（避免时区问题）
+       */
+      function formatDateForDisplay(date) {
+        if (!date) return '';
+        // 使用本地日期，避免时区转换
+        const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        return `${year}/${month}/${day}`;
       }
     </script>
   </body>

@@ -74,6 +74,10 @@
             console.warn('⚠️ Token 格式可能不正确，GitHub token 通常以 ghp_ 或 github_pat_ 开头');
             console.warn('当前 token 前10个字符:', token.substring(0, 10) + '...');
         }
+        
+        // 调试信息：显示使用的 token 来源和长度
+        const tokenSource = GITHUB_TOKEN ? '代码中配置' : 'localStorage';
+        console.log(`🔑 使用 Token (来源: ${tokenSource}, 长度: ${token.length}, 前缀: ${token.substring(0, 4)})`);
 
         try {
             // 获取或创建 Gist ID
@@ -89,9 +93,14 @@
             if (gistId) {
                 try {
                     const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
+                    // 对于 Personal Access Token (classic)，使用 token 前缀
+                    const authHeader = token.startsWith('github_pat_') 
+                        ? `Bearer ${token}`  // fine-grained token
+                        : `token ${token}`;   // classic token
+                    
                     const getResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
                         headers: {
-                            'Authorization': `Bearer ${token}`,
+                            'Authorization': authHeader,
                             'Accept': 'application/vnd.github.v3+json'
                         }
                     });
@@ -167,12 +176,31 @@
 
             console.log(`📤 ${method === 'POST' ? '创建' : '更新'} Gist...`);
 
-            // 使用从 localStorage 获取的 token
+            // 使用从 localStorage 获取的 token（这里重新获取确保使用最新值）
             const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
+            
+            // 调试：验证 token 是否正确
+            if (!token) {
+                console.error('❌ Token 为空，无法发送请求');
+                return false;
+            }
+            
+            console.log(`📡 发送请求到: ${url}`);
+            console.log(`🔑 使用 Token 长度: ${token.length}, 前缀: ${token.substring(0, 4)}...`);
+            
+            // 对于 Personal Access Token (classic)，使用 token 前缀
+            // 对于 fine-grained tokens，使用 Bearer 前缀
+            // 这里先尝试 token 格式（classic token的标准格式）
+            const authHeader = token.startsWith('github_pat_') 
+                ? `Bearer ${token}`  // fine-grained token
+                : `token ${token}`;   // classic token
+            
+            console.log(`🔐 使用认证格式: ${authHeader.substring(0, 10)}...`);
+            
             const response = await fetch(url, {
                 method: method,
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': authHeader,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json'
                 },
@@ -354,9 +382,14 @@
         }
 
         try {
+            // 对于 Personal Access Token (classic)，使用 token 前缀
+            const authHeader = token.startsWith('github_pat_') 
+                ? `Bearer ${token}`  // fine-grained token
+                : `token ${token}`;   // classic token
+            
             const response = await fetch(`https://api.github.com/gists/${gistId}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': authHeader,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });

@@ -185,8 +185,12 @@
                 return false;
             }
             
+            // 详细调试信息
             console.log(`📡 发送请求到: ${url}`);
-            console.log(`🔑 使用 Token 长度: ${token.length}, 前缀: ${token.substring(0, 4)}...`);
+            console.log(`🔑 Token 来源: ${GITHUB_TOKEN ? '代码中配置' : 'localStorage'}`);
+            console.log(`🔑 Token 值: ${token.substring(0, 10)}...${token.substring(token.length - 4)}`);
+            console.log(`🔑 Token 长度: ${token.length}`);
+            console.log(`🔑 Token 完整值:`, token); // 临时显示完整 token 用于调试
             
             // 对于 Personal Access Token (classic)，使用 token 前缀
             // 对于 fine-grained tokens，使用 Bearer 前缀
@@ -195,7 +199,7 @@
                 ? `Bearer ${token}`  // fine-grained token
                 : `token ${token}`;   // classic token
             
-            console.log(`🔐 使用认证格式: ${authHeader.substring(0, 10)}...`);
+            console.log(`🔐 使用认证格式: ${authHeader.substring(0, 20)}...`);
             
             const response = await fetch(url, {
                 method: method,
@@ -466,6 +470,73 @@
         } else {
             console.log('📋 还没有创建 Gist，首次发送日志时会自动创建');
             return null;
+        }
+    };
+
+    // 测试 Token 是否有效
+    window.testGitHubToken = async function() {
+        const token = GITHUB_TOKEN || localStorage.getItem('shipping_tools_github_token') || '';
+        
+        if (!token) {
+            console.error('❌ Token 未配置');
+            return false;
+        }
+        
+        console.log('🧪 开始测试 Token...');
+        console.log('Token 来源:', GITHUB_TOKEN ? '代码中配置' : 'localStorage');
+        console.log('Token 长度:', token.length);
+        console.log('Token 前缀:', token.substring(0, 10) + '...');
+        
+        // 使用正确的认证格式
+        const authHeader = token.startsWith('github_pat_') 
+            ? `Bearer ${token}`
+            : `token ${token}`;
+        
+        console.log('🔐 使用认证格式:', authHeader.substring(0, 15) + '...');
+        
+        try {
+            // 测试1: 获取用户信息
+            console.log('📡 测试1: 获取用户信息...');
+            const userResponse = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': authHeader,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                console.log('✅ 用户信息获取成功:', userData.login);
+            } else {
+                const errorText = await userResponse.text();
+                console.error('❌ 用户信息获取失败:', userResponse.status, errorText);
+                return false;
+            }
+            
+            // 测试2: 测试 Gist 权限
+            console.log('📡 测试2: 测试 Gist 权限...');
+            const gistResponse = await fetch('https://api.github.com/gists', {
+                method: 'GET',
+                headers: {
+                    'Authorization': authHeader,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (gistResponse.ok) {
+                console.log('✅ Gist API 访问成功');
+                return true;
+            } else {
+                const errorText = await gistResponse.text();
+                console.error('❌ Gist API 访问失败:', gistResponse.status, errorText);
+                if (gistResponse.status === 403) {
+                    console.error('💡 提示: Token 可能没有 gist 权限，请检查 Token 权限设置');
+                }
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ 测试失败:', error);
+            return false;
         }
     };
 })();

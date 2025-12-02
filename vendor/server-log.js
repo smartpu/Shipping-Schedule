@@ -15,7 +15,7 @@
     // ========== 配置区域 ==========
     // GitHub Issues 配置
     // 方式1：直接在代码中填写 token（推荐，方便使用）
-    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
+    const GITHUB_TOKEN = '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'; // GitHub Personal Access Token
     // 方式2：从 localStorage 获取（如果上面留空，会尝试从 localStorage 获取）
     // const GITHUB_TOKEN = localStorage.getItem('shipping_tools_github_token') || '';
     const GITHUB_OWNER = 'smartpu'; // GitHub 用户名或组织名

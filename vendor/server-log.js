@@ -1,12 +1,12 @@
 /**
  * 服务器端访问日志记录系统
- * 使用钉钉 Webhook 存储访问记录（通过 CORS 代理）
+ * 使用钉钉 Webhook 存储访问记录（通过 Vercel Serverless Function 代理）
  * 
  * 配置说明：
- * 1. 在钉钉群聊中添加"自定义机器人"
- * 2. 获取 Webhook URL
- * 3. 填入下面的 DINGTALK_WEBHOOK_URL
- * 4. 使用 CORS 代理服务绕过浏览器限制
+ * 1. 在钉钉群聊中添加"自定义机器人"，获取 Webhook URL
+ * 2. 将 api/dingtalk-webhook.js 部署到 Vercel
+ * 3. 在 Vercel 环境变量中设置 DINGTALK_WEBHOOK_URL（或直接在 api/dingtalk-webhook.js 中配置）
+ * 4. 将 Vercel 部署后的函数 URL 填入下面的 PROXY_API_URL
  */
 
 (function() {
@@ -17,9 +17,6 @@
     // 部署到 Vercel 后，将下面的 URL 替换为你的 Vercel 部署地址
     // 例如：https://your-project.vercel.app/api/dingtalk-webhook
     const PROXY_API_URL = 'https://shipping-schedule.vercel.app/api/dingtalk-webhook'; // Vercel 函数地址
-    
-    // 如果 Vercel 代理未配置，可以尝试直接使用钉钉 Webhook（会失败，但会尝试表单提交）
-    const DINGTALK_WEBHOOK_URL = 'https://oapi.dingtalk.com/robot/send?access_token=5e6f88c29281bc410f9a902f9f1d63cee4d3590a4b4fb28aaa88f6115f5a6e63';
     
     // 是否启用服务器端日志
     const ENABLE_SERVER_LOG = true;
@@ -118,71 +115,6 @@
             console.error('❌ 发送到钉钉失败:', error);
             return false;
         }
-    }
-
-    /**
-     * 使用隐藏表单提交发送消息（绕过 CORS）
-     * 注意：钉钉 Webhook 需要 JSON 格式，但表单提交可能无法正确传递
-     * 这个方法作为备选方案
-     */
-    function sendViaForm(webhookUrl, message) {
-        return new Promise((resolve) => {
-            try {
-                // 创建隐藏的 iframe 用于提交表单（避免页面跳转）
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.style.width = '0';
-                iframe.style.height = '0';
-                iframe.name = 'dingtalk_webhook_' + Date.now();
-                document.body.appendChild(iframe);
-
-                // 创建隐藏表单
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = webhookUrl;
-                form.target = iframe.name;
-                form.style.display = 'none';
-                form.enctype = 'application/json'; // 尝试设置 JSON 编码
-
-                // 创建隐藏输入字段，存储 JSON 数据
-                // 注意：钉钉 API 可能需要特定的参数名，这里尝试多种方式
-                const input1 = document.createElement('input');
-                input1.type = 'hidden';
-                input1.name = 'payload';
-                input1.value = JSON.stringify(message);
-                form.appendChild(input1);
-
-                // 也尝试直接作为 body 发送
-                const input2 = document.createElement('input');
-                input2.type = 'hidden';
-                input2.name = 'body';
-                input2.value = JSON.stringify(message);
-                form.appendChild(input2);
-
-                document.body.appendChild(form);
-
-                // 提交表单
-                form.submit();
-
-                // 清理：延迟移除 iframe 和表单
-                setTimeout(() => {
-                    try {
-                        document.body.removeChild(iframe);
-                        document.body.removeChild(form);
-                    } catch (e) {
-                        // 忽略清理错误
-                    }
-                }, 2000);
-
-                // 假设发送成功（因为无法获取响应）
-                console.log('✅ 日志已通过表单提交发送到钉钉');
-                console.log('💡 注意：表单提交无法获取响应，请检查钉钉群聊是否收到消息');
-                resolve(true);
-            } catch (error) {
-                console.error('❌ 表单提交失败:', error);
-                resolve(false);
-            }
-        });
     }
 
     /**

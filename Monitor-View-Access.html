@@ -312,8 +312,9 @@
             <div class="content-wrapper">
                 <div class="controls">
                     <button class="btn btn-primary" onclick="loadLogs()">刷新记录</button>
+                    <button class="btn btn-secondary" onclick="syncFromServer()">从服务器同步</button>
                     <button class="btn btn-secondary" onclick="exportLogs()">导出 CSV</button>
-                    <button class="btn btn-secondary" onclick="clearLogs()">清空记录</button>
+                    <button class="btn btn-secondary" onclick="clearLogs()">清空本地记录</button>
                 </div>
 
                 <div class="stats" id="stats">
@@ -364,6 +365,7 @@
 
     <script src="vendor/auth.js"></script>
     <script src="vendor/auth-password.js"></script>
+    <script src="vendor/server-log.js"></script>
     <script>
         // 双重验证系统：先用户验证，通过后再密码验证
         (function() {
@@ -456,6 +458,11 @@
                             logs.unshift(logEntry);
                             if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
                             localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
+                            
+                            // 发送到服务器（如果已配置）
+                            if (window.sendLogToServer) {
+                                window.sendLogToServer(logEntry);
+                            }
                         } catch (e) {
                             console.warn('记录访问日志失败', e);
                         }
@@ -540,6 +547,11 @@
                             logs.unshift(logEntry);
                             if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
                             localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
+                            
+                            // 发送到服务器（如果已配置）
+                            if (window.sendLogToServer) {
+                                window.sendLogToServer(logEntry);
+                            }
                         } catch (e) {
                             console.warn('记录访问日志失败', e);
                         }
@@ -588,63 +600,135 @@
 
         const ACCESS_LOG_KEY = 'shipping_tools_access_log';
 
+        /**
+         * 加载日志（从本地存储）
+         */
         function loadLogs() {
             try {
                 const logsJson = localStorage.getItem(ACCESS_LOG_KEY);
                 const logs = logsJson ? JSON.parse(logsJson) : [];
-                
-                const tbody = document.getElementById('logBody');
-                const totalCount = document.getElementById('totalCount');
-                const uniqueUsers = document.getElementById('uniqueUsers');
-                const uniquePages = document.getElementById('uniquePages');
-
-                // 更新统计
-                totalCount.textContent = logs.length;
-                
-                const userSet = new Set();
-                const pageSet = new Set();
-                logs.forEach(log => {
-                    if (log.email && log.email !== '未知') {
-                        userSet.add(log.email);
-                    }
-                    if (log.page) {
-                        pageSet.add(log.page);
-                    }
-                });
-                uniqueUsers.textContent = userSet.size;
-                uniquePages.textContent = pageSet.size;
-
-                // 清空表格
-                tbody.innerHTML = '';
-
-                if (logs.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="5" class="empty-state">
-                                <p>暂无访问记录</p>
-                                <p style="font-size: 12px; margin-top: 8px;">访问记录会在用户使用工具时自动记录</p>
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                // 显示记录
-                logs.forEach(log => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${log.date || new Date(log.timestamp).toLocaleString('zh-CN')}</td>
-                        <td>${log.name || '未知'}</td>
-                        <td>${log.phone || '未知'}</td>
-                        <td>${log.email || '未知'}</td>
-                        <td>${log.page || '未知'}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                displayLogs(logs);
             } catch (e) {
                 console.error('加载访问记录失败', e);
                 alert('加载访问记录失败：' + e.message);
             }
+        }
+
+        /**
+         * 从服务器同步日志
+         */
+        async function syncFromServer() {
+            if (!window.fetchLogsFromServer) {
+                alert('服务器日志功能未配置，请先配置 GitHub Gist');
+                return;
+            }
+
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '同步中...';
+
+            try {
+                const serverLogs = await window.fetchLogsFromServer();
+                if (serverLogs.length === 0) {
+                    alert('服务器上没有访问记录');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+
+                // 合并本地和服务器日志（去重，按时间戳）
+                const localLogsJson = localStorage.getItem(ACCESS_LOG_KEY);
+                const localLogs = localLogsJson ? JSON.parse(localLogsJson) : [];
+                
+                // 使用 Map 去重（以 timestamp + email + page 作为唯一标识）
+                const logMap = new Map();
+                
+                // 先添加本地日志
+                localLogs.forEach(log => {
+                    const key = `${log.timestamp}_${log.email}_${log.page}`;
+                    logMap.set(key, log);
+                });
+                
+                // 再添加服务器日志（会覆盖重复的）
+                serverLogs.forEach(log => {
+                    const key = `${log.timestamp}_${log.email}_${log.page}`;
+                    logMap.set(key, log);
+                });
+                
+                // 转换为数组并按时间倒序排序
+                const mergedLogs = Array.from(logMap.values())
+                    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                
+                // 保存合并后的日志
+                localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(mergedLogs));
+                
+                // 显示日志
+                displayLogs(mergedLogs);
+                
+                alert(`成功同步 ${serverLogs.length} 条服务器记录，合并后共 ${mergedLogs.length} 条记录`);
+            } catch (e) {
+                console.error('同步失败', e);
+                alert('同步失败：' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        /**
+         * 显示日志到表格
+         * @param {Array} logs - 日志数组
+         */
+        function displayLogs(logs) {
+            const tbody = document.getElementById('logBody');
+            const totalCount = document.getElementById('totalCount');
+            const uniqueUsers = document.getElementById('uniqueUsers');
+            const uniquePages = document.getElementById('uniquePages');
+
+            // 更新统计
+            totalCount.textContent = logs.length;
+            
+            const userSet = new Set();
+            const pageSet = new Set();
+            logs.forEach(log => {
+                if (log.email && log.email !== '未知') {
+                    userSet.add(log.email);
+                }
+                if (log.page) {
+                    pageSet.add(log.page);
+                }
+            });
+            uniqueUsers.textContent = userSet.size;
+            uniquePages.textContent = pageSet.size;
+
+            // 清空表格
+            tbody.innerHTML = '';
+
+            if (logs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <p>暂无访问记录</p>
+                            <p style="font-size: 12px; margin-top: 8px;">访问记录会在用户使用工具时自动记录</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // 显示记录
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${log.date || new Date(log.timestamp).toLocaleString('zh-CN')}</td>
+                    <td>${log.name || '未知'}</td>
+                    <td>${log.phone || '未知'}</td>
+                    <td>${log.email || '未知'}</td>
+                    <td>${log.page || '未知'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function exportLogs() {

@@ -844,6 +844,7 @@
     </div>
 
     <script src="vendor/auth.js"></script>
+    <script src="vendor/server-log.js"></script>
     <script>
 
       // 动态加载 XLSX 库（多个备用源）
@@ -1292,13 +1293,18 @@
         try {
           dom.exportBtn.disabled = true;
           dom.exportBtn.textContent = "导出中...";
-          const target = document.querySelector("main");
+          // 选择要导出的内容区域（排除 header 和 footer）
+          const target = document.querySelector(".content");
+          if (!target) {
+            throw new Error("找不到要导出的内容区域");
+          }
           const previousScroll = window.scrollY;
           window.scrollTo(0, 0);
           const canvas = await html2canvas(target, {
             scale: Math.min(window.devicePixelRatio || 1, 1.5),
             useCORS: true,
             backgroundColor: "#ffffff",
+            logging: false,
           });
           window.scrollTo(0, previousScroll);
 
@@ -1333,6 +1339,7 @@
           pdf.save(`rate-trend-${Date.now()}.pdf`);
         } catch (error) {
           console.error("Export failed:", error);
+          alert("导出 PDF 失败：" + (error.message || "未知错误") + "\n\n请确保页面内容已完全加载，然后重试。");
         } finally {
           dom.exportBtn.textContent = "导出 PDF";
           dom.exportBtn.disabled = !state.lastFiltered.length;

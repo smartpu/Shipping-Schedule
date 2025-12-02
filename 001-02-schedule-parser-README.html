@@ -12,6 +12,13 @@
             box-sizing: border-box;
         }
 
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -19,6 +26,8 @@
             padding: 0;
             margin: 0;
             color: #333;
+            width: 100%;
+            overflow-x: hidden;
         }
 
         .container {
@@ -73,9 +82,7 @@
         }
 
         .content {
-            padding: 40px;
-            max-width: 900px;
-            margin: 0 auto;
+            padding: 20px 40px 30px;
             line-height: 1.8;
         }
 
@@ -198,7 +205,26 @@
             line-height: 1.5;
         }
 
-        
+        @media (max-width: 640px) {
+            .content {
+                padding: 20px 20px 30px;
+            }
+
+            .header {
+                padding: 40px 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .back-home-btn {
+                top: 15px;
+                left: 15px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body data-page="001-02-schedule-parser-README.html">
@@ -235,7 +261,7 @@
 
         <div class="content">
             <h2>工具简介</h2>
-            <p><strong>维运网 船期解析工具</strong> 是一个零安装、离线运行的数据解析工具，用于将 <code>001-view-source</code> 目录下的 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具会自动提取船期信息，包括启运港、目的港、航线信息、船名航次、开航日期、码头信息等，并自动去重合并重复记录。</p>
+            <p><strong>维运网 船期解析工具</strong> 是一个零安装、基于浏览器的客户端工具，用于将 <code>001-view-source</code> 目录下的 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具会自动提取船期信息，包括启运港、目的港、航线信息、船名航次、开航日期、码头信息等，并自动去重合并重复记录。</p>
 
             <hr>
 
@@ -390,6 +416,7 @@
     </div>
 
     <script src="vendor/auth.js"></script>
+    <script src="vendor/server-log.js"></script>
     <script>
     </script>
 

@@ -71,6 +71,8 @@
                 timestamp: Date.now(),
                 date: new Date().toLocaleString('zh-CN')
             };
+            
+            // 本地存储（保留原有功能）
             let logs = [];
             try {
                 const existingLogs = localStorage.getItem(ACCESS_LOG_KEY);
@@ -81,6 +83,11 @@
             logs.unshift(logEntry);
             if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
             localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
+            
+            // 发送到服务器（如果已配置）
+            if (window.sendLogToServer) {
+                window.sendLogToServer(logEntry);
+            }
         } catch (e) {
             console.warn('记录访问日志失败', e);
         }

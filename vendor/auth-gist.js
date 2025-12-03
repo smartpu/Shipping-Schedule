@@ -17,8 +17,8 @@
 
     // ========== 配置区域 ==========
     // Vercel Serverless Function 地址
-    // 部署后更新为：https://your-project.vercel.app/api/gist-storage
-    const GIST_API_URL = 'https://shipping-schedule.vercel.app/api/gist-storage';
+    // 使用相对路径，自动适配当前域名（支持自定义域名）
+    const GIST_API_URL = '/api/gist-storage';
     
     // 存储键名
     const AUTH_STORAGE_KEY = 'shipping_tools_auth';

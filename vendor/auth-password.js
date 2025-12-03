@@ -1,6 +1,6 @@
 /**
  * 统一的密码验证系统
- * 用于需要密码验证的页面（如Monitor-View-Access.html）
+ * 用于需要密码验证的页面
  * 
  * 使用方法：
  * 1. 在HTML的<head>中引入：<link rel="stylesheet" href="auth.css">

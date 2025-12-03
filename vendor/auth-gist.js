@@ -29,24 +29,90 @@
     let userWhitelist = [];
 
     /**
+     * 带超时的 fetch 请求
+     */
+    async function fetchWithTimeout(url, options, timeout = 8000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error(`请求超时 (${timeout}ms)`);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * 带重试的请求函数
+     */
+    async function fetchWithRetry(url, options, retries = 2) {
+        let lastError;
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const response = await fetchWithTimeout(url, options);
+                return response;
+            } catch (error) {
+                lastError = error;
+                if (i < retries) {
+                    const delay = Math.min(1000 * Math.pow(2, i), 5000);
+                    console.warn(`[Auth] 请求失败，${delay}ms 后重试 (${i + 1}/${retries}):`, error.message);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        throw lastError;
+    }
+
+    /**
      * 从 Gist 加载用户白名单
      */
     async function loadWhitelist() {
+        const url = `${GIST_API_URL}?type=whitelist`;
+        console.log(`[Auth] 加载白名单: ${url}`);
+        
         try {
-            const response = await fetch(`${GIST_API_URL}?type=whitelist`);
+            const response = await fetchWithRetry(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
             if (!response.ok) {
-                throw new Error(`加载白名单失败: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`加载白名单失败: ${response.status} ${response.statusText} - ${errorText}`);
             }
+            
             const data = await response.json();
+            
+            if (!Array.isArray(data)) {
+                console.warn('[Auth] 白名单数据格式错误，期望数组');
+                userWhitelist = [];
+                return [];
+            }
+            
             userWhitelist = data.map(user => ({
                 name: (user.name || '').trim().toLowerCase(),
                 phone: (user.phone || '').trim(),
                 email: (user.email || '').trim().toLowerCase()
             }));
-            // 白名单已加载
+            
+            console.log(`[Auth] 白名单加载成功，共 ${userWhitelist.length} 个用户`);
             return userWhitelist;
         } catch (error) {
-            console.error('加载白名单失败:', error);
+            console.error('[Auth] 加载白名单失败:', {
+                message: error.message,
+                url: url
+            });
             userWhitelist = [];
             return [];
         }
@@ -117,8 +183,10 @@
      * 保存访问记录到 Gist
      */
     async function saveLogToGist(logEntry) {
+        console.log('[Auth] 保存访问记录:', logEntry);
+        
         try {
-            const response = await fetch(GIST_API_URL, {
+            const response = await fetchWithRetry(GIST_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -130,13 +198,18 @@
             });
 
             if (!response.ok) {
-                throw new Error(`保存失败: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`保存失败: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
-            await response.json();
+            const result = await response.json();
+            console.log('[Auth] 访问记录保存成功:', result);
             return true;
         } catch (error) {
-            console.error('保存访问记录失败:', error);
+            console.error('[Auth] 保存访问记录失败:', {
+                message: error.message,
+                logEntry: logEntry
+            });
             return false;
         }
     }

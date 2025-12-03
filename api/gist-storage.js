@@ -23,6 +23,53 @@ const ACCESS_LOG_GIST_ID = process.env.ACCESS_LOG_GIST_ID || '';
 const USER_WHITELIST_GIST_ID = process.env.USER_WHITELIST_GIST_ID || '';
 
 const GITHUB_API_BASE = 'https://api.github.com';
+const FETCH_TIMEOUT = 8000; // 8秒超时
+const MAX_RETRIES = 2; // 最大重试次数
+
+/**
+ * 带超时的 fetch 请求
+ */
+async function fetchWithTimeout(url, options, timeout = FETCH_TIMEOUT) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error(`请求超时 (${timeout}ms): ${url}`);
+        }
+        throw error;
+    }
+}
+
+/**
+ * 带重试的请求函数
+ */
+async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
+    let lastError;
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const response = await fetchWithTimeout(url, options);
+            return response;
+        } catch (error) {
+            lastError = error;
+            if (i < retries) {
+                // 等待后重试（指数退避）
+                const delay = Math.min(1000 * Math.pow(2, i), 5000);
+                console.warn(`请求失败，${delay}ms 后重试 (${i + 1}/${retries}):`, error.message);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+    throw lastError;
+}
 
 /**
  * 获取 Gist 内容
@@ -32,31 +79,43 @@ async function getGist(gistId) {
         throw new Error('GitHub Token 或 Gist ID 未配置');
     }
 
-    const response = await fetch(`${GITHUB_API_BASE}/gists/${gistId}`, {
-        headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json'
-        }
-    });
-
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`获取 Gist 失败: ${response.status} - ${error}`);
-    }
-
-    const gist = await response.json();
+    const url = `${GITHUB_API_BASE}/gists/${gistId}`;
+    console.log(`[Gist API] 获取 Gist: ${gistId}`);
     
-    // 获取第一个文件的内容
-    const files = Object.values(gist.files);
-    if (files.length === 0) {
-        return null;
-    }
+    try {
+        const response = await fetchWithRetry(url, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
 
-    const file = files[0];
-    return {
-        content: file.content,
-        filename: file.filename
-    };
+        if (!response.ok) {
+            const errorText = await response.text();
+            const errorMsg = `获取 Gist 失败: ${response.status} ${response.statusText} - ${errorText}`;
+            console.error(`[Gist API] ${errorMsg}`);
+            throw new Error(errorMsg);
+        }
+
+        const gist = await response.json();
+        
+        // 获取第一个文件的内容
+        const files = Object.values(gist.files);
+        if (files.length === 0) {
+            console.warn(`[Gist API] Gist ${gistId} 中没有文件`);
+            return null;
+        }
+
+        const file = files[0];
+        console.log(`[Gist API] 成功获取 Gist: ${gistId}, 文件: ${file.filename}`);
+        return {
+            content: file.content,
+            filename: file.filename
+        };
+    } catch (error) {
+        console.error(`[Gist API] 获取 Gist ${gistId} 失败:`, error.message);
+        throw error;
+    }
 }
 
 /**
@@ -67,10 +126,13 @@ async function updateGist(gistId, filename, content) {
         throw new Error('GitHub Token 或 Gist ID 未配置');
     }
 
+    const url = `${GITHUB_API_BASE}/gists/${gistId}`;
+    console.log(`[Gist API] 更新 Gist: ${gistId}, 文件: ${filename}`);
+
     // 先获取现有 Gist（保留文件名）
     let existingGist;
     try {
-        const gistResponse = await fetch(`${GITHUB_API_BASE}/gists/${gistId}`, {
+        const gistResponse = await fetchWithRetry(url, {
             headers: {
                 'Authorization': `token ${GITHUB_TOKEN}`,
                 'Accept': 'application/vnd.github.v3+json'
@@ -81,6 +143,7 @@ async function updateGist(gistId, filename, content) {
         }
     } catch (e) {
         // 忽略错误，继续创建新文件
+        console.warn(`[Gist API] 获取现有 Gist 失败，将创建新文件:`, e.message);
     }
 
     // 构建文件对象（需要保留所有现有文件）
@@ -94,24 +157,33 @@ async function updateGist(gistId, filename, content) {
     // 更新或创建目标文件
     files[filename] = { content: content };
 
-    const response = await fetch(`${GITHUB_API_BASE}/gists/${gistId}`, {
-        method: 'PATCH',
-        headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            files: files
-        })
-    });
+    try {
+        const response = await fetchWithRetry(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                files: files
+            })
+        });
 
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`更新 Gist 失败: ${response.status} - ${error}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            const errorMsg = `更新 Gist 失败: ${response.status} ${response.statusText} - ${errorText}`;
+            console.error(`[Gist API] ${errorMsg}`);
+            throw new Error(errorMsg);
+        }
+
+        const result = await response.json();
+        console.log(`[Gist API] 成功更新 Gist: ${gistId}`);
+        return result;
+    } catch (error) {
+        console.error(`[Gist API] 更新 Gist ${gistId} 失败:`, error.message);
+        throw error;
     }
-
-    return await response.json();
 }
 
 // 主处理函数
@@ -150,9 +222,18 @@ module.exports = async function handler(req, res) {
                     return;
                 }
 
-                const users = JSON.parse(gist.content);
-                res.status(200).json(users);
-                return;
+                try {
+                    const users = JSON.parse(gist.content);
+                    res.status(200).json(users);
+                    return;
+                } catch (parseError) {
+                    console.error('[Gist API] 解析白名单 JSON 失败:', parseError);
+                    res.status(500).json({ 
+                        error: '解析白名单数据失败',
+                        message: parseError.message
+                    });
+                    return;
+                }
             }
 
             if (type === 'logs') {
@@ -171,9 +252,18 @@ module.exports = async function handler(req, res) {
                     return;
                 }
 
-                const logs = JSON.parse(gist.content);
-                res.status(200).json(logs);
-                return;
+                try {
+                    const logs = JSON.parse(gist.content);
+                    res.status(200).json(logs);
+                    return;
+                } catch (parseError) {
+                    console.error('[Gist API] 解析访问记录 JSON 失败:', parseError);
+                    res.status(500).json({ 
+                        error: '解析访问记录数据失败',
+                        message: parseError.message
+                    });
+                    return;
+                }
             }
 
             res.status(400).json({ 
@@ -214,10 +304,19 @@ module.exports = async function handler(req, res) {
                 try {
                     const gist = await getGist(ACCESS_LOG_GIST_ID);
                     if (gist && gist.content) {
-                        logs = JSON.parse(gist.content);
+                        try {
+                            logs = JSON.parse(gist.content);
+                            if (!Array.isArray(logs)) {
+                                console.warn('[Gist API] 访问记录数据格式错误，重置为空数组');
+                                logs = [];
+                            }
+                        } catch (parseError) {
+                            console.error('[Gist API] 解析现有访问记录失败，创建新记录:', parseError);
+                            logs = [];
+                        }
                     }
                 } catch (e) {
-                    console.warn('读取现有记录失败，创建新记录:', e);
+                    console.warn('[Gist API] 读取现有记录失败，创建新记录:', e.message);
                 }
 
                 // 添加新记录
@@ -255,9 +354,18 @@ module.exports = async function handler(req, res) {
                     return;
                 }
 
-                const logs = JSON.parse(gist.content);
-                res.status(200).json(logs);
-                return;
+                try {
+                    const logs = JSON.parse(gist.content);
+                    res.status(200).json(logs);
+                    return;
+                } catch (parseError) {
+                    console.error('[Gist API] 解析访问记录 JSON 失败:', parseError);
+                    res.status(500).json({ 
+                        error: '解析访问记录数据失败',
+                        message: parseError.message
+                    });
+                    return;
+                }
             }
 
             if (action === 'getWhitelist') {
@@ -275,9 +383,18 @@ module.exports = async function handler(req, res) {
                     return;
                 }
 
-                const users = JSON.parse(gist.content);
-                res.status(200).json(users);
-                return;
+                try {
+                    const users = JSON.parse(gist.content);
+                    res.status(200).json(users);
+                    return;
+                } catch (parseError) {
+                    console.error('[Gist API] 解析白名单 JSON 失败:', parseError);
+                    res.status(500).json({ 
+                        error: '解析白名单数据失败',
+                        message: parseError.message
+                    });
+                    return;
+                }
             }
 
             res.status(400).json({ 
@@ -286,10 +403,18 @@ module.exports = async function handler(req, res) {
             });
         }
     } catch (error) {
-        console.error('Gist 存储操作失败:', error);
+        console.error('[Gist API] 操作失败:', {
+            message: error.message,
+            stack: error.stack,
+            method: req.method,
+            url: req.url,
+            query: req.query,
+            body: req.body
+        });
         res.status(500).json({ 
             error: '操作失败',
-            message: error.message 
+            message: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };

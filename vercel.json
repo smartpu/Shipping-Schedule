@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/dingtalk-webhook.js": {
+    "api/gist-storage.js": {
       "maxDuration": 10
     }
   }

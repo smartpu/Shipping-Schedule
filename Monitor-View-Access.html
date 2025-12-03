@@ -363,18 +363,23 @@
         </div>
     </div>
 
-    <script src="vendor/auth.js"></script>
+    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
+    <script src="vendor/auth-gist.js"></script>
     <script src="vendor/auth-password.js"></script>
-    <script src="vendor/server-log.js"></script>
     <script>
-        // 双重验证系统：先用户验证，通过后再密码验证
+        // 双重验证系统：先 Gist 白名单验证，通过后再密码验证
         (function() {
             const CORRECT_PASSWORD = 'Aa18653202580';
             
-            // 用户验证成功后的回调
-            function onUserAuthSuccess() {
-                // 用户验证通过后，显示密码验证
-                initPasswordAuth(CORRECT_PASSWORD, onPasswordAuthSuccess);
+            // Gist 验证成功后的回调
+            function onGistAuthSuccess() {
+                // Gist 验证通过后，显示密码验证
+                if (window.initPasswordAuth) {
+                    initPasswordAuth(CORRECT_PASSWORD, onPasswordAuthSuccess);
+                } else {
+                    // 如果没有密码验证，直接加载日志
+                    onPasswordAuthSuccess();
+                }
             }
 
             // 密码验证成功后的回调
@@ -383,220 +388,24 @@
                 loadLogs();
             }
 
-            // 初始化用户验证（第一步）
-            // 修改auth.js的默认行为，使其在验证成功后调用我们的回调
-            const originalInit = window.initUserAuth;
-            window.initUserAuth = function(pageName) {
-                // 保存原始函数
-                const originalCheckAuth = window.checkAuth;
-                
-                // 重写initUserAuth以支持回调
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', function() {
-                        setupUserAuth(pageName);
-                    });
-                } else {
-                    setupUserAuth(pageName);
-                }
+            // 监听 Gist 验证成功事件
+            window.onGistAuthSuccess = function(userData) {
+                console.log('✅ Gist 验证成功:', userData);
+                onGistAuthSuccess();
             };
 
-            function setupUserAuth(pageName) {
+            // 检查是否已通过验证
+            if (window.checkAuth && window.checkAuth()) {
                 const authOverlay = document.getElementById('authOverlay');
-                const authForm = document.getElementById('authForm');
-                const nameInput = document.getElementById('userName');
-                const phoneInput = document.getElementById('userPhone');
-                const emailInput = document.getElementById('userEmail');
-                const nameError = document.getElementById('nameError');
-                const phoneError = document.getElementById('phoneError');
-                const emailError = document.getElementById('emailError');
-
-                if (!authOverlay || !authForm) return;
-
-                // 检查是否已通过用户验证
-                const AUTH_STORAGE_KEY = 'shipping_tools_auth';
-                const AUTH_EXPIRY_DAYS = 7;
-                function checkAuth() {
-                    try {
-                        const authData = localStorage.getItem(AUTH_STORAGE_KEY);
-                        if (!authData) return false;
-                        const data = JSON.parse(authData);
-                        const now = Date.now();
-                        if (data.expiry && now > data.expiry) {
-                            localStorage.removeItem(AUTH_STORAGE_KEY);
-                            return false;
-                        }
-                        return true;
-                    } catch (e) {
-                        return false;
-                    }
-                }
-
-                if (checkAuth()) {
+                if (authOverlay) {
                     authOverlay.classList.add('hidden');
-                    document.body.classList.remove('auth-locked');
-                    if (pageName) {
-                        // 记录访问日志
-                        const ACCESS_LOG_KEY = 'shipping_tools_access_log';
-                        const MAX_LOG_ENTRIES = 100;
-                        try {
-                            const authData = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
-                            const logEntry = {
-                                page: pageName,
-                                name: authData.name || '未知',
-                                phone: authData.phone || '未知',
-                                email: authData.email || '未知',
-                                timestamp: Date.now(),
-                                date: new Date().toLocaleString('zh-CN')
-                            };
-                            let logs = [];
-                            try {
-                                const existingLogs = localStorage.getItem(ACCESS_LOG_KEY);
-                                if (existingLogs) logs = JSON.parse(existingLogs);
-                            } catch (e) {
-                                logs = [];
-                            }
-                            logs.unshift(logEntry);
-                            if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
-                            localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
-                            
-                            // 发送到服务器（如果已配置）
-                            if (window.sendLogToServer) {
-                                window.sendLogToServer(logEntry);
-                            }
-                        } catch (e) {
-                            console.warn('记录访问日志失败', e);
-                        }
-                    }
-                    // 用户验证通过，继续密码验证
-                    onUserAuthSuccess();
-                    return;
                 }
-
-                // 显示用户验证模态框
-                document.body.classList.add('auth-locked');
-                authOverlay.classList.remove('hidden');
-                if (nameInput) nameInput.focus();
-
-                // 表单提交处理
-                authForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const name = nameInput.value.trim();
-                    const phone = phoneInput.value.trim();
-                    const email = emailInput.value.trim().toLowerCase();
-                    
-                    // 验证姓名
-                    if (!name) {
-                        nameError.classList.add('show');
-                        nameInput.focus();
-                        return;
-                    } else {
-                        nameError.classList.remove('show');
-                    }
-
-                    // 验证手机号
-                    const phoneRegex = /^1[3-9]\d{9}$/;
-                    if (!phone || !phoneRegex.test(phone)) {
-                        phoneError.classList.add('show');
-                        phoneInput.focus();
-                        return;
-                    } else {
-                        phoneError.classList.remove('show');
-                    }
-
-                    // 验证邮箱
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!email || !emailRegex.test(email)) {
-                        emailError.classList.add('show');
-                        emailInput.focus();
-                        return;
-                    } else {
-                        emailError.classList.remove('show');
-                    }
-
-                    // 保存用户信息
-                    const expiry = Date.now() + (AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-                    const authData = {
-                        name: name.trim(),
-                        phone: phone.trim(),
-                        email: email.trim().toLowerCase(),
-                        timestamp: Date.now(),
-                        expiry: expiry
-                    };
-                    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-
-                    // 记录访问日志
-                    if (pageName) {
-                        const ACCESS_LOG_KEY = 'shipping_tools_access_log';
-                        const MAX_LOG_ENTRIES = 100;
-                        try {
-                            const logEntry = {
-                                page: pageName,
-                                name: authData.name || '未知',
-                                phone: authData.phone || '未知',
-                                email: authData.email || '未知',
-                                timestamp: Date.now(),
-                                date: new Date().toLocaleString('zh-CN')
-                            };
-                            let logs = [];
-                            try {
-                                const existingLogs = localStorage.getItem(ACCESS_LOG_KEY);
-                                if (existingLogs) logs = JSON.parse(existingLogs);
-                            } catch (e) {
-                                logs = [];
-                            }
-                            logs.unshift(logEntry);
-                            if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
-                            localStorage.setItem(ACCESS_LOG_KEY, JSON.stringify(logs));
-                            
-                            // 发送到服务器（如果已配置）
-                            if (window.sendLogToServer) {
-                                window.sendLogToServer(logEntry);
-                            }
-                        } catch (e) {
-                            console.warn('记录访问日志失败', e);
-                        }
-                    }
-
-                    // 用户验证通过，隐藏用户验证模态框，显示密码验证
-                    authOverlay.classList.add('hidden');
-                    onUserAuthSuccess();
-                });
-
-                // 实时验证提示
-                if (nameInput) {
-                    nameInput.addEventListener('input', () => {
-                        if (nameInput.value.trim()) nameError.classList.remove('show');
-                    });
-                }
-
-                if (phoneInput) {
-                    phoneInput.addEventListener('input', () => {
-                        const phone = phoneInput.value.trim();
-                        if (phone && /^1[3-9]\d{9}$/.test(phone)) {
-                            phoneError.classList.remove('show');
-                        }
-                    });
-                }
-
-                if (emailInput) {
-                    emailInput.addEventListener('input', () => {
-                        const email = emailInput.value.trim();
-                        if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                            emailError.classList.remove('show');
-                        }
-                    });
-                }
+                // 如果已登录，直接进入密码验证
+                onGistAuthSuccess();
             }
-
-            // 初始化
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    setupUserAuth('Monitor-View-Access.html');
-                });
-            } else {
-                setupUserAuth('Monitor-View-Access.html');
-            }
+            // 否则等待 Gist 验证系统初始化（auth-gist.js 会自动初始化）
         })();
+
 
         const ACCESS_LOG_KEY = 'shipping_tools_access_log';
 
@@ -615,23 +424,25 @@
         }
 
         /**
-         * 从服务器同步日志
+         * 从 Gist 同步日志
          */
         async function syncFromServer() {
-            if (!window.fetchLogsFromServer) {
-                alert('服务器日志功能未配置，请先配置 GitHub Gist');
-                return;
-            }
-
+            const GIST_API_URL = 'https://shipping-schedule.vercel.app/api/gist-storage';
+            
             const btn = event.target;
             const originalText = btn.textContent;
             btn.disabled = true;
             btn.textContent = '同步中...';
 
             try {
-                const serverLogs = await window.fetchLogsFromServer();
-                if (serverLogs.length === 0) {
-                    alert('服务器上没有访问记录');
+                const response = await fetch(`${GIST_API_URL}?type=logs`);
+                if (!response.ok) {
+                    throw new Error(`同步失败: ${response.status}`);
+                }
+                
+                const serverLogs = await response.json();
+                if (!Array.isArray(serverLogs) || serverLogs.length === 0) {
+                    alert('Gist 上没有访问记录');
                     btn.disabled = false;
                     btn.textContent = originalText;
                     return;
@@ -666,7 +477,7 @@
                 // 显示日志
                 displayLogs(mergedLogs);
                 
-                alert(`成功同步 ${serverLogs.length} 条服务器记录，合并后共 ${mergedLogs.length} 条记录`);
+                alert(`成功同步 ${serverLogs.length} 条 Gist 记录，合并后共 ${mergedLogs.length} 条记录`);
             } catch (e) {
                 console.error('同步失败', e);
                 alert('同步失败：' + e.message);

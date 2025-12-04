@@ -1,0 +1,308 @@
+/**
+ * 监控工具样式文件
+ * 用于 Monitor-Rate-Trends.html 和 Monitor-SCFI-Trends.html
+ * 
+ * 包含：
+ * - 监控工具组件样式
+ * - 上传区域、状态卡片、筛选区域等组件
+ */
+
+/* ============================================
+   监控工具组件样式
+   （用于 Monitor-Rate-Trends.html 和 Monitor-SCFI-Trends.html）
+   ============================================ */
+
+/* 上传区域 */
+.upload-area {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+@media (max-width: 840px) {
+    .upload-area {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 上传卡片 */
+.upload-card {
+    background: rgba(102, 126, 234, 0.15);
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    cursor: pointer;
+    border: 2px dashed rgba(102, 126, 234, 0.3);
+    transition: all 0.2s ease;
+}
+
+.upload-card:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.5);
+}
+
+/* 状态卡片 */
+.status-card {
+    border-radius: 10px;
+    padding: 20px 24px;
+    border: 1px solid #e9ecef;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.status-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6c757d;
+}
+
+.status-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.status-detail {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* 筛选区域 */
+.filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+    align-items: stretch;
+}
+
+@media (max-width: 960px) {
+    .filters {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+}
+
+/* 日期堆叠 */
+.date-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.date-stack .date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 筛选块 */
+.filter-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-block label {
+    font-weight: 500;
+    color: #495057;
+}
+
+/* 切换组 */
+.toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0 20px;
+}
+
+/* 切换芯片 */
+.toggle-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 2px solid #e9ecef;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.toggle-chip:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.toggle-chip input {
+    accent-color: #667eea;
+}
+
+/* 操作块 */
+.action-block {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.action-block button {
+    width: 100%;
+}
+
+/* 端口块 */
+.port-block {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.port-block select {
+    flex: 1;
+}
+
+/* 提示文本 */
+.hint {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* 面板区域 */
+section.panel {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   表单输入样式
+   ============================================ */
+
+/* 注意：.content 样式已在 common-styles.css 中定义，此处不再重复 */
+
+/* 文件输入隐藏 */
+input[type="file"] {
+    display: none;
+}
+
+/* 日期输入和选择框 */
+input[type="date"],
+select {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 10px 12px;
+    font: inherit;
+    background: white;
+    color: #333;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="date"]:focus,
+select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+select[multiple] {
+    min-height: 170px;
+}
+
+/* 控制组样式 */
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.control-group input[type="date"] {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.control-group input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ============================================
+   图表容器样式（覆盖 common-styles.css）
+   ============================================ */
+
+/* Monitor 工具特定的图表样式 */
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 800px;
+    margin-top: 20px;
+}
+
+canvas {
+    width: 100%;
+    max-height: 420px;
+}
+
+/* ============================================
+   页脚样式
+   ============================================ */
+
+.page-footer {
+    width: 100%;
+    background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+    color: white;
+    padding: 32px 30px 36px;
+    text-align: center;
+    margin-top: 0;
+    box-sizing: border-box;
+}
+
+.page-footer h2 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.page-footer p {
+    margin: 6px 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.5;
+}
+
+/* ============================================
+   响应式样式
+   ============================================ */
+
+@media (max-width: 640px) {
+    /* .content 的响应式样式已在 common-styles.css 中处理，此处仅处理 panel */
+    section.panel {
+        padding: 18px;
+    }
+}
+

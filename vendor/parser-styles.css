@@ -1,0 +1,89 @@
+/**
+ * 解析工具样式文件
+ * 用于 001-02, 365-02 系列解析工具页面
+ *
+ * 包含：
+ * - 解析工具特定的 header 样式（覆盖 common-styles.css）
+ * - 解析工具表格样式
+ * - 其他解析工具特定样式
+ */
+
+/* ==========================================================================
+   1. Header 样式（覆盖 common-styles.css）
+   ========================================================================== */
+
+/* 解析工具页面的 header 使用不同的渐变和字体大小 */
+body[data-page*="schedule-parser"] .header,
+body[data-page*="schedule-full-parser"] .header,
+body[data-page*="rotation-parser"] .header,
+body[data-page*="market-rate-parser"] .header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px 30px;
+}
+
+body[data-page*="schedule-parser"] .header h1,
+body[data-page*="schedule-full-parser"] .header h1,
+body[data-page*="rotation-parser"] .header h1,
+body[data-page*="market-rate-parser"] .header h1 {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+body[data-page*="schedule-parser"] .header p,
+body[data-page*="schedule-full-parser"] .header p,
+body[data-page*="rotation-parser"] .header p,
+body[data-page*="market-rate-parser"] .header p {
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   2. 表格样式（解析工具专用）
+   ========================================================================== */
+
+/* 解析工具页面的表格样式 */
+body[data-page*="schedule-parser"] table,
+body[data-page*="schedule-full-parser"] table,
+body[data-page*="rotation-parser"] table,
+body[data-page*="market-rate-parser"] table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+body[data-page*="schedule-parser"] th,
+body[data-page*="schedule-parser"] td,
+body[data-page*="schedule-full-parser"] th,
+body[data-page*="schedule-full-parser"] td,
+body[data-page*="rotation-parser"] th,
+body[data-page*="rotation-parser"] td,
+body[data-page*="market-rate-parser"] th,
+body[data-page*="market-rate-parser"] td {
+    border: 1px solid #e9ecef;
+    padding: 10px 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+body[data-page*="schedule-parser"] thead th,
+body[data-page*="schedule-full-parser"] thead th,
+body[data-page*="rotation-parser"] thead th,
+body[data-page*="market-rate-parser"] thead th {
+    position: sticky;
+    top: 0;
+    background: #f7f7f9;
+    z-index: 1;
+    font-weight: 600;
+    color: #495057;
+}
+
+body[data-page*="schedule-parser"] tbody tr:hover,
+body[data-page*="schedule-full-parser"] tbody tr:hover,
+body[data-page*="rotation-parser"] tbody tr:hover,
+body[data-page*="market-rate-parser"] tbody tr:hover {
+    background: #f8f9fa;
+}
+

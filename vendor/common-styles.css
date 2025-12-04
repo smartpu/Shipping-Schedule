@@ -1,0 +1,467 @@
+/**
+ * 公共样式文件
+ * 用于所有HTML工具页面
+ * 
+ * 包含：
+ * - 基础重置样式
+ * - 通用布局样式（container、header、back-home-btn）
+ * - PDF导出样式
+ * - 通用组件样式（card、controls、file-btn等）
+ */
+
+/* 基础重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+    color: #333;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* PDF导出样式 */
+body.pdf-export {
+    background: #ffffff !important;
+}
+
+body.pdf-export * {
+    box-shadow: none !important;
+}
+
+body.pdf-export .card,
+body.pdf-export .chart-container,
+body.pdf-export .table-container,
+body.pdf-export .info-box,
+body.pdf-export .instructions,
+body.pdf-export .market-report-upload,
+body.pdf-export .ai-analysis-container,
+body.pdf-export .booking-data-table,
+body.pdf-export .bunker-info,
+body.pdf-export .index-info,
+body.pdf-export .summary-row,
+body.pdf-export .footer {
+    background: #ffffff !important;
+}
+
+body.pdf-export .header,
+body.pdf-export .page-footer {
+    background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%) !important;
+}
+
+body.pdf-export canvas,
+body.pdf-export .chart-wrapper,
+body.pdf-export .chart-container,
+body.pdf-export .chart-wrapper canvas {
+    background: #ffffff !important;
+}
+
+/* 通用容器 */
+.container {
+    width: 100%;
+    margin: 0;
+    background: white;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+    min-height: 100vh;
+}
+
+/* 页面头部 */
+.header {
+    background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+    color: white;
+    padding: 48px 30px;
+    text-align: center;
+    position: relative;
+}
+
+.header h1 {
+    font-size: 30px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.header p {
+    opacity: 0.92;
+    font-size: 15px;
+    letter-spacing: 0.4px;
+}
+
+/* 返回首页按钮 */
+.back-home-btn {
+    position: absolute;
+    top: 20px;
+    left: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.back-home-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 使用说明 */
+details.instructions {
+    padding: 25px 40px;
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    margin: 20px 40px;
+    border-radius: 8px;
+}
+
+details.instructions summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    list-style: none;
+    color: #856404;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+details.instructions summary::-webkit-details-marker {
+    display: none;
+}
+
+details.instructions summary::after {
+    content: '⌄';
+    font-size: 16px;
+    transition: transform 0.2s ease;
+}
+
+details.instructions[open] summary::after {
+    transform: rotate(180deg);
+}
+
+details.instructions[open] .instruction-section {
+    margin-top: 16px;
+}
+
+.instructions ol {
+    margin-left: 20px;
+    color: #856404;
+    line-height: 1.8;
+}
+
+.instructions li {
+    margin-bottom: 8px;
+}
+
+.instructions strong {
+    color: #856404;
+}
+
+.instruction-section {
+    margin-top: 16px;
+}
+
+.instruction-section h4 {
+    color: #495057;
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+/* 内容区域 */
+.content {
+    padding: 20px 40px 30px;
+}
+
+/* 卡片 */
+.card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* 控制按钮组 */
+.controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+/* 文件选择按钮 */
+.file-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.file-btn:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.file-btn input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+button.file-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+button.file-btn:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+button.file-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.file-hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 8px;
+    line-height: 1.5;
+}
+
+/* 隐藏类 */
+.hidden {
+    display: none !important;
+}
+
+/* 通用按钮 */
+.btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn[disabled] {
+    background: #d2d2d7;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+}
+
+/* 表格容器 */
+.table-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+}
+
+/* 表格基础样式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+th, td {
+    border: 1px solid #e9ecef;
+    padding: 12px;
+    text-align: left;
+}
+
+thead th {
+    background: #667eea;
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+tbody tr:hover {
+    background: #e9ecef;
+}
+
+/* 图表容器（基础样式） */
+/* 注意：monitor-styles.css 和 market-analysis-styles.css 会覆盖此样式以适配不同工具 */
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-wrapper {
+    position: relative;
+    margin-top: 20px;
+}
+
+/* 视图切换按钮 */
+.view-toggle {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.view-toggle label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.view-toggle button {
+    background: white;
+    border: 2px solid #667eea;
+    color: #667eea;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.view-toggle button.active {
+    background: #667eea;
+    color: white;
+}
+
+.view-toggle button:hover:not(.active) {
+    background: #f0f0ff;
+}
+
+/* 筛选输入框 */
+.filter-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    margin-top: 4px;
+    box-sizing: border-box;
+}
+
+.filter-input::placeholder {
+    color: #999;
+}
+
+.filter-input:focus {
+    outline: none;
+    background: white;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* 日期输入框 */
+input[type="date"] {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 筛选控件组 */
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-group label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.filter-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    font-size: 13px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+

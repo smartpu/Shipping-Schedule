@@ -1,0 +1,745 @@
+/**
+ * 市场分析工具样式文件
+ * 用于 001-04-market-analysis.html 和 365-04-market-watch.html
+ *
+ * 包含：
+ * - 功能模块组件样式（.feature-section, .section-title, .module-header 等）
+ * - 筛选器组件样式（.filter-group, .top-controls, .file-hint）
+ * - 表格特定样式（.filter-header, .week-header, .number-cell, .hover-cell, .tooltip）
+ * - AI 分析相关样式（.ai-analysis-container, .api-config, .ai-tabs 等）
+ * - 信息展示组件（.info-box, .bunker-info, .index-info）
+ * - 预订数据表格样式（.booking-data-table, .booking-table）
+ * - 图表容器样式（.chart-container, .chart-wrapper 等）
+ */
+
+/* ==========================================================================
+   0. 功能模块组件样式
+   ========================================================================== */
+
+/* 功能模块区域 */
+.feature-section {
+    margin-top: 40px;
+}
+
+.feature-section.hidden {
+    display: none;
+}
+
+/* 模块标题 */
+.section-title {
+    font-size: 22px;
+    color: #1f2d3d;
+    font-weight: 600;
+    margin-bottom: 15px;
+    letter-spacing: 0.3px;
+}
+
+.section-title span {
+    font-size: 12px;
+    color: #98a2b3;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-left: 10px;
+}
+
+/* 模块头部 */
+.module-header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.module-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(102, 126, 234, 0.15);
+    color: #5568d3;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.module-desc {
+    margin: 4px 0 0;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* 目的地筛选器 */
+.destination-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.destination-filters.hidden {
+    display: none;
+}
+
+/* 操作按钮 */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: #f0f0ff;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.2);
+}
+
+/* 市场报告上传区 */
+.market-report-upload {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: #f8fbff;
+    border: 1px solid #dbe5fb;
+    border-radius: 10px;
+}
+
+.market-report-upload h5 {
+    margin-bottom: 10px;
+    font-size: 15px;
+    color: #1f2d3d;
+}
+
+.market-report-upload .file-hint {
+    margin-top: 8px;
+    display: block;
+}
+
+/* 市场报告列表 */
+.market-report-list {
+    margin-top: 12px;
+    list-style: none;
+    padding-left: 0;
+    color: #495057;
+    font-size: 13px;
+}
+
+.market-report-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.market-report-list li:last-child {
+    border-bottom: none;
+}
+
+.market-report-list span {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* 多选提示 */
+.multi-hint {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+/* 顶部控制区 */
+.top-controls {
+    justify-content: flex-start;
+    gap: 16px;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.top-controls .file-hint {
+    flex-basis: 100%;
+}
+
+/* ==========================================================================
+   1. 筛选器组件样式
+   ========================================================================== */
+
+.filter-group {
+    flex: 1 1 180px;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.filter-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    font-size: 13px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+button.file-btn {
+    border: none;
+    font-family: inherit;
+}
+
+.file-hint {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* ==========================================================================
+   2. 表格样式
+   ========================================================================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+}
+
+th, td {
+    border: 1px solid #e9ecef;
+    padding: 12px;
+    text-align: left;
+    width: calc(100% / 7);
+}
+
+thead th {
+    background: #667eea;
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+thead th.filter-header {
+    padding: 8px;
+    background: #5568d3;
+}
+
+thead th.week-header {
+    background: #5568d3;
+    text-align: center;
+    vertical-align: middle;
+}
+
+thead th.week-header > div {
+    line-height: 1.4;
+}
+
+.number-cell {
+    text-align: right;
+    font-weight: 500;
+}
+
+.hover-cell {
+    cursor: help;
+    position: relative;
+}
+
+.hover-cell:hover {
+    background: #e7f3ff !important;
+}
+
+.week-cell {
+    text-align: center;
+    font-weight: 600;
+}
+
+/* 工具提示 */
+.tooltip {
+    position: fixed;
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: pre;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.tooltip-line {
+    white-space: nowrap;
+    display: block;
+}
+
+/* ==========================================================================
+   3. 信息展示组件
+   ========================================================================== */
+
+.info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #007aff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-box p {
+    margin: 5px 0;
+    color: #004085;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.bunker-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.bunker-copy h4 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: #495057;
+}
+
+.bunker-copy p {
+    margin: 0;
+    color: #343a40;
+    font-size: 13px;
+}
+
+.bunker-meta {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.index-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
+.index-info h4 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: #495057;
+}
+
+.index-info p {
+    margin: 0;
+    color: #343a40;
+    font-size: 13px;
+    white-space: pre-line;
+}
+
+.index-meta {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* ==========================================================================
+   4. AI 分析相关样式
+   ========================================================================== */
+
+.ai-analysis-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.api-config {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 2px solid #e9ecef;
+}
+
+.ai-header {
+    margin-bottom: 16px;
+}
+
+.ai-header h3 {
+    margin: 0;
+    color: #495057;
+    font-size: 18px;
+}
+
+.ai-header p {
+    margin-top: 6px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+.ai-tabs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.ai-tab-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ai-tab-btn {
+    border: 2px solid #d0d7ff;
+    background: white;
+    color: #5568d3;
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-tab-btn.active {
+    background: #5568d3;
+    color: white;
+    box-shadow: 0 6px 16px rgba(85, 104, 211, 0.25);
+}
+
+.ai-tab-btn:hover:not(.active) {
+    background: #f5f6ff;
+}
+
+.ai-tab-hint {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.ai-panels {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ai-panel {
+    display: none;
+}
+
+.ai-panel.active {
+    display: block;
+}
+
+.api-config h4 {
+    margin-bottom: 15px;
+    color: #495057;
+    font-size: 16px;
+}
+
+.api-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.api-input-group label {
+    min-width: 120px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.api-input-group input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.api-input-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.api-save-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.api-save-btn:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-analysis-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-top: 15px;
+}
+
+.ai-analysis-btn:hover:not(:disabled) {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.ai-analysis-btn:disabled {
+    background: #d2d2d7;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.ai-analysis-btn.secondary {
+    background: #ff7b6b;
+    box-shadow: none;
+}
+
+.ai-analysis-btn.secondary:hover:not(:disabled) {
+    background: #ff624f;
+    box-shadow: 0 4px 12px rgba(255, 123, 107, 0.4);
+}
+
+.ai-result {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+}
+
+.ai-result h4 {
+    margin-bottom: 15px;
+    color: #495057;
+    font-size: 16px;
+}
+
+.ai-result-content {
+    color: #333;
+    line-height: 1.8;
+    white-space: pre-wrap;
+}
+
+.ai-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.ai-loading::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+/* ==========================================================================
+   5. 预订数据表格样式
+   ========================================================================== */
+
+.booking-data-table {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 2px solid #e9ecef;
+}
+
+.booking-data-table h4 {
+    margin-bottom: 15px;
+    color: #495057;
+    font-size: 16px;
+}
+
+.booking-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 13px;
+    table-layout: fixed;
+}
+
+.booking-table th,
+.booking-table td {
+    border: 1px solid #e9ecef;
+    padding: 10px;
+    text-align: left;
+}
+
+.booking-table th {
+    background: #667eea;
+    color: white;
+    font-weight: 600;
+}
+
+.booking-table th:first-child,
+.booking-table td:first-child {
+    width: 20%;
+}
+
+.booking-table th.description-header,
+.booking-table td.description-cell {
+    width: 80%;
+}
+
+.booking-table td input,
+.booking-table td textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 13px;
+    box-sizing: border-box;
+    font-family: inherit;
+    background: white;
+}
+
+.booking-table td textarea {
+    resize: vertical;
+    min-height: 70px;
+    line-height: 1.5;
+}
+
+.booking-table td input:focus,
+.booking-table td textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.booking-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+/* ==========================================================================
+   6. 图表容器样式（覆盖 common-styles.css）
+   ========================================================================== */
+
+/* 市场分析工具特定的图表样式 */
+.chart-container {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    margin-top: 30px;
+    box-shadow: 0 10px 30px rgba(21, 31, 64, 0.12);
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 800px;
+    margin-top: 30px;
+}
+
+.summary-row {
+    background: #f0f0ff !important;
+    font-weight: 600;
+}
+
+.empty-chart-message {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+/* ==========================================================================
+   7. 其他通用样式
+   ========================================================================== */
+
+body.pdf-export .container {
+    box-shadow: none !important;
+}
+
+/* ==========================================================================
+   8. 页脚样式（覆盖 common-styles.css）
+   ========================================================================== */
+
+/* 市场分析工具页面的页脚需要全宽显示 */
+.page-footer {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+    color: white;
+    padding: 32px 30px 36px;
+    text-align: center;
+    margin-top: 0;
+    box-sizing: border-box;
+}
+
+.page-footer h2 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.page-footer p {
+    margin: 6px 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.5;
+}
+
+/* 注意：.hidden 样式已在 common-styles.css 中定义（display: none !important），此处不再重复 */
+

@@ -5,266 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>明日数航 船期解析工具</title>
     <link rel="stylesheet" href="vendor/auth.css">
+    <link rel="stylesheet" href="vendor/common-styles.css">
+    <link rel="stylesheet" href="vendor/tool-styles.css">
+    <link rel="stylesheet" href="vendor/parser-styles.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 0;
-            margin: 0;
-            color: #333;
-        }
-
-        .container {
-            width: 100%;
-            margin: 0;
-            background: white;
-            border-radius: 0;
-            box-shadow: none;
-            overflow: hidden;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
-            position: relative;
-        }
-
-        .back-home-btn {
-            position: absolute;
-            top: 20px;
-            left: 30px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .back-home-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .instructions {
-            padding: 25px 40px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            margin: 20px 40px;
-            border-radius: 8px;
-        }
-
-        .instructions h3 {
-            color: #856404;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .instructions ol {
-            margin-left: 20px;
-            color: #856404;
-            line-height: 1.8;
-        }
-
-        .instructions li {
-            margin-bottom: 8px;
-        }
-
-        .instructions strong {
-            color: #856404;
-        }
-
-        .content {
-            padding: 20px 40px 30px;
-        }
-
-        .card {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .controls {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-
-        .file-btn {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .file-btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .file-btn input {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .btn:hover:not(:disabled) {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn[disabled] {
-            background: #d2d2d7;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        #summary {
-            color: #6c757d;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-
-        .log {
-            margin-top: 15px;
-            background: #fafafa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 15px;
-            max-height: 300px;
-            overflow: auto;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        #preview {
-            width: 100%;
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        th, td {
-            border: 1px solid #e9ecef;
-            padding: 10px 12px;
-            text-align: left;
-            white-space: nowrap;
-        }
-
-        thead th {
-            position: sticky;
-            top: 0;
-            background: #f7f7f9;
-            z-index: 1;
-            font-weight: 600;
-            color: #495057;
-        }
-
-        tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        .footer {
-            padding: 20px 40px;
-            background: #f8f9fa;
-            text-align: center;
-            color: #6c757d;
-            font-size: 12px;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .page-footer {
-            width: 100%;
-            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
-            color: white;
-            padding: 32px 30px 36px;
-            text-align: center;
-            margin-top: 0;
-            box-sizing: border-box;
-        }
-        .page-footer h2 {
-            font-size: 18px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-        .page-footer p {
-            margin: 6px 0;
-            font-size: 13px;
-            color: rgba(255,255,255,0.82);
-            line-height: 1.5;
-        }
-
-        
+        /* 页面特定样式（保留与公共样式不同的部分） */
     </style>
     <meta name="color-scheme" content="light dark">
 </head>
@@ -339,42 +84,16 @@
 
     <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
     <script src="vendor/auth-gist.js"></script>
+    <script src="vendor/parser-utils.js"></script>
     <script>
 
     (function() {
-        /** Utility: log area */
+        /** Utility: log area - 使用 parser-utils.js */
         const $ = (sel) => document.querySelector(sel);
-        const logBox = $('#log');
-        function log(msg, cls) {
-            const line = document.createElement('div');
-            if (cls) line.className = cls;
-            line.textContent = msg;
-            logBox.appendChild(line);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
+        const log = createLogger('#log', { useClassName: true });
 
-        /** CSV utils */
-        function toCsvCell(v) {
-            if (v == null) return '';
-            const s = String(v);
-            if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-            return s;
-        }
-        function rowsToCsv(rows) {
-            return rows.map(r => r.map(toCsvCell).join(',')).join('\n');
-        }
-        function downloadBlob(content, name, type) {
-            const blob = new Blob([content], { type });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = name; a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-        }
-
-        /** Parse helpers */
-        function text(el) { return el ? el.textContent.trim() : ''; }
-        function find(el, sel) { return el ? el.querySelector(sel) : null; }
-        function findAll(el, sel) { return el ? Array.from(el.querySelectorAll(sel)) : []; }
+        /** CSV utils - 使用 parser-utils.js 中的函数 */
+        /** DOM helpers - 使用 parser-utils.js 中的函数 (text, find, findAll) */
 
         function parseYearImoType(scope) {
             // Within .Route_notice_item5, find divs like <div><h3>年份</h3><h6>2019</h6></div>
@@ -501,28 +220,13 @@
             return allRows;
         }
 
-        /** Table preview */
-        function renderPreview(rows, container, table) {
+        /** Table preview - 使用 parser-utils.js 中的函数 */
+        function renderPreviewLocal(rows, container, table) {
             const headers = [
                 '启运港', '目的港', '航线ID', '开航日', '航程(计划)', '共舱船公司', '航线备注',
                 '船名航次', '年份', '船型', '船期', '启运港码头', '目的港码头', '航程(当次)'
             ];
-            table.innerHTML = '';
-            const thead = document.createElement('thead');
-            const trh = document.createElement('tr');
-            headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; trh.appendChild(th); });
-            thead.appendChild(trh);
-            table.appendChild(thead);
-
-            const tbody = document.createElement('tbody');
-            const maxRows = Math.min(rows.length, 50); // limit preview
-            for (let i = 0; i < maxRows; i++) {
-                const tr = document.createElement('tr');
-                rows[i].forEach(c => { const td = document.createElement('td'); td.textContent = c || ''; tr.appendChild(td); });
-                tbody.appendChild(tr);
-            }
-            table.appendChild(tbody);
-            container.classList.toggle('hidden', rows.length === 0);
+            renderPreview(rows, container, table, headers, 50);
         }
 
         /** Main flow */
@@ -537,7 +241,8 @@
         let outputRows = [];
 
         picker.addEventListener('change', () => {
-            logBox.innerHTML = '';
+            const logBox = document.querySelector('#log');
+            if (logBox) logBox.innerHTML = '';
             outputRows = [];
             preview.classList.add('hidden');
             selectedFiles = Array.from(picker.files).filter(f => /\.html?$/i.test(f.name));
@@ -583,7 +288,7 @@
             }
 
             outputRows = all;
-            renderPreview(all.slice(1), preview, table);
+            renderPreviewLocal(all.slice(1), preview, table);
             downloadBtn.disabled = all.length <= 1;
             summary.textContent = `完成：${fileOk} 个文件，${fileWarn} 个提醒，共 ${all.length - 1} 条记录。`;
         });
@@ -591,8 +296,7 @@
         downloadBtn.addEventListener('click', () => {
             if (!outputRows || outputRows.length <= 1) return;
             const csv = '\uFEFF' + rowsToCsv(outputRows); // BOM for Excel UTF-8
-            const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-            downloadBlob(csv, `shipping-schedule-${ts}.csv`, 'text/csv;charset=utf-8');
+            downloadBlob(csv, generateTimestampFilename('shipping-schedule'), 'text/csv;charset=utf-8');
         });
     })();
 </script>

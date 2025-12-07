@@ -138,8 +138,6 @@ Shipping-Schedule/
 - ⭐⭐⭐⭐ 性能
 - ⭐⭐⭐⭐⭐ 可维护性
 
-详细报告请查看 [CODE_REPORT.md](CODE_REPORT.md)
-
 ## 🧪 测试
 
 项目包含测试框架和测试文件，位于 `tests/` 目录。
@@ -174,5 +172,5 @@ Shipping-Schedule/
 
 ---
 
-**最后更新**: 2025-01-XX
+**最后更新**: 2025-12-07
 

@@ -15,6 +15,19 @@
 (function() {
     'use strict';
 
+    // ========== 调试函数降级处理 ==========
+    // 如果 debug-utils.js 还未加载，提供降级函数
+    const debugLog = typeof window !== 'undefined' && window.debugLog 
+        ? window.debugLog 
+        : function() {}; // 静默忽略，避免错误
+    const debugWarn = typeof window !== 'undefined' && window.debugWarn 
+        ? window.debugWarn 
+        : function() {}; // 静默忽略，避免错误
+    const debugError = typeof window !== 'undefined' && window.debugError 
+        ? window.debugError 
+        : function() {}; // 静默忽略，避免错误
+    // ====================================
+
     // ========== 配置区域 ==========
     // Vercel Serverless Function 地址
     // 使用相对路径，自动适配当前域名（支持自定义域名）

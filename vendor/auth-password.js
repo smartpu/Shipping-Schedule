@@ -62,7 +62,7 @@
      */
     function initPasswordAuth(correctPassword, onSuccess, storageKey) {
         if (!correctPassword) {
-            console.error('密码验证系统：未提供正确密码');
+            debugError('密码验证系统：未提供正确密码');
             return;
         }
 
@@ -73,7 +73,7 @@
         const passwordError = document.getElementById('passwordError');
 
         if (!authOverlay || !authForm) {
-            console.warn('密码验证模态框元素未找到，请确保HTML中包含密码验证模态框结构');
+            debugWarn('密码验证模态框元素未找到，请确保HTML中包含密码验证模态框结构');
             return;
         }
 

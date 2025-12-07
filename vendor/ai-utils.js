@@ -24,7 +24,7 @@ const DEFAULT_AI_PROVIDERS = {
     defaultModel: 'deepseek-chat',
     storagePrefix: 'deepseek', // 默认前缀，可通过 createAiProviders 自定义
     temperature: 0.7,
-    maxTokens: 2000
+    maxTokens: 8000
   },
   kimi: {
     id: 'kimi',
@@ -40,7 +40,7 @@ const DEFAULT_AI_PROVIDERS = {
     defaultModel: 'moonshot-v1-32k',
     storagePrefix: 'kimi',
     temperature: 0.7,
-    maxTokens: 2000
+    maxTokens: 8000
   },
   qwen: {
     id: 'qwen',
@@ -56,7 +56,7 @@ const DEFAULT_AI_PROVIDERS = {
     defaultModel: 'qwen-max',
     storagePrefix: 'qwen',
     temperature: 0.7,
-    maxTokens: 2000
+    maxTokens: 8000
   }
 };
 
@@ -145,10 +145,36 @@ function getAiConfigFromInputs(providerId, aiProviders) {
   const keyInput = document.getElementById(provider.keyInputId);
   const urlInput = document.getElementById(provider.urlInputId);
   const modelInput = document.getElementById(provider.modelInputId);
+  
+  // 优先从输入框读取
+  let apiKey = keyInput ? keyInput.value.trim() : '';
+  let apiUrl = urlInput ? urlInput.value.trim() : '';
+  let model = modelInput ? modelInput.value.trim() : '';
+  
+  // 如果输入框为空，尝试从 AI_CONFIG 读取（服务器配置）
+  if (!apiKey && typeof AI_CONFIG !== 'undefined' && AI_CONFIG[provider.id]) {
+    const config = AI_CONFIG[provider.id];
+    if (config.apiKey && config.apiKey.trim() !== '') {
+      apiKey = config.apiKey;
+    }
+  }
+  if (!apiUrl && typeof AI_CONFIG !== 'undefined' && AI_CONFIG[provider.id]) {
+    const config = AI_CONFIG[provider.id];
+    if (config.apiUrl && config.apiUrl.trim() !== '') {
+      apiUrl = config.apiUrl;
+    }
+  }
+  if (!model && typeof AI_CONFIG !== 'undefined' && AI_CONFIG[provider.id]) {
+    const config = AI_CONFIG[provider.id];
+    if (config.model && config.model.trim() !== '') {
+      model = config.model;
+    }
+  }
+  
   return {
-    apiKey: keyInput ? keyInput.value.trim() : '',
-    apiUrl: urlInput ? (urlInput.value.trim() || provider.defaultUrl) : provider.defaultUrl,
-    model: modelInput ? (modelInput.value.trim() || provider.defaultModel) : provider.defaultModel
+    apiKey: apiKey || '',
+    apiUrl: apiUrl || provider.defaultUrl,
+    model: model || provider.defaultModel
   };
 }
 
@@ -257,6 +283,19 @@ function initAiModule(aiProviders, eventListenerManager = null) {
 }
 
 /**
+ * 显示临时API Key使用提示对话框
+ * @param {string} providerName - 提供商名称
+ * @returns {Promise<boolean>} 用户是否确认继续
+ */
+async function showTempApiKeyWarning(providerName) {
+  return new Promise((resolve) => {
+    const message = `您当前使用的是临时 API Key（服务器配置）。\n\n强烈建议您自行申请自己的 API Key，以获得更好的使用体验和更高的调用额度。\n\n是否继续使用临时 API Key 进行分析？`;
+    const confirmed = confirm(message);
+    resolve(confirmed);
+  });
+}
+
+/**
  * 运行 AI 分析
  * @param {string} providerId - 提供商 ID
  * @param {Object<string, Object>} aiProviders - AI 提供商配置对象
@@ -277,9 +316,23 @@ async function executeAiAnalysis(providerId, aiProviders, buildPrompt, systemPro
   if (!provider) return;
   
   const config = getAiConfigFromInputs(providerId, aiProviders);
+  
+  // 检查是否使用了临时API Key（从AI_CONFIG读取）
+  const keyInput = document.getElementById(provider.keyInputId);
+  const inputKey = keyInput ? keyInput.value.trim() : '';
+  const isUsingTempKey = !inputKey && config.apiKey && typeof AI_CONFIG !== 'undefined' && AI_CONFIG[provider.id] && AI_CONFIG[provider.id].apiKey === config.apiKey;
+  
   if (!config || !config.apiKey) {
     onError(`请先配置 ${provider?.name || 'AI'} 的 API Key`);
     return;
+  }
+  
+  // 如果使用临时API Key，显示提示对话框
+  if (isUsingTempKey) {
+    const confirmed = await showTempApiKeyWarning(provider.name);
+    if (!confirmed) {
+      return;
+    }
   }
   
   // 执行分析前的操作（如获取数据）
@@ -337,7 +390,7 @@ async function executeAiAnalysis(providerId, aiProviders, buildPrompt, systemPro
       resultContainer.classList.remove('hidden');
     }
   } catch (error) {
-    console.error('AI分析失败:', error);
+    debugError('AI分析失败:', error);
     if (resultContent) {
       resultContent.textContent = `分析失败：${error.message}\n\n请检查：\n1. API Key 是否正确\n2. 网络连接是否正常\n3. API URL / 模型是否正确`;
     }

@@ -1828,7 +1828,7 @@
                     `<td class="${routeCellClass}" ${routePathAttr}>${item.routeLabel || '未知航线'}</td>`
                 ];
 
-                weekColumns.forEach(week => {
+                weekColumns.forEach((week) => {
                     const weekCode = week.code;
                     const ships = item.weeks[weekCode] || [];
                     
@@ -1898,7 +1898,7 @@
                 
                 // 计算每周的合计
                 groupedData.forEach(item => {
-                    weekColumns.forEach(week => {
+                    weekColumns.forEach((week) => {
                         const weekCode = week.code;
                         const ships = item.weeks[weekCode] || [];
                         const weekCapacity = ships.reduce((sum, ship) => sum + (ship.capacity || 0), 0);
@@ -1913,7 +1913,7 @@
                     });
                 });
                 
-                weekColumns.forEach(week => {
+                weekColumns.forEach((week) => {
                     const weekCode = week.code;
                     const totalCapacity = totalCapacityByWeek[weekCode] || 0;
                     const totalShips = totalShipsByWeek[weekCode] || 0;
@@ -2075,7 +2075,8 @@
                 const item = groupedData[index];
                 const capacityValues = [];
                 
-                weekCodes.forEach(weekCode => {
+                weekColumns.forEach((week) => {
+                    const weekCode = week.code;
                     const ships = item.weeks[weekCode] || [];
                     const weekCapacity = ships.reduce((sum, ship) => sum + (ship.capacity || 0), 0);
                     capacityValues.push(weekCapacity);
@@ -2095,11 +2096,22 @@
                 });
             });
             
-            // 计算每周的总派船数
-            weekCodes.forEach(weekCode => {
+            // 计算每周的总派船数（考虑周别合并）
+            weekCodes.forEach((weekCode, weekIndex) => {
                 let totalShips = 0;
                 groupedData.forEach(item => {
-                    const ships = item.weeks[weekCode] || [];
+                    let ships = item.weeks[weekCode] || [];
+                    
+                    // 检查是否需要与下一个周别合并
+                    if (weekIndex < weekCodes.length - 1) {
+                        const nextWeekCode = weekCodes[weekIndex + 1];
+                        if (typeof shouldMergeWeeks === 'function' && shouldMergeWeeks(weekCode, nextWeekCode)) {
+                            // 合并两个周别的数据
+                            const nextWeekShips = item.weeks[nextWeekCode] || [];
+                            ships = [...ships, ...nextWeekShips];
+                        }
+                    }
+                    
                     totalShips += ships.length;
                 });
                 shipData.push(totalShips);
@@ -2186,7 +2198,11 @@
         }
 
         // AI分析相关功能（使用统一的工具模块）
-        const aiProviders = createAiProviders('', {}); // 市场观察工具使用默认前缀
+        const aiProviders = createAiProviders('', {
+            deepseek: { maxTokens: 8000 },
+            kimi: { maxTokens: 8000 },
+            qwen: { maxTokens: 8000 }
+        }); // 市场观察工具使用默认前缀，增加输出长度限制
         // 提示词已从共享文件 vendor/ai-prompts.js 加载
         // baseSystemPrompt 和 aiInstructionTemplate 现在从外部文件引用
         let activeAiProvider = 'deepseek';

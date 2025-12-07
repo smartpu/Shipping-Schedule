@@ -899,7 +899,7 @@
                     `<td>${item.routeLabel || '未知航线'}</td>`
                 ];
 
-                weekColumns.forEach(week => {
+                weekColumns.forEach((week) => {
                     const weekCode = week.code;
                     const ships = item.weeks[weekCode] || [];
                     
@@ -973,7 +973,7 @@
                 
                 // 计算每周的合计
                 groupedData.forEach(item => {
-                    weekColumns.forEach(week => {
+                    weekColumns.forEach((week) => {
                         const weekCode = week.code;
                         const ships = item.weeks[weekCode] || [];
                         const weekCapacity = ships.reduce((sum, ship) => sum + (ship.capacity || 0), 0);
@@ -988,7 +988,7 @@
                     });
                 });
                 
-                weekColumns.forEach(week => {
+                weekColumns.forEach((week) => {
                     const weekCode = week.code;
                     const totalCapacity = totalCapacityByWeek[weekCode] || 0;
                     const totalShips = totalShipsByWeek[weekCode] || 0;
@@ -1157,7 +1157,8 @@
                 const item = groupedData[index];
                 const capacityValues = [];
                 
-                weekCodes.forEach(weekCode => {
+                weekColumns.forEach((week) => {
+                    const weekCode = week.code;
                     const ships = item.weeks[weekCode] || [];
                     const weekCapacity = ships.reduce((sum, ship) => sum + (ship.capacity || 0), 0);
                     capacityValues.push(weekCapacity);
@@ -1178,7 +1179,8 @@
             });
             
             // 计算每周的总派船数
-            weekCodes.forEach(weekCode => {
+            weekColumns.forEach((week) => {
+                const weekCode = week.code;
                 let totalShips = 0;
                 groupedData.forEach(item => {
                     const ships = item.weeks[weekCode] || [];
@@ -1283,7 +1285,7 @@
                 defaultModel: 'deepseek-chat',
                 storagePrefix: 'deepseek',
                 temperature: 0.7,
-                maxTokens: 2000
+                maxTokens: 8000
             },
             kimi: {
                 id: 'kimi',
@@ -1299,7 +1301,7 @@
                 defaultModel: 'moonshot-v1-32k',
                 storagePrefix: 'kimi',
                 temperature: 0.7,
-                maxTokens: 2000
+                maxTokens: 8000
             },
             qwen: {
                 id: 'qwen',
@@ -1315,7 +1317,7 @@
                 defaultModel: 'qwen-max',
                 storagePrefix: 'qwen',
                 temperature: 0.7,
-                maxTokens: 2000
+                maxTokens: 8000
             }
         };
         // 提示词已从共享文件 vendor/ai-prompts.js 加载

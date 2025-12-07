@@ -64,7 +64,7 @@
                 lastError = error;
                 if (i < retries) {
                     const delay = Math.min(1000 * Math.pow(2, i), 5000);
-                    console.warn(`[Auth] 请求失败，${delay}ms 后重试 (${i + 1}/${retries}):`, error.message);
+                    debugWarn(`[Auth] 请求失败，${delay}ms 后重试 (${i + 1}/${retries}):`, error.message);
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
@@ -77,7 +77,7 @@
      */
     async function loadWhitelist() {
         const url = `${GIST_API_URL}?type=whitelist`;
-        console.log(`[Auth] 加载白名单: ${url}`);
+        debugLog(`[Auth] 加载白名单: ${url}`);
         
         try {
             const response = await fetchWithRetry(url, {
@@ -95,7 +95,7 @@
             const data = await response.json();
             
             if (!Array.isArray(data)) {
-                console.warn('[Auth] 白名单数据格式错误，期望数组');
+                debugWarn('[Auth] 白名单数据格式错误，期望数组');
                 userWhitelist = [];
                 return [];
             }
@@ -106,10 +106,10 @@
                 email: (user.email || '').trim().toLowerCase()
             }));
             
-            console.log(`[Auth] 白名单加载成功，共 ${userWhitelist.length} 个用户`);
+            debugLog(`[Auth] 白名单加载成功，共 ${userWhitelist.length} 个用户`);
             return userWhitelist;
         } catch (error) {
-            console.error('[Auth] 加载白名单失败:', {
+            debugError('[Auth] 加载白名单失败:', {
                 message: error.message,
                 url: url
             });
@@ -123,7 +123,7 @@
      */
     function isUserInWhitelist(name, phone, email) {
         if (userWhitelist.length === 0) {
-            console.warn('白名单未加载，拒绝访问');
+            debugWarn('白名单未加载，拒绝访问');
             return false;
         }
 
@@ -183,7 +183,7 @@
      * 保存访问记录到 Gist
      */
     async function saveLogToGist(logEntry) {
-        console.log('[Auth] 保存访问记录:', logEntry);
+        debugLog('[Auth] 保存访问记录:', logEntry);
         
         try {
             const response = await fetchWithRetry(GIST_API_URL, {
@@ -203,10 +203,10 @@
             }
 
             const result = await response.json();
-            console.log('[Auth] 访问记录保存成功:', result);
+            debugLog('[Auth] 访问记录保存成功:', result);
             return true;
         } catch (error) {
-            console.error('[Auth] 保存访问记录失败:', {
+            debugError('[Auth] 保存访问记录失败:', {
                 message: error.message,
                 logEntry: logEntry
             });
@@ -263,7 +263,7 @@
         const emailError = document.getElementById('emailError');
 
         if (!authOverlay || !authForm) {
-            console.warn('验证模态框元素未找到');
+            debugWarn('验证模态框元素未找到');
             return;
         }
 
@@ -351,7 +351,7 @@
                     phoneError.textContent = '手机号或邮箱不匹配';
                     phoneError.classList.add('show');
                 }
-                console.warn('用户不在白名单中');
+                debugWarn('用户不在白名单中');
                 return;
             }
 

@@ -63,9 +63,11 @@
                 <li><strong>Excel 数据文件</strong>：准备包含船期数据的 Excel 文件（支持 001 或 365 格式）</li>
                 <li><strong>AI API 密钥（可选）</strong>：
                     <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
-                        <li>工具已集成测试 API Key，可直接使用 AI 分析功能</li>
-                        <li><strong>强烈建议自行申请 API Key 自用</strong>：测试 API Key 随时可能过期无法使用，且可能存在配额限制</li>
-                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的测试 API Key</li>
+                        <li>工具已集成临时 API Key（服务器配置），可直接使用 AI 分析功能</li>
+                        <li><strong>使用临时 API Key 时会弹出提示</strong>：系统会提示您正在使用临时 API Key，并强烈建议自行申请自己的 API Key</li>
+                        <li><strong>强烈建议自行申请 API Key 自用</strong>：临时 API Key 随时可能过期无法使用，且可能存在配额限制。自行申请可获得更好的使用体验和更高的调用额度</li>
+                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的临时 API Key</li>
+                        <li><strong>AI 输出长度</strong>：已设置为 8000 tokens，可支持更长的分析输出</li>
                         <li>申请地址：
                             <ul style="margin-top: 4px; margin-left: 20px; list-style: circle;">
                                 <li>DeepSeek：<a href="https://platform.deepseek.com" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.deepseek.com</a></li>
@@ -120,10 +122,12 @@
                 <li><strong>多模型支持</strong>：支持 DeepSeek、KIMI（Moonshot）、通义千问三种 AI 模型</li>
                 <li><strong>API Key 配置</strong>：
                     <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
-                        <li>工具已集成测试 API Key，可直接使用，无需手动输入</li>
-                        <li><strong>强烈建议自行申请 API Key</strong>：测试 API Key 随时可能过期无法使用，且可能存在配额限制</li>
-                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的测试 API Key</li>
+                        <li>工具已集成临时 API Key（服务器配置），可直接使用，无需手动输入</li>
+                        <li><strong>使用临时 API Key 时会弹出提示</strong>：系统会提示您正在使用临时 API Key，并强烈建议自行申请自己的 API Key</li>
+                        <li><strong>强烈建议自行申请 API Key</strong>：临时 API Key 随时可能过期无法使用，且可能存在配额限制。自行申请可获得更好的使用体验和更高的调用额度</li>
+                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的临时 API Key</li>
                         <li>配置会自动保存到浏览器本地存储，下次打开会自动加载</li>
+                        <li><strong>AI 输出长度</strong>：已设置为 8000 tokens，可支持更长的分析输出</li>
                     </ul>
                 </li>
                 <li><strong>智能分析</strong>：基于当前筛选的船期数据，AI 提供趋势分析和决策建议</li>
@@ -186,7 +190,8 @@
             <p>A: 请检查：</p>
             <ul>
                 <li>网络连接是否正常，确保可以访问 AI API</li>
-                <li>如果使用的是测试 API Key，可能已过期或配额不足，建议自行申请 API Key</li>
+                <li>如果使用的是临时 API Key（服务器配置），可能已过期或配额不足，建议自行申请 API Key</li>
+                <li>使用临时 API Key 时会弹出提示对话框，确认后即可继续使用</li>
                 <li>如果已自行配置 API Key，请检查 API Key、URL 和模型 ID 是否正确</li>
                 <li>查看浏览器控制台是否有错误信息</li>
             </ul>

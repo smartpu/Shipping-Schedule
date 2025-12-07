@@ -25,7 +25,7 @@ async function loadPdfLibraries() {
                 await loadScript(src);
                 if (typeof window.html2canvas !== 'undefined') break;
             } catch (error) {
-                console.warn('html2canvas 加载失败', src, error);
+                debugWarn('html2canvas 加载失败', src, error);
             }
         }
     }
@@ -43,7 +43,7 @@ async function loadPdfLibraries() {
                 await loadScript(src);
                 if (typeof window.jspdf !== 'undefined') break;
             } catch (error) {
-                console.warn('jsPDF 加载失败', src, error);
+                debugWarn('jsPDF 加载失败', src, error);
             }
         }
     }
@@ -142,7 +142,7 @@ async function exportToPdf(target, options = {}) {
 
         if (onComplete) onComplete();
     } catch (error) {
-        console.error('导出PDF失败:', error);
+        debugError('导出PDF失败:', error);
         if (onError) onError(error);
         throw error;
     }

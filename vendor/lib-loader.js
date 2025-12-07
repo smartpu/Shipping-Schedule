@@ -24,7 +24,7 @@
 
             function tryLoadNext() {
                 if (currentIndex >= remoteSources.length) {
-                    console.error(`${libraryName} 无法加载，请检查网络或手动刷新后重试`);
+                    debugError(`${libraryName} 无法加载，请检查网络或手动刷新后重试`);
                     resolve(false);
                     return;
                 }
@@ -36,7 +36,7 @@
                 
                 script.onload = () => {
                     if (typeof window[globalName] !== 'undefined') {
-                        console.log(`${libraryName} loaded from`, url);
+                        debugLog(`${libraryName} loaded from`, url);
                         resolve(true);
                     } else {
                         // 加载了但库未定义，尝试下一个
@@ -46,7 +46,7 @@
                 };
                 
                 script.onerror = () => {
-                    console.warn(`${libraryName} load failed from`, url, 'trying next...');
+                    debugWarn(`${libraryName} load failed from`, url, 'trying next...');
                     currentIndex++;
                     tryLoadNext();
                 };

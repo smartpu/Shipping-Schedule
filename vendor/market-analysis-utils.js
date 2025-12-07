@@ -175,7 +175,44 @@ function getCurrentWeekCode() {
 }
 
 /**
+ * 检查两个周别是否加起来正好是7天（需要合并）
+ * @param {string} weekCode1 - 第一个周别代码（如"202553"）
+ * @param {string} weekCode2 - 第二个周别代码（如"202601"）
+ * @returns {boolean} 如果两个周别加起来正好是7天，返回true
+ */
+function shouldMergeWeeks(weekCode1, weekCode2) {
+    const range1 = getWeekDateRange(weekCode1);
+    const range2 = getWeekDateRange(weekCode2);
+    
+    // 解析日期字符串（格式：YYYY/MM/DD）
+    const parseDateStr = (dateStr) => {
+        const parts = dateStr.split('/');
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    };
+    
+    const week1Sunday = parseDateStr(range1.sunday);
+    const week1Saturday = parseDateStr(range1.saturday);
+    const week2Sunday = parseDateStr(range2.sunday);
+    const week2Saturday = parseDateStr(range2.saturday);
+    
+    // 计算两个周别覆盖的总天数
+    const totalDays = Math.floor((week2Saturday - week1Sunday) / (1000 * 60 * 60 * 24)) + 1;
+    
+    // 如果总天数正好是7天，且week1的周六和week2的周日是连续的，说明需要合并
+    if (totalDays === 7) {
+        // 检查week1的周六和week2的周日是否连续（相差1天）
+        const daysBetween = Math.floor((week2Sunday - week1Saturday) / (1000 * 60 * 60 * 24));
+        if (daysBetween === 1) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
  * 获取当周+未来4周（共5周）
+ * 如果检测到需要合并的周别，会跳过被合并的周别，继续获取下一周
  * @returns {string[]} 周别代码数组
  */
 function getWeekRange() {
@@ -187,18 +224,41 @@ function getWeekRange() {
     const currentWeekNo = parseInt(currentWeekCode.substring(4));
     
     // 生成当周+未来4周（共5周）
-    for (let i = 0; i < 5; i++) {
+    let skipNext = false; // 标记是否跳过下一周（因为被合并了）
+    for (let i = 0; weeks.length < 5; i++) {
         let year = currentYear;
         let weekNo = currentWeekNo + i;
         
-        // 处理跨年
+        // 处理跨年：如果周数超过53，则进入下一年
         if (weekNo > 53) {
             year = year + 1;
             weekNo = weekNo - 53;
         }
         
         const weekStr = String(year) + String(weekNo).padStart(2, '0');
+        
+        // 如果上一周需要与当前周合并，跳过当前周
+        if (skipNext) {
+            skipNext = false;
+            continue;
+        }
+        
         weeks.push(weekStr);
+        
+        // 检查当前周是否需要与下一周合并
+        if (weeks.length < 5) {
+            let nextYear = year;
+            let nextWeekNo = weekNo + 1;
+            if (nextWeekNo > 53) {
+                nextYear = year + 1;
+                nextWeekNo = nextWeekNo - 53;
+            }
+            const nextWeekStr = String(nextYear) + String(nextWeekNo).padStart(2, '0');
+            
+            if (shouldMergeWeeks(weekStr, nextWeekStr)) {
+                skipNext = true; // 标记下一周需要跳过
+            }
+        }
     }
     
     return weeks;
@@ -307,7 +367,7 @@ function getWeekDateRange(weekCode) {
  */
 async function loadScript(url) {
     if (typeof loadedScripts === 'undefined') {
-        console.warn('loadedScripts 未定义，请在页面中声明');
+        debugWarn('loadedScripts 未定义，请在页面中声明');
         return;
     }
     if (loadedScripts.has(url)) {
@@ -332,7 +392,7 @@ async function loadScript(url) {
  */
 async function loadWorkerAsBlob(url) {
     if (typeof loadedWorkers === 'undefined') {
-        console.warn('loadedWorkers 未定义，请在页面中声明');
+        debugWarn('loadedWorkers 未定义，请在页面中声明');
         return null;
     }
     if (loadedWorkers.has(url)) {
@@ -354,7 +414,7 @@ async function loadWorkerAsBlob(url) {
  */
 async function ensurePdfJsLoaded() {
     if (typeof pdfJsReady === 'undefined' || typeof pdfJsLoadingPromise === 'undefined') {
-        console.warn('pdfJsReady 或 pdfJsLoadingPromise 未定义，请在页面中声明');
+        debugWarn('pdfJsReady 或 pdfJsLoadingPromise 未定义，请在页面中声明');
         return;
     }
     if (typeof window.pdfjsLib !== 'undefined') {
@@ -396,7 +456,7 @@ async function ensurePdfJsLoaded() {
                 }
             } catch (error) {
                 lastError = error;
-                console.warn('PDF.js 加载失败，尝试下一个源:', src.script, error);
+                debugWarn('PDF.js 加载失败，尝试下一个源:', src.script, error);
             }
         }
         if (!pdfJsReady) {
@@ -446,7 +506,7 @@ async function extractTextFromPdf(file) {
  */
 async function handleMarketReportFile(file) {
     if (typeof marketReports === 'undefined') {
-        console.warn('marketReports 未定义，请在页面中声明');
+        debugWarn('marketReports 未定义，请在页面中声明');
         return;
     }
     try {
@@ -459,7 +519,7 @@ async function handleMarketReportFile(file) {
             });
         }
     } catch (error) {
-        console.error('解析PDF失败', file.name, error);
+        debugError('解析PDF失败', file.name, error);
         // 抛出异常，由调用方处理（更灵活的错误处理机制）
         throw new Error(`解析 ${file.name} 失败：${error.message || error}`);
     }
@@ -539,7 +599,7 @@ async function fetchTextContent(url, options = {}) {
             const decoder = new TextDecoder(options.encoding);
             return decoder.decode(buffer);
         } catch (error) {
-            console.warn('自定义编码解析失败，回退到默认编码', error);
+            debugWarn('自定义编码解析失败，回退到默认编码', error);
         }
     }
     return response.text();
@@ -552,7 +612,7 @@ async function fetchTextContent(url, options = {}) {
  */
 async function fetchBunkerData(force = false) {
     if (typeof bunkerData === 'undefined' || typeof bunkerStatusEl === 'undefined') {
-        console.warn('bunkerData 或 bunkerStatusEl 未定义，请在页面中声明');
+        debugWarn('bunkerData 或 bunkerStatusEl 未定义，请在页面中声明');
         return null;
     }
     const sixHours = 6 * 60 * 60 * 1000;
@@ -685,7 +745,7 @@ function describeBunkerLine(label, data) {
  */
 async function fetchCcfiData(force = false) {
     if (typeof ccfiData === 'undefined' || typeof ccfiStatusEl === 'undefined') {
-        console.warn('ccfiData 或 ccfiStatusEl 未定义，请在页面中声明');
+        debugWarn('ccfiData 或 ccfiStatusEl 未定义，请在页面中声明');
         return null;
     }
     const sixHours = 6 * 60 * 60 * 1000;
@@ -737,7 +797,7 @@ function parseAndValidateCcfiMatch(match, route, strategyName) {
         };
         
         if (getCachedDebugMode()) {
-            console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
+            debugLog(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
         }
         
         return result;
@@ -772,7 +832,7 @@ function parseAndValidateCcfiMatchCurrentOnly(match, route, strategyName) {
         };
         
         if (getCachedDebugMode()) {
-            console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { current });
+            debugLog(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { current });
         }
         
         return result;
@@ -836,7 +896,7 @@ function tryMatchCcfiRoute(regexOrPattern, normalized, route, strategyName, pars
  */
 function parseCcfiText(text) {
     if (typeof ccfiRoutes === 'undefined') {
-        console.warn('ccfiRoutes 未定义，请在页面中声明');
+        debugWarn('ccfiRoutes 未定义，请在页面中声明');
         return { timestamp: Date.now(), period: null, routes: [] };
     }
     
@@ -858,8 +918,8 @@ function parseCcfiText(text) {
     // 调试：检查文本内容（仅在调试模式下）
     const DEBUG_MODE = getCachedDebugMode();
     if (DEBUG_MODE) {
-        console.log('[CCFI] 文本长度:', normalized.length);
-        console.log('[CCFI] 文本前500字符:', normalized.substring(0, 500));
+        debugLog('[CCFI] 文本长度:', normalized.length);
+        debugLog('[CCFI] 文本前500字符:', normalized.substring(0, 500));
         // 查找包含航线中文名称的部分
         const routeLabels = ccfiRoutes.map(r => r.label);
         const foundLabels = [];
@@ -868,16 +928,16 @@ function parseCcfiText(text) {
                 foundLabels.push(label);
             }
         });
-        console.log('[CCFI] 找到的航线标签:', foundLabels);
+        debugLog('[CCFI] 找到的航线标签:', foundLabels);
         // 查找包含数字的部分（可能是价格数据）
         const numberMatches = normalized.match(/[\d,]+\.?\d*/g);
         if (numberMatches) {
-            console.log('[CCFI] 找到的数字数据（前30个）:', numberMatches.slice(0, 30));
+            debugLog('[CCFI] 找到的数字数据（前30个）:', numberMatches.slice(0, 30));
         }
         // 查找包含英文航线名称的部分
         const routeMatches = normalized.match(/(JAPAN|EUROPE|AMERICA|KOREA|ASIA|MEDITERRANEAN|AUSTRALIA|AFRICA|PERSIAN|GULF|RED SEA)/gi);
         if (routeMatches) {
-            console.log('[CCFI] 找到的英文航线名称（前20个）:', routeMatches.slice(0, 20));
+            debugLog('[CCFI] 找到的英文航线名称（前20个）:', routeMatches.slice(0, 20));
         }
         // 查找每个航线名称附近的文本内容（用于调试）
         const sampleRoutes = ['JAPAN', 'EUROPE', 'KOREA', 'ASIA'];
@@ -885,14 +945,14 @@ function parseCcfiText(text) {
             const index = normalized.indexOf(keyword);
             if (index !== -1) {
                 const snippet = normalized.substring(Math.max(0, index - 50), index + 200);
-                console.log(`[CCFI] "${keyword}" 附近的文本:`, snippet);
+                debugLog(`[CCFI] "${keyword}" 附近的文本:`, snippet);
             }
         });
         // 查找综合指数附近的文本内容
         const compositeIndex = normalized.indexOf('CHINA CONTAINERIZED FREIGHT INDEX');
         if (compositeIndex !== -1) {
             const snippet = normalized.substring(Math.max(0, compositeIndex - 50), compositeIndex + 200);
-            console.log(`[CCFI] "CHINA CONTAINERIZED FREIGHT INDEX" 附近的文本:`, snippet);
+            debugLog(`[CCFI] "CHINA CONTAINERIZED FREIGHT INDEX" 附近的文本:`, snippet);
         }
     }
     
@@ -1023,7 +1083,7 @@ function parseCcfiText(text) {
                         wow: isFinite(wow) ? wow : null
                     };
                     if (getCachedDebugMode()) {
-                        console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
+                        debugLog(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
                     }
                     return result;
                 }
@@ -1054,7 +1114,7 @@ function parseCcfiText(text) {
                         wow: null
                     };
                     if (getCachedDebugMode()) {
-                        console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { current });
+                        debugLog(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { current });
                     }
                     return result;
                 }
@@ -1087,7 +1147,7 @@ function parseCcfiText(text) {
                         wow: isFinite(wow) ? wow : null
                     };
                     if (getCachedDebugMode()) {
-                        console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
+                        debugLog(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
                     }
                     return result;
                 }
@@ -1100,12 +1160,12 @@ function parseCcfiText(text) {
         }
         
         if (!found && getCachedDebugMode()) {
-            console.warn(`[CCFI] 未匹配到: ${route.label} (${route.match})`);
+            debugWarn(`[CCFI] 未匹配到: ${route.label} (${route.match})`);
         }
     });
     
     if (getCachedDebugMode()) {
-        console.log(`[CCFI] 总共匹配到 ${result.routes.length} 条航线数据`);
+        debugLog(`[CCFI] 总共匹配到 ${result.routes.length} 条航线数据`);
     }
     
     return result;
@@ -1330,7 +1390,7 @@ function renderCcfiStatus() {
  */
 async function fetchWciData(force = false) {
     if (typeof wciData === 'undefined' || typeof wciStatusEl === 'undefined') {
-        console.warn('wciData 或 wciStatusEl 未定义，请在页面中声明');
+        debugWarn('wciData 或 wciStatusEl 未定义，请在页面中声明');
         return null;
     }
     const sixHours = 6 * 60 * 60 * 1000;
@@ -1382,7 +1442,7 @@ function parseWciByCode(normalized, code, label, result) {
                 result.routes.push({ code, route: label, rate: value });
             }
             if (getCachedDebugMode()) {
-                console.log(`[WCI] 策略1匹配成功: ${code} (${label})`, { value });
+                debugLog(`[WCI] 策略1匹配成功: ${code} (${label})`, { value });
             }
             return true;
         }
@@ -1410,7 +1470,7 @@ function parseWciByLabel(normalized, code, label, result) {
         if (isFinite(value) && value > 0) {
             result.routes.push({ code, route: label, rate: value });
             if (getCachedDebugMode()) {
-                console.log(`[WCI] 策略2匹配成功: ${code} (${label})`, { value });
+                debugLog(`[WCI] 策略2匹配成功: ${code} (${label})`, { value });
             }
             return true;
         }
@@ -1482,7 +1542,7 @@ function parseWciByFallback(normalized, matchedCodes, wciCodeMap, result) {
                         result.routes.push({ code, route: label, rate: value });
                         matchedCodes.add(code);
                         if (getCachedDebugMode()) {
-                            console.log(`[WCI] Fallback匹配成功: ${code} (${label})`, { value, pattern: pattern.toString() });
+                            debugLog(`[WCI] Fallback匹配成功: ${code} (${label})`, { value, pattern: pattern.toString() });
                         }
                         break;
                     }
@@ -1519,7 +1579,7 @@ function parseWciComposite(normalized, result) {
  */
 function parseWciText(text) {
     if (typeof wciCodeMap === 'undefined') {
-        console.warn('wciCodeMap 未定义，请在页面中声明');
+        debugWarn('wciCodeMap 未定义，请在页面中声明');
         return { timestamp: Date.now(), worldIndex: null, changePct: null, routes: [] };
     }
     const normalized = text.replace(/\r/g, ' ');
@@ -1528,19 +1588,19 @@ function parseWciText(text) {
     // 调试：检查文本内容（仅在调试模式下）
     const DEBUG_MODE = getCachedDebugMode();
     if (DEBUG_MODE) {
-        console.log('[WCI] 文本长度:', normalized.length);
-        console.log('[WCI] 文本前500字符:', normalized.substring(0, 500));
+        debugLog('[WCI] 文本长度:', normalized.length);
+        debugLog('[WCI] 文本前500字符:', normalized.substring(0, 500));
         const numberMatches = normalized.match(/\$\s*[\d,]+/g);
         if (numberMatches) {
-            console.log('[WCI] 找到的价格数据（前20个）:', numberMatches.slice(0, 20));
+            debugLog('[WCI] 找到的价格数据（前20个）:', numberMatches.slice(0, 20));
         }
         const cityMatches = normalized.match(/(Shanghai|Rotterdam|Los Angeles|New York|Genoa)/gi);
         if (cityMatches) {
-            console.log('[WCI] 找到的城市名称（前20个）:', cityMatches.slice(0, 20));
+            debugLog('[WCI] 找到的城市名称（前20个）:', cityMatches.slice(0, 20));
         }
         const wciCodeMatches = normalized.match(/WCI-[A-Z-]+/gi);
         if (wciCodeMatches) {
-            console.log('[WCI] 找到的 WCI 代码（前20个）:', wciCodeMatches.slice(0, 20));
+            debugLog('[WCI] 找到的 WCI 代码（前20个）:', wciCodeMatches.slice(0, 20));
         }
     }
     
@@ -1551,7 +1611,7 @@ function parseWciText(text) {
             matched = parseWciByLabel(normalized, code, label, result);
         }
         if (!matched && getCachedDebugMode()) {
-            console.warn(`[WCI] 未匹配到: ${code} (${label})`);
+            debugWarn(`[WCI] 未匹配到: ${code} (${label})`);
         }
     });
     
@@ -1627,7 +1687,7 @@ function renderWciStatus() {
  */
 async function fetchFbxData(force = false) {
     if (typeof fbxData === 'undefined' || typeof fbxStatusEl === 'undefined') {
-        console.warn('fbxData 或 fbxStatusEl 未定义，请在页面中声明');
+        debugWarn('fbxData 或 fbxStatusEl 未定义，请在页面中声明');
         return null;
     }
     const threeHours = 3 * 60 * 60 * 1000;
@@ -1653,7 +1713,7 @@ async function fetchFbxData(force = false) {
  */
 function parseFbxText(text) {
     if (typeof fbxCodeMap === 'undefined') {
-        console.warn('fbxCodeMap 未定义，请在页面中声明');
+        debugWarn('fbxCodeMap 未定义，请在页面中声明');
         return { timestamp: Date.now(), indices: [] };
     }
     const normalized = text.replace(/\r/g, '');

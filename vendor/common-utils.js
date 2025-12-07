@@ -107,7 +107,7 @@ function loadCachedData(key) {
         if (!raw) return null;
         return JSON.parse(raw);
     } catch (error) {
-        console.warn('加载缓存失败', error);
+        debugWarn('加载缓存失败', error);
         return null;
     }
 }
@@ -122,7 +122,7 @@ function saveCachedData(key, data) {
         if (typeof localStorage === 'undefined') return;
         localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
-        console.warn('写入缓存失败', error);
+        debugWarn('写入缓存失败', error);
     }
 }
 

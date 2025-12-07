@@ -55,7 +55,7 @@
             <ol>
                 <li><strong>上传 Excel 数据源</strong>：文件需同时包含 <strong>market / schedule</strong> 工作表，并具备区域、港口、航线、周别、运力、船名航次、20GP / 40GP 等字段。</li>
                 <li><strong>上传市场周报</strong>：支持一次选择多份 PDF（如 Alphaliner Newsletter、Linerlytica Weekly 等），便于 AI 参考最新情报。</li>
-                <li><strong>AI 密钥</strong>：工具已集成测试 API Key，可直接使用。但<strong>强烈建议自行申请 API Key 自用</strong>（测试 API Key 随时可能过期），用户输入的 API Key 优先级高于配置文件中的测试 API Key。调用费用及合规责任由使用方承担。详细说明见下方"Module 03 · AI 趋势分析"部分。</li>
+                <li><strong>AI 密钥</strong>：工具已集成临时 API Key（服务器配置），可直接使用。使用临时 API Key 时会弹出提示，<strong>强烈建议自行申请 API Key 自用</strong>（临时 API Key 随时可能过期），用户输入的 API Key 优先级高于配置文件中的临时 API Key。调用费用及合规责任由使用方承担。详细说明见下方"Module 03 · AI 趋势分析"部分。</li>
             </ol>
 
             <h3>基本使用流程</h3>
@@ -104,10 +104,12 @@
                 </li>
                 <li><strong>API Key 使用说明</strong>：
                     <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
-                        <li>工具已集成测试 API Key，可直接使用，无需手动输入</li>
-                        <li><strong>强烈建议自行申请 API Key</strong>：测试 API Key 随时可能过期无法使用，且可能存在配额限制</li>
-                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的测试 API Key</li>
+                        <li>工具已集成临时 API Key（服务器配置），可直接使用，无需手动输入</li>
+                        <li><strong>使用临时 API Key 时会弹出提示</strong>：系统会提示您正在使用临时 API Key，并强烈建议自行申请自己的 API Key</li>
+                        <li><strong>强烈建议自行申请 API Key</strong>：临时 API Key 随时可能过期无法使用，且可能存在配额限制。自行申请可获得更好的使用体验和更高的调用额度</li>
+                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的临时 API Key</li>
                         <li>配置会自动保存到浏览器本地存储，下次打开会自动加载</li>
+                        <li><strong>AI 输出长度</strong>：已设置为 8000 tokens，可支持更长的分析输出</li>
                     </ul>
                 </li>
                 <li><strong>收费说明</strong>：各模型按调用次数/Token 计费，具体价格请参考各平台官网。建议先使用经济型模型测试，再根据需求选择高性能模型。</li>
@@ -210,6 +212,12 @@
                 <li><strong>周别列</strong>：周别代码（N列或包含"周别"、"周次"、"周数"、"week"等关键词，格式如：202547 或 2025年第47周）</li>
                 <li><strong>运力列</strong>：运力（TEU）（O列或包含"运力"、"teu"、"舱位"等关键词）</li>
             </ul>
+            <h4>周别规则</h4>
+            <ul>
+                <li>支持格式：<code>202547</code>、<code>2025年第47周</code>、<code>2025-47</code>、<code>2025/47</code></li>
+                <li>周定义：周日 → 周六，例如 <code>2025/11/16 ~ 2025/11/22</code> 为 <code>2025/47</code></li>
+                <li><strong>跨年周别合并规则</strong>：如果遇到跨年周别（如 2025/53 和 2026/01），且两个周别加起来正好是 7 天，AI 分析时会自动将这两个周别的数据合并计算为一周，避免误判为运力短缺。表格和图表中会分别显示这两个周别的数据，但在 AI 分析时会合并计算。</li>
+            </ul>
 
             <hr>
 
@@ -226,7 +234,8 @@
             <h3>AI 分析失败怎么办？</h3>
             <p>请检查：</p>
             <ul>
-                <li>如果使用的是测试 API Key，可能已过期或配额不足，建议自行申请 API Key</li>
+                <li>如果使用的是临时 API Key（服务器配置），可能已过期或配额不足，建议自行申请 API Key</li>
+                <li>使用临时 API Key 时会弹出提示对话框，确认后即可继续使用</li>
                 <li>如果已自行配置 API Key，请检查 API Key、URL 和模型 ID 是否正确</li>
                 <li>网络连接是否正常，确保可以访问 AI API</li>
                 <li>API 配额是否充足</li>

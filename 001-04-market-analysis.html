@@ -676,7 +676,8 @@
                         ) || workbook.SheetNames[0];
                         
                         const worksheet = workbook.Sheets[sheetName];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: null });
+                        // 使用 raw: true 保留原始类型（Date对象、数字等），以便正确解析M列的日期数据
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: null, dateNF: 'yyyy/mm/dd' });
                         resolve(jsonData);
                     } catch (error) {
                         reject(error);
@@ -914,14 +915,23 @@
                             const capacity = ship.capacity || 0;
                             let date = ship.shipDate;
                             
-                            // 格式化日期为 YYYY/MM/DD
+                            // 格式化日期为 YYYY/MM/DD（M列数据）
                             // 使用统一的日期解析和格式化函数
-                            date = formatDateToYYYYMMDD(date);
+                            let formattedDate = '';
+                            if (date !== null && date !== undefined && date !== '') {
+                                formattedDate = formatDateToYYYYMMDD(date);
+                                // 如果格式化失败，尝试直接使用原值
+                                if (!formattedDate || formattedDate === '未知') {
+                                    formattedDate = String(date);
+                                }
+                            } else {
+                                formattedDate = '—';
+                            }
                             
-                            // 格式：船名航次（K列）+ xx TEU（L列）+ (开航时间)（M列）
+                            // 格式：船名航次（K列）+ xx TEU（L列）+ (开航时间)（M列，格式：YYYY/MM/DD）
                             const capacityStr = capacity > 0 ? `${capacity.toLocaleString()} TEU` : '0 TEU';
-                            // 确保格式为：船名航次 + 运力TEU + (开航时间)
-                            return `${name} ${capacityStr} (${date})`;
+                            // 确保格式为：船名航次 + 运力TEU + (YYYY/MM/DD)
+                            return `${name} ${capacityStr} (${formattedDate})`;
                         }).join('\n');
                         tooltipData = shipDetails;
                     }

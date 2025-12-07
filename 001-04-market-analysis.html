@@ -9,14 +9,15 @@
     <link rel="stylesheet" href="vendor/market-analysis-styles.css">
     <script src="vendor/lib-loader.js"></script>
     <script src="vendor/common-utils.js"></script>
+    <script src="vendor/date-utils.js"></script>
+    <script src="vendor/pdf-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/ai-config.js"></script>
     <script src="vendor/ai-prompts.js"></script>
+    <script src="vendor/ai-utils.js"></script>
     <script src="vendor/market-analysis-utils.js"></script>
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-
-        /* .page-footer 样式已在 market-analysis-styles.css 中定义，此处不再重复 */
-
-    </style>
+    <!-- 页面特定样式：当前无特殊样式，所有样式已在 vendor 文件中定义 -->
 </head>
 <body data-page="001-04-market-analysis.html">
     <!-- 用户验证模态框 -->
@@ -47,52 +48,10 @@
     <div class="container">
         <div class="header">
             <a href="index.html?tab=tools001" class="back-home-btn">← 返回首页</a>
+            <a href="001-04-market-analysis-README.html" class="readme-btn">使用说明 →</a>
             <h1>Market Analysis · 市场分析</h1>
             <p>一份 Excel 与周报即可联动航线供给与 AI 决策，轻松完成跨板块洞察</p>
         </div>
-
-        <details class="instructions">
-            <summary>
-                <span>📋 使用说明 · 展开仔细阅读，建议按顺序完成</span>
-            </summary>
-            <div class="instruction-section">
-                <h4>① 通用准备</h4>
-                <ol>
-                    <li><strong>上传 Excel 数据源</strong>：文件需包含 <strong>schedule</strong> 工作表，并具备港口、航线、周别、运力、船名航次等字段。</li>
-                    <li><strong>上传市场周报</strong>：支持一次选择多份 PDF（如 Alphaliner Newsletter、Linerlytica Weekly 等），便于 AI 参考最新情报。</li>
-                    <li><strong>准备 AI 密钥</strong>：DeepSeek / KIMI / 通义千问 API Key 请由用户自备，调用费用及合规责任由使用方承担。</li>
-                </ol>
-            </div>
-            <div class="instruction-section">
-                <h4>② Module 01 · 航线运力分析</h4>
-                <ol>
-                    <li>使用港口多选筛选与航线搜索锁定目标市场。</li>
-                    <li>“全部 / 运力 / 派船”视图用于聚焦不同指标；表格支持即输即筛。</li>
-                    <li>选择目的港后自动绘制堆积柱（运力）+ 折线（派船）趋势，便于观察当周+未来四周变化。</li>
-                </ol>
-            </div>
-            <div class="instruction-section">
-                <h4>③ Module 02 · AI 趋势分析</h4>
-                <ol>
-                    <li>填写"其他影响因素"表格、刷新燃油/指数数据，作为 AI 提示词的优先依据。</li>
-                    <li>分别配置 DeepSeek / KIMI / 通义千问 API 后，可对比三种模型的洞察结果，支持导出 PDF 汇报。</li>
-                    <li><strong>模型选择建议</strong>：
-                        <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
-                            <li><strong>DeepSeek</strong>：推荐 <code>deepseek-chat</code>（基础）或 <code>deepseek-v3</code>（高性能）
-                                <br>申请 API Key：<a href="https://platform.deepseek.com" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.deepseek.com</a>
-                            </li>
-                            <li><strong>KIMI</strong>：推荐 <code>moonshot-v1-32k</code>（平衡），<code>moonshot-v1-k2</code>（K2新模型，需确认API可用）
-                                <br>申请 API Key：<a href="https://platform.moonshot.cn/console/api-keys" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.moonshot.cn/console/api-keys</a>
-                            </li>
-                            <li><strong>通义千问</strong>：推荐 <code>qwen-max</code>（最佳性能），<code>qwen-turbo</code>（经济型）
-                                <br>申请 API Key：<a href="https://dashscope.console.aliyun.com/apiKey" target="_blank" style="color: #667eea; text-decoration: underline;">https://dashscope.console.aliyun.com/apiKey</a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li><strong>收费说明</strong>：各模型按调用次数/Token 计费，具体价格请参考各平台官网。建议先使用经济型模型测试，再根据需求选择高性能模型。</li>
-                </ol>
-            </div>
-        </details>
 
         <div class="content">
             <div class="card">
@@ -180,15 +139,15 @@
                     </div>
                 </div>
                 <div class="card module-card hidden" data-module="ai">
-                    <div id="aiAnalysisContainer" class="ai-analysis-container hidden">
+                    <div id="aiAnalysisContainer" class="ai-analysis-container">
                         <div class="ai-header">
                             <h3>AI 船期趋势分析</h3>
                             <p>同一份筛选数据可由多模型并行分析，快速对比观点并交叉验证结论</p>
                         </div>
-                        <div id="emptyAiMessage" class="empty-chart-message hidden">
-                            请选择港口以启用 AI 分析
+                        <div id="emptyAiMessage" class="empty-chart-message" style="display: none;">
+                            请先加载数据文件并选择筛选条件以启用 AI 分析
                         </div>
-                        <div id="aiConfigSection" class="hidden">
+                        <div id="aiConfigSection" style="display: none;">
                             <div class="booking-data-table">
                                 <h4>其他影响因素</h4>
                                 <table class="booking-table" id="bookingDataTable">
@@ -377,6 +336,15 @@
     <script src="vendor/auth-gist.js"></script>
     <script>
 
+        // ==================== 调试模式 ====================
+        // 调试函数已统一到 vendor/debug-utils.js
+        // 使用：debugLog(), debugWarn(), debugError()
+
+        // ==================== 错误处理 ====================
+        // 错误处理已统一到 vendor/error-handler.js
+        // 使用：showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED')
+        // ErrorType 和 showError 函数已从 error-handler.js 加载
+
         let pdfJsReady = false;
         let pdfJsLoadingPromise = null;
 
@@ -436,27 +404,27 @@
 
         refreshBunkerBtn?.addEventListener('click', () => {
             fetchBunkerData(true).catch(error => {
-                console.warn('燃油行情抓取失败', error);
+                debugWarn('燃油行情抓取失败', error);
                 bunkerStatusEl && (bunkerStatusEl.textContent = '抓取失败，请稍后重试或检查网络');
                 bunkerUpdatedEl && (bunkerUpdatedEl.textContent = '最近更新时间：—');
             });
         });
         refreshCcfiBtn?.addEventListener('click', () => {
             fetchCcfiData(true).catch(error => {
-                console.warn('CCFI 数据抓取失败', error);
+                debugWarn('CCFI 数据抓取失败', error);
                 ccfiStatusEl && (ccfiStatusEl.textContent = '抓取失败，请稍后重试或检查网络');
                 ccfiUpdatedEl && (ccfiUpdatedEl.textContent = '最近更新时间：—');
             });
         });
         refreshWciBtn?.addEventListener('click', () => {
             fetchWciData(true).catch(error => {
-                console.warn('WCI 抓取失败', error);
+                debugWarn('WCI 抓取失败', error);
                 if (wciStatusEl) wciStatusEl.textContent = '抓取失败，请稍后重试';
             });
         });
         refreshFbxBtn?.addEventListener('click', () => {
             fetchFbxData(true).catch(error => {
-                console.warn('FBX 抓取失败', error);
+                debugWarn('FBX 抓取失败', error);
                 if (fbxStatusEl) fbxStatusEl.textContent = '抓取失败，请稍后重试';
             });
         });
@@ -478,7 +446,12 @@
                     marketReportList.innerHTML = '<li>正在解析上传的报告...</li>';
                 }
                 for (const file of files) {
-                    await handleMarketReportFile(file);
+                    try {
+                        await handleMarketReportFile(file);
+                    } catch (error) {
+                        debugError('解析PDF失败:', error);
+                        showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', { message: error.message || String(error) }, error);
+                    }
                 }
                 renderMarketReportList();
                 marketReportInput.value = '';
@@ -634,7 +607,7 @@
 
             // 检查 XLSX 是否已加载
             if (typeof XLSX === 'undefined') {
-                alert('XLSX 库尚未加载完成，请稍候几秒后重试。\n\n如果问题持续，请检查网络连接或刷新页面。');
+                showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
                 return;
             }
 
@@ -647,8 +620,8 @@
                 excelLoadState.schedule = true;
                 tryRevealModules();
             } catch (error) {
-                alert('读取文件失败：' + error.message);
-                console.error(error);
+                showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
+                debugError(error);
             }
         });
 
@@ -720,7 +693,7 @@
 
         function generatePivotTable(data) {
             if (!data || data.length === 0) {
-                alert('数据为空');
+                showError(ErrorType.DATA_VALIDATION, 'DATA_EMPTY');
                 return;
             }
 
@@ -775,7 +748,7 @@
             const routeRemarkCol = columnKeys[7] || null; // H列（索引7）
 
             if (!weekCol || !capacityCol || !shipNameCol || !shipDateCol || !routeCol || !portCol) {
-                alert('无法找到必要的列。请检查Excel文件格式。\n\n找到的列：' + columnKeys.join(', '));
+                showError(ErrorType.FILE_PARSE, 'MISSING_COLUMNS', { columns: columnKeys.join(', ') });
                 return;
             }
 
@@ -848,7 +821,7 @@
                 routeLabel: getRouteLabel(record.routeId, record.route)
             }));
             if (processedRecords.length === 0) {
-                alert('当前时间范围内没有符合条件的船期数据');
+                showError(ErrorType.FILE_PARSE, 'NO_SCHEDULE_DATA');
                 return;
             }
 
@@ -942,106 +915,8 @@
                             let date = ship.shipDate;
                             
                             // 格式化日期为 YYYY/MM/DD
-                            // 检查日期是否有效（不是空字符串、null、undefined）
-                            const dateIsValid = date !== null && 
-                                               date !== undefined && 
-                                               date !== '' && 
-                                               (typeof date === 'string' ? date.trim() !== '' : true);
-                            if (dateIsValid) {
-                                try {
-                                    let dateObj = null;
-                                    
-                                    // 先检查是否是 Date 对象
-                                    if (date instanceof Date && !isNaN(date.getTime())) {
-                                        dateObj = date;
-                                    } 
-                                    // 再检查是否是数字（Excel日期序列号）
-                                    else if (typeof date === 'number') {
-                                        // 尝试使用 XLSX 的日期解析（如果可用）
-                                        if (typeof XLSX !== 'undefined' && XLSX.SSF && XLSX.SSF.parse_date_code) {
-                                            try {
-                                                const parsed = XLSX.SSF.parse_date_code(date);
-                                                if (parsed) {
-                                                    dateObj = new Date(parsed.y, parsed.m - 1, parsed.d, parsed.H || 0, parsed.M || 0, parsed.S || 0);
-                                                }
-                                            } catch (error) {
-                                                // 如果 XLSX 解析失败，使用备用方法
-                                            }
-                                        }
-                                        // 如果 XLSX 解析失败或不可用，使用备用方法
-                                        if (!dateObj) {
-                                            const numValue = date;
-                                            // Excel日期序列号通常在1000-100000之间（1900-2174年）
-                                            if (numValue > 1000 && numValue < 100000) {
-                                                // Excel日期从1900-01-01开始，但Excel错误地认为1900是闰年
-                                                // 所以需要减去1天（除了1900-03-01之前）
-                                                const excelEpoch = new Date(1899, 11, 30);
-                                                dateObj = new Date(excelEpoch.getTime() + numValue * 24 * 60 * 60 * 1000);
-                                                // 修正 Excel 日期偏移
-                                                if (dateObj.getFullYear() > 1900 || (dateObj.getFullYear() === 1900 && dateObj.getMonth() >= 2)) {
-                                                    dateObj = new Date(dateObj.getTime() - 24 * 60 * 60 * 1000);
-                                                }
-                                            } else {
-                                                // 可能是时间戳
-                                                dateObj = new Date(numValue);
-                                            }
-                                        }
-                                    } else {
-                                        // 尝试解析字符串日期
-                                        const dateStr = String(date).trim();
-                                        if (!dateStr || dateStr === '') {
-                                            dateObj = null;
-                                        } else {
-                                            // 如果看起来像日期序列号（纯数字且长度合理）
-                                            if (/^\d+$/.test(dateStr) && dateStr.length >= 4 && dateStr.length <= 6) {
-                                                const numValue = parseFloat(dateStr);
-                                                if (numValue > 1000 && numValue < 100000) {
-                                                    const excelEpoch = new Date(1899, 11, 30);
-                                                    dateObj = new Date(excelEpoch.getTime() + numValue * 24 * 60 * 60 * 1000);
-                                                } else {
-                                                    dateObj = new Date(dateStr);
-                                                }
-                                            } else {
-                                                // 尝试解析各种日期格式
-                                                dateObj = new Date(dateStr);
-                                                // 如果解析失败，尝试其他格式
-                                                if (isNaN(dateObj.getTime())) {
-                                                    // 尝试 YYYY/MM/DD 格式
-                                                    const ymdMatch = dateStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-                                                    if (ymdMatch) {
-                                                        dateObj = new Date(parseInt(ymdMatch[1]), parseInt(ymdMatch[2]) - 1, parseInt(ymdMatch[3]));
-                                                    } else {
-                                                        // 尝试 MM/DD 格式（假设当前年份）
-                                                        const mdMatch = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})/);
-                                                        if (mdMatch) {
-                                                            const currentYear = new Date().getFullYear();
-                                                            dateObj = new Date(currentYear, parseInt(mdMatch[1]) - 1, parseInt(mdMatch[2]));
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    
-                                    if (dateObj && !isNaN(dateObj.getTime())) {
-                                        const year = dateObj.getFullYear();
-                                        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                                        const day = String(dateObj.getDate()).padStart(2, '0');
-                                        date = `${year}/${month}/${day}`;
-                                    } else {
-                                        // 如果解析失败，尝试显示原值，如果是空字符串则显示"未知"
-                                        const dateStr = String(date).trim();
-                                        date = dateStr || '未知';
-                                    }
-                                } catch (e) {
-                                    // 如果解析失败，尝试显示原值，如果是空字符串则显示"未知"
-                                    const dateStr = String(date).trim();
-                                    date = dateStr || '未知';
-                                }
-                            } else {
-                                // 如果日期为空或无效，显示"未知"
-                                date = '未知';
-                            }
+                            // 使用统一的日期解析和格式化函数
+                            date = formatDateToYYYYMMDD(date);
                             
                             // 格式：船名航次（K列）+ xx TEU（L列）+ (开航时间)（M列）
                             const capacityStr = capacity > 0 ? `${capacity.toLocaleString()} TEU` : '0 TEU';
@@ -1135,6 +1010,7 @@
                 cell.addEventListener('mouseenter', (e) => {
                     tooltip = document.createElement('div');
                     tooltip.className = 'tooltip';
+                    tooltip.style.display = 'block';
                     // 对于船期信息，直接显示完整文本，使用 pre-wrap 保持格式
                     const displayText = tooltipText;
                     const span = document.createElement('span');
@@ -1146,12 +1022,14 @@
                     
                     // 使用鼠标位置来定位tooltip，这样滚动时也能正确显示
                     const updateTooltipPosition = (event) => {
-                        if (!tooltip) return;
+                        if (!tooltip || !tooltip.parentNode) return;
                         
                         const mouseX = event.clientX;
                         const mouseY = event.clientY;
-                        const tooltipWidth = tooltip.offsetWidth;
-                        const tooltipHeight = tooltip.offsetHeight;
+                        // 使用 getBoundingClientRect 获取更准确的尺寸
+                        const rect = tooltip.getBoundingClientRect();
+                        const tooltipWidth = rect.width || tooltip.offsetWidth;
+                        const tooltipHeight = rect.height || tooltip.offsetHeight;
                         const padding = 10;
                         
                         // 默认显示在鼠标右下方
@@ -1182,8 +1060,10 @@
                         tooltip.style.top = tooltipY + 'px';
                     };
                     
-                    // 初始定位
-                    updateTooltipPosition(e);
+                    // 初始定位 - 使用 requestAnimationFrame 确保 DOM 已更新
+                    requestAnimationFrame(() => {
+                        updateTooltipPosition(e);
+                    });
                     
                     // 鼠标移动时更新位置
                     cell.addEventListener('mousemove', updateTooltipPosition);
@@ -1489,14 +1369,13 @@
         }
 
         function saveAiConfig(providerId = 'deepseek') {
-            const provider = aiProviders[providerId];
-            if (!provider) return;
-            const config = getAiConfig(providerId);
-            if (!config) return;
-            localStorage.setItem(`${provider.storagePrefix}_api_key`, config.apiKey);
-            localStorage.setItem(`${provider.storagePrefix}_api_url`, config.apiUrl);
-            localStorage.setItem(`${provider.storagePrefix}_model`, config.model);
-            alert(`${provider.name} API 配置已保存`);
+            saveAiConfigToStorage(providerId, aiProviders, (providerName) => {
+                // 使用统一的错误处理模块
+                const configSavedMsg = typeof getErrorMessage === 'function' 
+                    ? getErrorMessage(ErrorType.USER_ACTION, 'CONFIG_SAVED', { provider: providerName })
+                    : `${providerName} API 配置已保存`;
+                showSuccess(configSavedMsg);
+            });
         }
 
         // fetchBunkerData, extractBunkerTables, parseBunkerTable, updateBunkerStatus, describeBunkerLine 已从 vendor/market-analysis-utils.js 加载
@@ -1569,102 +1448,57 @@
 
         // fetchTextContent 已从 vendor/market-analysis-utils.js 加载
 
+        /**
+         * 更新AI分析模块可见性（默认显示，类似 Monitor-Sailing-Schedule）
+         * @param {boolean} hasPortSelection - 是否有港口选择
+         */
         function updateAiAnalysis(hasPortSelection) {
             const aiAnalysisContainer = document.getElementById('aiAnalysisContainer');
             const emptyAiMessage = document.getElementById('emptyAiMessage');
             const aiConfigSection = document.getElementById('aiConfigSection');
             
-            aiAnalysisContainer.classList.remove('hidden');
+            if (!aiAnalysisContainer) return;
             
-            if (!hasPortSelection || latestFilteredRecords.length === 0) {
-                emptyAiMessage.classList.remove('hidden');
-                aiConfigSection.classList.add('hidden');
+            // AI 模块始终显示（默认显示）
+            aiAnalysisContainer.style.display = 'block';
+            
+            // 根据数据状态显示/隐藏配置区域
+            if (!hasPortSelection || !latestFilteredRecords || latestFilteredRecords.length === 0) {
+                if (emptyAiMessage) emptyAiMessage.style.display = 'block';
+                if (aiConfigSection) aiConfigSection.style.display = 'none';
                 return;
             }
             
-            emptyAiMessage.classList.add('hidden');
-            aiConfigSection.classList.remove('hidden');
+            if (emptyAiMessage) emptyAiMessage.style.display = 'none';
+            if (aiConfigSection) aiConfigSection.style.display = 'block';
             loadAiConfigs();
             setActiveAiPanel(activeAiProvider);
         }
 
         async function runAiAnalysis(providerId = 'deepseek') {
-            const provider = aiProviders[providerId] || aiProviders.deepseek;
-            if (!provider) return;
-            const config = getAiConfig(providerId);
-            if (!config || !config.apiKey) {
-                alert(`请先配置 ${provider?.name || 'AI'} 的 API Key`);
-                return;
-            }
-            await Promise.allSettled([
-                fetchBunkerData(false),
-                fetchCcfiData(false),
-                fetchWciData(false),
-                fetchFbxData(false)
-            ]);
-            const prompt = buildAiPrompt();
-            if (!prompt) {
-                return;
-            }
-
-            const button = document.getElementById(provider.buttonId);
-            const loading = document.getElementById(provider.loadingId);
-            const resultContainer = document.getElementById(provider.resultContainerId);
-            const resultContent = document.getElementById(provider.resultContentId);
-
-            if (button) button.disabled = true;
-            if (loading) loading.classList.remove('hidden');
-            if (resultContainer) resultContainer.classList.add('hidden');
-
-            try {
-                const response = await fetch((config.apiUrl || provider.defaultUrl), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${config.apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: config.model || provider.defaultModel,
-                        messages: [
-                            { role: 'system', content: baseSystemPrompt },
-                            { role: 'user', content: prompt }
-                        ],
-                        temperature: provider.temperature,
-                        max_tokens: provider.maxTokens
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error?.message || `API请求失败: ${response.status} ${response.statusText}`);
+            await executeAiAnalysis(
+                providerId,
+                aiProviders,
+                buildAiPrompt,
+                baseSystemPrompt,
+                {
+                    beforeAnalysis: async () => {
+                        // 分析前获取数据
+                        await Promise.allSettled([
+                            fetchBunkerData(false),
+                            fetchCcfiData(false),
+                            fetchWciData(false),
+                            fetchFbxData(false)
+                        ]);
+                    }
                 }
-
-                const data = await response.json();
-                const analysisText = data.choices?.[0]?.message?.content || '分析结果为空';
-                if (resultContent) {
-                    resultContent.textContent = analysisText;
-                }
-                if (resultContainer) {
-                    resultContainer.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error('AI分析失败:', error);
-                if (resultContent) {
-                    resultContent.textContent = `分析失败：${error.message}\n\n请检查：\n1. API Key 是否正确\n2. 网络连接是否正常\n3. API URL / 模型是否正确`;
-                }
-                if (resultContainer) {
-                    resultContainer.classList.remove('hidden');
-                }
-            } finally {
-                if (button) button.disabled = false;
-                if (loading) loading.classList.add('hidden');
-            }
+            );
         }
 
         function buildAiPrompt() {
             const filteredRecords = latestFilteredRecords;
             if (!filteredRecords.length) {
-                alert('没有可分析的数据');
+                showError(ErrorType.DATA_VALIDATION, 'NO_DATA');
                 return null;
             }
             // 无论是否选择港口，都按航线分组（合并不同港口），这样同一船名航次在不同港口时不会重复统计
@@ -1672,169 +1506,29 @@
             // 始终不按港口分组，合并相同航线
             const analysisGroups = groupedTableData.length ? groupedTableData : groupRecords(filteredRecords, false).data;
             if (!analysisGroups.length) {
-                alert('没有可分析的航线数据');
+                showError(ErrorType.DATA_VALIDATION, 'NO_ROUTE_DATA');
                 return null;
             }
 
-            const weekCodes = weekColumns.map(week => week.code);
-            if (!weekCodes.length) {
-                alert('暂未找到可用于分析的周别');
-                return null;
-            }
+            // 使用公共函数准备分析数据
+            const prepared = prepareAnalysisData(analysisGroups, weekColumns, showError, ErrorType);
+            if (!prepared) return null;
+            const { analysisData, weeklySummary, analysisWeekCodes, analysisWeekLabels } = prepared;
 
-            const labelByCode = {};
-            weekColumns.forEach(week => {
-                const range = week.range ? ` (${week.range})` : '';
-                labelByCode[week.code] = `${week.label}${range}`;
-            });
-
-            const analysisWeekCodes = weekCodes.length > 1 ? weekCodes.slice(1) : weekCodes;
-            if (!analysisWeekCodes.length) {
-                alert('当周+未来四周数据不足，请检查 Excel 是否包含最新船期');
-                return null;
-            }
-            const analysisWeekLabels = analysisWeekCodes.map(code => labelByCode[code] || code);
-
-            const analysisData = [];
-            const weeklySummary = {};
-            analysisWeekCodes.forEach(code => {
-                weeklySummary[code] = { capacity: 0, ships: 0 };
-            });
-
-            analysisGroups.forEach(item => {
-                const weekData = {};
-                analysisWeekCodes.forEach(weekCode => {
-                    const ships = item.weeks[weekCode] || [];
-                    const totalCapacity = ships.reduce((sum, ship) => sum + (ship.capacity || 0), 0);
-                    const shipCount = ships.length;
-                    weeklySummary[weekCode].capacity += totalCapacity;
-                    weeklySummary[weekCode].ships += shipCount;
-                    weekData[weekCode] = {
-                        capacity: totalCapacity,
-                        ships: shipCount
-                    };
-                });
-                analysisData.push({
-                    port: item.port,
-                    routeLabel: item.routeLabel,
-                    weeks: weekData
-                });
-            });
-
-            if (!analysisData.length) {
-                alert('没有可分析的航线数据');
-                return null;
-            }
-
+            // 构建目的地摘要（001-04格式）
             const destinationSummary = destinationFilters.ports.length
                 ? destinationFilters.ports.join('、')
                 : '全部港口';
 
-            let prompt = `请分析以下船期数据，提供专业的趋势分析和预测：
-
-【数据概览】
-分析目的港路径：${destinationSummary}
-分析航线数量：${analysisData.length}条
-
-【当周+未来四周数据汇总】
-`;
-
-            analysisWeekCodes.forEach((weekCode, index) => {
-                const weekLabel = analysisWeekLabels[index];
-                const summary = weeklySummary[weekCode];
-                prompt += `周别 ${weekLabel} (${weekCode}): 总运力 ${summary.capacity.toLocaleString()} TEU, 总派船数 ${summary.ships}艘\n`;
-            });
-
-            prompt += `\n【详细数据】
-`;
-
-            analysisData.forEach(item => {
-                prompt += `\n港口：${item.port || '未分配'}，航线：${item.routeLabel || '未知航线'}\n`;
-                analysisWeekCodes.forEach((weekCode, index) => {
-                    const weekLabel = analysisWeekLabels[index];
-                    const weekData = item.weeks[weekCode] || {};
-                    prompt += `  周别 ${weekLabel}: 运力 ${weekData.capacity.toLocaleString()} TEU, 派船 ${weekData.ships}艘\n`;
-                });
-            });
-
-            const bookingData = getBookingData();
-            if (bookingData.length > 0) {
-                prompt += `\n【其他影响因素（用户补充）】
-`;
-                bookingData.forEach((item, index) => {
-                    const title = item.remark || `数据项 ${index + 1}`;
-                    const description = item.description || '（用户未填写）';
-                    prompt += `\n- ${title}：${description}\n`;
-                });
-            }
-
-
-            if (marketReports && marketReports.length > 0) {
-                prompt += `\n【市场周报 / 指数节选】
-（以下内容来自用户上传PDF，请优先参考）
-`;
-                marketReports.forEach((report, index) => {
-                    const snippet = report.text.length > 1200 ? report.text.slice(0, 1200) + '…' : report.text;
-                    prompt += `\n报告 ${index + 1}（${report.name}）：
-${snippet}
-`;
-                });
-            }
-
-            if (bunkerData && (bunkerData.vlsfo || bunkerData.mgo || bunkerData.ifo380)) {
-                prompt += `\n【燃油行情（Ship & Bunker · 新加坡）】
-`;
-                if (bunkerData.vlsfo) {
-                    const delta = typeof bunkerData.vlsfo.delta === 'number' ? (bunkerData.vlsfo.delta >= 0 ? `+${bunkerData.vlsfo.delta.toFixed(2)}` : bunkerData.vlsfo.delta.toFixed(2)) : 'N/A';
-                    prompt += `- VLSFO 0.5%：${bunkerData.vlsfo.price?.toFixed(2) ?? 'N/A'} USD/t${delta !== 'N/A' ? `（WoW ${delta}）` : ''}\n`;
-                }
-                if (bunkerData.mgo) {
-                    const delta = typeof bunkerData.mgo.delta === 'number' ? (bunkerData.mgo.delta >= 0 ? `+${bunkerData.mgo.delta.toFixed(2)}` : bunkerData.mgo.delta.toFixed(2)) : 'N/A';
-                    prompt += `- MGO 0.1%：${bunkerData.mgo.price?.toFixed(2) ?? 'N/A'} USD/t${delta !== 'N/A' ? `（WoW ${delta}）` : ''}\n`;
-                }
-                if (bunkerData.ifo380) {
-                    const delta = typeof bunkerData.ifo380.delta === 'number' ? (bunkerData.ifo380.delta >= 0 ? `+${bunkerData.ifo380.delta.toFixed(2)}` : bunkerData.ifo380.delta.toFixed(2)) : 'N/A';
-                    prompt += `- IFO380：${bunkerData.ifo380.price?.toFixed(2) ?? 'N/A'} USD/t${delta !== 'N/A' ? `（WoW ${delta}）` : ''}\n`;
-                }
-                prompt += `（抓取时间：${new Date(bunkerData.timestamp).toLocaleString()}）\n`;
-            }
-            if (ccfiData && ccfiData.routes?.length) {
-                prompt += `\n【中国出口集装箱运价指数（CCFI）】
-`;
-                if (ccfiData.period) {
-                    prompt += `- 本期 ${ccfiData.period.current || '—'}，对比上期 ${ccfiData.period.previous || '—'}\n`;
-                }
-                ccfiData.routes.forEach(route => {
-                    const currentText = typeof route.current === 'number' ? route.current.toLocaleString() : '—';
-                    const previousText = typeof route.previous === 'number' ? route.previous.toLocaleString() : '—';
-                    prompt += `- ${route.label}：${currentText}（上期 ${previousText}，WoW ${formatPercent(route.wow)}）\n`;
-                });
-            }
-            if (wciData && (typeof wciData.worldIndex === 'number' || (wciData.routes?.length))) {
-                prompt += `\n【Drewry WCI 现货趋势】
-`;
-                if (typeof wciData.worldIndex === 'number') {
-                    const changeValue = typeof wciData.worldIndexWoW === 'number'
-                        ? `（WoW ${formatPercent(wciData.worldIndexWoW)}）`
-                        : (typeof wciData.changePct === 'number' ? `（${wciData.changePct >= 0 ? '+' : ''}${wciData.changePct}% WoW）` : '');
-                    prompt += `- 全球指数：${wciData.worldIndex.toLocaleString()} USD/FEU${changeValue}\n`;
-                }
-                if (wciData.routes?.length) {
-                    wciData.routes.slice(0, 6).forEach(route => {
-                        const codeLabel = route.code ? `${route.code} ` : '';
-                        const wowText = typeof route.wow === 'number' ? `（WoW ${formatPercent(route.wow)}）` : '';
-                        prompt += `- ${codeLabel}${route.route}：${route.rate.toLocaleString()} USD/FEU${wowText}\n`;
-                    });
-                }
-            }
-            if (fbxData && fbxData.indices?.length) {
-                prompt += `\n【Freightos FBX 航线指数】
-`;
-                fbxData.indices.forEach(item => {
-                    const wowText = typeof item.wow === 'number' ? `（WoW ${formatPercent(item.wow)}）` : '';
-                    prompt += `- ${item.label}：${item.rate.toLocaleString()} USD/FEU${wowText}\n`;
-                });
-            }
+            // 使用公共函数构建提示词
+            let prompt = buildDataOverview(destinationSummary, analysisData.length, analysisWeekCodes, analysisWeekLabels, weeklySummary);
+            prompt += buildDetailedData001(analysisData, analysisWeekCodes, analysisWeekLabels);
+            prompt += buildBookingDataSection(getBookingData());
+            prompt += buildMarketReportsSection(marketReports);
+            prompt += buildBunkerDataSection(bunkerData);
+            prompt += buildCcfiDataSection(ccfiData);
+            prompt += buildWciDataSection(wciData);
+            prompt += buildFbxDataSection(fbxData);
 
             prompt += aiInstructionTemplate;
             return prompt;
@@ -1863,138 +1557,58 @@ ${snippet}
             return data;
         }
 
-        let exportLibsReady = false;
-
-        async function ensureExportLibs() {
-            if (exportLibsReady) return;
-            const html2CanvasSources = [
-                'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-                'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
-                'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'
-            ];
-            const jsPdfSources = [
-                'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-                'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
-                'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
-            ];
-
-            let loaded = false;
-            for (const src of html2CanvasSources) {
-                try {
-                    await loadScript(src);
-                    loaded = true;
-                    break;
-                } catch (error) {
-                    console.warn('html2canvas 加载失败', src, error);
-                }
-            }
-            if (!loaded || typeof window.html2canvas === 'undefined') {
-                throw new Error('无法加载 html2canvas 库');
-            }
-
-            loaded = false;
-            for (const src of jsPdfSources) {
-                try {
-                    await loadScript(src);
-                    loaded = true;
-                    break;
-                } catch (error) {
-                    console.warn('jsPDF 加载失败', src, error);
-                }
-            }
-            if (!loaded || typeof window.jspdf === 'undefined') {
-                throw new Error('无法加载 jsPDF 库');
-            }
-
-            exportLibsReady = true;
-        }
-
+        /**
+         * 导出整页 PDF（使用 vendor/pdf-utils.js）
+         */
         async function exportPageToPdf() {
             const exportBtn = document.getElementById('exportPdfBtn');
-            if (exportBtn) {
-                exportBtn.disabled = true;
-                exportBtn.textContent = '正在导出...';
-            }
+            if (!exportBtn) return;
+            
             try {
-                await ensureExportLibs();
-                const target = document.querySelector('.container');
-                if (!target) {
-                    throw new Error('未找到需要导出的内容区域');
-                }
-                const originalHtmlBg = document.documentElement.style.background;
-                const originalBodyBg = document.body.style.background;
-                const originalBodyBgImage = document.body.style.backgroundImage;
-                const originalHtmlBgImage = document.documentElement.style.backgroundImage;
-                const originalTargetBg = target.style.background;
-                const originalTargetBgImage = target.style.backgroundImage;
-                const originalTargetWidth = target.style.width;
-                const originalTargetPadding = target.style.padding;
-                const originalTargetMargin = target.style.margin;
-                document.body.classList.add('pdf-export');
-                document.documentElement.style.background = '#ffffff';
-                document.body.style.background = '#ffffff';
-                document.body.style.backgroundImage = 'none';
-                document.documentElement.style.backgroundImage = 'none';
-                target.style.background = '#ffffff';
-                target.style.backgroundImage = 'none';
-                target.style.width = '100%';
-                target.style.padding = '0 24px';
-                target.style.margin = '0 auto';
-                const captureScale = Math.min(1.2, window.devicePixelRatio || 1.2);
-                const canvas = await html2canvas(target, {
-                    scale: captureScale,
-                    useCORS: true,
-                    scrollY: -window.scrollY,
-                    windowWidth: document.documentElement.scrollWidth,
-                    windowHeight: document.documentElement.scrollHeight,
-                    backgroundColor: '#ffffff'
+                // 生成文件名：市场分析报告_年月日.pdf
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const fileName = `市场分析报告_${year}${month}${day}`;
+                
+                // 使用 vendor/pdf-utils.js 中的 exportToPdf 函数
+                await exportToPdf('.container', {
+                    fileName: fileName,
+                    onStart: () => {
+                        exportBtn.disabled = true;
+                        exportBtn.textContent = '正在导出...';
+                    },
+                    onComplete: () => {
+                        exportBtn.textContent = '导出整页 PDF';
+                        exportBtn.disabled = false;
+                    },
+                    onError: (error) => {
+                        debugError('导出PDF失败:', error);
+                        showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+                            message: error.message || String(error) 
+                        }, error);
+                        exportBtn.textContent = '导出整页 PDF';
+                        exportBtn.disabled = false;
+                    }
                 });
-                document.body.classList.remove('pdf-export');
-                document.documentElement.style.background = originalHtmlBg;
-                document.body.style.background = originalBodyBg;
-                document.body.style.backgroundImage = originalBodyBgImage;
-                document.documentElement.style.backgroundImage = originalHtmlBgImage;
-                target.style.background = originalTargetBg;
-                target.style.backgroundImage = originalTargetBgImage;
-                target.style.width = originalTargetWidth;
-                target.style.padding = originalTargetPadding;
-                target.style.margin = originalTargetMargin;
-                const imgData = canvas.toDataURL('image/jpeg', 0.65);
-                const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4', true);
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 8; // mm margins for better readability
-                const imgWidth = pageWidth - margin * 2;
-                const imgHeight = canvas.height * imgWidth / canvas.width;
-
-                let heightLeft = imgHeight;
-                let position = margin;
-                const pageContentHeight = pageHeight - margin * 2;
-
-                pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
-                heightLeft -= pageContentHeight;
-
-                while (heightLeft > -pageContentHeight) {
-                    pdf.addPage();
-                    position = margin - (imgHeight - heightLeft);
-                    pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
-                    heightLeft -= pageContentHeight;
-                }
-
-                pdf.save('市场分析报告.pdf');
             } catch (error) {
-                console.error('导出 PDF 失败', error);
-                alert(`导出 PDF 失败：${error.message || error}`);
-            } finally {
+                debugError('导出PDF失败:', error);
+                showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+                    message: error.message || String(error) 
+                }, error);
                 if (exportBtn) {
-                    exportBtn.disabled = false;
                     exportBtn.textContent = '导出整页 PDF';
+                    exportBtn.disabled = false;
                 }
             }
         }
 
         document.getElementById('exportPdfBtn')?.addEventListener('click', exportPageToPdf);
         window.addEventListener('load', () => {
+            // 页面加载时显示 AI 模块（默认显示）
+            updateAiAnalysis(false);
+            
             Promise.allSettled([
                 fetchBunkerData(false),
                 fetchCcfiData(false),

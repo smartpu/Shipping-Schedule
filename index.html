@@ -13,43 +13,71 @@
             width: 100%;
             margin: 0;
             padding: 0;
+            background: white;
         }
 
         /* header 样式已在 common-styles.css 中定义，此处仅覆盖首页特定样式 */
         .header {
             margin-bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 60px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="80" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
         }
 
         .header h1 {
-            font-size: 32px;
+            font-size: 36px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            position: relative;
+            z-index: 1;
+            font-size: 16px;
+            opacity: 0.95;
         }
 
         .tabs {
             display: flex;
-            gap: 32px;
-            justify-content: flex-start;
+            gap: 24px;
+            justify-content: center;
             margin: 0;
             padding: 40px 40px;
-            background: white;
-            border-bottom: 1px solid #e9ecef;
+            background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+            border-bottom: 2px solid #e9ecef;
             flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .tab-btn {
             background: white;
             color: #495057;
             border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 14px 0;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 16px;
+            padding: 24px 48px;
+            font-size: 20px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             flex: 1;
             min-width: 200px;
-            max-width: none;
             text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            letter-spacing: 0.5px;
         }
 
         .tab-btn:hover {
@@ -99,23 +127,43 @@
             margin-top: 0;
             padding: 50px 40px;
             max-width: 100%;
+            background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
         }
 
         .tool-card {
             background: white;
             border-radius: 20px;
             padding: 32px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             border: 1px solid #f0f0f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
         }
 
         .tool-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
-            border-color: #e0e0ff;
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .tool-card:hover::before {
+            transform: scaleX(1);
         }
 
         .tool-header {
@@ -137,6 +185,13 @@
             color: white;
             flex-shrink: 0;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tool-card:hover .tool-icon {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
         }
 
         .tool-icon.blue {
@@ -223,33 +278,47 @@
         }
 
         .section-intro {
-            background: white;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
             border-radius: 0;
             padding: 40px 40px 30px;
             margin-bottom: 0;
             box-shadow: none;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 2px solid #e9ecef;
+            border-top: 2px solid #e9ecef;
             display: flex;
             align-items: center;
             gap: 24px;
+            position: relative;
+        }
+
+        .section-intro::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .section-intro h2 {
-            font-size: 16px;
-            color: #1f2d3d;
+            font-size: 15px;
+            color: #667eea;
             margin: 0;
-            font-weight: 600;
-            letter-spacing: 0.3px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             flex-shrink: 0;
             white-space: nowrap;
+            text-transform: uppercase;
         }
 
         .section-intro p {
             color: #495057;
-            font-size: 16px;
-            line-height: 1.7;
+            font-size: 15px;
+            line-height: 1.8;
             margin: 0;
             flex: 1;
+            font-weight: 400;
         }
 
         .footer {
@@ -267,23 +336,46 @@
 
         .page-footer {
             width: 100%;
-            background: linear-gradient(135deg, #5f7ae0 0%, #4f2d8c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 32px 30px 36px;
+            padding: 48px 40px;
             text-align: center;
             margin-top: 0;
             box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
         }
+
+        .page-footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="30" cy="60" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="80" r="1.5" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
+        }
+
         .page-footer h2 {
-            font-size: 18px;
-            margin-bottom: 12px;
-            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 16px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
+
         .page-footer p {
-            margin: 6px 0;
-            font-size: 13px;
-            color: rgba(255,255,255,0.82);
-            line-height: 1.5;
+            margin: 8px 0;
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+            line-height: 1.8;
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         @media (max-width: 1600px) {
@@ -319,35 +411,45 @@
                 gap: 24px;
             }
 
+            .header {
+                padding: 40px 20px;
+            }
+
             .header h1 {
-                font-size: 26px;
+                font-size: 28px;
+            }
+
+            .header p {
+                font-size: 14px;
             }
 
             .tab-btn {
-                padding: 12px 0;
-                font-size: 14px;
-                min-width: 120px;
+                padding: 20px 32px;
+                font-size: 18px;
+                min-width: 160px;
+                flex: 1;
+                max-width: none;
             }
 
             .tabs {
-                padding: 30px 20px;
-                gap: 16px;
+                padding: 24px 20px;
+                gap: 12px;
             }
 
             .section-intro {
-                padding: 30px 20px 20px;
+                padding: 24px 20px;
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 12px;
             }
 
             .section-intro h2 {
-                font-size: 16px;
+                font-size: 14px;
                 white-space: normal;
             }
 
             .section-intro p {
-                font-size: 16px;
+                font-size: 14px;
             }
 
             .tool-card {
@@ -362,6 +464,18 @@
 
             .tool-title h3 {
                 font-size: 18px;
+            }
+
+            .page-footer {
+                padding: 32px 20px;
+            }
+
+            .page-footer h2 {
+                font-size: 18px;
+            }
+
+            .page-footer p {
+                font-size: 13px;
             }
         }
     </style>
@@ -617,7 +731,7 @@
         <div id="rateTrends" class="tab-content">
             <div class="section-intro">
                 <h2>Monitor 系列工具</h2>
-                <p>专业的市场趋势分析工具集，支持运价趋势和 SCFI 历史趋势查看。提供 Excel 数据上传、多维度筛选、大尺寸趋势图表展示等功能，便于进行市场分析和决策支持。</p>
+                <p>专业的市场趋势分析与船期管理工具集，支持运价趋势、SCFI 历史趋势查看和船期表可视化。提供 Excel 数据上传、多维度筛选、大尺寸趋势图表展示、AI 智能分析等功能，便于进行市场分析和决策支持。</p>
             </div>
 
             <div class="tools-grid">
@@ -663,6 +777,27 @@
                     </div>
                 </div>
 
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon green">📅</div>
+                        <div class="tool-title">
+                            <h3>船期表</h3>
+                            <div class="tool-id">Monitor-Sailing-Schedule</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        专业的船期可视化与分析工具，支持 001 和 365 两种数据模式。提供日历视图展示、多维度筛选（区域/船公司/港口）、AI 智能分析和 PDF 导出功能，帮助快速掌握船期信息。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="Monitor-Sailing-Schedule.html?from=monitor" class="tool-link">
+                            打开工具 →
+                        </a>
+                        <a href="Monitor-Sailing-Schedule-README.html" class="tool-link secondary">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -692,17 +827,20 @@
                 event.target.classList.add('active');
             } else {
                 // 如果没有 event，通过 tabId 找到对应的按钮
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    if (btn.textContent.includes('001') && tabId === 'tools001') {
-                        btn.classList.add('active');
-                    } else if (btn.textContent.includes('365') && tabId === 'tools365') {
-                        btn.classList.add('active');
-                    } else if ((btn.textContent.includes('Monitor') || btn.textContent.includes('运价趋势')) && tabId === 'rateTrends') {
-                        btn.classList.add('active');
-                    } else if (btn.textContent.includes('Monitor') && tabId === 'monitor') {
-                        btn.classList.add('active');
-                    }
-                });
+                const tabMap = {
+                    'tools001': '001',
+                    'tools365': '365',
+                    'rateTrends': 'Monitor',
+                    'monitor': 'Monitor'
+                };
+                const keyword = tabMap[tabId];
+                if (keyword) {
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        if (btn.textContent.includes(keyword)) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
             }
         }
 
@@ -710,13 +848,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab');
-            if (tab === 'tools001' || tab === 'tools365' || tab === 'rateTrends' || tab === 'monitor') {
-                // 如果 tab 是 monitor，切换到 rateTrends
-                if (tab === 'monitor') {
-                    switchTab('rateTrends');
-                } else {
-                    switchTab(tab);
-                }
+            // 如果 tab 是 monitor，映射到 rateTrends
+            const targetTab = tab === 'monitor' ? 'rateTrends' : tab;
+            if (['tools001', 'tools365', 'rateTrends'].includes(targetTab)) {
+                switchTab(targetTab);
             }
         });
     </script>

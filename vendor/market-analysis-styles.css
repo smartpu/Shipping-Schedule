@@ -75,6 +75,7 @@
     flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 12px;
+    align-items: flex-start;
 }
 
 .destination-filters.hidden {
@@ -171,8 +172,9 @@
    ========================================================================== */
 
 .filter-group {
-    flex: 1 1 180px;
-    min-width: 160px;
+    flex: 1 1 200px;
+    min-width: 180px;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -182,6 +184,7 @@
     font-size: 13px;
     font-weight: 600;
     color: #495057;
+    flex-shrink: 0;
 }
 
 .filter-group select {
@@ -192,6 +195,15 @@
     font-size: 13px;
     background: white;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+}
+
+/* 多选框特殊样式：确保有足够的高度，不会被挤压 */
+.filter-group select[multiple] {
+    min-height: 150px;
+    padding: 8px;
+    overflow-y: auto;
+    resize: vertical;
 }
 
 .filter-group select:focus {
@@ -274,23 +286,33 @@ thead th.week-header > div {
 /* 工具提示 */
 .tooltip {
     position: fixed;
-    background: #333;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    white-space: pre;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 10000;
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    max-width: 500px;
+    min-width: 400px;
+    max-width: 600px;
+    font-size: 12px;
     line-height: 1.6;
-    overflow-x: auto;
+    pointer-events: none;
+    display: none;
 }
 
 .tooltip-line {
-    white-space: nowrap;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e9ecef;
     display: block;
+    white-space: pre-wrap;
+    color: #495057;
+}
+
+.tooltip-line:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
 }
 
 /* ==========================================================================

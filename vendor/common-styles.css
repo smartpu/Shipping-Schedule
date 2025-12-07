@@ -130,6 +130,33 @@ body.pdf-export .chart-wrapper canvas {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* 使用说明按钮（右上角，与返回首页按钮对称） */
+.readme-btn {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.readme-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 /* 使用说明 */
 details.instructions {
     padding: 25px 40px;
@@ -463,5 +490,80 @@ input[type="date"]:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ============================================
+   工具提示框样式（用于悬停显示详细信息）
+   ============================================ */
+
+.tooltip {
+    position: fixed;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    min-width: 400px;
+    max-width: 600px;
+    font-size: 12px;
+    line-height: 1.6;
+    pointer-events: none;
+    display: none;
+}
+
+.tooltip-line {
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e9ecef;
+    display: grid;
+    grid-template-columns: 120px 140px 120px 140px;
+    gap: 16px;
+    align-items: start;
+}
+
+.tooltip-line:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.tooltip-label {
+    font-weight: 600;
+    color: #667eea;
+    margin-right: 8px;
+    min-width: 100px;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.tooltip-value {
+    color: #495057;
+    flex: 1;
+    text-align: left;
+}
+
+.tooltip-path {
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 1.5;
+}
+
+.tooltip-row {
+    display: flex;
+    gap: 16px;
+}
+
+.tooltip-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.tooltip-col-label {
+    font-weight: 600;
+    color: #667eea;
+    margin-right: 8px;
+    display: inline-block;
+    min-width: 90px;
 }
 

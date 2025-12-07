@@ -1,0 +1,3141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitor · 船期表</title>
+    <link rel="stylesheet" href="vendor/auth.css">
+    <link rel="stylesheet" href="vendor/common-styles.css">
+    <link rel="stylesheet" href="vendor/monitor-styles.css">
+    <link rel="stylesheet" href="vendor/ai-styles.css">
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/pdf-utils.js"></script>
+    <script src="vendor/ai-config.js"></script>
+    <script src="vendor/ai-prompts.js"></script>
+    <script src="vendor/ai-utils.js"></script>
+    <style>
+      /* 页面特定样式 */
+      
+      /* header-controls 样式已移至 vendor/monitor-styles.css */
+
+      /* mode-toggle, mode-btn 样式已移至 vendor/monitor-styles.css */
+
+      /* filters-container, filter-group, filter-search, filter-btn 样式已移至 vendor/monitor-styles.css */
+
+      .calendar-container {
+        background: white;
+        border-radius: 10px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+        min-width: 100%;
+      }
+
+      .calendar-header {
+        display: grid;
+        grid-template-columns: 120px repeat(7, minmax(180px, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+        font-weight: 600;
+        color: #495057;
+        font-size: 14px;
+      }
+
+      .calendar-header-cell {
+        padding: 12px;
+        text-align: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .calendar-week {
+        display: grid;
+        grid-template-columns: 120px repeat(7, minmax(180px, 1fr));
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .calendar-day-label {
+        padding: 12px;
+        text-align: center;
+        font-weight: 500;
+        color: #495057;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 13px;
+      }
+
+      .calendar-day {
+        height: 750px;
+        min-height: 750px;
+        max-height: 750px;
+        min-width: 180px;
+        padding: 12px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+        position: relative;
+        overflow-y: hidden;
+        overflow-x: hidden;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .calendar-day:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+      }
+
+      .calendar-day.today {
+        border-color: #667eea;
+        background: linear-gradient(to bottom, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+      }
+
+      .schedule-item {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        background: white;
+        border-left: 4px solid #667eea;
+        border-radius: 6px;
+        font-size: 12px;
+        line-height: 1.5;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+      }
+
+      .schedule-item:hover {
+        background: rgba(102, 126, 234, 0.08);
+        transform: translateX(3px);
+        box-shadow: 0 3px 8px rgba(102, 126, 234, 0.2);
+        border-left-color: #764ba2;
+      }
+
+      .schedule-item.highlighted {
+        background: rgba(102, 126, 234, 0.15);
+        border-left-color: #764ba2;
+        border-left-width: 5px;
+      }
+
+      .schedule-item.highlighted:hover {
+        background: rgba(102, 126, 234, 0.2);
+      }
+
+      .schedule-item .port {
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 2px;
+      }
+
+      .schedule-item .carrier {
+        color: #6c757d;
+        font-size: 11px;
+      }
+
+      .schedule-item .vessel {
+        color: #495057;
+        font-size: 11px;
+        margin-top: 2px;
+      }
+
+      .schedule-item .carrier {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+
+      /* tooltip 相关样式已移至 vendor/common-styles.css */
+      /* empty-message 样式已移至 vendor/monitor-styles.css */
+      
+      .more-items-indicator {
+        flex-shrink: 0;
+        margin-top: auto;
+        padding-top: 8px;
+        min-height: 24px;
+      }
+
+      .calendar-container.hidden {
+        display: none;
+      }
+
+      /* 响应式设计：平板和窄屏 */
+      @media (max-width: 1400px) {
+        .calendar-header {
+          grid-template-columns: 100px repeat(7, minmax(150px, 1fr));
+        }
+        .calendar-week {
+          grid-template-columns: 100px repeat(7, minmax(150px, 1fr));
+        }
+        .calendar-day {
+          min-width: 150px;
+        }
+      }
+
+      @media (max-width: 1200px) {
+        .calendar-header {
+          grid-template-columns: 80px repeat(7, minmax(120px, 1fr));
+        }
+        .calendar-week {
+          grid-template-columns: 80px repeat(7, minmax(120px, 1fr));
+        }
+        .calendar-day {
+          min-width: 120px;
+          height: 600px;
+          min-height: 600px;
+          max-height: 600px;
+        }
+      }
+
+      /* 手机端：按日显示（垂直布局） */
+      @media (max-width: 768px) {
+        .calendar-container {
+          padding: 16px;
+        }
+        
+        .calendar-header {
+          display: none; /* 手机端隐藏表头 */
+        }
+        
+        .calendar-week {
+          display: block; /* 改为块级布局 */
+          margin-bottom: 16px;
+        }
+        
+        .calendar-day-label {
+          display: none; /* 手机端隐藏周标签 */
+        }
+        
+        .calendar-day {
+          width: 100%;
+          min-width: 100%;
+          max-width: 100%;
+          height: auto;
+          min-height: auto;
+          max-height: none;
+          margin-bottom: 16px;
+          padding: 16px;
+          overflow-y: visible;
+        }
+        
+        .schedule-item {
+          font-size: 13px;
+          padding: 12px;
+        }
+        
+        .schedule-item .port {
+          font-size: 14px;
+        }
+        
+        .schedule-item .carrier {
+          font-size: 12px;
+        }
+        
+        .schedule-item .vessel {
+          font-size: 11px;
+        }
+      }
+
+      /* upload-area, upload-card, status-card 样式已移至 vendor/monitor-styles.css */
+
+      /* AI 分析模块样式已移至 vendor/ai-styles.css */
+    </style>
+  </head>
+  <body data-page="monitor-sailing-schedule.html">
+    <!-- 用户验证模态框 -->
+    <div id="authOverlay" class="auth-overlay">
+      <div class="auth-modal">
+        <h2>🔐 访问验证</h2>
+        <p>为了了解工具使用情况，请填写以下信息</p>
+        <form id="authForm">
+          <div class="auth-form-group">
+            <label for="userName">姓名 *</label>
+            <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
+            <div class="auth-error" id="nameError">请输入您的姓名</div>
+          </div>
+          <div class="auth-form-group">
+            <label for="userPhone">手机号 *</label>
+            <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
+            <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+          </div>
+          <div class="auth-form-group">
+            <label for="userEmail">邮箱 *</label>
+            <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
+            <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+          </div>
+          <button type="submit" class="auth-submit-btn">确认并继续</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="header">
+        <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+        <a href="Monitor-Sailing-Schedule-README.html" class="readme-btn">使用说明 →</a>
+        <h1>Monitor · 船期表</h1>
+        <p>以日历视图展示船期信息，支持航线区域、船公司、港口多维度筛选</p>
+      </div>
+
+      <div class="content">
+        <!-- 文件上传区域 -->
+        <section class="panel">
+          <div class="upload-area">
+            <label class="upload-card" for="file001">
+              <span class="file-icon">📄</span>
+              <div class="file-info">
+                <div class="file-name">001-03-market-analysis.xlsx</div>
+                <div class="file-status" id="status001">未加载</div>
+              </div>
+              <input type="file" id="file001" accept=".xlsx,.xls">
+            </label>
+            <label class="upload-card" for="file365">
+              <span class="file-icon">📄</span>
+              <div class="file-info">
+                <div class="file-name">365-03-market-watch.xlsx</div>
+                <div class="file-status" id="status365">未加载</div>
+              </div>
+              <input type="file" id="file365" accept=".xlsx,.xls">
+            </label>
+          </div>
+        </section>
+
+        <!-- 筛选器和显示模式 -->
+        <section class="panel">
+          <div class="header-controls">
+            <h3 style="margin: 0; color: #495057;">筛选条件</h3>
+            <div style="display: flex; gap: 16px; align-items: center;">
+              <div class="mode-toggle">
+                <span style="color: #6c757d; font-size: 14px; margin-right: 8px;">显示模式：</span>
+                <button class="mode-btn active" data-mode="001">001</button>
+                <button class="mode-btn" data-mode="365">365</button>
+              </div>
+              <button type="button" class="mode-btn" id="exportPdfBtn" style="background: #667eea; color: white; border-color: #667eea;">
+                导出 PDF
+              </button>
+            </div>
+          </div>
+
+          <div class="filters-container">
+            <div class="filter-group">
+              <label for="regionFilter">航线区域筛选（可多选）</label>
+              <input type="text" id="regionSearch" class="filter-search" placeholder="搜索航线区域...">
+              <select id="regionFilter" multiple>
+                <!-- 动态填充 -->
+              </select>
+              <div class="filter-actions">
+                <button type="button" class="filter-btn" data-filter="region" data-action="select-all">全部选择</button>
+                <button type="button" class="filter-btn" data-filter="region" data-action="clear-all">清除选择</button>
+              </div>
+            </div>
+            <div class="filter-group">
+              <label for="carrierFilter">船公司筛选（可多选）</label>
+              <input type="text" id="carrierSearch" class="filter-search" placeholder="搜索船公司...">
+              <select id="carrierFilter" multiple>
+                <!-- 动态填充 -->
+              </select>
+              <div class="filter-actions">
+                <button type="button" class="filter-btn" data-filter="carrier" data-action="select-all">全部选择</button>
+                <button type="button" class="filter-btn" data-filter="carrier" data-action="clear-all">清除选择</button>
+              </div>
+            </div>
+            <div class="filter-group">
+              <label for="portFilter">港口筛选（可多选）</label>
+              <input type="text" id="portSearch" class="filter-search" placeholder="搜索港口...">
+              <select id="portFilter" multiple>
+                <!-- 动态填充 -->
+              </select>
+              <div class="filter-actions">
+                <button type="button" class="filter-btn" data-filter="port" data-action="select-all">全部选择</button>
+                <button type="button" class="filter-btn" data-filter="port" data-action="clear-all">清除选择</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 日历视图 -->
+        <section class="panel">
+          <div class="empty-message" id="emptyMessage">
+            请选择筛选条件以显示船期日历
+          </div>
+          <div class="calendar-container hidden" id="calendarContainer">
+            <div class="calendar-header">
+              <div class="calendar-header-cell">时间</div>
+            <div class="calendar-header-cell">周日</div>
+            <div class="calendar-header-cell">周一</div>
+            <div class="calendar-header-cell">周二</div>
+            <div class="calendar-header-cell">周三</div>
+            <div class="calendar-header-cell">周四</div>
+            <div class="calendar-header-cell">周五</div>
+            <div class="calendar-header-cell">周六</div>
+            </div>
+            <div id="calendarBody"></div>
+          </div>
+        </section>
+
+        <!-- AI 船期分析模块 -->
+        <section class="card" id="aiAnalysisSection">
+          <div class="card-header">
+            <h2 class="section-title">AI 船期分析 <span>AI SAILING SCHEDULE ANALYSIS</span></h2>
+            <p class="module-desc">DeepSeek × KIMI × 通义千问 三模型交叉验证船期规律、异常检测与趋势分析</p>
+          </div>
+          <div id="aiAnalysisContainer" class="ai-analysis-container">
+            <div class="ai-header">
+              <h3>AI 船期分析</h3>
+              <p>基于当前筛选条件，对区域航线、船公司或具体港口进行深度船期分析</p>
+            </div>
+            <div id="emptyAiMessage" class="empty-chart-message" style="display: none;">
+              请先选择筛选条件（区域航线、船公司或港口）以启用 AI 分析
+            </div>
+            <div id="aiConfigSection" style="display: none;">
+              <div class="ai-tabs">
+                <div class="ai-tab-buttons">
+                  <button class="ai-tab-btn active" data-provider="deepseek">DeepSeek</button>
+                  <button class="ai-tab-btn" data-provider="kimi">KIMI (Moonshot)</button>
+                  <button class="ai-tab-btn" data-provider="qwen">通义千问 (Qwen)</button>
+                </div>
+                <span class="ai-tab-hint">可切换不同模型对比观点一致性</span>
+              </div>
+              <div class="ai-panels">
+                <div class="ai-panel active" data-provider="deepseek">
+                  <div class="api-config">
+                    <h4>DeepSeek API 配置</h4>
+                    <div class="api-input-group">
+                      <label>API Key:</label>
+                      <input type="password" id="apiKeyInput" placeholder="请输入 DeepSeek API Key">
+                    </div>
+                    <div class="api-input-group">
+                      <label>API URL:</label>
+                      <input type="text" id="apiUrlInput" placeholder="https://api.deepseek.com/v1/chat/completions" value="https://api.deepseek.com/v1/chat/completions">
+                    </div>
+                    <div class="api-input-group">
+                      <label>模型 ID:</label>
+                      <input type="text" id="apiModelInput" placeholder="deepseek-chat" value="deepseek-chat" list="deepseekModelOptions">
+                    </div>
+                    <button class="api-save-btn" onclick="saveAiConfig('deepseek')">保存配置</button>
+                  </div>
+                  <button class="ai-analysis-btn" id="aiAnalysisBtn" onclick="runAiAnalysis('deepseek')">使用 DeepSeek 分析</button>
+                  <div id="aiLoading" class="ai-loading hidden">正在分析中</div>
+                  <div id="aiResult" class="ai-result hidden">
+                    <h4>DeepSeek 分析结果</h4>
+                    <div class="ai-result-content" id="aiResultContent"></div>
+                  </div>
+                </div>
+                <div class="ai-panel" data-provider="kimi">
+                  <div class="api-config">
+                    <h4>KIMI (Moonshot) API 配置</h4>
+                    <div class="api-input-group">
+                      <label>API Key:</label>
+                      <input type="password" id="kimiApiKeyInput" placeholder="请输入 KIMI / Moonshot API Key">
+                    </div>
+                    <div class="api-input-group">
+                      <label>API URL:</label>
+                      <input type="text" id="kimiApiUrlInput" placeholder="https://api.moonshot.cn/v1/chat/completions" value="https://api.moonshot.cn/v1/chat/completions">
+                    </div>
+                    <div class="api-input-group">
+                      <label>模型 ID:</label>
+                      <input type="text" id="kimiModelInput" placeholder="moonshot-v1-32k" value="moonshot-v1-32k" list="kimiModelOptions">
+                    </div>
+                    <button class="api-save-btn" onclick="saveAiConfig('kimi')">保存配置</button>
+                  </div>
+                  <button class="ai-analysis-btn secondary" id="kimiAnalysisBtn" onclick="runAiAnalysis('kimi')">使用 KIMI 分析</button>
+                  <div id="kimiAiLoading" class="ai-loading hidden">正在分析中</div>
+                  <div id="kimiAiResult" class="ai-result hidden">
+                    <h4>KIMI 分析结果</h4>
+                    <div class="ai-result-content" id="kimiAiResultContent"></div>
+                  </div>
+                </div>
+                <div class="ai-panel" data-provider="qwen">
+                  <div class="api-config">
+                    <h4>通义千问 (Qwen) API 配置</h4>
+                    <div class="api-input-group">
+                      <label>API Key:</label>
+                      <input type="password" id="qwenApiKeyInput" placeholder="请输入通义千问 API Key">
+                    </div>
+                    <div class="api-input-group">
+                      <label>API URL:</label>
+                      <input type="text" id="qwenApiUrlInput" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" value="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions">
+                    </div>
+                    <div class="api-input-group">
+                      <label>模型 ID:</label>
+                      <input type="text" id="qwenModelInput" placeholder="qwen-max" value="qwen-max" list="qwenModelOptions">
+                    </div>
+                    <button class="api-save-btn" onclick="saveAiConfig('qwen')">保存配置</button>
+                  </div>
+                  <button class="ai-analysis-btn" id="qwenAnalysisBtn" onclick="runAiAnalysis('qwen')" style="background: #ff6b35;">使用通义千问分析</button>
+                  <div id="qwenAiLoading" class="ai-loading hidden">正在分析中</div>
+                  <div id="qwenAiResult" class="ai-result hidden">
+                    <h4>通义千问 分析结果</h4>
+                    <div class="ai-result-content" id="qwenAiResultContent"></div>
+                  </div>
+                </div>
+              </div>
+              <datalist id="deepseekModelOptions">
+                <option value="deepseek-chat">基础对话模型（推荐）</option>
+                <option value="deepseek-v3">V3 高性能模型（2024年12月发布）</option>
+                <option value="deepseek-reasoner">推理模型（逻辑推理）</option>
+                <option value="deepseek-r1">R1 推理模型（2025年1月发布）</option>
+                <option value="deepseek-coder">代码模型</option>
+              </datalist>
+              <datalist id="kimiModelOptions">
+                <option value="moonshot-v1-8k">8K 上下文（经济型）</option>
+                <option value="moonshot-v1-32k">32K 上下文（推荐）</option>
+                <option value="moonshot-v1-128k">128K 上下文（长文档）</option>
+                <option value="moonshot-v1-k2">K2 模型（320亿参数，需确认API可用性）</option>
+              </datalist>
+              <datalist id="qwenModelOptions">
+                <option value="qwen-turbo">Turbo 快速模型（经济型）</option>
+                <option value="qwen-plus">Plus 平衡模型</option>
+                <option value="qwen-max">Max 高性能模型（推荐，最佳性能）</option>
+                <option value="qwen-max-longcontext">Max 长上下文模型</option>
+              </datalist>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      // ==================== 常量定义 ====================
+      
+      /** @constant {number} 防抖延迟时间（毫秒） */
+      const DEBOUNCE_DELAY = 300;
+      
+      /** @constant {number} 日历显示周数 */
+      const CALENDAR_WEEKS = 4;
+      
+      /** @constant {number} 每周天数 */
+      const DAYS_PER_WEEK = 7;
+      
+      /** @constant {number} 日历每天显示的最大项目数 */
+      const MAX_ITEMS_PER_DAY = 7;
+      
+      /** @constant {number} 日历单元格高度（像素） */
+      const CALENDAR_DAY_HEIGHT = 750;
+      
+      /** @constant {number} 日历单元格最小宽度（像素） */
+      const CALENDAR_DAY_MIN_WIDTH = 180;
+      
+      /** @constant {number} 时间标签宽度（像素） */
+      const TIME_LABEL_WIDTH = 120;
+      
+      /** @constant {number} 最大失败记录数（用于统计） */
+      const MAX_FAILED_RECORDS = 20;
+      
+      // 调试函数已统一到 vendor/debug-utils.js
+      // 使用：debugLog(), debugWarn(), debugError()
+      
+      /** @constant {string} 默认模式 */
+      const DEFAULT_MODE = '001';
+      
+      /** @constant {string} 模式 365 */
+      const MODE_365 = '365';
+      
+      /** @constant {string} 模式 001 */
+      const MODE_001 = '001';
+      
+      /** @constant {string} Excel 文件类型 */
+      const EXCEL_MIME_TYPES = '.xlsx,.xls';
+      
+      /** @constant {string} Schedule Sheet 关键词 */
+      const SCHEDULE_SHEET_KEYWORD = 'schedule';
+      
+      /** @constant {number} 001 文件默认 Sheet 索引 */
+      const SHEET_INDEX_001 = 0;
+      
+      /** @constant {number} 365 文件默认 Sheet 索引 */
+      const SHEET_INDEX_365 = 1;
+      
+      /** @constant {string} 日期格式分隔符 */
+      const DATE_SEPARATOR = '/';
+      
+      /** @constant {string} 港口分隔符 */
+      const PORT_SEPARATOR = '、';
+      
+      // ==================== 错误处理 ====================
+      // 注意：ErrorType 和 showError/showSuccess 已在 vendor/error-handler.js 中定义
+      // 这里只添加页面特定的错误消息
+      
+      // 添加页面特定的错误消息（使用统一的错误处理模块）
+      if (typeof addErrorMessage === 'function') {
+        addErrorMessage(ErrorType.DATA_VALIDATION, 'NO_FILTERS', '请先选择筛选条件');
+        addErrorMessage(ErrorType.DATA_VALIDATION, 'NO_FILTERED_DATA', '筛选后没有可分析的数据');
+        addErrorMessage(ErrorType.DATA_VALIDATION, 'NO_DATA_FOR_ANALYSIS', '没有可分析的数据，请先加载Excel文件并选择筛选条件');
+        addErrorMessage(ErrorType.API_ERROR, 'API_KEY_MISSING', '请先配置 {provider} 的 API Key');
+        addErrorMessage(ErrorType.DOM_ERROR, 'ELEMENT_NOT_FOUND', '未找到必要的页面元素：{element}');
+      }
+      
+      // 调试函数已统一到 vendor/debug-utils.js
+
+      // 航线区域分类规则（按指定顺序排列）
+      const regionMapping = {
+        '美西': ['长滩', '洛杉矶'],
+        '美东': ['纽约'],
+        '加拿大': ['温哥华'],
+        '墨西哥': ['曼萨尼约', '墨西哥曼萨尼约'],
+        '中南美': ['巴尔博亚', '考赛多', '库特扎尔'],
+        '南美西': ['布埃纳文图拉', '圣安东尼奥'],
+        '南美东': ['桑托斯'],
+        '欧基': ['鹿特丹', '费利克斯托'],
+        '地西': ['巴塞罗那', '巴塞罗纳', '瓦伦西亚'],
+        '黑海': ['伊斯坦布尔'],
+        '中东': ['杰贝阿里', '达曼'],
+        '红海': ['吉达'],
+        '印巴': ['吉大', '吉大港', '科伦坡', '纳瓦西瓦', '那瓦西瓦', '清奈'],
+        '澳洲': ['布里斯班'],
+        '东非': ['蒙巴萨'],
+        '南非': ['德班'],
+        '西非': ['黑角', '特马'],
+        '香港': ['香港'],
+        '台湾': ['高雄'],
+        '新加坡': ['新加坡'],
+        '马来': ['巴生西', '巴生北', '巴西古单', '槟城', '丹戎帕拉帕斯'],
+        '泰国': ['林查班'],
+        '越南': ['盖梅港', '盖美', '海防', '胡志明', '同奈'],
+        '柬埔寨': ['西哈努克'],
+        '印尼': ['雅加达', '泗水'],
+        '菲律宾': ['马尼拉南', '马尼拉北']
+      };
+
+      // 所有46个港口列表（按照航线区域顺序排列）
+      const allPorts = [
+        // 美西
+        '长滩', '洛杉矶',
+        // 美东
+        '纽约',
+        // 加拿大
+        '温哥华',
+        // 墨西哥
+        '曼萨尼约', '墨西哥曼萨尼约',
+        // 中南美
+        '巴尔博亚', '考赛多', '库特扎尔',
+        // 南美西
+        '布埃纳文图拉', '圣安东尼奥',
+        // 南美东
+        '桑托斯',
+        // 欧基
+        '鹿特丹', '费利克斯托',
+        // 地西
+        '巴塞罗那', '巴塞罗纳', '瓦伦西亚',
+        // 黑海
+        '伊斯坦布尔',
+        // 中东
+        '杰贝阿里', '达曼',
+        // 红海
+        '吉达',
+        // 印巴
+        '吉大', '吉大港', '科伦坡', '纳瓦西瓦', '那瓦西瓦', '清奈',
+        // 澳洲
+        '布里斯班',
+        // 东非
+        '蒙巴萨',
+        // 南非
+        '德班',
+        // 西非
+        '黑角', '特马',
+        // 香港
+        '香港',
+        // 台湾
+        '高雄',
+        // 新加坡
+        '新加坡',
+        // 马来
+        '巴生西', '巴生北', '巴西古单', '槟城', '丹戎帕拉帕斯',
+        // 泰国
+        '林查班',
+        // 越南
+        '盖梅港', '盖美', '海防', '胡志明', '同奈',
+        // 柬埔寨
+        '西哈努克',
+        // 印尼
+        '雅加达', '泗水',
+        // 菲律宾
+        '马尼拉南', '马尼拉北'
+      ];
+
+      // 港口名称匹配规则（处理不同数据源的港口名称差异，按港口顺序排列）
+      const portNameMapping = {
+        // 美西
+        'LONG BEACH': '长滩',
+        'LONG BEACH, CA': '长滩',
+        'LONG BEACH,CA': '长滩',
+        'LONG BEACH CA': '长滩',
+        '长滩,加利福尼亚州': '长滩',
+        'LOS ANGELES': '洛杉矶',
+        'LOS ANGELES, CA': '洛杉矶',
+        'LOS ANGELES,CA': '洛杉矶',
+        'LOS ANGELES CA': '洛杉矶',
+        '洛杉矶,加利福尼亚州': '洛杉矶',
+        // 美东
+        'NEW YORK': '纽约',
+        'NEW YORK,NY': '纽约',
+        'NEW YORK, NY': '纽约',
+        'NEW YORK NY': '纽约',
+        '纽约,纽约州': '纽约',
+        // 加拿大
+        'VANCOUVER': '温哥华',
+        'VANCOUVER.BC': '温哥华',
+        'VANCOUVER,BC': '温哥华',
+        'VANCOUVER, BC': '温哥华',
+        'VANCOUVER BC': '温哥华',
+        // 墨西哥
+        'MANZANILLO': '曼萨尼约',
+        'MANZANILLO,MX': '曼萨尼约',
+        'MANZANILLO, MX': '曼萨尼约',
+        'MANZANILLO MX': '曼萨尼约',
+        '墨西哥曼萨尼约': '曼萨尼约',
+        // 中南美
+        'BALBOA': '巴尔博亚',
+        'BALBOA(巴尔博亚)': '巴尔博亚',
+        'CAUCEDO': '考赛多',
+        'PUERTO QUETZAL': '库特扎尔',
+        // 南美西
+        'BUENAVENTURA': '布埃纳文图拉',
+        'BUENAVENTURA(布埃纳文图拉)': '布埃纳文图拉',
+        'SAN ANTONIO': '圣安东尼奥',
+        'SAN ANTONIO, CHILE': '圣安东尼奥',
+        'SAN ANTONIO,CHILE': '圣安东尼奥',
+        'SAN ANTONIO CHILE': '圣安东尼奥',
+        // 南美东
+        'SANTOS': '桑托斯',
+        'SANTOS(桑托斯)': '桑托斯',
+        // 欧基
+        'ROTTERDAM': '鹿特丹',
+        'ROTTERDAM,NL': '鹿特丹',
+        'ROTTERDAM, NL': '鹿特丹',
+        'ROTTERDAM NL': '鹿特丹',
+        'FELIXSTOWE': '费利克斯托',
+        'FELIXSTOWE(费利克斯托)': '费利克斯托',
+        // 地西
+        'BARCELONA': '巴塞罗那',
+        'BARCELONA(巴塞罗纳)': '巴塞罗那',
+        '巴塞罗纳': '巴塞罗那',
+        'VALENCIA': '瓦伦西亚',
+        'VALENCIA,ES': '瓦伦西亚',
+        'VALENCIA, ES': '瓦伦西亚',
+        'VALENCIA ES': '瓦伦西亚',
+        // 黑海
+        'ISTANBUL': '伊斯坦布尔',
+        'ISTANBUL(伊斯坦布尔)': '伊斯坦布尔',
+        // 中东
+        'JEBEL ALI': '杰贝阿里',
+        'JEBEL ALI(杰贝阿里)': '杰贝阿里',
+        'DAMMAM': '达曼',
+        'DAMMAM(达曼)': '达曼',
+        // 红海
+        'JEDDAH': '吉达',
+        'JEDDAH(吉达)': '吉达',
+        // 印巴
+        'CHATTOGRAM': '吉大',
+        'CHATTOGRAM(吉大港)': '吉大',
+        '吉大港': '吉大',
+        'COLOMBO': '科伦坡',
+        'COLOMBO(科伦坡)': '科伦坡',
+        'NHAVA SHEVA': '纳瓦西瓦',
+        'NHAVA SHEVA(那瓦西瓦)': '纳瓦西瓦',
+        '那瓦西瓦': '纳瓦西瓦',
+        'CHENNAI': '清奈',
+        'CHENNAI(清奈)': '清奈',
+        // 澳洲
+        'BRISBANE': '布里斯班',
+        'BRISBANE,AU': '布里斯班',
+        'BRISBANE, AU': '布里斯班',
+        'BRISBANE AU': '布里斯班',
+        'BRISBANE,AU(布里斯班)': '布里斯班',
+        // 东非
+        'MOMBASA': '蒙巴萨',
+        'MOMBASA(蒙巴萨)': '蒙巴萨',
+        // 南非
+        'DURBAN': '德班',
+        'DURBAN(德班)': '德班',
+        // 西非
+        'POINTE NOIRE': '黑角',
+        'POINTE NOIRE(黑角)': '黑角',
+        'TEMA': '特马',
+        'TEMA(特马)': '特马',
+        // 香港
+        'HONG KONG': '香港',
+        'HONG KONG(香港)': '香港',
+        // 台湾
+        'KAOHSIUNG': '高雄',
+        'KAOHSIUNG(高雄)': '高雄',
+        // 新加坡
+        'SINGAPORE': '新加坡',
+        'SINGAPORE(新加坡)': '新加坡',
+        // 马来
+        'PORT KELANG N': '巴生北',
+        'PORT KELANG N(巴生北)': '巴生北',
+        'PORT KELANG NORTH': '巴生北',
+        '巴生北': '巴生北',
+        'PORT KELANG S': '巴生西',
+        'PORT KELANG S(巴生西)': '巴生西',
+        'PORT KELANG SOUTH': '巴生西',
+        '巴生西': '巴生西',
+        'PASIR GUDANG': '巴西古单',
+        'PASIR GUDANG(巴西古单)': '巴西古单',
+        'PENANG': '槟城',
+        'PENANG(槟城)': '槟城',
+        'TANJUNG PELEPAS': '丹戎帕拉帕斯',
+        'TANJUNG PELEPAS(丹戎帕拉帕斯)': '丹戎帕拉帕斯',
+        // 泰国
+        'LAEM CHABANG': '林查班',
+        'LAEM CHABANG(林查班)': '林查班',
+        // 越南
+        'CAI MEP': '盖梅港',
+        'CAI MEP, VUNG TAU': '盖梅港',
+        'CAI MEP,VUNG TAU': '盖梅港',
+        'CAI MEP, VUNG TAU(盖梅港,头顿)': '盖梅港',
+        '盖梅港,头顿': '盖梅港',
+        '盖梅港, 头顿': '盖梅港',
+        '盖美港,头顿': '盖梅港',
+        '盖美港, 头顿': '盖梅港',
+        '盖美': '盖梅港',
+        'HAIPHONG': '海防',
+        'HAIPHONG(海防)': '海防',
+        'HOCHIMINH': '胡志明',
+        'HO CHI MINH': '胡志明',
+        'HOCHIMINH(胡志明)': '胡志明',
+        'DONG NAI': '同奈',
+        'DONG NAI(同奈)': '同奈',
+        // 柬埔寨
+        'SIHANOUKVILLE': '西哈努克',
+        'SIHANOUKVILLE(西哈努克)': '西哈努克',
+        // 印尼
+        'JAKARTA': '雅加达',
+        'JAKARTA(雅加达)': '雅加达',
+        'SURABAYA': '泗水',
+        'SURABAYA(泗水)': '泗水',
+        // 菲律宾
+        'MANILA N': '马尼拉北',
+        'MANILA N(马尼拉北)': '马尼拉北',
+        'MANILA NORTH': '马尼拉北',
+        'MANILA S': '马尼拉南',
+        'MANILA S(马尼拉南)': '马尼拉南',
+        'MANILA SOUTH': '马尼拉南'
+      };
+
+      // 调试函数已统一到 vendor/debug-utils.js
+      // 使用：debugLog(), debugWarn(), debugError()
+
+      /**
+       * 应用程序状态管理对象
+       * @type {Object}
+       * @property {Array<Object>|null} data001 - 001模式数据
+       * @property {Array<Object>|null} data365 - 365模式数据
+       * @property {string} currentMode - 当前显示模式（'001' 或 '365'）
+       * @property {Array<string>} selectedRegions - 选中的航线区域
+       * @property {Array<string>} selectedCarriers - 选中的船公司
+       * @property {Array<string>} selectedPorts - 选中的港口
+       * @property {Set<string>} allCarriers001 - 001模式所有船公司
+       * @property {Set<string>} allCarriers365 - 365模式所有船公司
+       * @property {Set<string>} allPorts001 - 001模式所有港口
+       * @property {Set<string>} allPorts365 - 365模式所有港口
+       */
+      const state = {
+        data001: null,
+        data365: null,
+        currentMode: DEFAULT_MODE,
+        selectedRegions: [],
+        selectedCarriers: [],
+        selectedPorts: [],
+        allCarriers001: new Set(),
+        allCarriers365: new Set(),
+        allPorts001: new Set(),
+        allPorts365: new Set()
+      };
+
+      // 事件监听器管理（用于清理）
+      const eventListeners = {
+        handlers: new Map(),
+        add(element, event, handler, options) {
+          if (!element) return;
+          const key = `${element.constructor.name}_${event}_${handler.name || 'anonymous'}`;
+          element.addEventListener(event, handler, options);
+          if (!this.handlers.has(element)) {
+            this.handlers.set(element, []);
+          }
+          this.handlers.get(element).push({ event, handler, options, key });
+        },
+        remove(element, event, handler) {
+          if (!element) return;
+          element.removeEventListener(event, handler);
+          const listeners = this.handlers.get(element);
+          if (listeners) {
+            const index = listeners.findIndex(l => l.event === event && l.handler === handler);
+            if (index > -1) {
+              listeners.splice(index, 1);
+            }
+          }
+        },
+        removeAll(element) {
+          if (!element) return;
+          const listeners = this.handlers.get(element);
+          if (listeners) {
+            listeners.forEach(({ event, handler, options }) => {
+              element.removeEventListener(event, handler, options);
+            });
+            this.handlers.delete(element);
+          }
+        },
+        cleanup() {
+          this.handlers.forEach((listeners, element) => {
+            listeners.forEach(({ event, handler, options }) => {
+              element.removeEventListener(event, handler, options);
+            });
+          });
+          this.handlers.clear();
+        }
+      };
+
+      /**
+       * 防抖函数 - 延迟执行函数，直到停止调用后等待指定时间
+       * @param {Function} func - 要防抖的函数
+       * @param {number} [wait=DEBOUNCE_DELAY] - 等待时间（毫秒）
+       * @returns {Function} 防抖后的函数
+       */
+      function debounce(func, wait = DEBOUNCE_DELAY) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      /**
+       * DOM 元素缓存对象
+       * 所有 DOM 查询结果都缓存在这里，避免重复查询
+       * @type {Object<string, HTMLElement|NodeList>}
+       */
+      const dom = {
+        file001: null,
+        file365: null,
+        status001: null,
+        status365: null,
+        modeBtns: null,
+        regionFilter: null,
+        regionSearch: null,
+        carrierFilter: null,
+        carrierSearch: null,
+        portFilter: null,
+        portSearch: null,
+        calendarContainer: null,
+        calendarBody: null,
+        emptyMessage: null,
+        exportPdfBtn: null,
+        aiAnalysisSection: null,
+        emptyAiMessage: null,
+        aiConfigSection: null
+      };
+      
+      /**
+       * 初始化 DOM 元素缓存
+       * 在页面加载时调用，缓存所有需要的 DOM 元素
+       */
+      function initDOMCache() {
+        dom.file001 = document.getElementById('file001');
+        dom.file365 = document.getElementById('file365');
+        dom.status001 = document.getElementById('status001');
+        dom.status365 = document.getElementById('status365');
+        dom.modeBtns = document.querySelectorAll('.mode-btn');
+        dom.regionFilter = document.getElementById('regionFilter');
+        dom.regionSearch = document.getElementById('regionSearch');
+        dom.carrierFilter = document.getElementById('carrierFilter');
+        dom.carrierSearch = document.getElementById('carrierSearch');
+        dom.portFilter = document.getElementById('portFilter');
+        dom.portSearch = document.getElementById('portSearch');
+        dom.calendarContainer = document.getElementById('calendarContainer');
+        dom.calendarBody = document.getElementById('calendarBody');
+        dom.emptyMessage = document.getElementById('emptyMessage');
+        dom.exportPdfBtn = document.getElementById('exportPdfBtn');
+        dom.aiAnalysisSection = document.getElementById('aiAnalysisSection');
+        dom.emptyAiMessage = document.getElementById('emptyAiMessage');
+        dom.aiConfigSection = document.getElementById('aiConfigSection');
+        
+        // 验证必要的 DOM 元素是否存在
+        const requiredElements = [
+          { key: 'file001', name: '001文件上传' },
+          { key: 'file365', name: '365文件上传' },
+          { key: 'regionFilter', name: '区域筛选器' },
+          { key: 'carrierFilter', name: '船公司筛选器' },
+          { key: 'portFilter', name: '港口筛选器' },
+          { key: 'calendarContainer', name: '日历容器' },
+          { key: 'calendarBody', name: '日历主体' }
+        ];
+        
+        const missingElements = requiredElements.filter(({ key }) => !dom[key]);
+        if (missingElements.length > 0) {
+          const missingNames = missingElements.map(e => e.name).join('、');
+          showError(ErrorType.DOM_ERROR, 'ELEMENT_NOT_FOUND', { element: missingNames });
+          debugWarn('缺少必要的 DOM 元素:', missingElements);
+        }
+      }
+
+      /**
+       * 初始化应用程序
+       * 设置事件监听器、填充筛选器选项等
+       */
+      function init() {
+        // 初始化 DOM 缓存
+        initDOMCache();
+        // 填充航线区域选项
+        const regions = Object.keys(regionMapping);
+        regions.forEach(region => {
+          const option = document.createElement('option');
+          option.value = region;
+          option.textContent = region;
+          dom.regionFilter.appendChild(option);
+        });
+
+        // 填充港口选项
+        allPorts.forEach(port => {
+          const option = document.createElement('option');
+          option.value = port;
+          option.textContent = port;
+          dom.portFilter.appendChild(option);
+        });
+
+        // 事件监听（使用事件监听器管理）
+        const handleFile001Change = (e) => handleFileUpload(e, '001');
+        const handleFile365Change = (e) => handleFileUpload(e, '365');
+        eventListeners.add(dom.file001, 'change', handleFile001Change);
+        eventListeners.add(dom.file365, 'change', handleFile365Change);
+        
+        dom.modeBtns.forEach(btn => {
+          const handleModeClick = () => {
+            const mode = btn.dataset.mode;
+            if (mode !== state.currentMode) {
+              state.currentMode = mode;
+              dom.modeBtns.forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              updateCarrierFilter();
+              renderCalendar();
+              updateAiModuleVisibility(); // 更新 AI 模块可见性
+            }
+          };
+          eventListeners.add(btn, 'click', handleModeClick);
+        });
+
+        eventListeners.add(dom.regionFilter, 'change', handleFilterChange);
+        eventListeners.add(dom.carrierFilter, 'change', handleFilterChange);
+        eventListeners.add(dom.portFilter, 'change', handleFilterChange);
+
+        // 搜索功能（添加防抖）
+        const handleRegionSearch = debounce((e) => filterOptions('region', e.target.value));
+        const handleCarrierSearch = debounce((e) => filterOptions('carrier', e.target.value));
+        const handlePortSearch = debounce((e) => filterOptions('port', e.target.value));
+        eventListeners.add(dom.regionSearch, 'input', handleRegionSearch);
+        eventListeners.add(dom.carrierSearch, 'input', handleCarrierSearch);
+        eventListeners.add(dom.portSearch, 'input', handlePortSearch);
+
+        // 筛选器按钮事件
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          const handleFilterBtnClick = () => {
+            const filterType = btn.dataset.filter;
+            const action = btn.dataset.action;
+            handleFilterAction(filterType, action);
+          };
+          eventListeners.add(btn, 'click', handleFilterBtnClick);
+        });
+
+        // 导出PDF按钮（使用缓存的DOM元素）
+        if (dom.exportPdfBtn) {
+          eventListeners.add(dom.exportPdfBtn, 'click', handleExportPdf);
+        }
+      }
+
+      /**
+       * 处理筛选器按钮操作
+       * @param {string} filterType - 筛选类型（'region', 'carrier', 'port'）
+       * @param {string} action - 操作类型（'select-all', 'clear-all'）
+       */
+      function handleFilterAction(filterType, action) {
+        let select;
+        if (filterType === 'region') select = dom.regionFilter;
+        else if (filterType === 'carrier') select = dom.carrierFilter;
+        else select = dom.portFilter;
+
+        if (action === 'select-all') {
+          // 全部选择（只选择可见的选项）
+          Array.from(select.options).forEach(option => {
+            if (!option.classList.contains('hidden') && option.style.display !== 'none') {
+              option.selected = true;
+            }
+          });
+        } else if (action === 'clear-all') {
+          // 清除选择
+          Array.from(select.options).forEach(option => {
+            option.selected = false;
+          });
+        }
+
+        // 触发change事件以更新筛选
+        select.dispatchEvent(new Event('change'));
+      }
+
+      // 搜索筛选选项
+      function filterOptions(type, searchText) {
+        const searchLower = searchText.toLowerCase();
+        let select;
+        if (type === 'region') select = dom.regionFilter;
+        else if (type === 'carrier') select = dom.carrierFilter;
+        else select = dom.portFilter;
+
+        Array.from(select.options).forEach(option => {
+          const text = option.textContent.toLowerCase();
+          if (text.includes(searchLower)) {
+            option.classList.remove('hidden');
+          } else {
+            option.classList.add('hidden');
+          }
+        });
+      }
+
+      // 处理文件上传
+      async function handleFileUpload(event, mode) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (typeof window.XLSX === "undefined") {
+          showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
+          return;
+        }
+
+        const statusEl = mode === '001' ? dom.status001 : dom.status365;
+        statusEl.textContent = "解析中...";
+
+        try {
+          const data = await file.arrayBuffer();
+          // 对于001文件，不使用cellDates: true，因为可能日期格式不一致
+          // 使用raw模式读取，然后手动解析日期
+          const workbook = XLSX.read(data, { 
+            type: "array", 
+            cellDates: false,  // 改为false，手动解析日期
+            cellNF: false, 
+            cellText: false,
+            dateNF: 'yyyy-mm-dd'  // 指定日期格式（如果Excel中有格式）
+          });
+          
+          // 根据模式选择正确的sheet
+          let sheetName;
+          if (mode === MODE_001) {
+            // 001-03文件：第一个sheet是schedule（索引0）
+            // 优先使用第一个sheet，如果第一个sheet名称包含schedule则使用，否则也使用第一个
+            if (workbook.SheetNames.length > 0) {
+              const firstSheet = workbook.SheetNames[0];
+              // 如果第一个sheet名称包含schedule，使用它；否则也使用第一个sheet
+              if (firstSheet.toLowerCase().includes('schedule')) {
+                sheetName = firstSheet;
+              } else {
+                // 查找是否有其他sheet包含schedule，如果有且是第一个，使用它；否则使用第一个sheet
+                const scheduleSheet = workbook.SheetNames.find(name => 
+                  name.toLowerCase().includes('schedule')
+                );
+                sheetName = scheduleSheet || firstSheet;
+              }
+            } else {
+              // 使用统一的错误处理模块
+              const noSheetsMsg = typeof getErrorMessage === 'function'
+                  ? getErrorMessage(ErrorType.FILE_LOAD, 'NO_SHEETS')
+                  : 'Excel文件中没有找到任何工作表';
+              throw new Error(noSheetsMsg);
+            }
+            debugLog('001模式选择的sheet:', sheetName, '所有sheet:', workbook.SheetNames);
+          } else {
+            // 365-03文件：第二个sheet是schedule
+            const scheduleSheet = workbook.SheetNames.find(name => 
+              name.toLowerCase().includes(SCHEDULE_SHEET_KEYWORD)
+            );
+            if (scheduleSheet) {
+              sheetName = scheduleSheet;
+            } else if (workbook.SheetNames.length > SHEET_INDEX_365) {
+              // 如果找不到schedule，使用第二个sheet
+              sheetName = workbook.SheetNames[SHEET_INDEX_365];
+            } else {
+              // 如果只有一个sheet，使用第一个
+              sheetName = workbook.SheetNames[SHEET_INDEX_001];
+            }
+            debugLog('365模式选择的sheet:', sheetName, '所有sheet:', workbook.SheetNames);
+          }
+          
+          const sheet = workbook.Sheets[sheetName];
+          // 使用 raw: true 来获取原始值，包括日期序列号
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: null });
+
+          // 解析数据（使用不同的解析方法）
+          const parsedData = mode === MODE_001 ? parseExcelData001(jsonData) : parseExcelData365(jsonData);
+          
+          if (mode === MODE_001) {
+            state.data001 = parsedData;
+          } else {
+            state.data365 = parsedData;
+          }
+
+          statusEl.textContent = `已加载 ${parsedData.length} 条记录`;
+          
+          // 更新筛选器（联动更新）
+          updateRegionFilter();
+          updateCarrierFilter();
+          updatePortFilter();
+          renderCalendar();
+          updateAiModuleVisibility(); // 更新 AI 模块可见性
+        } catch (error) {
+          debugError('解析文件失败:', error);
+          statusEl.textContent = "加载失败";
+          showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', {}, error);
+        }
+      }
+
+      // ==================== 公共解析工具函数 ====================
+      
+      /**
+       * 将Excel列字母转换为索引（A=0, B=1, ..., Z=25, AA=26, ...）
+       * @param {string} letter - 列字母（如 'A', 'B', 'AA'）
+       * @returns {number|null} 列索引，如果无效则返回 null
+       */
+      function columnLetterToIndex(letter) {
+        if (!letter) return null;
+        let index = 0;
+        const up = letter.trim().toUpperCase();
+        for (let i = 0; i < up.length; i++) {
+          const charCode = up.charCodeAt(i);
+          if (charCode < 65 || charCode > 90) return null;
+          index = index * 26 + (charCode - 64);
+        }
+        return index - 1;
+      }
+
+      /**
+       * 匹配列名（检查单个关键词）
+       * @param {string} key - 要匹配的列名
+       * @param {string} keyword - 关键词
+       * @returns {boolean} 是否匹配
+       */
+      function matchesKeyword(key, keyword) {
+        if (!key || !keyword) return false;
+        const lowerKey = String(key).toLowerCase();
+        const lowerKeyword = String(keyword).toLowerCase();
+        return lowerKey.includes(lowerKeyword);
+      }
+
+      /**
+       * 通用数据行解析函数（抽取公共逻辑）
+       * @param {Object} row - Excel行数据对象
+       * @param {Object} config - 列配置对象
+       * @param {string} mode - 解析模式（'001' 或 '365'）
+       * @returns {Object|null} 解析后的数据对象，如果无效则返回 null
+       */
+      function parseDataRow(row, config, mode) {
+        const {
+          portCol,
+          carrierCol,
+          dateCol,
+          vesselCol,
+          shipTypeCol,
+          weekdayCol,
+          voyageDaysCol,
+          originTerminalCol,
+          destTerminalCol,
+          routeIdCol,
+          vesselNameCol,
+          yearCol,
+          routePathCol
+        } = config;
+
+        // 提取基础字段
+        const rawPort = row[portCol];
+        const port = normalizePortName(rawPort ? String(rawPort).trim() : '');
+        const carrier = row[carrierCol] ? String(row[carrierCol]).trim() : '';
+        const vessel = vesselCol && row[vesselCol] ? String(row[vesselCol]).trim() : '';
+        const shipType = shipTypeCol && row[shipTypeCol] ? String(row[shipTypeCol]).trim() : '';
+
+        // 验证必要字段
+        if (!port || !allPorts.includes(port)) return null;
+        if (!carrier) return null;
+
+        // 解析日期
+        const rawDate = row[dateCol];
+        const date = parseDate(rawDate);
+        if (!date || isNaN(date.getTime())) return null;
+
+        // 提取额外字段
+        const weekday = weekdayCol && row[weekdayCol] ? String(row[weekdayCol]).trim() : '';
+        const voyageDays = voyageDaysCol && row[voyageDaysCol] ? String(row[voyageDaysCol]).trim() : '';
+        const originTerminal = originTerminalCol && row[originTerminalCol] ? String(row[originTerminalCol]).trim() : '';
+        
+        // 目的港码头处理（001模式特殊处理：只取/前的部分）
+        let destTerminal = '';
+        if (destTerminalCol && row[destTerminalCol]) {
+          const destTerminalRaw = String(row[destTerminalCol]).trim();
+          if (mode === MODE_001) {
+            destTerminal = destTerminalRaw.includes(DATE_SEPARATOR) ? destTerminalRaw.split(DATE_SEPARATOR)[0].trim() : destTerminalRaw;
+          } else {
+            destTerminal = destTerminalRaw;
+          }
+        }
+
+        // 构建基础数据对象
+        const baseData = {
+          port,
+          carrier,
+          date,
+          vessel,
+          shipType,
+          weekday,
+          voyageDays,
+          originTerminal,
+          destTerminal,
+          mode
+        };
+
+        // 365模式特有字段
+        if (mode === MODE_365) {
+          baseData.routeId = routeIdCol && row[routeIdCol] ? String(row[routeIdCol]).trim() : '';
+          baseData.vesselName = vesselNameCol && row[vesselNameCol] ? String(row[vesselNameCol]).trim() : '';
+          baseData.year = yearCol && row[yearCol] ? String(row[yearCol]).trim() : '';
+          baseData.routePath = routePathCol && row[routePathCol] ? String(row[routePathCol]).trim() : '';
+        }
+
+        return baseData;
+      }
+
+      // 解析Excel数据 - 001文件专用
+      function parseExcelData001(jsonData) {
+        if (!jsonData || jsonData.length === 0) return [];
+
+        const firstRow = jsonData[0];
+        const columnKeys = Object.keys(firstRow);
+
+        const getColumnKey = (keywords, fallbackLetter = null) => {
+          const key = columnKeys.find(col => 
+            keywords.some(keyword => matchesKeyword(col, keyword))
+          );
+          if (key) return key;
+          if (fallbackLetter) {
+            const idx = columnLetterToIndex(fallbackLetter);
+            if (idx !== null && columnKeys[idx]) {
+              return columnKeys[idx];
+            }
+          }
+          return null;
+        };
+
+        // 001文件列定义
+        const portCol = getColumnKey(['港口', '目的港', 'pod'], 'B'); // B列
+        const carrierCol = getColumnKey(['共舱船公司', '共舱', '船公司'], 'G'); // G列
+        // 强制使用M列（索引12）作为日期列，避免关键词匹配到错误列
+        const mColIndexForDate = columnLetterToIndex('M');
+        const dateCol = (mColIndexForDate !== null && columnKeys[mColIndexForDate]) ? columnKeys[mColIndexForDate] : getColumnKey(['船期', '开船', '离港', 'etd'], 'M'); // M列
+        // 强制使用K列（索引10）作为船名航次列，避免关键词匹配到错误列（如I列）
+        const kColIndex = columnLetterToIndex('K');
+        const vesselCol = (kColIndex !== null && columnKeys[kColIndex]) ? columnKeys[kColIndex] : getColumnKey(['船名', '航次', 'vessel'], 'K'); // K列 - 船名航次
+        // 强制使用L列（索引11）作为船型列
+        const lColIndex = columnLetterToIndex('L');
+        const shipTypeCol = (lColIndex !== null && columnKeys[lColIndex]) ? columnKeys[lColIndex] : null; // L列 - 船型
+        
+        // 001模式悬停框额外列：E、F、P、Q
+        const eColIndex = columnLetterToIndex('E');
+        const weekdayCol = (eColIndex !== null && columnKeys[eColIndex]) ? columnKeys[eColIndex] : null; // E列 - 标准开航日
+        const fColIndex = columnLetterToIndex('F');
+        const voyageDaysCol = (fColIndex !== null && columnKeys[fColIndex]) ? columnKeys[fColIndex] : null; // F列 - 标准航程
+        const pColIndex = columnLetterToIndex('P');
+        const originTerminalCol = (pColIndex !== null && columnKeys[pColIndex]) ? columnKeys[pColIndex] : null; // P列 - 起运港码头
+        const qColIndex = columnLetterToIndex('Q');
+        const destTerminalCol = (qColIndex !== null && columnKeys[qColIndex]) ? columnKeys[qColIndex] : null; // Q列 - 目的港码头
+
+        // 调试：显示列映射信息（仅在调试模式下）
+        debugLog('001文件列映射:');
+        debugLog('所有列:', columnKeys);
+        debugLog('B列索引:', columnLetterToIndex('B'), '港口列:', portCol, '索引:', columnKeys.indexOf(portCol));
+        debugLog('G列索引:', columnLetterToIndex('G'), '船公司列:', carrierCol, '索引:', columnKeys.indexOf(carrierCol));
+        debugLog('M列索引:', mColIndexForDate, '日期列:', dateCol, '索引:', columnKeys.indexOf(dateCol));
+        debugLog('K列索引:', columnLetterToIndex('K'), '船名列:', vesselCol, '索引:', vesselCol ? columnKeys.indexOf(vesselCol) : 'N/A');
+        debugLog('L列索引:', lColIndex, '船型列:', shipTypeCol, '索引:', shipTypeCol ? columnKeys.indexOf(shipTypeCol) : 'N/A');
+        debugLog('E列索引:', eColIndex, '标准开航日列:', weekdayCol, '索引:', weekdayCol ? columnKeys.indexOf(weekdayCol) : 'N/A');
+        debugLog('F列索引:', fColIndex, '标准航程列:', voyageDaysCol, '索引:', voyageDaysCol ? columnKeys.indexOf(voyageDaysCol) : 'N/A');
+        debugLog('P列索引:', pColIndex, '起运港码头列:', originTerminalCol, '索引:', originTerminalCol ? columnKeys.indexOf(originTerminalCol) : 'N/A');
+        debugLog('Q列索引:', qColIndex, '目的港码头列:', destTerminalCol, '索引:', destTerminalCol ? columnKeys.indexOf(destTerminalCol) : 'N/A');
+        
+        // 检查M列和N列的实际数据（前5行）
+        const nColIndex = columnLetterToIndex('N');
+        if (mColIndexForDate !== null && columnKeys[mColIndexForDate]) {
+          const mColKey = columnKeys[mColIndexForDate];
+          debugLog('M列实际列名:', mColKey, '前5行数据:', jsonData.slice(0, 5).map(r => r[mColKey]));
+        }
+        if (nColIndex !== null && columnKeys[nColIndex]) {
+          const nColKey = columnKeys[nColIndex];
+          debugLog('N列实际列名:', nColKey, '前5行数据:', jsonData.slice(0, 5).map(r => r[nColKey]));
+        }
+
+        if (!portCol || !carrierCol || !dateCol) {
+          debugWarn('001文件缺少必要的列:', { portCol, carrierCol, dateCol, allColumns: columnKeys });
+          return [];
+        }
+
+        const parsed = [];
+        const carriers = state.allCarriers001;
+        const ports = state.allPorts001;
+        
+        // 统计信息
+        let totalRows = 0;
+        let skippedPort = 0;
+        let skippedCarrier = 0;
+        let skippedDate = 0;
+        const failedPorts = new Map(); // 记录映射失败的港口名称
+        const failedDates = new Map(); // 记录解析失败的日期格式（前20个）
+
+        // 构建列配置对象
+        const columnConfig = {
+          portCol,
+          carrierCol,
+          dateCol,
+          vesselCol,
+          shipTypeCol,
+          weekdayCol,
+          voyageDaysCol,
+          originTerminalCol,
+          destTerminalCol
+        };
+
+        jsonData.forEach(row => {
+          totalRows++;
+          
+          // 使用公共解析函数
+          const parsedRow = parseDataRow(row, columnConfig, '001');
+          
+          if (!parsedRow) {
+            // 记录失败原因
+            const rawPort = row[portCol];
+            const port = normalizePortName(rawPort ? String(rawPort).trim() : '');
+            const carrier = row[carrierCol] ? String(row[carrierCol]).trim() : '';
+            const rawDate = row[dateCol];
+            
+            if (!port || !allPorts.includes(port)) {
+              skippedPort++;
+              if (rawPort) {
+                const rawPortStr = String(rawPort).trim();
+                failedPorts.set(rawPortStr, (failedPorts.get(rawPortStr) || 0) + 1);
+              }
+            } else if (!carrier) {
+              skippedCarrier++;
+            } else {
+              skippedDate++;
+              // 记录失败的日期格式（只记录前20个不同的格式）
+              if (failedDates.size < 20 && rawDate !== null && rawDate !== undefined) {
+                const dateStr = String(rawDate);
+                if (!failedDates.has(dateStr)) {
+                  failedDates.set(dateStr, {
+                    value: rawDate,
+                    type: typeof rawDate,
+                    sample: dateStr.substring(0, 50)
+                  });
+                }
+              }
+            }
+            return;
+          }
+
+          parsed.push(parsedRow);
+          carriers.add(parsedRow.carrier);
+          ports.add(parsedRow.port);
+        });
+
+        // 输出统计信息（仅在调试模式下）
+        debugLog('001文件解析统计:');
+        debugLog(`总行数: ${totalRows}`);
+        debugLog(`成功解析: ${parsed.length}`);
+        debugLog(`跳过-港口映射失败: ${skippedPort}`);
+        debugLog(`跳过-船公司为空: ${skippedCarrier}`);
+        debugLog(`跳过-日期无效: ${skippedDate}`);
+        
+        // 输出映射失败的港口（按出现次数排序，只显示前20个）
+        if (failedPorts.size > 0) {
+          const sortedFailedPorts = Array.from(failedPorts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 20);
+          debugLog('映射失败的港口（前20个）:', sortedFailedPorts);
+        }
+        
+        // 输出解析失败的日期格式
+        if (failedDates.size > 0) {
+          debugLog('解析失败的日期格式（前20个）:', Array.from(failedDates.entries()));
+        }
+
+        return parsed;
+      }
+
+      /**
+       * 解析Excel数据 - 365文件专用
+       * @param {Array<Object>} jsonData - Excel转换后的JSON数据
+       * @returns {Array<Object>} 解析后的船期数据数组
+       */
+      function parseExcelData365(jsonData) {
+        if (!jsonData || jsonData.length === 0) return [];
+
+        const firstRow = jsonData[0];
+        const columnKeys = Object.keys(firstRow);
+
+        const findColumnKey = (keywords, fallbackIndex = null) => {
+          const key = columnKeys.find(col => 
+            keywords.some(keyword => matchesKeyword(col, keyword))
+          );
+          if (key) return key;
+          if (typeof fallbackIndex === 'number' && columnKeys[fallbackIndex]) {
+            return columnKeys[fallbackIndex];
+          }
+          return null;
+        };
+
+        // 365文件列定义
+        const portCol = findColumnKey(['港口', '目的港', 'pod'], 1); // B列（索引1）
+        const carrierCol = findColumnKey(['共舱', '船公司'], 9); // J列（索引9）- 强制使用索引9
+        const dateCol = findColumnKey(['船期', '开船', '离港', 'etd'], 12); // M列（索引12）
+        const vesselCol = columnKeys[11] || findColumnKey(['船名', '航次', 'vessel'], 11); // L列（索引11）- 船名航次
+        const routeIdCol = findColumnKey(['航线id', '航线ID', 'route id', 'group_id', 'groupid'], 6); // G列（索引6）- 航线ID
+        const vesselNameCol = columnKeys[16] || findColumnKey(['船名'], 16); // Q列（索引16）- 船名
+        
+        // 额外列：H、I、N、O、S、U、Y
+        const weekdayCol = columnKeys[7] || null; // H列（索引7）- 标准开航日
+        const voyageDaysCol = columnKeys[8] || null; // I列（索引8）- 标准航程
+        const originTerminalCol = columnKeys[13] || null; // N列（索引13）- 起运港码头
+        const destTerminalCol = columnKeys[14] || null; // O列（索引14）- 目的港码头
+        const shipTypeCol = columnKeys[18] || null; // S列（索引18）- 船型
+        const yearCol = columnKeys[20] || null; // U列（索引20）- 年份
+        const routePathCol = columnKeys[24] || null; // Y列（索引24）- 路径
+
+        if (!portCol || !carrierCol || !dateCol) {
+          debugWarn('365文件缺少必要的列:', { portCol, carrierCol, dateCol, allColumns: columnKeys });
+          // 如果通过关键词找不到，强制使用索引
+          const portColFallback = columnKeys[1] || null;
+          const carrierColFallback = columnKeys[9] || null; // J列
+          const dateColFallback = columnKeys[12] || null; // M列
+          const routeIdColFallback = columnKeys[6] || null; // G列
+          const vesselNameColFallback = columnKeys[16] || null; // Q列
+          
+          if (!portColFallback || !carrierColFallback || !dateColFallback) {
+            return [];
+          }
+          
+          // 使用fallback
+          const finalPortCol = portCol || portColFallback;
+          const finalCarrierCol = carrierCol || carrierColFallback;
+          const finalDateCol = dateCol || dateColFallback;
+          const finalRouteIdCol = routeIdCol || routeIdColFallback;
+          const finalVesselNameCol = vesselNameCol || vesselNameColFallback;
+          
+          return parse365WithColumns(jsonData, finalPortCol, finalCarrierCol, finalDateCol, vesselCol,
+            weekdayCol, voyageDaysCol, originTerminalCol, destTerminalCol, shipTypeCol, yearCol, routePathCol,
+            finalRouteIdCol, finalVesselNameCol);
+        }
+
+        return parse365WithColumns(jsonData, portCol, carrierCol, dateCol, vesselCol,
+          weekdayCol, voyageDaysCol, originTerminalCol, destTerminalCol, shipTypeCol, yearCol, routePathCol,
+          routeIdCol, vesselNameCol);
+      }
+
+      // 365文件数据解析（使用指定列）
+      function parse365WithColumns(jsonData, portCol, carrierCol, dateCol, vesselCol,
+        weekdayCol, voyageDaysCol, originTerminalCol, destTerminalCol, shipTypeCol, yearCol, routePathCol,
+        routeIdCol, vesselNameCol) {
+        const parsed = [];
+        const carriers = state.allCarriers365;
+        const ports = state.allPorts365;
+
+        // 构建列配置对象
+        const columnConfig = {
+          portCol,
+          carrierCol,
+          dateCol,
+          vesselCol,
+          shipTypeCol,
+          weekdayCol,
+          voyageDaysCol,
+          originTerminalCol,
+          destTerminalCol,
+          routeIdCol,
+          vesselNameCol,
+          yearCol,
+          routePathCol
+        };
+
+        jsonData.forEach(row => {
+          // 使用公共解析函数
+          const parsedRow = parseDataRow(row, columnConfig, '365');
+          
+          if (!parsedRow) {
+            return; // 跳过无效数据
+          }
+
+          parsed.push(parsedRow);
+          carriers.add(parsedRow.carrier);
+          ports.add(parsedRow.port);
+        });
+
+        return parsed;
+      }
+
+      // parseDate 函数已移至 vendor/common-utils.js
+
+      // 标准化港口名称（更智能的匹配）
+      function normalizePortName(portName) {
+        if (!portName) return '';
+        
+        // 去除多余空格
+        let normalized = String(portName).trim();
+        const originalNormalized = normalized;
+        
+        // 先检查映射表（精确匹配）
+        if (portNameMapping[normalized]) {
+          return portNameMapping[normalized];
+        }
+
+        // 处理英文格式：BALBOA(巴尔博亚) 或 BRISBANE,AU(布里斯班) 或 CHATTOGRAM(吉大港)
+        if (normalized.includes('(') && normalized.includes(')')) {
+          // 先提取括号前的英文部分，尝试匹配
+          const beforeBracket = normalized.split('(')[0].trim();
+          const upperBeforeBracket = beforeBracket.toUpperCase();
+          if (portNameMapping[upperBeforeBracket]) {
+            return portNameMapping[upperBeforeBracket];
+          }
+          // 提取括号内的中文名称
+          const match = normalized.match(/\(([^)]+)\)/);
+          if (match && match[1]) {
+            const chineseName = match[1].split(',')[0].trim(); // 如果有逗号，取第一部分
+            if (portNameMapping[chineseName]) {
+              return portNameMapping[chineseName];
+            }
+            // 直接使用括号内的中文名称（如果它在标准港口列表中）
+            if (allPorts.includes(chineseName)) {
+              return chineseName;
+            }
+            normalized = chineseName;
+          }
+        }
+
+        // 处理包含逗号的情况（如"盖梅港,头顿" -> "盖梅港" 或 "LOS ANGELES, CA" -> "LOS ANGELES"）
+        if (normalized.includes(',')) {
+          const mainPart = normalized.split(',')[0].trim();
+          // 先检查原始格式（带逗号的完整格式）
+          const upperFull = normalized.toUpperCase();
+          if (portNameMapping[upperFull]) {
+            return portNameMapping[upperFull];
+          }
+          // 检查主部分（中文或英文）
+          if (portNameMapping[mainPart]) {
+            return portNameMapping[mainPart];
+          }
+          // 检查英文格式：LOS ANGELES, CA -> LOS ANGELES
+          const upperPart = mainPart.toUpperCase();
+          if (portNameMapping[upperPart]) {
+            return portNameMapping[upperPart];
+          }
+          // 对于中文格式，尝试直接匹配标准港口名称
+          if (/[\u4e00-\u9fa5]/.test(mainPart)) {
+            // 如果主部分是中文，尝试精确匹配标准港口
+            if (allPorts.includes(mainPart)) {
+              return mainPart;
+            }
+            // 尝试模糊匹配（包含关系）
+            for (const standardPort of allPorts) {
+              if (mainPart.includes(standardPort) || standardPort.includes(mainPart)) {
+                return standardPort;
+              }
+            }
+          }
+          normalized = mainPart;
+        }
+
+        // 处理点号分隔：VANCOUVER.BC -> VANCOUVER
+        if (normalized.includes('.')) {
+          const mainPart = normalized.split('.')[0].trim();
+          const upperPart = mainPart.toUpperCase();
+          if (portNameMapping[upperPart]) {
+            return portNameMapping[upperPart];
+          }
+          normalized = mainPart;
+        }
+
+        // 处理括号内容（如"青岛(青岛)" -> "青岛"）
+        if (normalized.includes('(')) {
+          const beforeBracket = normalized.split('(')[0].trim();
+          if (portNameMapping[beforeBracket]) {
+            return portNameMapping[beforeBracket];
+          }
+          normalized = beforeBracket;
+        }
+
+        // 再次检查映射表（处理后的值）
+        if (normalized !== originalNormalized && portNameMapping[normalized]) {
+          return portNameMapping[normalized];
+        }
+
+        // 检查大写格式（英文港口名）
+        const upperNormalized = normalized.toUpperCase();
+        if (portNameMapping[upperNormalized]) {
+          return portNameMapping[upperNormalized];
+        }
+
+        // 对于中文格式，先尝试精确匹配标准港口名称
+        if (/[\u4e00-\u9fa5]/.test(normalized)) {
+          // 精确匹配
+          if (allPorts.includes(normalized)) {
+            return normalized;
+          }
+          // 去除常见后缀（如"港"、"港口"等，但保留在标准名称中的）
+          const cleaned = normalized.replace(/港$/, '').trim();
+          if (cleaned !== normalized && allPorts.includes(cleaned)) {
+            return cleaned;
+          }
+          // 模糊匹配（包含关系，优先匹配更长的标准名称）
+          const matches = [];
+          for (const standardPort of allPorts) {
+            // 检查是否包含标准港口名（双向包含）
+            if (normalized.includes(standardPort) || standardPort.includes(normalized) ||
+                cleaned.includes(standardPort) || standardPort.includes(cleaned)) {
+              matches.push({ port: standardPort, length: standardPort.length });
+            }
+          }
+          if (matches.length > 0) {
+            // 优先返回更长的匹配（更精确）
+            matches.sort((a, b) => b.length - a.length);
+            return matches[0].port;
+          }
+        }
+        
+        // 对于英文格式，去除常见后缀
+        const cleaned = normalized.replace(/港$/, '').trim();
+        
+        // 精确匹配
+        for (const standardPort of allPorts) {
+          if (normalized === standardPort || cleaned === standardPort) {
+            return standardPort;
+          }
+        }
+
+        // 模糊匹配（包含关系，优先匹配更长的标准名称）
+        const matches = [];
+        for (const standardPort of allPorts) {
+          // 检查是否包含标准港口名
+          if (normalized.includes(standardPort) || standardPort.includes(normalized) ||
+              cleaned.includes(standardPort) || standardPort.includes(cleaned)) {
+            matches.push({ port: standardPort, length: standardPort.length });
+          }
+        }
+        
+        if (matches.length > 0) {
+          // 返回最长的匹配（更精确）
+          matches.sort((a, b) => b.length - a.length);
+          return matches[0].port;
+        }
+
+        // 如果都不匹配，返回空字符串（跳过这条记录）
+        return '';
+      }
+
+      // 获取港口所属区域
+      function getPortRegion(port) {
+        for (const [region, ports] of Object.entries(regionMapping)) {
+          if (ports.some(p => port.includes(p) || p.includes(port))) {
+            return region;
+          }
+        }
+        return null;
+      }
+
+      /**
+       * 更新船公司筛选器（联动更新）
+       * 根据当前选中的区域和港口，更新可用的船公司选项
+       */
+      function updateCarrierFilter() {
+        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
+        if (!currentData || currentData.length === 0) {
+          dom.carrierFilter.innerHTML = '';
+          return;
+        }
+
+        // 根据当前筛选条件，获取可用的船公司
+        const availableCarriers = getAvailableCarriers(currentData);
+        
+        // 保存当前选中的值
+        const currentSelected = Array.from(dom.carrierFilter.selectedOptions).map(o => o.value);
+        
+        dom.carrierFilter.innerHTML = '';
+        availableCarriers.forEach(carrier => {
+          const option = document.createElement('option');
+          option.value = carrier;
+          option.textContent = carrier;
+          if (currentSelected.includes(carrier)) {
+            option.selected = true;
+          }
+          dom.carrierFilter.appendChild(option);
+        });
+      }
+
+      /**
+       * 更新港口筛选器（联动更新）
+       * 根据当前选中的区域和船公司，更新可用的港口选项
+       */
+      function updatePortFilter() {
+        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
+        if (!currentData || currentData.length === 0) {
+          return;
+        }
+
+        // 根据当前筛选条件，获取可用的港口
+        const availablePorts = getAvailablePorts(currentData);
+        
+        // 保存当前选中的值
+        const currentSelected = Array.from(dom.portFilter.selectedOptions).map(o => o.value);
+        
+        // 更新选项，只显示可用的港口
+        Array.from(dom.portFilter.options).forEach(option => {
+          if (availablePorts.includes(option.value)) {
+            option.style.display = '';
+            if (currentSelected.includes(option.value)) {
+              option.selected = true;
+            }
+          } else {
+            option.style.display = 'none';
+            option.selected = false;
+          }
+        });
+      }
+
+      // 获取可用的航线区域（基于当前船公司和港口筛选）
+      function getAvailableRegions(data) {
+        const filtered = data.filter(item => {
+          // 船公司筛选
+          if (state.selectedCarriers.length > 0) {
+            if (!state.selectedCarriers.includes(item.carrier)) {
+              return false;
+            }
+          }
+          // 港口筛选
+          if (state.selectedPorts.length > 0) {
+            if (!state.selectedPorts.includes(item.port)) {
+              return false;
+            }
+          }
+          return true;
+        });
+        
+        const regions = new Set();
+        filtered.forEach(item => {
+          const region = getPortRegion(item.port);
+          if (region) {
+            regions.add(region);
+          }
+        });
+        return Array.from(regions).sort();
+      }
+
+      // 获取可用的船公司（基于当前区域和港口筛选）
+      function getAvailableCarriers(data) {
+        const filtered = data.filter(item => {
+          // 区域筛选
+          if (state.selectedRegions.length > 0) {
+            const itemRegion = getPortRegion(item.port);
+            if (!itemRegion || !state.selectedRegions.includes(itemRegion)) {
+              return false;
+            }
+          }
+          // 港口筛选
+          if (state.selectedPorts.length > 0) {
+            if (!state.selectedPorts.includes(item.port)) {
+              return false;
+            }
+          }
+          return true;
+        });
+        
+        const carriers = new Set(filtered.map(item => item.carrier));
+        return Array.from(carriers).sort();
+      }
+
+      // 获取可用的港口（基于当前区域和船公司筛选）
+      function getAvailablePorts(data) {
+        const filtered = data.filter(item => {
+          // 区域筛选
+          if (state.selectedRegions.length > 0) {
+            const itemRegion = getPortRegion(item.port);
+            if (!itemRegion || !state.selectedRegions.includes(itemRegion)) {
+              return false;
+            }
+          }
+          // 船公司筛选
+          if (state.selectedCarriers.length > 0) {
+            if (!state.selectedCarriers.includes(item.carrier)) {
+              return false;
+            }
+          }
+          return true;
+        });
+        
+        const ports = new Set(filtered.map(item => item.port));
+        return Array.from(ports).filter(p => allPorts.includes(p));
+      }
+
+      /**
+       * 更新航线区域筛选器（联动更新）
+       * 根据当前选中的船公司和港口，更新可用的区域选项
+       */
+      function updateRegionFilter() {
+        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
+        if (!currentData || currentData.length === 0) {
+          return;
+        }
+
+        // 根据当前筛选条件，获取可用的航线区域
+        const availableRegions = getAvailableRegions(currentData);
+        
+        // 保存当前选中的值
+        const currentSelected = Array.from(dom.regionFilter.selectedOptions).map(o => o.value);
+        
+        // 更新选项，只显示可用的区域
+        Array.from(dom.regionFilter.options).forEach(option => {
+          if (availableRegions.includes(option.value)) {
+            option.style.display = '';
+            if (currentSelected.includes(option.value)) {
+              option.selected = true;
+            }
+          } else {
+            option.style.display = 'none';
+            option.selected = false;
+          }
+        });
+      }
+
+      // 处理筛选变化（联动更新）
+      function handleFilterChange() {
+        state.selectedRegions = Array.from(dom.regionFilter.selectedOptions).map(o => o.value);
+        state.selectedCarriers = Array.from(dom.carrierFilter.selectedOptions).map(o => o.value);
+        state.selectedPorts = Array.from(dom.portFilter.selectedOptions).map(o => o.value);
+        
+        // 联动更新所有筛选器
+        updateRegionFilter();
+        updateCarrierFilter();
+        updatePortFilter();
+        
+        renderCalendar();
+        updateAiModuleVisibility(); // 更新 AI 模块可见性
+      }
+
+      /**
+       * 渲染日历视图
+       * 根据筛选条件显示船期日历，支持4周显示
+       */
+      function renderCalendar() {
+        const hasFilters = state.selectedRegions.length > 0 || 
+                          state.selectedCarriers.length > 0 || 
+                          state.selectedPorts.length > 0;
+
+        if (!hasFilters) {
+          dom.calendarContainer.classList.add('hidden');
+          dom.emptyMessage.classList.remove('hidden');
+          return;
+        }
+
+        dom.calendarContainer.classList.remove('hidden');
+        dom.emptyMessage.classList.add('hidden');
+
+        // 获取当前数据
+        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
+        if (!currentData || currentData.length === 0) {
+          dom.calendarContainer.classList.add('hidden');
+          dom.emptyMessage.textContent = `请先加载 ${state.currentMode} 数据文件`;
+          dom.emptyMessage.classList.remove('hidden');
+          return;
+        }
+
+        // 筛选数据
+        const filteredData = currentData.filter(item => {
+          // 区域筛选
+          if (state.selectedRegions.length > 0) {
+            const itemRegion = getPortRegion(item.port);
+            if (!itemRegion || !state.selectedRegions.includes(itemRegion)) {
+              return false;
+            }
+          }
+
+          // 船公司筛选
+          if (state.selectedCarriers.length > 0) {
+            if (!state.selectedCarriers.includes(item.carrier)) {
+              return false;
+            }
+          }
+
+          // 港口筛选
+          if (state.selectedPorts.length > 0) {
+            if (!state.selectedPorts.includes(item.port)) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        // 按日期分组
+        const dataByDate = {};
+        filteredData.forEach(item => {
+          const dateKey = formatDateKey(item.date);
+          if (!dataByDate[dateKey]) {
+            dataByDate[dateKey] = [];
+          }
+          dataByDate[dateKey].push(item);
+        });
+
+        // 检测是否为手机端（屏幕宽度 <= 768px）
+        const isMobile = window.innerWidth <= 768;
+        
+        // 清空日历容器（会自动清理动态元素的事件监听器）
+        dom.calendarBody.innerHTML = '';
+
+        // 使用事件委托处理日历项的点击事件（优化性能，避免为每个元素单独添加监听器）
+        if (!dom.calendarBody.dataset.delegated) {
+          const handleScheduleItemClick = (e) => {
+            const itemEl = e.target.closest('.schedule-item');
+            if (!itemEl) return;
+            
+            e.stopPropagation();
+            const clickedCarrier = itemEl.dataset.carrier;
+            if (!clickedCarrier) return;
+            
+            // 切换高亮状态
+            const isHighlighted = itemEl.classList.contains('highlighted');
+            
+            // 使用缓存的查询结果（从 calendarBody 查询，避免全局查询）
+            // 由于使用事件委托，我们可以直接从容器查询，性能更好
+            const scheduleItems = dom.calendarBody.querySelectorAll('.schedule-item');
+            
+            // 清除所有高亮
+            scheduleItems.forEach(el => {
+              el.classList.remove('highlighted');
+            });
+            
+            // 如果不是已高亮状态，则高亮同航线
+            if (!isHighlighted) {
+              scheduleItems.forEach(el => {
+                if (el.dataset.carrier === clickedCarrier) {
+                  el.classList.add('highlighted');
+                }
+              });
+            }
+          };
+          
+          eventListeners.add(dom.calendarBody, 'click', handleScheduleItemClick);
+          dom.calendarBody.dataset.delegated = 'true';
+        }
+
+        // 手机端：按日显示（显示未来28天的数据）
+        if (isMobile) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const days = [];
+          
+          // 生成未来28天的日期
+          for (let d = 0; d < 28; d++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + d);
+            days.push(date);
+          }
+          
+          // 按日期渲染
+          days.forEach(date => {
+            const dateKey = formatDateKey(date);
+            const dayData = dataByDate[dateKey] || [];
+            
+            // 创建日期卡片
+            const dayCard = document.createElement('div');
+            dayCard.className = 'calendar-day';
+            if (isToday(date)) {
+              dayCard.classList.add('today');
+            }
+            
+            // 日期标签
+            const dateLabel = document.createElement('div');
+            dateLabel.style.cssText = 'font-weight: 600; margin-bottom: 16px; color: #495057; font-size: 16px; padding-bottom: 12px; border-bottom: 2px solid #e9ecef;';
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const weekday = weekdays[date.getDay()];
+            dateLabel.textContent = `${month}月${day}日 ${weekday}`;
+            if (isToday(date)) {
+              dateLabel.style.color = '#667eea';
+              dateLabel.style.borderBottomColor = '#667eea';
+            }
+            dayCard.appendChild(dateLabel);
+            
+            // 去重处理
+            let uniqueData = deduplicateItems(dayData);
+            
+            // 合并同船名航次船型的港口
+            const mergeByVessel = (items) => {
+              const grouped = {};
+              
+              items.forEach(item => {
+                let groupKey;
+                let vesselName, voyageNumber, shipType, carrier;
+                
+                // 365模式：同一天 + 同船名(Q列) + 同航线ID(G列)
+                if (item.mode === '365') {
+                  const dateKey = formatDateKey(item.date);
+                  vesselName = item.vesselName || getVesselName(item.vessel || '');
+                  const routeId = item.routeId || '';
+                  groupKey = `${dateKey}_${vesselName}_${routeId}`;
+                } else {
+                  // 001模式：船名 + 航次 + 船型 + 船公司
+                  vesselName = getVesselName(item.vessel || '');
+                  voyageNumber = getVoyageNumber(item.vessel || '');
+                  shipType = item.shipType || '';
+                  carrier = item.carrier || '';
+                  groupKey = `${vesselName}_${voyageNumber}_${shipType}_${carrier}`;
+                }
+                
+                if (!grouped[groupKey]) {
+                  if (item.mode === MODE_365) {
+                    grouped[groupKey] = {
+                      vessel: item.vessel || '',
+                      vesselName: item.vesselName || getVesselName(item.vessel || ''),
+                      shipType: item.shipType || '',
+                      carriers: [],
+                      carriersSet: new Set(),
+                      ports: [],
+                      portsSet: new Set(),
+                      weekday: item.weekday,
+                      voyageDays: item.voyageDays,
+                      originTerminal: item.originTerminal,
+                      destTerminal: item.destTerminal,
+                      year: item.year,
+                      routePath: item.routePath,
+                      routeId: item.routeId || '',
+                      mode: item.mode,
+                      date: item.date
+                    };
+                  } else {
+                    grouped[groupKey] = {
+                      vessel: item.vessel || '',
+                      vesselName: vesselName,
+                      voyageNumber: voyageNumber,
+                      shipType: shipType,
+                      carrier: carrier,
+                      ports: [],
+                      portsSet: new Set(),
+                      weekday: item.weekday,
+                      voyageDays: item.voyageDays,
+                      originTerminal: item.originTerminal,
+                      destTerminal: item.destTerminal,
+                      year: item.year,
+                      routePath: item.routePath,
+                      mode: item.mode,
+                      date: item.date
+                    };
+                  }
+                }
+                
+                // 添加港口（去重）
+                if (item.port && !grouped[groupKey].portsSet.has(item.port)) {
+                  grouped[groupKey].ports.push(item.port);
+                  grouped[groupKey].portsSet.add(item.port);
+                }
+                
+                // 365模式：收集共舱船公司
+                if (item.mode === MODE_365 && item.carrier && !grouped[groupKey].carriersSet.has(item.carrier)) {
+                  grouped[groupKey].carriers.push(item.carrier);
+                  grouped[groupKey].carriersSet.add(item.carrier);
+                }
+              });
+              
+              // 转换为数组，合并多个港口的标记为需要合并显示
+              return Object.values(grouped).map(group => {
+                // 365模式：选择最长的共舱船公司
+                if (group.mode === MODE_365) {
+                  const longestCarrier = group.carriers.reduce((longest, current) => {
+                    return current.length > longest.length ? current : longest;
+                  }, group.carriers[0] || '');
+                  group.carrier = longestCarrier;
+                }
+                
+                if (group.ports.length > 1) {
+                  return {
+                    ...group,
+                    ports: group.ports,
+                    portsText: group.ports.join('、'),
+                    isMerged: true
+                  };
+                } else {
+                  return {
+                    ...group,
+                    port: group.ports[0] || '',
+                    isMerged: false
+                  };
+                }
+              });
+            };
+            
+            // 合并同船名航次船型的港口
+            const mergedData = mergeByVessel(uniqueData);
+            
+            // 显示所有项目（手机端不限制数量）
+            mergedData.forEach(item => {
+              const itemEl = document.createElement('div');
+              itemEl.className = 'schedule-item';
+              
+              // 使用公共函数渲染（统一处理 001/365 模式）
+              renderScheduleItem(itemEl, item, state.currentMode);
+              
+              dayCard.appendChild(itemEl);
+            });
+            
+            // 如果没有数据，显示提示
+            if (mergedData.length === 0) {
+              const emptyMsg = document.createElement('div');
+              emptyMsg.style.cssText = 'text-align: center; color: #6c757d; font-size: 13px; padding: 20px;';
+              emptyMsg.textContent = '当日无船期';
+              dayCard.appendChild(emptyMsg);
+            }
+            
+            dom.calendarBody.appendChild(dayCard);
+          });
+          
+          return; // 手机端渲染完成，直接返回
+        }
+
+        // 桌面端：按周显示（显示当前周+未来3周，共4周，周日开始）
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const weeks = [];
+        
+        // 找到本周日（一周的开始）
+        const currentSunday = new Date(today);
+        const dayOfWeek = today.getDay(); // 0=周日, 1=周一, ..., 6=周六
+        const diff = -dayOfWeek; // 如果是周日，diff=0；如果是周一，diff=-1，以此类推
+        currentSunday.setDate(today.getDate() + diff);
+        
+        for (let w = 0; w < CALENDAR_WEEKS; w++) {
+          const weekStart = new Date(currentSunday);
+          weekStart.setDate(currentSunday.getDate() + w * DAYS_PER_WEEK);
+          weeks.push(weekStart);
+        }
+
+        weeks.forEach(weekStart => {
+          const weekRow = document.createElement('div');
+          weekRow.className = 'calendar-week';
+
+          // 时间标签
+          const weekLabel = document.createElement('div');
+          weekLabel.className = 'calendar-day-label';
+          weekLabel.textContent = `第${getWeekNumber(weekStart)}周`;
+          weekRow.appendChild(weekLabel);
+
+          // 生成一周的日期（从周日开始）
+          for (let d = 0; d < DAYS_PER_WEEK; d++) {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() + d);
+            const dateKey = formatDateKey(date);
+            const dayData = dataByDate[dateKey] || [];
+
+            const dayCell = document.createElement('div');
+            dayCell.className = 'calendar-day';
+            if (isToday(date)) {
+              dayCell.classList.add('today');
+            }
+
+            // 日期标签
+            const dateLabel = document.createElement('div');
+            dateLabel.style.cssText = 'font-weight: 600; margin-bottom: 10px; color: #495057; font-size: 14px; padding-bottom: 8px; border-bottom: 2px solid #e9ecef;';
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const weekday = weekdays[date.getDay()];
+            dateLabel.textContent = `${month}/${day} ${weekday}`;
+            if (isToday(date)) {
+              dateLabel.style.color = '#667eea';
+              dateLabel.style.borderBottomColor = '#667eea';
+            }
+            dayCell.appendChild(dateLabel);
+
+            // 去重处理
+            let uniqueData = deduplicateItems(dayData);
+            
+            // 合并同一天、同船名、同航次、同船型的不同港口
+            const mergeByVessel = (items) => {
+              const grouped = {};
+              
+              items.forEach(item => {
+                let groupKey;
+                let vesselName, voyageNumber, shipType, carrier;
+                
+                // 365模式：同一天 + 同船名(Q列) + 同航线ID(G列)
+                if (item.mode === '365') {
+                  const dateKey = formatDateKey(item.date);
+                  vesselName = item.vesselName || getVesselName(item.vessel || '');
+                  const routeId = item.routeId || '';
+                  groupKey = `${dateKey}_${vesselName}_${routeId}`;
+                } else {
+                  // 001模式：船名 + 航次 + 船型 + 船公司
+                  vesselName = getVesselName(item.vessel || '');
+                  voyageNumber = getVoyageNumber(item.vessel || '');
+                  shipType = item.shipType || '';
+                  carrier = item.carrier || '';
+                  groupKey = `${vesselName}_${voyageNumber}_${shipType}_${carrier}`;
+                }
+                
+                if (!grouped[groupKey]) {
+                  if (item.mode === MODE_365) {
+                    // 365模式：收集所有共舱船公司，选择最长的
+                    grouped[groupKey] = {
+                      vessel: item.vessel || '',
+                      vesselName: item.vesselName || getVesselName(item.vessel || ''),
+                      shipType: item.shipType || '',
+                      carriers: [], // 收集所有共舱船公司
+                      carriersSet: new Set(),
+                      ports: [],
+                      portsSet: new Set(),
+                      weekday: item.weekday,
+                      voyageDays: item.voyageDays,
+                      originTerminal: item.originTerminal,
+                      destTerminal: item.destTerminal,
+                      year: item.year,
+                      routePath: item.routePath,
+                      routeId: item.routeId || '',
+                      mode: item.mode,
+                      date: item.date
+                    };
+                  } else {
+                    grouped[groupKey] = {
+                      vessel: item.vessel || '',
+                      vesselName: vesselName,
+                      voyageNumber: voyageNumber,
+                      shipType: shipType,
+                      carrier: carrier,
+                      ports: [],
+                      portsSet: new Set(),
+                      weekday: item.weekday,
+                      voyageDays: item.voyageDays,
+                      originTerminal: item.originTerminal,
+                      destTerminal: item.destTerminal,
+                      year: item.year,
+                      routePath: item.routePath,
+                      mode: item.mode,
+                      date: item.date
+                    };
+                  }
+                }
+                
+                // 添加港口（去重）
+                if (item.port && !grouped[groupKey].portsSet.has(item.port)) {
+                  grouped[groupKey].ports.push(item.port);
+                  grouped[groupKey].portsSet.add(item.port);
+                }
+                
+                // 365模式：收集共舱船公司
+                if (item.mode === MODE_365 && item.carrier && !grouped[groupKey].carriersSet.has(item.carrier)) {
+                  grouped[groupKey].carriers.push(item.carrier);
+                  grouped[groupKey].carriersSet.add(item.carrier);
+                }
+              });
+              
+              // 转换为数组，合并多个港口的标记为需要合并显示
+              return Object.values(grouped).map(group => {
+                // 365模式：选择最长的共舱船公司
+                if (group.mode === MODE_365) {
+                  const longestCarrier = group.carriers.reduce((longest, current) => {
+                    return current.length > longest.length ? current : longest;
+                  }, group.carriers[0] || '');
+                  group.carrier = longestCarrier;
+                }
+                
+                if (group.ports.length > 1) {
+                  return {
+                    ...group,
+                    ports: group.ports,
+                    portsText: group.ports.join('、'),
+                    isMerged: true
+                  };
+                } else {
+                  return {
+                    ...group,
+                    port: group.ports[0] || '',
+                    isMerged: false
+                  };
+                }
+              });
+            };
+            
+            // 合并同船名航次船型的港口
+            const mergedData = mergeByVessel(uniqueData);
+            
+            // 所有模式都显示完整3行（不再进行特殊分组）
+            let displayItems = mergedData.slice(0, MAX_ITEMS_PER_DAY);
+            let remainingItems = mergedData.slice(MAX_ITEMS_PER_DAY);
+            
+            displayItems.forEach(item => {
+              const itemEl = document.createElement('div');
+              itemEl.className = 'schedule-item';
+              
+              // 使用公共函数渲染（统一处理 001/365 模式）
+              renderScheduleItem(itemEl, item, state.currentMode);
+              
+              dayCell.appendChild(itemEl);
+            });
+
+            // 如果超过7条，显示提示并添加悬停功能
+            if (remainingItems && remainingItems.length > 0) {
+              const moreEl = document.createElement('div');
+              moreEl.className = 'more-items-indicator';
+              moreEl.style.cssText = 'font-size: 11px; color: #6c757d; font-style: italic; cursor: pointer; text-decoration: underline;';
+              moreEl.textContent = `还有 ${remainingItems.length} 条...`;
+              
+              // 创建悬停提示框显示剩余船期信息
+              const moreTooltip = document.createElement('div');
+              moreTooltip.className = 'tooltip';
+              moreTooltip.style.display = 'none';
+              
+              // 构建剩余船期信息
+              const moreTooltipContent = document.createElement('div');
+              moreTooltipContent.style.padding = '8px';
+              moreTooltipContent.style.maxHeight = '400px';
+              moreTooltipContent.style.overflowY = 'auto';
+              
+              const moreTitle = document.createElement('div');
+              moreTitle.style.cssText = 'font-weight: 600; color: #667eea; margin-bottom: 8px; font-size: 13px;';
+              moreTitle.textContent = `还有 ${remainingItems.length} 条船期：`;
+              moreTooltipContent.appendChild(moreTitle);
+              
+              remainingItems.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = 'padding: 6px 0; border-bottom: 1px solid #e9ecef; font-size: 12px;';
+                
+                if (state.currentMode === MODE_365 && item.mode === MODE_365) {
+                  const vesselText = item.vessel || '';
+                  const shipTypeText = item.shipType ? ` ${item.shipType}TEU` : '';
+                  const thirdLine = vesselText + shipTypeText;
+                  const portText = item.isMerged ? item.portsText : (item.port || '');
+                  
+                  itemDiv.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1f2d3d;">${item.carrier || ''}</div>
+                    <div style="color: #667eea; font-weight: 500; margin-bottom: 4px; font-size: 12px;">${portText}</div>
+                    <div style="color: #495057; font-size: 11px; line-height: 1.5;">${thirdLine || ''}</div>
+                  `;
+                } else {
+                  // 001模式：第一行共舱船公司，第二行港口，第三行船名航次+船型
+                  const portText = item.isMerged ? item.portsText : (item.port || '');
+                  const vesselText = item.vessel || '';
+                  const shipTypeText = item.shipType ? ` ${item.shipType}TEU` : '';
+                  const thirdLine = vesselText + shipTypeText;
+                  
+                  itemDiv.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1f2d3d;">${item.carrier || ''}</div>
+                    <div style="color: #667eea; font-weight: 500; margin-bottom: 4px; font-size: 12px;">${portText}</div>
+                    ${thirdLine ? `<div style="color: #495057; font-size: 11px; line-height: 1.5;">${thirdLine}</div>` : ''}
+                  `;
+                }
+                
+                moreTooltipContent.appendChild(itemDiv);
+              });
+              
+              moreTooltip.appendChild(moreTooltipContent);
+              document.body.appendChild(moreTooltip);
+              
+              // 添加悬停事件
+              let moreTooltipTimeout;
+              moreEl.addEventListener('mouseenter', (e) => {
+                clearTimeout(moreTooltipTimeout);
+                moreTooltip.style.display = 'block';
+                positionTooltip(moreTooltip, moreEl);
+              });
+              moreEl.addEventListener('mouseleave', () => {
+                moreTooltipTimeout = setTimeout(() => {
+                  moreTooltip.style.display = 'none';
+                }, 100);
+              });
+              moreEl.addEventListener('mousemove', (e) => {
+                clearTimeout(moreTooltipTimeout);
+                if (moreTooltip.style.display === 'block') {
+                  positionTooltip(moreTooltip, moreEl);
+                }
+              });
+              
+              dayCell.appendChild(moreEl);
+            }
+
+            weekRow.appendChild(dayCell);
+          }
+
+          dom.calendarBody.appendChild(weekRow);
+        });
+      }
+
+      /**
+       * 创建日历项的悬停提示事件处理器
+       * @param {HTMLElement} itemEl - 日历项元素
+       * @param {Object} item - 数据项
+       * @returns {void}
+       */
+      function attachTooltipToItem(itemEl, item) {
+        const tooltip = createTooltip(item);
+        if (!tooltip) return;
+        
+        document.body.appendChild(tooltip);
+        
+        let tooltipTimeout;
+        const handleMouseEnter = (e) => {
+          clearTimeout(tooltipTimeout);
+          tooltip.style.display = 'block';
+          positionTooltip(tooltip, itemEl);
+        };
+        const handleMouseLeave = () => {
+          tooltipTimeout = setTimeout(() => {
+            tooltip.style.display = 'none';
+          }, 100);
+        };
+        const handleMouseMove = (e) => {
+          clearTimeout(tooltipTimeout);
+          if (tooltip.style.display === 'block') {
+            positionTooltip(tooltip, itemEl);
+          }
+        };
+        
+        itemEl.addEventListener('mouseenter', handleMouseEnter);
+        itemEl.addEventListener('mouseleave', handleMouseLeave);
+        itemEl.addEventListener('mousemove', handleMouseMove);
+      }
+      
+      /**
+       * 渲染日历项（抽取 001/365 公共逻辑）
+       * @param {HTMLElement} itemEl - 日历项元素
+       * @param {Object} item - 数据项
+       * @param {string} currentMode - 当前模式（'001' 或 '365'）
+       */
+      function renderScheduleItem(itemEl, item, currentMode) {
+        // 准备数据
+        const portText = item.isMerged ? item.portsText : (item.port || '');
+        const vesselText = item.vessel || '';
+        const shipTypeText = item.shipType ? ` ${item.shipType}TEU` : '';
+        const thirdLine = vesselText + shipTypeText;
+        
+        // 001 模式：只在有 thirdLine 时显示第三行
+        // 365 模式：总是显示第三行
+        const showThirdLine = currentMode === MODE_365 || thirdLine;
+        
+        // 构建 HTML
+        itemEl.innerHTML = `
+          <div class="carrier" style="font-weight: 600; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #1f2d3d;">${item.carrier || ''}</div>
+          <div class="port" style="color: #667eea; font-weight: 500; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px;">${portText}</div>
+          ${showThirdLine ? `<div class="vessel" style="color: #495057; font-size: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${thirdLine || ''}</div>` : ''}
+        `;
+        
+        // 存储航线信息用于点击高亮
+        itemEl.dataset.carrier = item.carrier || '';
+        
+        // 判断是否需要显示 tooltip
+        // 365 模式：只要有任意一个字段就显示
+        // 001 模式：只要有 carrier 或 shipType 或其他额外信息就显示
+        const shouldShowTooltip = currentMode === MODE_365
+          ? (item.weekday || item.voyageDays || item.originTerminal || item.destTerminal || 
+             item.shipType || item.year || item.routePath)
+          : (item.carrier || item.shipType || item.weekday || item.voyageDays || 
+             item.originTerminal || item.destTerminal);
+        
+        if (shouldShowTooltip) {
+          attachTooltipToItem(itemEl, item);
+        }
+      }
+      
+      /**
+       * 渲染剩余项目（用于"还有 X 条"提示框）
+       * @param {Object} item - 数据项
+       * @param {string} currentMode - 当前模式
+       * @returns {string} HTML 字符串
+       */
+      function renderRemainingItem(item, currentMode) {
+        const portText = item.isMerged ? item.portsText : (item.port || '');
+        const vesselText = item.vessel || '';
+        const shipTypeText = item.shipType ? ` ${item.shipType}TEU` : '';
+        const thirdLine = vesselText + shipTypeText;
+        const showThirdLine = currentMode === MODE_365 || thirdLine;
+        
+        return `
+          <div style="font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1f2d3d;">${item.carrier || ''}</div>
+          <div style="color: #667eea; font-weight: 500; margin-bottom: 4px; font-size: 12px;">${portText}</div>
+          ${showThirdLine ? `<div style="color: #495057; font-size: 11px; line-height: 1.5;">${thirdLine || ''}</div>` : ''}
+        `;
+      }
+
+      // 提取船名（去除航次号）
+      function getVesselName(vesselText) {
+        if (!vesselText) return '';
+        // 船名航次格式通常是 "船名/航次" 或 "船名 航次" 或 "船名航次"
+        const parts = vesselText.split(/[\/\s]/);
+        return parts[0] ? parts[0].trim() : '';
+      }
+      
+      // 提取航次号
+      function getVoyageNumber(vesselText) {
+        if (!vesselText) return '';
+        const parts = vesselText.split(/[\/\s]/);
+        return parts.length > 1 ? parts[1].trim() : '';
+      }
+
+      // 去重函数：根据业务规则去重
+      function deduplicateItems(items) {
+        if (!items || items.length === 0) return [];
+        
+        const seen = new Set();
+        const result = [];
+        
+        items.forEach(item => {
+          const vesselName = getVesselName(item.vessel || '');
+          const voyageNumber = getVoyageNumber(item.vessel || '');
+          const shipType = item.shipType || '';
+          const carrier = item.carrier || '';
+          const port = item.port || '';
+          const dateKey = formatDateKey(item.date);
+          
+          // 规则1：如果日期、港口、船名、船型、船公司、航次都完全相同，去重
+          const exactKey = `${dateKey}_${port}_${vesselName}_${shipType}_${carrier}_${voyageNumber}`;
+          if (seen.has(exactKey)) {
+            return; // 完全重复，跳过
+          }
+          
+          // 规则2：如果日期、港口、船名、船型、船公司相同，但航次不同
+          // 这种情况很可能是重复数据（同一船公司，同一船名，同一船型，只是航次号不一致）
+          const similarKey = `${dateKey}_${port}_${vesselName}_${shipType}_${carrier}`;
+          if (seen.has(similarKey)) {
+            // 同一船公司，相同船名、船型、日期、港口，只是航次不同，去重
+            return;
+          }
+          
+          // 规则3：如果日期、港口、船名、船型相同，但船公司不同，保留（可能是共舱）
+          // 这种情况不需要去重，因为船公司不同代表不同的航线
+          
+          // 添加到结果
+          seen.add(exactKey);
+          seen.add(similarKey);
+          result.push(item);
+        });
+        
+        return result;
+      }
+
+      // 工具函数
+      function formatDateKey(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function isToday(date) {
+        const today = new Date();
+        return date.getFullYear() === today.getFullYear() &&
+               date.getMonth() === today.getMonth() &&
+               date.getDate() === today.getDate();
+      }
+
+      function getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      }
+
+      // 创建悬停提示框
+      function createTooltip(item) {
+        const lines = [];
+        const is001Mode = item.mode === MODE_001;
+        
+        // 第一行：共舱船公司（完整显示，避免船期表中显示不全）
+        if (item.carrier) {
+          lines.push(`
+            <div class="tooltip-line">
+              <span class="tooltip-label">共舱船公司：</span>
+              <span class="tooltip-value" style="grid-column: 2 / -1;">${item.carrier}</span>
+            </div>
+          `);
+        }
+        
+        // 第二行：标准开航日 + 标准航程（对齐格式）
+        if (item.weekday || item.voyageDays) {
+          // 处理weekday：如果已经是"周x"格式，直接使用；如果是数字，转换为"周x"
+          let weekdayText = '';
+          if (item.weekday) {
+            const weekdayStr = String(item.weekday).trim();
+            // 如果已经包含"周"字，直接使用；否则添加"周"前缀
+            if (weekdayStr.includes('周')) {
+              weekdayText = weekdayStr.replace(/周+/g, '周'); // 去掉重复的"周"字
+            } else {
+              weekdayText = `周${weekdayStr}`;
+            }
+          }
+          
+          // 处理voyageDays：去掉重复的"天"字
+          let voyageText = '';
+          if (item.voyageDays) {
+            const voyageStr = String(item.voyageDays).trim();
+            // 去掉末尾的"天"字，然后统一添加一个"天"
+            voyageText = voyageStr.replace(/天+$/, '') + '天';
+          }
+          
+          lines.push(`
+            <div class="tooltip-line">
+              <span class="tooltip-label">标准开航日：</span>
+              <span class="tooltip-value">${weekdayText}</span>
+              <span class="tooltip-label">标准航程：</span>
+              <span class="tooltip-value">${voyageText}</span>
+            </div>
+          `);
+        }
+        
+        // 第三行：起运港码头 + 目的港码头（对齐格式）
+        if (item.originTerminal || item.destTerminal) {
+          const originText = item.originTerminal || '';
+          const destText = item.destTerminal || '';
+          lines.push(`
+            <div class="tooltip-line">
+              <span class="tooltip-label">起运港码头：</span>
+              <span class="tooltip-value">${originText}</span>
+              <span class="tooltip-label">目的港码头：</span>
+              <span class="tooltip-value">${destText}</span>
+            </div>
+          `);
+        }
+        
+        // 第四行：船舶船型 + 建造年份（仅365模式显示）
+        if (!is001Mode) {
+          if (item.shipType || item.year) {
+            const shipTypeText = item.shipType ? `${item.shipType} TEU` : '';
+            const yearText = item.year || '';
+            lines.push(`
+              <div class="tooltip-line">
+                <span class="tooltip-label">船舶船型：</span>
+                <span class="tooltip-value">${shipTypeText}</span>
+                <span class="tooltip-label">建造年份：</span>
+                <span class="tooltip-value">${yearText}</span>
+              </div>
+            `);
+          }
+        }
+        
+        // 第五行：航线路径（仅365模式显示）
+        if (!is001Mode && item.routePath) {
+          lines.push(`
+            <div class="tooltip-line">
+              <span class="tooltip-label">航线路径：</span>
+              <span class="tooltip-value tooltip-path" style="grid-column: 2 / -1;">${item.routePath}</span>
+            </div>
+          `);
+        }
+        
+        // 如果没有内容，返回null
+        if (lines.length === 0) {
+          return null;
+        }
+        
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.style.display = 'none';
+        tooltip.innerHTML = lines.join('');
+        return tooltip;
+      }
+
+      // 定位提示框
+      function positionTooltip(tooltip, target) {
+        const rect = target.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+        
+        // 默认显示在右侧
+        let left = rect.right + 10;
+        let top = rect.top;
+        
+        // 如果右侧空间不够，显示在左侧
+        if (left + tooltipRect.width > window.innerWidth) {
+          left = rect.left - tooltipRect.width - 10;
+        }
+        
+        // 确保不超出左边界
+        if (left < 10) {
+          left = 10;
+        }
+        
+        // 如果下方空间不够，向上调整
+        if (top + tooltipRect.height > window.innerHeight) {
+          top = window.innerHeight - tooltipRect.height - 10;
+        }
+        
+        // 确保不超出上边界
+        if (top < 10) {
+          top = 10;
+        }
+        
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      }
+
+      // loadScript, loadPdfLibraries, exportToPdf 函数已移至 vendor/pdf-utils.js 和 vendor/common-utils.js
+      
+      /**
+       * 导出PDF功能（使用 vendor/pdf-utils.js 中的函数）
+       */
+      async function handleExportPdf() {
+        const exportBtn = dom.exportPdfBtn;
+        if (!exportBtn) return;
+
+        // 检查是否有数据
+        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
+        if (!currentData || currentData.length === 0) {
+          showError(ErrorType.DATA_VALIDATION, 'NO_DATA');
+          return;
+        }
+
+        // 检查是否有筛选结果
+        const hasFilters = state.selectedRegions.length > 0 || 
+                          state.selectedCarriers.length > 0 || 
+                          state.selectedPorts.length > 0;
+        if (!hasFilters) {
+          showError(ErrorType.DATA_VALIDATION, 'NO_FILTERS');
+          return;
+        }
+
+        try {
+          exportBtn.disabled = true;
+          exportBtn.textContent = '导出中...';
+
+          // 生成文件名：Monitor-Sailing-Schedule_年月日.pdf
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const fileName = `Monitor-Sailing-Schedule_${year}${month}${day}`;
+
+          // 使用 vendor/pdf-utils.js 中的 exportToPdf 函数
+          // 导出整个内容区域（包括AI分析部分），排除页脚
+          await exportToPdf('.content', {
+            fileName: fileName,
+            onStart: () => {
+              exportBtn.disabled = true;
+              exportBtn.textContent = '导出中...';
+            },
+            onComplete: () => {
+              exportBtn.textContent = '导出 PDF';
+              exportBtn.disabled = false;
+            },
+            onError: (error) => {
+              debugError('导出PDF失败:', error);
+              showError(ErrorType.API_ERROR, 'API_REQUEST_FAILED', { 
+                message: error.message || String(error) 
+              }, error);
+              exportBtn.textContent = '导出 PDF';
+              exportBtn.disabled = false;
+            }
+          });
+        } catch (error) {
+          debugError('导出PDF失败:', error);
+          showError(ErrorType.API_ERROR, 'API_REQUEST_FAILED', { 
+            message: error.message || String(error) 
+          }, error);
+          exportBtn.textContent = '导出 PDF';
+          exportBtn.disabled = false;
+        }
+      }
+
+      // 页面加载完成后初始化
+      // ==================== AI 分析模块 ====================
+      
+      // AI 提供商配置（使用统一的工具模块）
+      const aiProviders = createAiProviders('sailing', {
+        deepseek: { maxTokens: 4000 },
+        kimi: { maxTokens: 4000 },
+        qwen: { maxTokens: 4000 }
+      });
+
+      let activeAiProvider = 'deepseek';
+      let setActiveAiPanelBound = null;
+
+      /**
+       * 初始化AI模块（使用统一的工具模块）
+       */
+      function initSailingAiModule() {
+        // 使用统一的 AI 工具模块初始化（直接调用全局函数，避免递归）
+        setActiveAiPanelBound = initAiModule(aiProviders, eventListeners);
+        
+        loadAiConfigsFromStorage(aiProviders);
+        updateAiModuleVisibility();
+      }
+
+      /**
+       * 设置活动的 AI 面板（使用统一工具模块）
+       * @param {string} providerId - 提供商 ID
+       */
+      function setActiveAiPanel(providerId = 'deepseek') {
+        const result = setActiveAiPanelBound(providerId);
+        if (result) {
+          activeAiProvider = result;
+        }
+      }
+
+      /**
+       * 加载 AI 配置（使用统一工具模块）
+       */
+      function loadAiConfigs() {
+        loadAiConfigsFromStorage(aiProviders);
+      }
+
+      /**
+       * 获取 AI 配置（使用统一工具模块）
+       * @param {string} providerId - 提供商 ID
+       * @returns {Object|null} 配置对象
+       */
+      function getAiConfig(providerId = 'deepseek') {
+        return getAiConfigFromInputs(providerId, aiProviders);
+      }
+
+      /**
+       * 保存 AI 配置（使用统一工具模块）
+       * @param {string} providerId - 提供商 ID
+       */
+      function saveAiConfig(providerId = 'deepseek') {
+        saveAiConfigToStorage(providerId, aiProviders, (providerName) => {
+          // 使用统一的错误处理模块
+          const configSavedMsg = typeof getErrorMessage === 'function'
+              ? getErrorMessage(ErrorType.USER_ACTION, 'CONFIG_SAVED', { provider: providerName })
+              : `${providerName} API 配置已保存`;
+          showSuccess(configSavedMsg);
+        });
+      }
+
+      /**
+       * 更新AI模块可见性
+       * 根据数据加载状态和筛选条件显示/隐藏AI分析模块
+       */
+      function updateAiModuleVisibility() {
+        const aiSection = dom.aiAnalysisSection;
+        const emptyMessage = dom.emptyAiMessage;
+        const configSection = dom.aiConfigSection;
+        
+        if (!aiSection) return;
+        
+        // 检查是否有筛选条件
+        const hasFilters = (state.selectedRegions.length > 0 || 
+                           state.selectedCarriers.length > 0 || 
+                           state.selectedPorts.length > 0);
+        // 检查是否有数据（需要先检查是否为 null）
+        const hasData = (state.currentMode === MODE_001 && state.data001 && state.data001.length > 0) ||
+                        (state.currentMode === MODE_365 && state.data365 && state.data365.length > 0);
+        
+        if (hasFilters && hasData) {
+          aiSection.style.display = 'block';
+          if (emptyMessage) emptyMessage.style.display = 'none';
+          if (configSection) configSection.style.display = 'block';
+        } else {
+          aiSection.style.display = 'block';
+          if (emptyMessage) emptyMessage.style.display = 'block';
+          if (configSection) configSection.style.display = 'none';
+        }
+      }
+
+      /**
+       * 构建AI分析提示词
+       * @returns {string|null} 构建的提示词，如果数据无效则返回 null
+       */
+      function buildAiPrompt() {
+        // 获取当前筛选后的数据
+        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
+        if (!currentData || currentData.length === 0) {
+          showError(ErrorType.DATA_VALIDATION, 'NO_DATA_FOR_ANALYSIS');
+          return null;
+        }
+
+        // 应用筛选条件
+        let filteredData = currentData.filter(item => {
+          // 区域筛选
+          if (state.selectedRegions.length > 0) {
+            const itemRegion = getPortRegion(item.port);
+            if (!state.selectedRegions.includes(itemRegion)) {
+              return false;
+            }
+          }
+          
+          // 船公司筛选
+          if (state.selectedCarriers.length > 0) {
+            if (!state.selectedCarriers.includes(item.carrier)) {
+              return false;
+            }
+          }
+          
+          // 港口筛选
+          if (state.selectedPorts.length > 0) {
+            if (!state.selectedPorts.includes(item.port)) {
+              return false;
+            }
+          }
+          
+          return true;
+        });
+
+        if (filteredData.length === 0) {
+          showError(ErrorType.DATA_VALIDATION, 'NO_FILTERED_DATA');
+          return null;
+        }
+
+        // 按区域和航线分组数据
+        const groupedByRegion = {};
+        filteredData.forEach(item => {
+          const region = getPortRegion(item.port);
+          if (!groupedByRegion[region]) {
+            groupedByRegion[region] = {};
+          }
+          
+          // 按船公司分组（作为航线标识）
+          const routeKey = item.carrier || '未知船公司';
+          if (!groupedByRegion[region][routeKey]) {
+            groupedByRegion[region][routeKey] = [];
+          }
+          
+          groupedByRegion[region][routeKey].push(item);
+        });
+
+        // 构建数据描述
+        let dataDescription = `【筛选条件】\n`;
+        if (state.selectedRegions.length > 0) {
+          dataDescription += `区域：${state.selectedRegions.join('、')}\n`;
+        }
+        if (state.selectedCarriers.length > 0) {
+          dataDescription += `船公司：${state.selectedCarriers.join('、')}\n`;
+        }
+        if (state.selectedPorts.length > 0) {
+          dataDescription += `港口：${state.selectedPorts.join('、')}\n`;
+        }
+        dataDescription += `数据模式：${state.currentMode}\n\n`;
+
+        dataDescription += `【船期数据】\n`;
+        dataDescription += `共 ${filteredData.length} 条船期记录\n\n`;
+
+        // 按区域组织数据
+        Object.keys(groupedByRegion).sort().forEach(region => {
+          dataDescription += `## ${region}\n\n`;
+          const routes = groupedByRegion[region];
+          
+          Object.keys(routes).sort().forEach(routeKey => {
+            const items = routes[routeKey];
+            // 按日期排序
+            items.sort((a, b) => a.date.getTime() - b.date.getTime());
+            
+            dataDescription += `### 航线：${routeKey}\n`;
+            dataDescription += `船期记录数：${items.length}\n\n`;
+            
+            // 按周分组显示
+            const weeklyData = {};
+            items.forEach(item => {
+              const weekKey = getWeekKey(item.date);
+              if (!weeklyData[weekKey]) {
+                weeklyData[weekKey] = [];
+              }
+              weeklyData[weekKey].push(item);
+            });
+            
+            Object.keys(weeklyData).sort().forEach(weekKey => {
+              const weekItems = weeklyData[weekKey];
+              dataDescription += `**${weekKey}**：\n`;
+              weekItems.forEach(item => {
+                const dateStr = formatDate(item.date);
+                const port = item.port || '';
+                const carrier = item.carrier || '';
+                const vessel = item.vessel || '';
+                const shipType = item.shipType ? `${item.shipType}TEU` : '';
+                dataDescription += `  - ${dateStr} | ${port} | ${carrier} | ${vessel}${shipType ? ' ' + shipType : ''}\n`;
+              });
+              dataDescription += `\n`;
+            });
+            
+            dataDescription += `\n`;
+          });
+          
+          dataDescription += `\n`;
+        });
+
+        // 组合完整提示词
+        const fullPrompt = `${sailingScheduleInstructionTemplate}\n\n${dataDescription}`;
+        
+        return fullPrompt;
+      }
+
+      // 获取周键（用于分组）
+      function getWeekKey(date) {
+        const year = date.getFullYear();
+        const week = getWeekNumber(date);
+        return `${year}年第${week}周`;
+      }
+
+      // 格式化日期
+      function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        const weekday = weekdays[date.getDay()];
+        return `${year}/${month}/${day}(${weekday})`;
+      }
+
+      /**
+       * 运行AI分析（使用统一工具模块）
+       * @param {string} providerId - 提供商 ID
+       */
+      async function runAiAnalysis(providerId = 'deepseek') {
+        await executeAiAnalysis(
+          providerId,
+          aiProviders,
+          buildAiPrompt,
+          sailingScheduleSystemPrompt,
+          {
+            onError: (message) => {
+              showError(ErrorType.API_ERROR, 'API_REQUEST_FAILED', { message });
+            }
+          }
+        );
+      }
+
+      // 页面卸载时清理所有事件监听器
+      window.addEventListener('beforeunload', () => {
+        eventListeners.cleanup();
+      });
+
+      // 初始化
+      if (document.readyState === 'loading') {
+        const handleDOMContentLoaded = () => {
+          init();
+          initSailingAiModule();
+        };
+        eventListeners.add(document, 'DOMContentLoaded', handleDOMContentLoaded);
+      } else {
+        init();
+        initSailingAiModule();
+      }
+    </script>
+
+    <div class="page-footer">
+      <h2>Monitor · 船期表使用声明</h2>
+      <p>资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+      <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+      <p>AI 服务由 DeepSeek / KIMI / 通义千问 API 驱动，所有调用费用与合规责任由使用者自担，涉及客户或敏感数据时请先完成脱敏处理。</p>
+    </div>
+
+    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
+    <script src="vendor/auth-gist.js"></script>
+  </body>
+</html>
+
+

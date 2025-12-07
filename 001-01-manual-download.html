@@ -84,6 +84,7 @@
     <div class="container">
         <div class="header">
             <a href="index.html?tab=tools001" class="back-home-btn">← 返回首页</a>
+            <a href="001-01-manual-download-README.html" class="readme-btn">使用说明 →</a>
             <h1>维运网 船期网页手动下载工具</h1>
             <p id="totalCountText">共46个网页需要保存</p>
         </div>
@@ -208,7 +209,7 @@
                     <div class="url-number">${index + 1}</div>
                     <div class="url-content">
                         <div style="font-weight: 600; color: #495057; margin-bottom: 8px; font-size: 15px;">${item.route}</div>
-                        <a href="${item.url}" target="_blank" class="url-link">${item.url}</a>
+                        <div class="url-link" style="color: #6c757d; word-break: break-all;">${item.url}</div>
                         <span class="status-badge ${isSaved ? 'status-saved' : 'status-pending'}" style="margin-top: 8px; display: inline-block;">
                             ${isSaved ? '✓ 已保存' : '待处理'}
                         </span>

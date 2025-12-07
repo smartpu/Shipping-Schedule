@@ -11,6 +11,31 @@
  */
 
 // ============================================
+// 全局配置
+// ============================================
+
+// 注意：getDebugMode 和 getCachedDebugMode 函数已在 vendor/debug-utils.js 中定义
+// 如果 debug-utils.js 已加载，直接使用；否则提供降级实现
+if (typeof window !== 'undefined' && typeof window.getCachedDebugMode === 'undefined') {
+    // 降级实现（仅在 debug-utils.js 未加载时使用）
+    let _cachedDebugMode = null;
+    window.getCachedDebugMode = function() {
+        if (_cachedDebugMode === null) {
+            if (typeof window !== 'undefined') {
+                try {
+                    _cachedDebugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
+                } catch (e) {
+                    _cachedDebugMode = false;
+                }
+            } else {
+                _cachedDebugMode = false;
+            }
+        }
+        return _cachedDebugMode;
+    };
+}
+
+// ============================================
 // 数据工具函数
 // ============================================
 
@@ -435,7 +460,8 @@ async function handleMarketReportFile(file) {
         }
     } catch (error) {
         console.error('解析PDF失败', file.name, error);
-        alert(`解析 ${file.name} 失败：${error.message || error}`);
+        // 抛出异常，由调用方处理（更灵活的错误处理机制）
+        throw new Error(`解析 ${file.name} 失败：${error.message || error}`);
     }
 }
 
@@ -679,8 +705,133 @@ async function fetchCcfiData(force = false) {
 }
 
 /**
- * 解析CCFI文本
- * @param {string} text - 文本内容
+ * 解析并验证 CCFI 匹配结果
+ * @param {Array<string>} match - 正则匹配结果数组
+ * @param {Object} route - 航线配置对象
+ * @param {string} strategyName - 策略名称（用于调试）
+ * @returns {Object|null} 解析后的路由数据，如果验证失败返回 null
+ */
+function parseAndValidateCcfiMatch(match, route, strategyName) {
+    // 解析数字（支持逗号分隔符）
+    const parseNumber = (str) => {
+        if (!str) return null;
+        return parseFloat(String(str).replace(/,/g, ''));
+    };
+    
+    const previous = parseNumber(match[1]);
+    const current = parseNumber(match[2]);
+    const wow = match[3] ? parseNumber(match[3]) : null;
+    
+    // 验证数字是否合理（CCFI 指数通常在 50-5000 之间）
+    const previousValid = previous !== null && isFinite(previous) && previous > 50 && previous < 5000;
+    const currentValid = current !== null && isFinite(current) && current > 50 && current < 5000;
+    const wowValid = wow !== null && isFinite(wow) && Math.abs(wow) < 100; // WoW 通常在 -100% 到 100% 之间
+    
+    if (previousValid && currentValid) {
+        const result = {
+            id: route.match,
+            label: route.label,
+            previous: previous,
+            current: current,
+            wow: wowValid ? wow : null
+        };
+        
+        if (getCachedDebugMode()) {
+            console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
+        }
+        
+        return result;
+    }
+    
+    return null;
+}
+
+/**
+ * 解析并验证 CCFI 匹配结果（仅当前值）
+ * @param {Array<string>} match - 正则匹配结果数组
+ * @param {Object} route - 航线配置对象
+ * @param {string} strategyName - 策略名称（用于调试）
+ * @returns {Object|null} 解析后的路由数据，如果验证失败返回 null
+ */
+function parseAndValidateCcfiMatchCurrentOnly(match, route, strategyName) {
+    const parseNumber = (str) => {
+        if (!str) return null;
+        return parseFloat(String(str).replace(/,/g, ''));
+    };
+    
+    const current = parseNumber(match[1]);
+    const currentValid = current !== null && isFinite(current) && current > 50 && current < 5000;
+    
+    if (currentValid) {
+        const result = {
+            id: route.match,
+            label: route.label,
+            previous: null,
+            current: current,
+            wow: null
+        };
+        
+        if (getCachedDebugMode()) {
+            console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { current });
+        }
+        
+        return result;
+    }
+    
+    return null;
+}
+
+/**
+ * 正则表达式缓存（用于优化 CCFI 匹配性能）
+ * @type {Map<string, RegExp>}
+ */
+const regexCache = new Map();
+
+/**
+ * 获取或创建正则表达式（带缓存）
+ * @param {string} pattern - 正则表达式模式
+ * @param {string} flags - 正则表达式标志
+ * @returns {RegExp} 正则表达式对象
+ */
+function getCachedRegex(pattern, flags = 'gi') {
+    const key = `${pattern}::${flags}`;
+    if (!regexCache.has(key)) {
+        regexCache.set(key, new RegExp(pattern, flags));
+    }
+    return regexCache.get(key);
+}
+
+/**
+ * 尝试匹配 CCFI 航线数据（优化版：使用缓存的正则表达式）
+ * @param {RegExp|string} regexOrPattern - 正则表达式对象或模式字符串
+ * @param {string} normalized - 规范化后的文本
+ * @param {Object} route - 航线配置对象
+ * @param {string} strategyName - 策略名称
+ * @param {Function} parseFn - 解析函数（parseAndValidateCcfiMatch 或 parseAndValidateCcfiMatchCurrentOnly）
+ * @returns {Object|null} 解析后的路由数据，如果匹配失败返回 null
+ */
+function tryMatchCcfiRoute(regexOrPattern, normalized, route, strategyName, parseFn) {
+    // 如果传入的是字符串，使用缓存的正则表达式
+    const regex = typeof regexOrPattern === 'string' 
+        ? getCachedRegex(regexOrPattern) 
+        : regexOrPattern;
+    
+    regex.lastIndex = 0;
+    let match;
+    // 限制最大匹配次数，避免无限循环（每个策略最多尝试 10 次）
+    let maxAttempts = 10;
+    while ((match = regex.exec(normalized)) !== null && maxAttempts-- > 0) {
+        const result = parseFn(match, route, strategyName);
+        if (result) {
+            return result;
+        }
+    }
+    return null;
+}
+
+/**
+ * 解析CCFI文本（支持HTML表格格式）
+ * @param {string} text - 文本内容或HTML内容
  * @returns {Object} CCFI数据
  */
 function parseCcfiText(text) {
@@ -688,6 +839,14 @@ function parseCcfiText(text) {
         console.warn('ccfiRoutes 未定义，请在页面中声明');
         return { timestamp: Date.now(), period: null, routes: [] };
     }
+    
+    // 尝试解析HTML表格格式
+    const htmlMatch = text.match(/<table[^>]*class=["']lb1["'][^>]*>[\s\S]*?<\/table>/i);
+    if (htmlMatch) {
+        return parseCcfiFromHtml(htmlMatch[0]);
+    }
+    
+    // 如果找不到HTML表格，使用原来的文本解析方式
     const normalized = text.replace(/\r/g, '');
     const headerMatch = normalized.match(/上期(\d{4}-\d{2}-\d{2}).*?本期(\d{4}-\d{2}-\d{2})/);
     const result = {
@@ -695,24 +854,409 @@ function parseCcfiText(text) {
         period: headerMatch ? { previous: headerMatch[1], current: headerMatch[2] } : null,
         routes: []
     };
-    ccfiRoutes.forEach(route => {
-        const escaped = escapeRegex(route.match);
-        const target = route.parenthesized ? `\\(${escaped}\\)` : escaped;
-        const regex = new RegExp(`${target}[\\s\\S]{0,80}?([\\d\\.]+)\\s+([\\d\\.]+)\\s*([+\\-]?\\d+(?:\\.\\d+)?)`, 'i');
-        const match = normalized.match(regex);
-        if (match) {
-            const previous = parseFloat(match[1]);
-            const current = parseFloat(match[2]);
-            const wow = parseFloat(match[3]);
-            result.routes.push({
-                id: route.match,
-                label: route.label,
-                previous: isFinite(previous) ? previous : null,
-                current: isFinite(current) ? current : null,
-                wow: isFinite(wow) ? wow : null
+    
+    // 调试：检查文本内容（仅在调试模式下）
+    const DEBUG_MODE = getCachedDebugMode();
+    if (DEBUG_MODE) {
+        console.log('[CCFI] 文本长度:', normalized.length);
+        console.log('[CCFI] 文本前500字符:', normalized.substring(0, 500));
+        // 查找包含航线中文名称的部分
+        const routeLabels = ccfiRoutes.map(r => r.label);
+        const foundLabels = [];
+        routeLabels.forEach(label => {
+            if (normalized.includes(label)) {
+                foundLabels.push(label);
+            }
+        });
+        console.log('[CCFI] 找到的航线标签:', foundLabels);
+        // 查找包含数字的部分（可能是价格数据）
+        const numberMatches = normalized.match(/[\d,]+\.?\d*/g);
+        if (numberMatches) {
+            console.log('[CCFI] 找到的数字数据（前30个）:', numberMatches.slice(0, 30));
+        }
+        // 查找包含英文航线名称的部分
+        const routeMatches = normalized.match(/(JAPAN|EUROPE|AMERICA|KOREA|ASIA|MEDITERRANEAN|AUSTRALIA|AFRICA|PERSIAN|GULF|RED SEA)/gi);
+        if (routeMatches) {
+            console.log('[CCFI] 找到的英文航线名称（前20个）:', routeMatches.slice(0, 20));
+        }
+        // 查找每个航线名称附近的文本内容（用于调试）
+        const sampleRoutes = ['JAPAN', 'EUROPE', 'KOREA', 'ASIA'];
+        sampleRoutes.forEach(keyword => {
+            const index = normalized.indexOf(keyword);
+            if (index !== -1) {
+                const snippet = normalized.substring(Math.max(0, index - 50), index + 200);
+                console.log(`[CCFI] "${keyword}" 附近的文本:`, snippet);
+            }
+        });
+        // 查找综合指数附近的文本内容
+        const compositeIndex = normalized.indexOf('CHINA CONTAINERIZED FREIGHT INDEX');
+        if (compositeIndex !== -1) {
+            const snippet = normalized.substring(Math.max(0, compositeIndex - 50), compositeIndex + 200);
+            console.log(`[CCFI] "CHINA CONTAINERIZED FREIGHT INDEX" 附近的文本:`, snippet);
+        }
+    }
+    
+    // 预编译常用正则表达式模式（性能优化）
+    const escapedRoutes = ccfiRoutes.map(route => ({
+        ...route,
+        escaped: escapeRegex(route.match),
+        target: route.parenthesized ? `\\(${escapeRegex(route.match)}\\)` : escapeRegex(route.match),
+        labelEscaped: escapeRegex(route.label || '')
+    }));
+    
+    escapedRoutes.forEach((route, index) => {
+        let found = false;
+        
+        // 策略1：匹配表格格式（支持 | 分隔符和空格分隔）
+        // 格式1：航线名称 | 上期值 | 本期值 | WoW值（如：CHINA CONTAINERIZED FREIGHT INDEX | 1121.80 | 1114.89 | -0.6）
+        // 格式2：航线名称 上期值 本期值 WoW值（如：CHINA CONTAINERIZED FREIGHT INDEX 1121.80 1114.89 -0.6）
+        // 先尝试匹配表格格式（| 分隔），限制匹配范围在航线名称后500字符内，避免匹配到其他航线的数据
+        // 使用字符串模式，让 tryMatchCcfiRoute 使用缓存的正则表达式
+        const tablePattern = `${route.target}[\\s\\S]{0,500}([\\d,\\.]+)\\s*[|]\\s*([\\d,\\.]+)\\s*[|]\\s*([+\\-]?\\d+(?:\\.\\d+)?)`;
+        let matchResult = tryMatchCcfiRoute(tablePattern, normalized, route, '策略1（表格格式）', parseAndValidateCcfiMatch);
+        if (matchResult) {
+            result.routes.push(matchResult);
+            found = true;
+        }
+        
+        // 如果表格格式匹配失败，尝试空格分隔格式
+        if (!found) {
+            const spacePattern = `${route.target}[\\s\\S]{0,500}([\\d,\\.]+)\\s+([\\d,\\.]+)\\s*([+\\-]?\\d+(?:\\.\\d+)?)`;
+            matchResult = tryMatchCcfiRoute(spacePattern, normalized, route, '策略1（空格格式）', parseAndValidateCcfiMatch);
+            if (matchResult) {
+                result.routes.push(matchResult);
+                found = true;
+            }
+        }
+        
+        // 策略1.5：匹配格式 (航线名称)数字（只有当前值，没有上期值和WoW）
+        // 这是最常见的格式，如 (JAPAN SERVICE)960.49
+        // 但首先尝试匹配表格格式：航线名称 | 上期值 | 本期值 | WoW值
+        if (!found && route.parenthesized && route.match) {
+            // 先尝试匹配表格格式：\(航线名称\) | 上期值 | 本期值 | WoW值
+            const parenthesizedTablePattern = `${route.target}[\\s\\S]{0,500}\\s*[|]\\s*([\\d,\\.]+)\\s*[|]\\s*([\\d,\\.]+)\\s*[|]\\s*([+\\-]?\\d+(?:\\.\\d+)?)`;
+            matchResult = tryMatchCcfiRoute(parenthesizedTablePattern, normalized, route, '策略1.5（表格格式）', parseAndValidateCcfiMatch);
+            if (matchResult) {
+                result.routes.push(matchResult);
+                found = true;
+            }
+            
+            // 如果表格格式匹配失败，尝试空格分隔格式
+            if (!found) {
+                const parenthesizedSpacePattern = `${route.target}[\\s\\S]{0,500}([\\d,\\.]+)\\s+([\\d,\\.]+)\\s*([+\\-]?\\d+(?:\\.\\d+)?)`;
+                matchResult = tryMatchCcfiRoute(parenthesizedSpacePattern, normalized, route, '策略1.5（空格格式）', parseAndValidateCcfiMatch);
+                if (matchResult) {
+                    result.routes.push(matchResult);
+                    found = true;
+                }
+            }
+            
+            // 如果表格格式和空格格式都匹配失败，尝试匹配 (航线名称)数字 格式（仅当前值）
+            if (!found) {
+                const currentOnlyPattern = `${route.target}([\\d,\\.]+)`;
+                matchResult = tryMatchCcfiRoute(currentOnlyPattern, normalized, route, '策略1.5（仅当前值）', parseAndValidateCcfiMatchCurrentOnly);
+                if (matchResult) {
+                    result.routes.push(matchResult);
+                    found = true;
+                }
+            }
+        }
+        
+        // 策略1.6：如果策略1.5失败，尝试匹配航线名称的关键词（如 "JAPAN" 而不是 "JAPAN SERVICE"）
+        if (!found && route.match) {
+            // 提取关键词：对于 "JAPAN SERVICE"，提取 "JAPAN"；对于 "W/C AMERICA SERVICE"，提取 "AMERICA"
+            // 对于 "SOUTHEAST ASIA SERVICE"，提取 "ASIA"；对于 "SOUTH AFRICA SERVICE"，提取 "AFRICA"
+            let keywords = route.match.split(/\s+/).filter(word => 
+                word.length > 2 && 
+                !word.match(/^(SERVICE|W\/C|E\/C|NEW|ZEALAND|GULF|RED|SEA|SOUTHEAST|WEST|EAST)$/i)
+            );
+            
+            // 特殊处理：对于 "SOUTHEAST ASIA"，使用 "ASIA"；对于 "SOUTH AFRICA"，使用 "AFRICA"
+            if (route.match.includes('SOUTHEAST ASIA')) {
+                keywords = ['ASIA'];
+            } else if (route.match.includes('SOUTH AFRICA')) {
+                keywords = ['AFRICA'];
+            } else if (route.match.includes('SOUTH AMERICA')) {
+                keywords = ['AMERICA'];
+            } else if (route.match.includes('WEST EAST AFRICA')) {
+                keywords = ['AFRICA'];
+            } else if (route.match.includes('PERSIAN GULF/RED SEA')) {
+                keywords = ['PERSIAN', 'GULF', 'RED'];
+            } else if (route.match.includes('AUSTRALIA/NEW ZEALAND')) {
+                keywords = ['AUSTRALIA'];
+            }
+            
+            if (keywords.length > 0) {
+                // 尝试每个关键词，匹配格式 (关键词 SERVICE)数字 或 (关键词)数字
+                for (const keyword of keywords) {
+                    const keywordEscaped = escapeRegex(keyword);
+                    // 匹配格式：\(关键词[^)]*\)数字（允许关键词后面有其他内容）
+                    const keywordPattern = `\\([^)]*${keywordEscaped}[^)]*\\)([\\d,\\.]+)`;
+                    matchResult = tryMatchCcfiRoute(keywordPattern, normalized, route, `策略1.6（关键词: ${keyword}）`, parseAndValidateCcfiMatchCurrentOnly);
+                    if (matchResult) {
+                        result.routes.push(matchResult);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // 策略2：如果直接匹配失败，尝试匹配中文标签（如"综合指数"、"日本航线"等）
+        if (!found && route.label) {
+            // 更宽松的匹配：允许标签和数字之间有更多字符
+            const labelPattern = `${route.labelEscaped}[：:：\\s]*([\\d,\\.]+)[^\\d]{0,200}?([\\d,\\.]+)[^\\d]{0,200}?([+\\-]?\\d+(?:\\.\\d+)?)`;
+            matchResult = tryMatchCcfiRoute(labelPattern, normalized, route, '策略2', (match, route, strategyName) => {
+                const parseNumber = (str) => {
+                    if (!str) return null;
+                    return parseFloat(String(str).replace(/,/g, ''));
+                };
+                const previous = parseNumber(match[1]);
+                const current = parseNumber(match[2]);
+                const wow = match[3] ? parseNumber(match[3]) : null;
+                if (isFinite(previous) || isFinite(current)) {
+                    const result = {
+                        id: route.match,
+                        label: route.label,
+                        previous: isFinite(previous) ? previous : null,
+                        current: isFinite(current) ? current : null,
+                        wow: isFinite(wow) ? wow : null
+                    };
+                    if (getCachedDebugMode()) {
+                        console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
+                    }
+                    return result;
+                }
+                return null;
             });
+            if (matchResult) {
+                result.routes.push(matchResult);
+                found = true;
+            }
+        }
+        
+        // 策略3：如果前两种都失败，尝试更宽松的匹配（只匹配标签后的第一个数字作为当前值）
+        if (!found && route.label) {
+            // 匹配格式：标签 + 当前值（可能没有上期值）
+            const labelCurrentPattern = `${route.labelEscaped}[：:：\\s]*([\\d,\\.]+)`;
+            matchResult = tryMatchCcfiRoute(labelCurrentPattern, normalized, route, '策略3', (match, route, strategyName) => {
+                const parseNumber = (str) => {
+                    if (!str) return null;
+                    return parseFloat(String(str).replace(/,/g, ''));
+                };
+                const current = parseNumber(match[1]);
+                if (isFinite(current) && current > 0) {
+                    const result = {
+                        id: route.match,
+                        label: route.label,
+                        previous: null,
+                        current: current,
+                        wow: null
+                    };
+                    if (getCachedDebugMode()) {
+                        console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { current });
+                    }
+                    return result;
+                }
+                return null;
+            });
+            if (matchResult) {
+                result.routes.push(matchResult);
+                found = true;
+            }
+        }
+        
+        // 策略4：如果前三种都失败，尝试匹配英文航线名称（用于处理编码问题）
+        if (!found && route.match) {
+            // 匹配格式：英文航线名称 + 数字 + 数字 + 百分比
+            const matchPattern = `${route.escaped}[\\s\\S]{0,5000}([\\d,\\.]+)\\s+([\\d,\\.]+)\\s*([+\\-]?\\d+(?:\\.\\d+)?)`;
+            matchResult = tryMatchCcfiRoute(matchPattern, normalized, route, '策略4', (match, route, strategyName) => {
+                const parseNumber = (str) => {
+                    if (!str) return null;
+                    return parseFloat(String(str).replace(/,/g, ''));
+                };
+                const previous = parseNumber(match[1]);
+                const current = parseNumber(match[2]);
+                const wow = match[3] ? parseNumber(match[3]) : null;
+                if (isFinite(previous) || isFinite(current)) {
+                    const result = {
+                        id: route.match,
+                        label: route.label,
+                        previous: isFinite(previous) ? previous : null,
+                        current: isFinite(current) ? current : null,
+                        wow: isFinite(wow) ? wow : null
+                    };
+                    if (getCachedDebugMode()) {
+                        console.log(`[CCFI] ${strategyName}匹配成功: ${route.label}`, { previous, current, wow });
+                    }
+                    return result;
+                }
+                return null;
+            });
+            if (matchResult) {
+                result.routes.push(matchResult);
+                found = true;
+            }
+        }
+        
+        if (!found && getCachedDebugMode()) {
+            console.warn(`[CCFI] 未匹配到: ${route.label} (${route.match})`);
         }
     });
+    
+    if (getCachedDebugMode()) {
+        console.log(`[CCFI] 总共匹配到 ${result.routes.length} 条航线数据`);
+    }
+    
+    return result;
+}
+
+/**
+ * 从HTML表格中解析CCFI数据
+ * @param {string} html - HTML表格内容
+ * @returns {Object} CCFI数据
+ */
+function parseCcfiFromHtml(html) {
+    const result = {
+        timestamp: Date.now(),
+        period: null,
+        routes: []
+    };
+    
+    // 创建临时DOM元素来解析HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // 查找表格
+    const table = tempDiv.querySelector('table.lb1') || tempDiv.querySelector('table');
+    if (!table) {
+        return result;
+    }
+    
+    // 查找表头行
+    const headerRow = table.querySelector('tr.csx1') || table.querySelector('tr');
+    if (!headerRow) {
+        return result;
+    }
+    
+    // 提取表头中的日期
+    const headerCells = headerRow.querySelectorAll('td');
+    if (headerCells.length >= 3) {
+        const prevDateText = headerCells[1].textContent || '';
+        const currDateText = headerCells[2].textContent || '';
+        
+        // 从文本中提取日期（格式：上期\n2025-11-28）
+        const prevDateMatch = prevDateText.match(/(\d{4}-\d{2}-\d{2})/);
+        const currDateMatch = currDateText.match(/(\d{4}-\d{2}-\d{2})/);
+        
+        if (prevDateMatch && currDateMatch) {
+            const prevDate = prevDateMatch[1];
+            const currDate = currDateMatch[1];
+            // 转换日期格式：2025-11-28 -> 2025/11/28
+            result.period = {
+                previous: prevDate.replace(/-/g, '/'),
+                current: currDate.replace(/-/g, '/')
+            };
+        }
+    }
+    
+    // 提取数据行
+    const dataRows = Array.from(table.querySelectorAll('tr')).slice(1); // 跳过表头行
+    
+    dataRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 4) {
+            return;
+        }
+        
+        // 第一列：航线名称
+        const routeNameCell = cells[0];
+        let routeName = '';
+        
+        // 提取航线名称（支持<p>标签格式）
+        const pTags = routeNameCell.querySelectorAll('p');
+        if (pTags.length > 0) {
+            routeName = Array.from(pTags).map(p => p.textContent.trim()).join(' ');
+        } else {
+            routeName = routeNameCell.textContent.trim();
+        }
+        
+        // 第二列：上期数值
+        const prevValueText = cells[1].textContent.trim();
+        const prevValue = parseFloat(prevValueText.replace(/,/g, '')) || null;
+        
+        // 第三列：本期数值
+        const currValueText = cells[2].textContent.trim();
+        const currValue = parseFloat(currValueText.replace(/,/g, '')) || null;
+        
+        // 第四列：涨跌百分比
+        const wowText = cells[3].textContent.trim().replace('%', '');
+        const wow = parseFloat(wowText) || null;
+        
+        // 匹配航线配置
+        if (routeName && (prevValue !== null || currValue !== null)) {
+            // 查找匹配的航线配置
+            let matchedRoute = null;
+            
+            // 先尝试精确匹配中文名称
+            matchedRoute = ccfiRoutes.find(r => routeName.includes(r.label));
+            
+            // 如果没找到，尝试匹配英文名称
+            if (!matchedRoute) {
+                matchedRoute = ccfiRoutes.find(r => {
+                    const matchText = r.match.toUpperCase();
+                    return routeName.toUpperCase().includes(matchText) || 
+                           matchText.includes(routeName.toUpperCase());
+                });
+            }
+            
+            // 如果还是没找到，尝试匹配部分关键词
+            if (!matchedRoute) {
+                const routeKeywords = {
+                    '综合指数': '综合指数',
+                    '日本': '日本航线',
+                    '欧洲': '欧洲航线',
+                    '美西': '美西航线',
+                    '美东': '美东航线',
+                    '韩国': '韩国航线',
+                    '东南亚': '东南亚航线',
+                    '地中海': '地中海航线',
+                    '澳新': '澳新航线',
+                    '南非': '南非航线',
+                    '南美': '南美航线',
+                    '东西非': '东西非航线',
+                    '波红': '波红航线'
+                };
+                
+                for (const [keyword, label] of Object.entries(routeKeywords)) {
+                    if (routeName.includes(keyword)) {
+                        matchedRoute = ccfiRoutes.find(r => r.label === label);
+                        if (matchedRoute) break;
+                    }
+                }
+            }
+            
+            if (matchedRoute) {
+                result.routes.push({
+                    id: matchedRoute.match,
+                    label: matchedRoute.label,
+                    previous: prevValue,
+                    current: currValue,
+                    wow: wow
+                });
+            } else {
+                // 如果没有匹配到配置，使用原始航线名称
+                result.routes.push({
+                    id: routeName,
+                    label: routeName,
+                    previous: prevValue,
+                    current: currValue,
+                    wow: wow
+                });
+            }
+        }
+    });
+    
     return result;
 }
 
@@ -729,14 +1273,37 @@ function renderCcfiStatus() {
         return;
     }
     const lines = [];
-    if (ccfiData.period) {
-        lines.push(`本期：${ccfiData.period.current || '—'}（对比上期 ${ccfiData.period.previous || '—'}）`);
-    }
+    const prevDate = ccfiData.period?.previous || '';
+    const currDate = ccfiData.period?.current || '';
+    
     ccfiData.routes.forEach(route => {
-        const currentText = typeof route.current === 'number' ? route.current.toLocaleString() : '—';
-        const previousText = typeof route.previous === 'number' ? route.previous.toLocaleString() : '—';
-        lines.push(`${route.label}：${currentText}（上期 ${previousText}，WoW ${formatPercent(route.wow)}）`);
+        const formatNumber = (num) => {
+            if (typeof num !== 'number' || !isFinite(num)) return '—';
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+        
+        const formatWow = (wow) => {
+            if (typeof wow !== 'number' || !isFinite(wow)) return '—';
+            return `${wow >= 0 ? '+' : ''}${wow.toFixed(1)}%`;
+        };
+        
+        const prevValue = formatNumber(route.previous);
+        const currValue = formatNumber(route.current);
+        const wowValue = formatWow(route.wow);
+        
+        // 格式：航线名称：上期(日期) 数值，本期(日期) 数值，WoW 涨跌幅%
+        if (prevDate && currDate && route.previous !== null && route.current !== null) {
+            lines.push(`${route.label}：上期(${prevDate}) ${prevValue}，本期(${currDate}) ${currValue}，WoW ${wowValue}`);
+        } else if (route.current !== null) {
+            // 如果没有上期值，只显示本期值
+            if (currDate) {
+                lines.push(`${route.label}：本期(${currDate}) ${currValue}`);
+            } else {
+                lines.push(`${route.label}：本期 ${currValue}`);
+            }
+        }
     });
+    
     ccfiStatusEl.textContent = lines.join('\n');
     if (typeof ccfiUpdatedEl !== 'undefined' && ccfiUpdatedEl) {
         ccfiUpdatedEl.textContent = `最近更新时间：${new Date(ccfiData.timestamp).toLocaleString()}`;
@@ -789,6 +1356,163 @@ async function fetchWciData(force = false) {
 }
 
 /**
+ * 解析WCI文本 - 策略1：匹配代码格式（WCI-XXX）
+ * @param {string} normalized - 规范化后的文本
+ * @param {string} code - WCI代码
+ * @param {string} label - 航线标签
+ * @param {Object} result - 结果对象
+ * @returns {boolean} 是否匹配成功
+ */
+function parseWciByCode(normalized, code, label, result) {
+    const regex = getCachedRegex(`${code}\\s*(?:=|:)?\\s*\\$?([\\d,]+(?:\\.\\d+)?)`, 'gi');
+    regex.lastIndex = 0;
+    let match;
+    while ((match = regex.exec(normalized)) !== null) {
+        const value = parseFloat(match[1].replace(/,/g, ''));
+        if (isFinite(value) && value > 0) {
+            if (code === 'WCI-COMPOSITE') {
+                result.worldIndex = value;
+                // 尝试匹配 WoW 百分比
+                const changeRegex = getCachedRegex(`${code}[^%]*(?:\\(|\\s)([+\\-]?\\d+(?:\\.\\d+)?)%`, 'i');
+                const changeMatch = normalized.match(changeRegex);
+                if (changeMatch) {
+                    result.changePct = parseFloat(changeMatch[1]);
+                }
+            } else {
+                result.routes.push({ code, route: label, rate: value });
+            }
+            if (getCachedDebugMode()) {
+                console.log(`[WCI] 策略1匹配成功: ${code} (${label})`, { value });
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * 解析WCI文本 - 策略2：匹配中文标签格式
+ * @param {string} normalized - 规范化后的文本
+ * @param {string} code - WCI代码
+ * @param {string} label - 航线标签
+ * @param {Object} result - 结果对象
+ * @returns {boolean} 是否匹配成功
+ */
+function parseWciByLabel(normalized, code, label, result) {
+    if (code === 'WCI-COMPOSITE') return false;
+    
+    const labelEscaped = escapeRegex(label);
+    const labelRegex = getCachedRegex(`${labelEscaped}[：:：\\s]*\\$?([\\d,]+(?:\\.\\d+)?)`, 'gi');
+    labelRegex.lastIndex = 0;
+    let labelMatch;
+    while ((labelMatch = labelRegex.exec(normalized)) !== null) {
+        const value = parseFloat(labelMatch[1].replace(/,/g, ''));
+        if (isFinite(value) && value > 0) {
+            result.routes.push({ code, route: label, rate: value });
+            if (getCachedDebugMode()) {
+                console.log(`[WCI] 策略2匹配成功: ${code} (${label})`, { value });
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * 解析WCI文本 - 策略3：Fallback匹配（更宽松的匹配）
+ * @param {string} normalized - 规范化后的文本
+ * @param {Set} matchedCodes - 已匹配的代码集合
+ * @param {Object} wciCodeMap - WCI代码映射
+ * @param {Object} result - 结果对象
+ */
+function parseWciByFallback(normalized, matchedCodes, wciCodeMap, result) {
+    if (matchedCodes.size >= Object.keys(wciCodeMap).length - 1) return; // -1 因为 WCI-COMPOSITE 不算在 routes 中
+    
+    const fallbackMap = [
+        { code: 'WCI-SHA-RTM', label: wciCodeMap['WCI-SHA-RTM'], patterns: [
+            /Shanghai.*?Rotterdam[^$]*\$?\s*(\d[\d,]*)/i,
+            /SHA.*?RTM[^$]*\$?\s*(\d[\d,]*)/i,
+            /上海.*?鹿特丹[^$]*\$?\s*(\d[\d,]*)/i
+        ]},
+        { code: 'WCI-SHA-GOA', label: wciCodeMap['WCI-SHA-GOA'], patterns: [
+            /Shanghai.*?Genoa[^$]*\$?\s*(\d[\d,]*)/i,
+            /SHA.*?GOA[^$]*\$?\s*(\d[\d,]*)/i,
+            /上海.*?热那亚[^$]*\$?\s*(\d[\d,]*)/i
+        ]},
+        { code: 'WCI-SHA-LAX', label: wciCodeMap['WCI-SHA-LAX'], patterns: [
+            /Shanghai.*?Los Angeles[^$]*\$?\s*(\d[\d,]*)/i,
+            /SHA.*?LAX[^$]*\$?\s*(\d[\d,]*)/i,
+            /上海.*?洛杉矶[^$]*\$?\s*(\d[\d,]*)/i
+        ]},
+        { code: 'WCI-SHA-NYC', label: wciCodeMap['WCI-SHA-NYC'], patterns: [
+            /Shanghai.*?New York[^$]*\$?\s*(\d[\d,]*)/i,
+            /SHA.*?NYC[^$]*\$?\s*(\d[\d,]*)/i,
+            /上海.*?纽约[^$]*\$?\s*(\d[\d,]*)/i
+        ]},
+        { code: 'WCI-RTM-SHA', label: wciCodeMap['WCI-RTM-SHA'], patterns: [
+            /Rotterdam.*?Shanghai[^$]*\$?\s*(\d[\d,]*)/i,
+            /RTM.*?SHA[^$]*\$?\s*(\d[\d,]*)/i,
+            /鹿特丹.*?上海[^$]*\$?\s*(\d[\d,]*)/i
+        ]},
+        { code: 'WCI-LAX-SHA', label: wciCodeMap['WCI-LAX-SHA'], patterns: [
+            /Los Angeles.*?Shanghai[^$]*\$?\s*(\d[\d,]*)/i,
+            /LAX.*?SHA[^$]*\$?\s*(\d[\d,]*)/i,
+            /洛杉矶.*?上海[^$]*\$?\s*(\d[\d,]*)/i
+        ]},
+        { code: 'WCI-NYC-RTM', label: wciCodeMap['WCI-NYC-RTM'], patterns: [
+            /New York.*?Rotterdam[^$]*\$?\s*(\d[\d,]*)/i,
+            /NYC.*?RTM[^$]*\$?\s*(\d[\d,]*)/i,
+            /纽约.*?鹿特丹[^$]*\$?\s*(\d[\d,]*)/i
+        ]},
+        { code: 'WCI-RTM-NYC', label: wciCodeMap['WCI-RTM-NYC'], patterns: [
+            /Rotterdam.*?New York[^$]*\$?\s*(\d[\d,]*)/i,
+            /RTM.*?NYC[^$]*\$?\s*(\d[\d,]*)/i,
+            /鹿特丹.*?纽约[^$]*\$?\s*(\d[\d,]*)/i
+        ]}
+    ];
+    
+    fallbackMap.forEach(({ code, label, patterns }) => {
+        if (!matchedCodes.has(code)) {
+            for (const pattern of patterns) {
+                pattern.lastIndex = 0;
+                let match;
+                while ((match = pattern.exec(normalized)) !== null) {
+                    const value = parseFloat(match[1].replace(/,/g, ''));
+                    if (isFinite(value) && value > 0) {
+                        result.routes.push({ code, route: label, rate: value });
+                        matchedCodes.add(code);
+                        if (getCachedDebugMode()) {
+                            console.log(`[WCI] Fallback匹配成功: ${code} (${label})`, { value, pattern: pattern.toString() });
+                        }
+                        break;
+                    }
+                }
+                if (matchedCodes.has(code)) break;
+            }
+        }
+    });
+}
+
+/**
+ * 解析WCI文本 - 匹配复合指数
+ * @param {string} normalized - 规范化后的文本
+ * @param {Object} result - 结果对象
+ */
+function parseWciComposite(normalized, result) {
+    if (result.worldIndex !== null) return;
+    
+    const compositeMatch = normalized.match(/World Container Index.*?(decreased|increased)\s+(\d+)%\s+to\s+\$([\d,]+)/i);
+    if (compositeMatch) {
+        const sign = compositeMatch[1].toLowerCase().includes('decrease') ? -1 : 1;
+        result.changePct = sign * parseFloat(compositeMatch[2]);
+        const compositeValue = parseFloat(compositeMatch[3].replace(/,/g, ''));
+        if (isFinite(compositeValue)) {
+            result.worldIndex = compositeValue;
+        }
+    }
+}
+
+/**
  * 解析WCI文本
  * @param {string} text - 文本内容
  * @returns {Object} WCI数据
@@ -800,57 +1524,44 @@ function parseWciText(text) {
     }
     const normalized = text.replace(/\r/g, ' ');
     const result = { timestamp: Date.now(), worldIndex: null, changePct: null, routes: [] };
+    
+    // 调试：检查文本内容（仅在调试模式下）
+    const DEBUG_MODE = getCachedDebugMode();
+    if (DEBUG_MODE) {
+        console.log('[WCI] 文本长度:', normalized.length);
+        console.log('[WCI] 文本前500字符:', normalized.substring(0, 500));
+        const numberMatches = normalized.match(/\$\s*[\d,]+/g);
+        if (numberMatches) {
+            console.log('[WCI] 找到的价格数据（前20个）:', numberMatches.slice(0, 20));
+        }
+        const cityMatches = normalized.match(/(Shanghai|Rotterdam|Los Angeles|New York|Genoa)/gi);
+        if (cityMatches) {
+            console.log('[WCI] 找到的城市名称（前20个）:', cityMatches.slice(0, 20));
+        }
+        const wciCodeMatches = normalized.match(/WCI-[A-Z-]+/gi);
+        if (wciCodeMatches) {
+            console.log('[WCI] 找到的 WCI 代码（前20个）:', wciCodeMatches.slice(0, 20));
+        }
+    }
+    
+    // 策略1和2：匹配代码和标签
     Object.entries(wciCodeMap).forEach(([code, label]) => {
-        const regex = new RegExp(`${code}\\s*(?:=|:)?\\s*\\$?([\\d,]+(?:\\.\\d+)?)`, 'i');
-        const match = normalized.match(regex);
-        if (match) {
-            const value = parseFloat(match[1].replace(/,/g, ''));
-            if (isFinite(value)) {
-                if (code === 'WCI-COMPOSITE') {
-                    result.worldIndex = value;
-                    const changeRegex = new RegExp(`${code}[^%]*(?:\\(|\\s)([+\\-]?\\d+(?:\\.\\d+)?)%`, 'i');
-                    const changeMatch = normalized.match(changeRegex);
-                    if (changeMatch) {
-                        result.changePct = parseFloat(changeMatch[1]);
-                    }
-                } else {
-                    result.routes.push({ code, route: label, rate: value });
-                }
-            }
+        let matched = parseWciByCode(normalized, code, label, result);
+        if (!matched) {
+            matched = parseWciByLabel(normalized, code, label, result);
+        }
+        if (!matched && getCachedDebugMode()) {
+            console.warn(`[WCI] 未匹配到: ${code} (${label})`);
         }
     });
-    if (!result.routes.length) {
-        const fallbackMap = [
-            { code: 'WCI-SHA-RTM', label: wciCodeMap['WCI-SHA-RTM'], regex: /Shanghai to Rotterdam[^$]*\$(\d[\d,]*)/i },
-            { code: 'WCI-SHA-GOA', label: wciCodeMap['WCI-SHA-GOA'], regex: /Shanghai to Genoa[^$]*\$(\d[\d,]*)/i },
-            { code: 'WCI-SHA-LAX', label: wciCodeMap['WCI-SHA-LAX'], regex: /to Los Angeles[^$]*\$(\d[\d,]*)/i },
-            { code: 'WCI-SHA-NYC', label: wciCodeMap['WCI-SHA-NYC'], regex: /Shanghai to New York[^$]*\$(\d[\d,]*)/i },
-            { code: 'WCI-RTM-SHA', label: wciCodeMap['WCI-RTM-SHA'], regex: /Rotterdam to Shanghai[^$]*\$(\d[\d,]*)/i },
-            { code: 'WCI-LAX-SHA', label: wciCodeMap['WCI-LAX-SHA'], regex: /Los Angeles to Shanghai[^$]*\$(\d[\d,]*)/i },
-            { code: 'WCI-NYC-RTM', label: wciCodeMap['WCI-NYC-RTM'], regex: /New York to Rotterdam[^$]*\$(\d[\d,]*)/i },
-            { code: 'WCI-RTM-NYC', label: wciCodeMap['WCI-RTM-NYC'], regex: /Rotterdam to New York[^$]*\$(\d[\d,]*)/i }
-        ];
-        fallbackMap.forEach(({ code, label, regex }) => {
-            const match = normalized.match(regex);
-            if (match) {
-                const value = parseFloat(match[1].replace(/,/g, ''));
-                if (isFinite(value)) {
-                    result.routes.push({ code, route: label, rate: value });
-                }
-            }
-        });
-    }
-    if (result.worldIndex === null) {
-        const compositeMatch = normalized.match(/World Container Index.*?(decreased|increased)\s+(\d+)%\s+to\s+\$([\d,]+)/i);
-        if (compositeMatch) {
-            const sign = compositeMatch[1].toLowerCase().includes('decrease') ? -1 : 1;
-            result.changePct = sign * parseFloat(compositeMatch[2]);
-            const compositeValue = parseFloat(compositeMatch[3].replace(/,/g, ''));
-            if (isFinite(compositeValue)) {
-                result.worldIndex = compositeValue;
-            }
-        }
-    }
+    
+    // 策略3：Fallback匹配
+    const matchedCodes = new Set(result.routes.map(r => r.code));
+    parseWciByFallback(normalized, matchedCodes, wciCodeMap, result);
+    
+    // 匹配复合指数
+    parseWciComposite(normalized, result);
+    
     return result;
 }
 
@@ -992,5 +1703,295 @@ function renderFbxStatus() {
     if (typeof fbxUpdatedEl !== 'undefined' && fbxUpdatedEl) {
         fbxUpdatedEl.textContent = `最近更新时间：${new Date(fbxData.timestamp).toLocaleString()}`;
     }
+}
+
+// ============================================
+// AI 提示词构建辅助函数
+// ============================================
+
+/**
+ * 准备分析数据（公共逻辑）
+ * @param {Array} analysisGroups - 分析组数据
+ * @param {Array} weekColumns - 周别列数据
+ * @param {Function} showError - 错误显示函数
+ * @param {Object} ErrorType - 错误类型枚举
+ * @returns {Object|null} 返回 { analysisData, weeklySummary, analysisWeekCodes, analysisWeekLabels } 或 null
+ */
+function prepareAnalysisData(analysisGroups, weekColumns, showError, ErrorType) {
+    if (!analysisGroups.length) {
+        showError(ErrorType.DATA_VALIDATION, 'NO_ROUTE_DATA');
+        return null;
+    }
+
+    const weekCodes = weekColumns.map(week => week.code);
+    if (!weekCodes.length) {
+        showError(ErrorType.DATA_VALIDATION, 'NO_WEEK_DATA');
+        return null;
+    }
+
+    const labelByCode = {};
+    weekColumns.forEach(week => {
+        const range = week.range ? ` (${week.range})` : '';
+        labelByCode[week.code] = `${week.label}${range}`;
+    });
+
+    const analysisWeekCodes = weekCodes.length > 1 ? weekCodes.slice(1) : weekCodes;
+    if (!analysisWeekCodes.length) {
+        showError(ErrorType.DATA_VALIDATION, 'NO_ANALYSIS_DATA');
+        return null;
+    }
+    const analysisWeekLabels = analysisWeekCodes.map(code => labelByCode[code] || code);
+
+    const analysisData = [];
+    const weeklySummary = {};
+    analysisWeekCodes.forEach(code => {
+        weeklySummary[code] = { capacity: 0, ships: 0 };
+    });
+
+    analysisGroups.forEach(item => {
+        const weekData = {};
+        analysisWeekCodes.forEach(weekCode => {
+            const ships = item.weeks[weekCode] || [];
+            const totalCapacity = ships.reduce((sum, ship) => sum + (ship.capacity || 0), 0);
+            const shipCount = ships.length;
+            weeklySummary[weekCode].capacity += totalCapacity;
+            weeklySummary[weekCode].ships += shipCount;
+            weekData[weekCode] = {
+                capacity: totalCapacity,
+                ships: shipCount
+            };
+        });
+        analysisData.push({
+            ...item, // 保留所有原始字段（port, routeLabel, area, subArea, country等）
+            weeks: weekData
+        });
+    });
+
+    if (!analysisData.length) {
+        showError(ErrorType.DATA_VALIDATION, 'NO_ROUTE_DATA');
+        return null;
+    }
+
+    return { analysisData, weeklySummary, analysisWeekCodes, analysisWeekLabels };
+}
+
+/**
+ * 构建数据概览部分
+ * @param {string} destinationSummary - 目的地摘要
+ * @param {number} routeCount - 航线数量
+ * @param {Array} analysisWeekCodes - 分析周别代码
+ * @param {Array} analysisWeekLabels - 分析周别标签
+ * @param {Object} weeklySummary - 周别汇总数据
+ * @returns {string} 提示词片段
+ */
+function buildDataOverview(destinationSummary, routeCount, analysisWeekCodes, analysisWeekLabels, weeklySummary) {
+    let prompt = `请分析以下船期数据，提供专业的趋势分析和预测：
+
+【数据概览】
+分析目的港路径：${destinationSummary}
+分析航线数量：${routeCount}条
+
+【当周+未来四周数据汇总】
+`;
+
+    analysisWeekCodes.forEach((weekCode, index) => {
+        const weekLabel = analysisWeekLabels[index];
+        const summary = weeklySummary[weekCode];
+        prompt += `周别 ${weekLabel} (${weekCode}): 总运力 ${summary.capacity.toLocaleString()} TEU, 总派船数 ${summary.ships}艘\n`;
+    });
+
+    return prompt;
+}
+
+/**
+ * 构建详细数据部分（001-04格式：只有port）
+ * @param {Array} analysisData - 分析数据
+ * @param {Array} analysisWeekCodes - 分析周别代码
+ * @param {Array} analysisWeekLabels - 分析周别标签
+ * @returns {string} 提示词片段
+ */
+function buildDetailedData001(analysisData, analysisWeekCodes, analysisWeekLabels) {
+    let prompt = `\n【详细数据】
+`;
+
+    analysisData.forEach(item => {
+        prompt += `\n港口：${item.port || '未分配'}，航线：${item.routeLabel || '未知航线'}\n`;
+        analysisWeekCodes.forEach((weekCode, index) => {
+            const weekLabel = analysisWeekLabels[index];
+            const weekData = item.weeks[weekCode] || {};
+            prompt += `  周别 ${weekLabel}: 运力 ${weekData.capacity.toLocaleString()} TEU, 派船 ${weekData.ships}艘\n`;
+        });
+    });
+
+    return prompt;
+}
+
+/**
+ * 构建详细数据部分（365-04格式：包含area/subArea/country/port）
+ * @param {Array} analysisData - 分析数据
+ * @param {Array} analysisWeekCodes - 分析周别代码
+ * @param {Array} analysisWeekLabels - 分析周别标签
+ * @returns {string} 提示词片段
+ */
+function buildDetailedData365(analysisData, analysisWeekCodes, analysisWeekLabels) {
+    let prompt = `\n【详细数据】
+`;
+
+    analysisData.forEach(item => {
+        prompt += `\n区域：${item.area} / ${item.subArea || '无子区域'} / ${item.country || '无国家信息'} / 港口：${item.port}，航线：${item.routeLabel || '未知航线'}\n`;
+        analysisWeekCodes.forEach((weekCode, index) => {
+            const weekLabel = analysisWeekLabels[index];
+            const weekData = item.weeks[weekCode] || {};
+            prompt += `  周别 ${weekLabel}: 运力 ${weekData.capacity.toLocaleString()} TEU, 派船 ${weekData.ships}艘\n`;
+        });
+    });
+
+    return prompt;
+}
+
+/**
+ * 构建其他影响因素部分
+ * @param {Array} bookingData - 订舱数据
+ * @returns {string} 提示词片段
+ */
+function buildBookingDataSection(bookingData) {
+    if (!bookingData || bookingData.length === 0) {
+        return '';
+    }
+
+    let prompt = `\n【其他影响因素（用户补充）】
+`;
+    bookingData.forEach((item, index) => {
+        const title = item.remark || `数据项 ${index + 1}`;
+        const description = item.description || '（用户未填写）';
+        prompt += `\n- ${title}：${description}\n`;
+    });
+
+    return prompt;
+}
+
+/**
+ * 构建市场周报部分
+ * @param {Array} marketReports - 市场报告数组
+ * @returns {string} 提示词片段
+ */
+function buildMarketReportsSection(marketReports) {
+    if (!marketReports || marketReports.length === 0) {
+        return '';
+    }
+
+    let prompt = `\n【市场周报 / 指数节选】
+（以下内容来自用户上传PDF，请优先参考）
+`;
+    marketReports.forEach((report, index) => {
+        const snippet = report.text.length > 1200 ? report.text.slice(0, 1200) + '…' : report.text;
+        prompt += `\n报告 ${index + 1}（${report.name}）：
+${snippet}
+`;
+    });
+
+    return prompt;
+}
+
+/**
+ * 构建燃油行情部分
+ * @param {Object} bunkerData - 燃油数据
+ * @returns {string} 提示词片段
+ */
+function buildBunkerDataSection(bunkerData) {
+    if (!bunkerData || (!bunkerData.vlsfo && !bunkerData.mgo && !bunkerData.ifo380)) {
+        return '';
+    }
+
+    let prompt = `\n【燃油行情（Ship & Bunker · 新加坡）】
+`;
+    if (bunkerData.vlsfo) {
+        const delta = typeof bunkerData.vlsfo.delta === 'number' ? (bunkerData.vlsfo.delta >= 0 ? `+${bunkerData.vlsfo.delta.toFixed(2)}` : bunkerData.vlsfo.delta.toFixed(2)) : 'N/A';
+        prompt += `- VLSFO 0.5%：${bunkerData.vlsfo.price?.toFixed(2) ?? 'N/A'} USD/t${delta !== 'N/A' ? `（WoW ${delta}）` : ''}\n`;
+    }
+    if (bunkerData.mgo) {
+        const delta = typeof bunkerData.mgo.delta === 'number' ? (bunkerData.mgo.delta >= 0 ? `+${bunkerData.mgo.delta.toFixed(2)}` : bunkerData.mgo.delta.toFixed(2)) : 'N/A';
+        prompt += `- MGO 0.1%：${bunkerData.mgo.price?.toFixed(2) ?? 'N/A'} USD/t${delta !== 'N/A' ? `（WoW ${delta}）` : ''}\n`;
+    }
+    if (bunkerData.ifo380) {
+        const delta = typeof bunkerData.ifo380.delta === 'number' ? (bunkerData.ifo380.delta >= 0 ? `+${bunkerData.ifo380.delta.toFixed(2)}` : bunkerData.ifo380.delta.toFixed(2)) : 'N/A';
+        prompt += `- IFO380：${bunkerData.ifo380.price?.toFixed(2) ?? 'N/A'} USD/t${delta !== 'N/A' ? `（WoW ${delta}）` : ''}\n`;
+    }
+    prompt += `（抓取时间：${new Date(bunkerData.timestamp).toLocaleString()}）\n`;
+
+    return prompt;
+}
+
+/**
+ * 构建CCFI数据部分
+ * @param {Object} ccfiData - CCFI数据
+ * @returns {string} 提示词片段
+ */
+function buildCcfiDataSection(ccfiData) {
+    if (!ccfiData || !ccfiData.routes?.length) {
+        return '';
+    }
+
+    let prompt = `\n【中国出口集装箱运价指数（CCFI）】
+`;
+    if (ccfiData.period) {
+        prompt += `- 本期 ${ccfiData.period.current || '—'}，对比上期 ${ccfiData.period.previous || '—'}\n`;
+    }
+    ccfiData.routes.forEach(route => {
+        const currentText = typeof route.current === 'number' ? route.current.toLocaleString() : '—';
+        const previousText = typeof route.previous === 'number' ? route.previous.toLocaleString() : '—';
+        prompt += `- ${route.label}：${currentText}（上期 ${previousText}，WoW ${formatPercent(route.wow)}）\n`;
+    });
+
+    return prompt;
+}
+
+/**
+ * 构建WCI数据部分
+ * @param {Object} wciData - WCI数据
+ * @returns {string} 提示词片段
+ */
+function buildWciDataSection(wciData) {
+    if (!wciData || (typeof wciData.worldIndex !== 'number' && !wciData.routes?.length)) {
+        return '';
+    }
+
+    let prompt = `\n【Drewry WCI 现货趋势】
+`;
+    if (typeof wciData.worldIndex === 'number') {
+        const changeValue = typeof wciData.worldIndexWoW === 'number'
+            ? `（WoW ${formatPercent(wciData.worldIndexWoW)}）`
+            : (typeof wciData.changePct === 'number' ? `（${wciData.changePct >= 0 ? '+' : ''}${wciData.changePct}% WoW）` : '');
+        prompt += `- 全球指数：${wciData.worldIndex.toLocaleString()} USD/FEU${changeValue}\n`;
+    }
+    if (wciData.routes?.length) {
+        wciData.routes.slice(0, 6).forEach(route => {
+            const codeLabel = route.code ? `${route.code} ` : '';
+            const wowText = typeof route.wow === 'number' ? `（WoW ${formatPercent(route.wow)}）` : '';
+            prompt += `- ${codeLabel}${route.route}：${route.rate.toLocaleString()} USD/FEU${wowText}\n`;
+        });
+    }
+
+    return prompt;
+}
+
+/**
+ * 构建FBX数据部分
+ * @param {Object} fbxData - FBX数据
+ * @returns {string} 提示词片段
+ */
+function buildFbxDataSection(fbxData) {
+    if (!fbxData || !fbxData.indices?.length) {
+        return '';
+    }
+
+    let prompt = `\n【Freightos FBX 航线指数】
+`;
+    fbxData.indices.forEach(item => {
+        const wowText = typeof item.wow === 'number' ? `（WoW ${formatPercent(item.wow)}）` : '';
+        prompt += `- ${item.label}：${item.rate.toLocaleString()} USD/FEU${wowText}\n`;
+    });
+
+    return prompt;
 }
 

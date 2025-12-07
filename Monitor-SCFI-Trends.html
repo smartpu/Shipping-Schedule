@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="vendor/monitor-styles.css">
     <script src="vendor/lib-loader.js"></script>
     <script src="vendor/common-utils.js"></script>
+    <script src="vendor/date-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
     <style>
       /* 页面特定样式（保留与公共样式不同的部分） */
 
@@ -120,6 +122,7 @@
     <div class="container">
       <div class="header">
         <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+        <a href="Monitor-SCFI-Trends-README.html" class="readme-btn">使用说明 →</a>
         <h1>Monitor · SCFI 历史趋势</h1>
         <p>读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势（默认最近3年）</p>
       </div>
@@ -198,6 +201,22 @@
     <script src="vendor/auth-gist.js"></script>
     <script>
 
+      // ==================== 调试模式 ====================
+      // 调试函数已统一到 vendor/debug-utils.js
+      // 使用：debugLog(), debugWarn(), debugError()
+
+      // ==================== 错误处理 ====================
+      
+      // ==================== 错误处理 ====================
+      // 错误处理已统一到 vendor/error-handler.js
+      // 使用：showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED')
+      // ErrorType 和 showError 函数已从 error-handler.js 加载
+      
+      // 添加自定义错误消息（如果需要）
+      if (typeof addErrorMessage !== 'undefined') {
+          addErrorMessage(ErrorType.DATA_VALIDATION, 'NO_DATA_IN_RANGE', '所选日期范围内没有数据');
+      }
+
       let scfiChart = null;
       let scfiData = [];
       let columnNames = [];
@@ -217,7 +236,7 @@
         if (!file) return;
 
         if (typeof XLSX === 'undefined') {
-          alert('XLSX 库尚未加载完成，请稍候几秒后重试。\n\n如果问题持续，请检查网络连接或刷新页面。');
+          showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
           return;
         }
 
@@ -226,7 +245,7 @@
           const data = await readExcelFile(file);
           
           if (!data.length) {
-            alert('Excel 文件为空或格式不正确');
+            showError(ErrorType.FILE_LOAD, 'FILE_EMPTY');
             return;
           }
 
@@ -245,8 +264,8 @@
             updateComparisonTable();
           }
         } catch (error) {
-          alert('读取文件失败：' + error.message);
-          console.error(error);
+          showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
+          debugError('读取文件失败:', error);
           statusInfo.textContent = '文件读取失败';
         }
       });
@@ -298,83 +317,8 @@
                 if (!row[0]) return; // 跳过没有日期的行
                 
                 const dateValue = row[0];
-                let date = null;
-                
-                // 处理日期（避免时区问题）
-                // 由于使用了raw: true，dateValue通常是数字（Excel日期序列号）
-                if (dateValue instanceof Date) {
-                  // 如果XLSX返回Date对象，使用UTC方法获取日期部分
-                  // 因为Excel日期没有时区概念，应该被视为本地日期
-                  const year = dateValue.getUTCFullYear();
-                  const month = dateValue.getUTCMonth();
-                  const day = dateValue.getUTCDate();
-                  date = new Date(year, month, day);
-                } else if (typeof dateValue === 'number') {
-                  // Excel日期序列号处理（这是最常见的情况）
-                  // Excel日期序列号：从1900-01-01开始（序列号1）
-                  // Excel错误地认为1900是闰年，所以实际上：
-                  // - 序列号1 = 1900-01-01
-                  // - 序列号60 = 1900-02-29（这个日期不存在，但Excel认为存在）
-                  // - 序列号61 = 1900-03-01
-                  // 所以对于序列号>=61的日期，需要减1天
-                  
-                  // 优先使用XLSX的parse_date_code方法（最准确）
-                  if (typeof XLSX !== 'undefined' && XLSX.SSF && XLSX.SSF.parse_date_code) {
-                    try {
-                      const parsed = XLSX.SSF.parse_date_code(dateValue);
-                      if (parsed && parsed.y && parsed.m && parsed.d) {
-                        // XLSX的parse_date_code返回的日期是UTC时间
-                        // 我们需要将其转换为本地日期
-                        // 直接使用年月日创建本地日期对象，避免时区转换
-                        date = new Date(parsed.y, parsed.m - 1, parsed.d);
-                        // 验证日期是否正确
-                        if (isNaN(date.getTime())) {
-                          date = null;
-                        } else {
-                          // 日期创建成功，跳过备用方法
-                          // 不需要做任何处理，直接使用
-                        }
-                      }
-                    } catch (error) {
-                      console.warn('XLSX日期解析失败，使用备用方法', error);
-                    }
-                  }
-                  
-                  // 如果XLSX解析失败或不可用，使用备用方法
-                  if (!date) {
-                    // Excel的基准日期是1899-12-30（序列号0），但序列号1对应1900-01-01
-                    // 所以我们需要从1899-12-30开始，加上dateValue天
-                    // 但要注意Excel的1900年闰年bug
-                    
-                    // 使用UTC时间创建基准日期，避免时区问题
-                    const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // 1899年12月30日 00:00:00 UTC
-                    
-                    // 计算目标日期（毫秒数）
-                    // 序列号1应该对应1900-01-01，所以是1899-12-30 + 2天
-                    // 但Excel认为1900是闰年，所以序列号60是1900-02-29（实际不存在）
-                    // 对于序列号>=61的日期，需要减1天
-                    let daysToAdd = dateValue;
-                    if (dateValue >= 61) {
-                      daysToAdd = dateValue - 1; // 修正Excel的1900年闰年bug
-                    }
-                    
-                    const targetTime = excelEpoch.getTime() + daysToAdd * 24 * 60 * 60 * 1000;
-                    const tempDate = new Date(targetTime);
-                    
-                    // 使用UTC方法获取日期部分，然后创建本地日期对象
-                    const year = tempDate.getUTCFullYear();
-                    const month = tempDate.getUTCMonth();
-                    const day = tempDate.getUTCDate();
-                    date = new Date(year, month, day);
-                  }
-                } else if (typeof dateValue === 'string') {
-                  // 解析字符串日期，使用本地时区
-                  const tempDate = new Date(dateValue);
-                  if (!isNaN(tempDate.getTime())) {
-                    date = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
-                  }
-                }
-
+                // 使用统一的日期解析函数
+                const date = parseDateValue(dateValue);
                 if (!date || isNaN(date.getTime())) return;
 
                 const record = {
@@ -460,7 +404,7 @@
         });
 
         if (!filteredData.length) {
-          alert('所选日期范围内没有数据');
+          showError(ErrorType.DATA_VALIDATION, 'NO_DATA_IN_RANGE');
           return;
         }
 

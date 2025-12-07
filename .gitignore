@@ -20,3 +20,6 @@ Thumbs.db
 # 系统文件
 desktop.ini
 
+# Python 脚本目录
+python/
+

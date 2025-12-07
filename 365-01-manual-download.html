@@ -83,6 +83,7 @@
     <div class="container">
         <div class="header">
             <a href="index.html?tab=tools365" class="back-home-btn">← 返回首页</a>
+            <a href="365-01-manual-download-README.html" class="readme-btn">使用说明 →</a>
             <h1>明日数航 船期网页手动下载工具</h1>
             <p>共46个网页需要保存</p>
         </div>
@@ -204,7 +205,7 @@
                 urlItem.innerHTML = `
                     <div class="url-number">${index + 1}</div>
                     <div class="url-content">
-                        <a href="${url}" target="_blank" class="url-link">${url}</a>
+                        <div class="url-link" style="color: #6c757d; word-break: break-all;">${url}</div>
                         <span class="status-badge ${isSaved ? 'status-saved' : 'status-pending'}">
                             ${isSaved ? '✓ 已保存' : '待处理'}
                         </span>

@@ -57,9 +57,9 @@
             <h2>快速开始</h2>
             <h3>前置准备</h3>
             <ol>
-                <li><strong>Excel 数据</strong>：<code>schedule</code> 工作表，列格式详见"数据格式说明"</li>
-                <li><strong>市场周报（可选）</strong>：如 Alphaliner Newsletter、Linerlytica Weekly 等 PDF</li>
-                <li><strong>AI API 密钥（可选）</strong>：DeepSeek / KIMI (Moonshot) / 通义千问 (Qwen)</li>
+                <li><strong>上传 Excel 数据源</strong>：文件需包含 <strong>schedule</strong> 工作表，并具备港口、航线、周别、运力、船名航次等字段。</li>
+                <li><strong>上传市场周报</strong>：支持一次选择多份 PDF（如 Alphaliner Newsletter、Linerlytica Weekly 等），便于 AI 参考最新情报。</li>
+                <li><strong>准备 AI 密钥</strong>：工具已集成测试 API Key，可直接使用。但<strong>强烈建议自行申请 API Key 自用</strong>（测试 API Key 随时可能过期），用户输入的 API Key 优先级高于配置文件中的测试 API Key。调用费用及合规责任由使用方承担。详细说明见下方"Module 02 · AI 趋势分析"部分。</li>
             </ol>
 
             <h3>基本流程</h3>
@@ -73,6 +73,41 @@
                 </li>
                 <li>当 Excel 解析成功后，港口筛选、表格、图表和 AI 模块自动显示</li>
                 <li>根据需求完成筛选、AI 分析，必要时点击"导出整页 PDF"</li>
+            </ol>
+
+            <h3>Module 01 · 航线运力分析</h3>
+            <ol>
+                <li>使用港口多选筛选与航线搜索锁定目标市场。</li>
+                <li>"全部 / 运力 / 派船"视图用于聚焦不同指标；表格支持即输即筛。</li>
+                <li>选择目的港后自动绘制堆积柱（运力）+ 折线（派船）趋势，便于观察当周+未来四周变化。</li>
+            </ol>
+
+            <h3>Module 02 · AI 趋势分析</h3>
+            <ol>
+                <li>填写"其他影响因素"表格、刷新燃油/指数数据，作为 AI 提示词的优先依据。</li>
+                <li>分别配置 DeepSeek / KIMI / 通义千问 API 后，可对比三种模型的洞察结果，支持导出 PDF 汇报。</li>
+                <li><strong>模型选择建议</strong>：
+                    <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
+                        <li><strong>DeepSeek</strong>：推荐 <code>deepseek-chat</code>（基础）或 <code>deepseek-v3</code>（高性能）
+                            <br>申请 API Key：<a href="https://platform.deepseek.com" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.deepseek.com</a>
+                        </li>
+                        <li><strong>KIMI</strong>：推荐 <code>moonshot-v1-32k</code>（平衡），<code>moonshot-v1-k2</code>（K2新模型，需确认API可用）
+                            <br>申请 API Key：<a href="https://platform.moonshot.cn/console/api-keys" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.moonshot.cn/console/api-keys</a>
+                        </li>
+                        <li><strong>通义千问</strong>：推荐 <code>qwen-max</code>（最佳性能），<code>qwen-turbo</code>（经济型）
+                            <br>申请 API Key：<a href="https://dashscope.console.aliyun.com/apiKey" target="_blank" style="color: #667eea; text-decoration: underline;">https://dashscope.console.aliyun.com/apiKey</a>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>API Key 使用说明</strong>：
+                    <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
+                        <li>工具已集成测试 API Key，可直接使用，无需手动输入</li>
+                        <li><strong>强烈建议自行申请 API Key</strong>：测试 API Key 随时可能过期无法使用，且可能存在配额限制</li>
+                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的测试 API Key</li>
+                        <li>配置会自动保存到浏览器本地存储，下次打开会自动加载</li>
+                    </ul>
+                </li>
+                <li><strong>收费说明</strong>：各模型按调用次数/Token 计费，具体价格请参考各平台官网。建议先使用经济型模型测试，再根据需求选择高性能模型。</li>
             </ol>
 
             <hr>
@@ -183,9 +218,11 @@
 
             <h3>AI 分析失败？</h3>
             <ul>
-                <li>检查 API Key、URL、模型 ID</li>
+                <li>如果使用的是测试 API Key，可能已过期或配额不足，建议自行申请 API Key</li>
+                <li>如果已自行配置 API Key，请检查 API Key、URL 和模型 ID 是否正确</li>
                 <li>确认网络可访问 DeepSeek / KIMI / 通义千问</li>
                 <li>查看提示信息（如配额不足、接口错误）</li>
+                <li>查看浏览器控制台是否有错误信息</li>
             </ul>
         </div>
     </div>

@@ -7,26 +7,24 @@
     'use strict';
 
     /**
-     * 加载XLSX库
-     * 使用 script 标签直接加载，避免浏览器的跟踪防护阻止
+     * 通用库加载函数
+     * @param {string} globalName - 全局变量名（如 'XLSX' 或 'Chart'）
+     * @param {string[]} remoteSources - CDN源数组
+     * @param {string} libraryName - 库名称（用于错误消息）
+     * @returns {Promise<boolean>} 加载是否成功
      */
-    function ensureXlsx() {
-        if (typeof XLSX !== 'undefined') {
+    function loadLibrary(globalName, remoteSources, libraryName) {
+        // 如果库已加载，直接返回成功
+        if (typeof window[globalName] !== 'undefined') {
             return Promise.resolve(true);
         }
-
-        const remoteSources = [
-            'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-            'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
-            'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
-        ];
 
         return new Promise((resolve) => {
             let currentIndex = 0;
 
             function tryLoadNext() {
                 if (currentIndex >= remoteSources.length) {
-                    console.error('XLSX 无法加载，请检查网络或手动刷新后重试');
+                    console.error(`${libraryName} 无法加载，请检查网络或手动刷新后重试`);
                     resolve(false);
                     return;
                 }
@@ -37,18 +35,18 @@
                 script.async = true;
                 
                 script.onload = () => {
-                    if (typeof XLSX !== 'undefined') {
-                        console.log('XLSX loaded from', url);
+                    if (typeof window[globalName] !== 'undefined') {
+                        console.log(`${libraryName} loaded from`, url);
                         resolve(true);
                     } else {
-                        // 加载了但XLSX未定义，尝试下一个
+                        // 加载了但库未定义，尝试下一个
                         currentIndex++;
                         tryLoadNext();
                     }
                 };
                 
                 script.onerror = () => {
-                    console.warn('XLSX load failed from', url, 'trying next...');
+                    console.warn(`${libraryName} load failed from`, url, 'trying next...');
                     currentIndex++;
                     tryLoadNext();
                 };
@@ -61,74 +59,33 @@
     }
 
     /**
+     * 加载XLSX库
+     * 使用 script 标签直接加载，避免浏览器的跟踪防护阻止
+     */
+    function ensureXlsx() {
+        const remoteSources = [
+            'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+            'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+        ];
+        return loadLibrary('XLSX', remoteSources, 'XLSX');
+    }
+
+    /**
      * 加载Chart.js库
      * 使用 script 标签直接加载，避免浏览器的跟踪防护阻止
      */
     function ensureChartJs() {
-        if (typeof Chart !== 'undefined') {
-            return Promise.resolve(true);
-        }
-
         const remoteSources = [
             'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
             'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js',
             'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
         ];
-
-        return new Promise((resolve) => {
-            let currentIndex = 0;
-
-            function tryLoadNext() {
-                if (currentIndex >= remoteSources.length) {
-                    console.error('Chart.js 无法加载，请检查网络或手动刷新后重试');
-                    resolve(false);
-                    return;
-                }
-
-                const url = remoteSources[currentIndex];
-                const script = document.createElement('script');
-                script.src = url;
-                script.async = true;
-                
-                script.onload = () => {
-                    if (typeof Chart !== 'undefined') {
-                        console.log('Chart.js loaded from', url);
-                        resolve(true);
-                    } else {
-                        // 加载了但Chart未定义，尝试下一个
-                        currentIndex++;
-                        tryLoadNext();
-                    }
-                };
-                
-                script.onerror = () => {
-                    console.warn('Chart.js load failed from', url, 'trying next...');
-                    currentIndex++;
-                    tryLoadNext();
-                };
-                
-                document.head.appendChild(script);
-            }
-
-            tryLoadNext();
-        });
+        return loadLibrary('Chart', remoteSources, 'Chart.js');
     }
 
     // 导出到全局
     window.ensureXlsx = ensureXlsx;
     window.ensureChartJs = ensureChartJs;
-
-    // 自动初始化（如果页面需要）
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            // 可以根据页面需要自动加载
-            // ensureXlsx();
-            // ensureChartJs();
-        });
-    } else {
-        // DOM已经加载完成
-        // ensureXlsx();
-        // ensureChartJs();
-    }
 })();
 

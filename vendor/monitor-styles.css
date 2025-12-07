@@ -1,10 +1,11 @@
 /**
  * 监控工具样式文件
- * 用于 Monitor-Rate-Trends.html 和 Monitor-SCFI-Trends.html
+ * 用于 Monitor-Rate-Trends.html、Monitor-SCFI-Trends.html 和 Monitor-Sailing-Schedule.html
  * 
  * 包含：
  * - 监控工具组件样式
  * - 上传区域、状态卡片、筛选区域等组件
+ * - 筛选器组件样式（用于船期表）
  */
 
 /* ============================================
@@ -42,6 +43,29 @@
 .upload-card:hover {
     background: rgba(102, 126, 234, 0.2);
     border-color: rgba(102, 126, 234, 0.5);
+}
+
+.upload-card input[type="file"] {
+    display: none;
+}
+
+.upload-card .file-icon {
+    font-size: 24px;
+}
+
+.upload-card .file-info {
+    flex: 1;
+}
+
+.upload-card .file-name {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.upload-card .file-status {
+    font-size: 12px;
+    color: #6c757d;
 }
 
 /* 状态卡片 */
@@ -265,7 +289,7 @@ select[multiple] {
 
 canvas {
     width: 100%;
-    max-height: 420px;
+    height: 100%;
 }
 
 /* ============================================
@@ -298,6 +322,156 @@ canvas {
 /* ============================================
    响应式样式
    ============================================ */
+
+/* ============================================
+   筛选器组件样式（用于 Monitor-Sailing-Schedule.html）
+   ============================================ */
+
+.filters-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 960px) {
+    .filters-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+}
+
+.filter-search {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    font-size: 13px;
+    background: white;
+    margin-bottom: 8px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-search:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-group select[multiple] {
+    min-height: 200px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    font-size: 13px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-group select[multiple]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-group select[multiple] option {
+    padding: 4px 8px;
+}
+
+.filter-group select[multiple] option.hidden {
+    display: none;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.filter-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+/* 模式切换按钮 */
+.mode-toggle {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.mode-btn {
+    padding: 8px 16px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.mode-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+.mode-btn:hover:not(.active) {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+/* 头部控制区域 */
+.header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+/* 空消息样式 */
+.empty-message {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.empty-message.hidden {
+    display: none;
+}
+
+.empty-chart-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-size: 14px;
+}
 
 @media (max-width: 640px) {
     /* .content 的响应式样式已在 common-styles.css 中处理，此处仅处理 panel */

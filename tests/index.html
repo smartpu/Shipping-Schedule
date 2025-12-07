@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单元测试 · Shipping Tools</title>
+    <link rel="stylesheet" href="../vendor/common-styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="80" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+            margin: 0;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .test-container {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f0f0f0;
+            transition: all 0.3s ease;
+        }
+
+        .test-container:hover {
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .test-container h2 {
+            color: #1f2d3d;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .test-container h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .test-summary {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-left: 4px solid #667eea;
+            padding: 24px;
+            margin: 24px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .test-summary.passed {
+            border-left-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+        }
+
+        .test-summary.failed {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.05) 100%);
+        }
+
+        .test-summary h3 {
+            color: #1f2d3d;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .test-summary p {
+            color: #495057;
+            font-size: 15px;
+            line-height: 1.8;
+            margin: 8px 0;
+        }
+
+        .test-summary strong {
+            font-size: 16px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        }
+
+        button.secondary:hover {
+            background: #f0f0ff;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        }
+
+        #console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+        }
+
+        #console::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #console::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+
+        #console::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        #console::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+
+        .log-success {
+            color: #10b981;
+            padding: 4px 0;
+        }
+
+        .log-error {
+            color: #ef4444;
+            padding: 4px 0;
+        }
+
+        .page-footer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .page-footer h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .page-footer p {
+            margin: 6px 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 24px 20px;
+            }
+
+            .header {
+                padding: 40px 20px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .test-container {
+                padding: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            #console {
+                max-height: 400px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>单元测试</h1>
+            <p>Shipping Tools · 代码质量保障</p>
+        </div>
+
+        <div class="content">
+            <div class="test-container">
+                <h2>测试控制</h2>
+                <div class="button-group">
+                    <button onclick="runAllTests()">▶ 运行所有测试</button>
+                    <button class="secondary" onclick="clearConsole()">🗑️ 清空控制台</button>
+                </div>
+            </div>
+
+            <div id="testSummary" class="test-summary" style="display: none;">
+                <h3>测试结果摘要</h3>
+                <div id="summaryContent"></div>
+            </div>
+
+            <div class="test-container">
+                <h2>控制台输出</h2>
+                <div id="console"></div>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <h2>单元测试说明</h2>
+            <p>本测试套件用于验证 Shipping Tools 项目的核心功能</p>
+            <p>测试覆盖：错误处理模块、公共工具函数、解析工具函数</p>
+        </div>
+    </div>
+
+    <!-- 加载依赖 -->
+    <script src="../vendor/error-handler.js"></script>
+    <script src="../vendor/common-utils.js"></script>
+    <script src="../vendor/parser-utils.js"></script>
+    <script src="../vendor/date-utils.js"></script>
+    <script src="../vendor/lib-loader.js"></script>
+    <script src="../vendor/ai-utils.js"></script>
+    <script src="../vendor/pdf-utils.js"></script>
+    <script src="../vendor/market-analysis-utils.js"></script>
+    
+    <!-- 加载测试工具和测试文件 -->
+    <script src="test-utils.js"></script>
+    <script src="test-error-handler.js"></script>
+    <script src="test-common-utils.js"></script>
+    <script src="test-parser-utils.js"></script>
+    <script src="test-date-utils.js"></script>
+    <script src="test-lib-loader.js"></script>
+    <script src="test-ai-utils.js"></script>
+    <script src="test-pdf-utils.js"></script>
+    <script src="test-market-analysis-utils.js"></script>
+
+    <script>
+        // 重写 console.log 和 console.error 以显示在页面上
+        const consoleDiv = document.getElementById('console');
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        function addToConsole(message, type = 'log') {
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'log-error' : 'log-success';
+            div.textContent = message;
+            consoleDiv.appendChild(div);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        function clearConsole() {
+            consoleDiv.innerHTML = '';
+        }
+
+        function runAllTests() {
+            clearConsole();
+            console.log('开始运行所有测试...\n');
+
+            const testSuites = {
+                '错误处理模块': () => {
+                    if (typeof testErrorHandler === 'function') {
+                        testErrorHandler();
+                    } else {
+                        console.error('testErrorHandler 函数未找到');
+                    }
+                },
+                '公共工具函数': () => {
+                    if (typeof testCommonUtils === 'function') {
+                        testCommonUtils();
+                    } else {
+                        console.error('testCommonUtils 函数未找到');
+                    }
+                },
+                '解析工具函数': () => {
+                    if (typeof testParserUtils === 'function') {
+                        testParserUtils();
+                    } else {
+                        console.error('testParserUtils 函数未找到');
+                    }
+                },
+                '日期工具函数': () => {
+                    if (typeof testDateUtils === 'function') {
+                        testDateUtils();
+                    } else {
+                        console.error('testDateUtils 函数未找到');
+                    }
+                },
+                '库加载器': () => {
+                    if (typeof testLibLoader === 'function') {
+                        testLibLoader();
+                    } else {
+                        console.error('testLibLoader 函数未找到');
+                    }
+                },
+                'AI 工具函数': () => {
+                    if (typeof testAiUtils === 'function') {
+                        testAiUtils();
+                    } else {
+                        console.error('testAiUtils 函数未找到');
+                    }
+                },
+                'PDF 工具函数': () => {
+                    if (typeof testPdfUtils === 'function') {
+                        testPdfUtils();
+                    } else {
+                        console.error('testPdfUtils 函数未找到');
+                    }
+                },
+                '市场分析工具函数': () => {
+                    if (typeof testMarketAnalysisUtils === 'function') {
+                        testMarketAnalysisUtils();
+                    } else {
+                        console.error('testMarketAnalysisUtils 函数未找到');
+                    }
+                }
+            };
+
+            const results = runTests(testSuites);
+
+            // 显示测试摘要
+            const summaryDiv = document.getElementById('testSummary');
+            const summaryContent = document.getElementById('summaryContent');
+            summaryDiv.style.display = 'block';
+            
+            if (results.failed === 0) {
+                summaryDiv.className = 'test-summary passed';
+                summaryContent.innerHTML = `
+                    <p><strong>✅ 所有测试通过！</strong></p>
+                    <p>总计: ${results.total} | 通过: ${results.passed} | 失败: ${results.failed}</p>
+                `;
+            } else {
+                summaryDiv.className = 'test-summary failed';
+                summaryContent.innerHTML = `
+                    <p><strong>❌ 部分测试失败</strong></p>
+                    <p>总计: ${results.total} | 通过: ${results.passed} | 失败: ${results.failed}</p>
+                `;
+            }
+        }
+
+        // 页面加载时显示提示
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('测试环境已就绪。点击"运行所有测试"按钮开始测试。\n');
+        });
+    </script>
+</body>
+</html>
+

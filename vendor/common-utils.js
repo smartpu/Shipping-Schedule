@@ -8,6 +8,33 @@
  * - 其他通用工具函数
  */
 
+// 提供 debug 函数的降级实现（如果 debug-utils.js 尚未加载）
+(function() {
+    if (typeof window !== 'undefined') {
+        if (typeof window.debugLog !== 'function') {
+            window.debugLog = function(...args) { 
+                if (window.getCachedDebugMode && window.getCachedDebugMode()) {
+                    console.log('[DEBUG]', ...args); 
+                }
+            };
+        }
+        if (typeof window.debugWarn !== 'function') {
+            window.debugWarn = function(...args) { 
+                if (window.getCachedDebugMode && window.getCachedDebugMode()) {
+                    console.warn('[DEBUG]', ...args); 
+                }
+            };
+        }
+        if (typeof window.debugError !== 'function') {
+            window.debugError = function(...args) { 
+                if (window.getCachedDebugMode && window.getCachedDebugMode()) {
+                    console.error('[DEBUG]', ...args); 
+                }
+            };
+        }
+    }
+})();
+
 // 自动加载XLSX和Chart.js（立即执行，不等待DOM）
 (function() {
     function loadLibraries() {
@@ -41,24 +68,61 @@ function getSelectedValues(selectEl) {
 }
 
 /**
- * 设置多选下拉框的点击切换功能
+ * 设置多选下拉框（使用浏览器默认行为，需要 Control 键才能多选）
  * @param {HTMLSelectElement} selectEl - 多选下拉框元素
  */
 function setupMultiSelect(selectEl) {
     if (!selectEl || !selectEl.multiple) return;
-    selectEl.addEventListener('mousedown', (event) => {
-        const option = event.target;
-        if (!option || option.tagName !== 'OPTION') return;
-        event.preventDefault();
-        if (option.value === '') {
-            Array.from(selectEl.options).forEach(opt => {
-                opt.selected = false;
-            });
-        } else {
-            option.selected = !option.selected;
-        }
-        selectEl.dispatchEvent(new Event('change'));
+    // 不阻止默认行为，让浏览器使用标准的 Control 键多选行为
+    // 只需要确保 change 事件能正常触发即可
+}
+
+/**
+ * 选中所有可用选项（跳过占位空值）
+ * @param {HTMLSelectElement} selectEl
+ */
+function selectAllOptions(selectEl) {
+    if (!selectEl || !selectEl.options) return;
+    Array.from(selectEl.options).forEach(opt => {
+        if (opt.value !== '') opt.selected = true;
     });
+    selectEl.dispatchEvent(new Event('change'));
+}
+
+/**
+ * 清除所有选中项
+ * @param {HTMLSelectElement} selectEl
+ */
+function clearSelectOptions(selectEl) {
+    if (!selectEl || !selectEl.options) return;
+    Array.from(selectEl.options).forEach(opt => { opt.selected = false; });
+    selectEl.dispatchEvent(new Event('change'));
+}
+
+/**
+ * 根据自定义顺序排序（未命中顺序的放在末尾，按字母排序）
+ * @param {string[]} list
+ * @param {string[]} order
+ * @returns {string[]}
+ */
+function sortByCustomOrder(list, order) {
+    if (!Array.isArray(list) || !Array.isArray(order)) return list || [];
+    const orderMap = new Map(order.map((v, i) => [v, i]));
+    return [...list].sort((a, b) => {
+        const ai = orderMap.has(a) ? orderMap.get(a) : Infinity;
+        const bi = orderMap.has(b) ? orderMap.get(b) : Infinity;
+        if (ai !== bi) return ai - bi;
+        return a.localeCompare(b, 'zh-Hans-CN');
+    });
+}
+
+// 导出到全局
+if (typeof window !== 'undefined') {
+    window.getSelectedValues = window.getSelectedValues || getSelectedValues;
+    window.setupMultiSelect = window.setupMultiSelect || setupMultiSelect;
+    window.selectAllOptions = window.selectAllOptions || selectAllOptions;
+    window.clearSelectOptions = window.clearSelectOptions || clearSelectOptions;
+    window.sortByCustomOrder = window.sortByCustomOrder || sortByCustomOrder;
 }
 
 /**

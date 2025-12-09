@@ -169,6 +169,114 @@
         display: none;
       }
 
+      /* 月度汇总表格样式 */
+      .monthly-summary-container {
+        background: white;
+        border-radius: 10px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+      }
+
+      .monthly-summary-container.hidden {
+        display: none;
+      }
+
+      .monthly-summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        min-width: 800px;
+        table-layout: fixed;
+      }
+
+      .monthly-summary-table th,
+      .monthly-summary-table td {
+        padding: 10px 12px;
+        border: 1px solid #e9ecef;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .monthly-summary-table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        text-align: center;
+      }
+
+      .monthly-summary-table th:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 11;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        text-align: center;
+      }
+
+      .monthly-summary-table td:first-child {
+        position: sticky;
+        left: 0;
+        background: #f8f9fa;
+        font-weight: 500;
+        z-index: 1;
+        text-align: center;
+      }
+
+      .monthly-summary-table td:not(:first-child) {
+        text-align: center;
+      }
+
+      .monthly-summary-table .vessel-info {
+        text-align: center;
+      }
+
+      .monthly-summary-table tfoot {
+        background: #f0f0f0;
+        font-weight: 600;
+      }
+
+      .monthly-summary-table tfoot td {
+        background: #f0f0f0;
+        border-top: 2px solid #667eea;
+        text-align: center;
+      }
+
+      .monthly-summary-table tfoot td:first-child {
+        background: #e9ecef;
+        border-top: 2px solid #667eea;
+        text-align: center;
+      }
+
+      .monthly-summary-table tbody tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+
+      .monthly-summary-table tbody tr:hover {
+        background: rgba(102, 126, 234, 0.08);
+      }
+
+      .monthly-summary-table tbody tr:hover td:first-child {
+        background: rgba(102, 126, 234, 0.12);
+      }
+
+      .monthly-summary-table .vessel-info {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #495057;
+      }
+
+      .monthly-summary-table .vessel-info-item {
+        margin-bottom: 4px;
+        padding: 2px 0;
+      }
+
+      .monthly-summary-table .vessel-info-item:last-child {
+        margin-bottom: 0;
+      }
+
       /* 响应式设计：平板和窄屏 */
       @media (max-width: 1400px) {
         .calendar-header {
@@ -379,6 +487,17 @@
             <div class="calendar-header-cell">周六</div>
             </div>
             <div id="calendarBody"></div>
+          </div>
+        </section>
+
+        <!-- 月度汇总表格 -->
+        <section class="panel">
+          <div class="empty-message" id="monthlySummaryEmptyMessage" style="display: none;">
+            请选择筛选条件以显示月度汇总
+          </div>
+          <div id="monthlySummaryContainer" class="monthly-summary-container hidden">
+            <h3 style="margin: 0 0 16px 0; color: #495057; font-size: 18px;">月度航线靠泊汇总</h3>
+            <div id="monthlySummaryTable" class="monthly-summary-table"></div>
           </div>
         </section>
 
@@ -960,6 +1079,9 @@
         dom.calendarBody = document.getElementById('calendarBody');
         dom.emptyMessage = document.getElementById('emptyMessage');
         dom.exportPdfBtn = document.getElementById('exportPdfBtn');
+        dom.monthlySummaryContainer = document.getElementById('monthlySummaryContainer');
+        dom.monthlySummaryTable = document.getElementById('monthlySummaryTable');
+        dom.monthlySummaryEmptyMessage = document.getElementById('monthlySummaryEmptyMessage');
         dom.aiAnalysisSection = document.getElementById('aiAnalysisSection');
         dom.emptyAiMessage = document.getElementById('emptyAiMessage');
         dom.aiConfigSection = document.getElementById('aiConfigSection');
@@ -1022,6 +1144,7 @@
               btn.classList.add('active');
               updateCarrierFilter();
               renderCalendar();
+              renderMonthlySummary(); // 渲染月度汇总表格
               updateAiModuleVisibility(); // 更新 AI 模块可见性
             }
           };
@@ -1190,6 +1313,7 @@
           updateCarrierFilter();
           updatePortFilter();
           renderCalendar();
+          renderMonthlySummary(); // 渲染月度汇总表格
           updateAiModuleVisibility(); // 更新 AI 模块可见性
         } catch (error) {
           debugError('解析文件失败:', error);
@@ -1929,6 +2053,7 @@
         updatePortFilter();
         
         renderCalendar();
+        renderMonthlySummary(); // 渲染月度汇总表格
         updateAiModuleVisibility(); // 更新 AI 模块可见性
       }
 
@@ -2077,8 +2202,10 @@
             }
             dayCard.appendChild(dateLabel);
             
-            // 去重处理
-            let uniqueData = deduplicateItems(dayData);
+            // 去重处理（统一使用 vendor 中的标准去重）
+            let uniqueData = typeof deduplicateSailingItems === 'function'
+              ? deduplicateSailingItems(dayData)
+              : deduplicateItems(dayData);
             
             // 合并同船名航次船型的港口
             const mergeByVessel = (items) => {
@@ -2266,8 +2393,10 @@
             }
             dayCell.appendChild(dateLabel);
 
-            // 去重处理
-            let uniqueData = deduplicateItems(dayData);
+            // 去重处理（统一使用 vendor 中的标准去重）
+            let uniqueData = typeof deduplicateSailingItems === 'function'
+              ? deduplicateSailingItems(dayData)
+              : deduplicateItems(dayData);
             
             // 合并同一天、同船名、同航次、同船型的不同港口
             const mergeByVessel = (items) => {
@@ -2479,6 +2608,277 @@
       }
 
       /**
+       * 渲染月度汇总表格
+       * 显示各航线按月汇总的靠泊情况
+       */
+      function renderMonthlySummary() {
+        const hasFilters = state.selectedRegions.length > 0 || 
+                          state.selectedCarriers.length > 0 || 
+                          state.selectedPorts.length > 0;
+
+        if (!hasFilters) {
+          dom.monthlySummaryContainer.classList.add('hidden');
+          dom.monthlySummaryEmptyMessage.style.display = 'block';
+          return;
+        }
+
+        // 获取当前数据
+        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
+        if (!currentData || currentData.length === 0) {
+          dom.monthlySummaryContainer.classList.add('hidden');
+          dom.monthlySummaryEmptyMessage.style.display = 'block';
+          dom.monthlySummaryEmptyMessage.textContent = `请先加载 ${state.currentMode} 数据文件`;
+          return;
+        }
+
+        // 筛选数据（使用与日历相同的筛选逻辑）
+        const filteredData = currentData.filter(item => {
+          // 区域筛选
+          if (state.selectedRegions.length > 0) {
+            const itemRegion = getPortRegion(item.port);
+            if (!itemRegion || !state.selectedRegions.includes(itemRegion)) {
+              return false;
+            }
+          }
+
+          // 船公司筛选
+          if (state.selectedCarriers.length > 0) {
+            if (!state.selectedCarriers.includes(item.carrier)) {
+              return false;
+            }
+          }
+
+          // 港口筛选
+          if (state.selectedPorts.length > 0) {
+            if (!state.selectedPorts.includes(item.port)) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        if (filteredData.length === 0) {
+          dom.monthlySummaryContainer.classList.add('hidden');
+          dom.monthlySummaryEmptyMessage.style.display = 'block';
+          return;
+        }
+
+        dom.monthlySummaryContainer.classList.remove('hidden');
+        dom.monthlySummaryEmptyMessage.style.display = 'none';
+
+        // 去重处理（使用与日历相同的去重规则）
+        let uniqueData = typeof deduplicateSailingItems === 'function'
+          ? deduplicateSailingItems(filteredData)
+          : deduplicateItems(filteredData);
+
+        // 合并同船名航次船型的数据（使用与日历相同的合并规则）
+        const mergeByVessel = (items) => {
+          const grouped = {};
+          
+          items.forEach(item => {
+            let groupKey;
+            let vesselName, voyageNumber, shipType, carrier;
+            
+            // 365模式：同一天 + 同船名(Q列) + 同航线ID(G列)
+            if (item.mode === '365') {
+              const dateKey = formatDateKey(item.date);
+              vesselName = item.vesselName || getVesselName(item.vessel || '');
+              const routeId = item.routeId || '';
+              groupKey = `${dateKey}_${vesselName}_${routeId}`;
+            } else {
+              // 001模式：船名 + 航次 + 船型 + 船公司
+              vesselName = getVesselName(item.vessel || '');
+              voyageNumber = getVoyageNumber(item.vessel || '');
+              shipType = item.shipType || '';
+              carrier = item.carrier || '';
+              groupKey = `${vesselName}_${voyageNumber}_${shipType}_${carrier}`;
+            }
+            
+            if (!grouped[groupKey]) {
+              if (item.mode === MODE_365) {
+                grouped[groupKey] = {
+                  vessel: item.vessel || '',
+                  vesselName: item.vesselName || getVesselName(item.vessel || ''),
+                  shipType: item.shipType || '',
+                  carriers: [],
+                  carriersSet: new Set(),
+                  ports: [],
+                  portsSet: new Set(),
+                  routeId: item.routeId || '',
+                  mode: item.mode,
+                  date: item.date
+                };
+              } else {
+                grouped[groupKey] = {
+                  vessel: item.vessel || '',
+                  vesselName: vesselName,
+                  voyageNumber: voyageNumber,
+                  shipType: shipType,
+                  carrier: carrier,
+                  ports: [],
+                  portsSet: new Set(),
+                  mode: item.mode,
+                  date: item.date
+                };
+              }
+            }
+            
+            // 添加港口（去重）
+            if (item.port && !grouped[groupKey].portsSet.has(item.port)) {
+              grouped[groupKey].ports.push(item.port);
+              grouped[groupKey].portsSet.add(item.port);
+            }
+            
+            // 365模式：收集共舱船公司
+            if (item.mode === MODE_365 && item.carrier && !grouped[groupKey].carriersSet.has(item.carrier)) {
+              grouped[groupKey].carriers.push(item.carrier);
+              grouped[groupKey].carriersSet.add(item.carrier);
+            }
+          });
+          
+          return Object.values(grouped).map(group => {
+            // 365模式：选择最长的共舱船公司
+            if (group.mode === MODE_365) {
+              const longestCarrier = group.carriers.reduce((longest, current) => {
+                return current.length > longest.length ? current : longest;
+              }, group.carriers[0] || '');
+              group.carrier = longestCarrier;
+            }
+            
+            if (group.ports.length > 1) {
+              return {
+                ...group,
+                ports: group.ports,
+                portsText: group.ports.join('、'),
+                isMerged: true
+              };
+            } else {
+              return {
+                ...group,
+                port: group.ports[0] || '',
+                isMerged: false
+              };
+            }
+          });
+        };
+
+        const mergedData = mergeByVessel(uniqueData);
+
+        // 定义航线（使用与日历相同的规则）
+        const getRouteKey = (item) => {
+          // 001和365模式都只显示共舱船公司
+          return item.carrier || '未知';
+        };
+
+        // 按航线分组
+        const routesMap = new Map();
+        mergedData.forEach(item => {
+          const routeKey = getRouteKey(item);
+          if (!routesMap.has(routeKey)) {
+            routesMap.set(routeKey, []);
+          }
+          routesMap.get(routeKey).push(item);
+        });
+
+        // 获取所有月份（从数据中提取）
+        const monthsSet = new Set();
+        mergedData.forEach(item => {
+          const year = item.date.getFullYear();
+          const month = String(item.date.getMonth() + 1).padStart(2, '0');
+          const monthKey = `${year}${month}`;
+          monthsSet.add(monthKey);
+        });
+
+        const months = Array.from(monthsSet).sort();
+
+        // 构建表格
+        let tableHTML = '<table class="monthly-summary-table"><thead><tr>';
+        tableHTML += '<th>航线</th>';
+        months.forEach(month => {
+          const year = month.substring(0, 4);
+          const monthNum = month.substring(4);
+          tableHTML += `<th>${year}${monthNum}</th>`;
+        });
+        tableHTML += '</tr></thead><tbody>';
+
+        // 按航线排序
+        const sortedRoutes = Array.from(routesMap.entries()).sort((a, b) => {
+          return a[0].localeCompare(b[0], 'zh-Hans-CN');
+        });
+
+        // 统计每个月的总船次（用于总计行）
+        const monthlyTotals = new Map();
+        months.forEach(month => {
+          monthlyTotals.set(month, 0);
+        });
+
+        sortedRoutes.forEach(([routeKey, items]) => {
+          tableHTML += '<tr>';
+          tableHTML += `<td>${routeKey}</td>`;
+
+          // 按月份填充数据
+          months.forEach(month => {
+            const year = parseInt(month.substring(0, 4));
+            const monthNum = parseInt(month.substring(4)) - 1; // JavaScript月份从0开始
+
+            // 筛选该月份的数据
+            const monthItems = items.filter(item => {
+              const itemYear = item.date.getFullYear();
+              const itemMonth = item.date.getMonth();
+              return itemYear === year && itemMonth === monthNum;
+            });
+
+            if (monthItems.length === 0) {
+              tableHTML += '<td></td>';
+            } else {
+              // 按日期排序
+              monthItems.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+              // 统计船次
+              monthlyTotals.set(month, monthlyTotals.get(month) + monthItems.length);
+
+              // 构建显示内容：船名航次(开航时间)
+              const vesselInfoItems = monthItems.map(item => {
+                const vesselText = item.vessel || '';
+                const dateStr = formatDateForSummary(item.date);
+                return `${vesselText}(${dateStr})`;
+              });
+
+              tableHTML += `<td><div class="vessel-info">`;
+              vesselInfoItems.forEach(info => {
+                tableHTML += `<div class="vessel-info-item">${info}</div>`;
+              });
+              tableHTML += `</div></td>`;
+            }
+          });
+
+          tableHTML += '</tr>';
+        });
+
+        // 添加总计行
+        tableHTML += '</tbody><tfoot><tr>';
+        tableHTML += '<td>合计</td>';
+        months.forEach(month => {
+          const total = monthlyTotals.get(month) || 0;
+          tableHTML += `<td style="text-align: center; font-weight: 600; color: #667eea;">${total} 艘次</td>`;
+        });
+        tableHTML += '</tr></tfoot></table>';
+        dom.monthlySummaryTable.innerHTML = tableHTML;
+      }
+
+      /**
+       * 格式化日期用于汇总表格显示
+       * @param {Date} date - 日期对象
+       * @returns {string} 格式化后的日期字符串（MM/DD）
+       */
+      function formatDateForSummary(date) {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${month}/${day}`;
+      }
+
+      /**
        * 创建日历项的悬停提示事件处理器
        * @param {HTMLElement} itemEl - 日历项元素
        * @param {Object} item - 数据项
@@ -2589,45 +2989,14 @@
         return parts.length > 1 ? parts[1].trim() : '';
       }
 
-      // 去重函数：根据业务规则去重
+      // 去重函数：统一调用 vendor 中的标准实现（兼容老逻辑）
       function deduplicateItems(items) {
+        if (typeof deduplicateSailingItems === 'function') {
+          return deduplicateSailingItems(items);
+        }
         if (!items || items.length === 0) return [];
-        
-        const seen = new Set();
-        const result = [];
-        
-        items.forEach(item => {
-          const vesselName = getVesselName(item.vessel || '');
-          const voyageNumber = getVoyageNumber(item.vessel || '');
-          const shipType = item.shipType || '';
-          const carrier = item.carrier || '';
-          const port = item.port || '';
-          const dateKey = formatDateKey(item.date);
-          
-          // 规则1：如果日期、港口、船名、船型、船公司、航次都完全相同，去重
-          const exactKey = `${dateKey}_${port}_${vesselName}_${shipType}_${carrier}_${voyageNumber}`;
-          if (seen.has(exactKey)) {
-            return; // 完全重复，跳过
-          }
-          
-          // 规则2：如果日期、港口、船名、船型、船公司相同，但航次不同
-          // 这种情况很可能是重复数据（同一船公司，同一船名，同一船型，只是航次号不一致）
-          const similarKey = `${dateKey}_${port}_${vesselName}_${shipType}_${carrier}`;
-          if (seen.has(similarKey)) {
-            // 同一船公司，相同船名、船型、日期、港口，只是航次不同，去重
-            return;
-          }
-          
-          // 规则3：如果日期、港口、船名、船型相同，但船公司不同，保留（可能是共舱）
-          // 这种情况不需要去重，因为船公司不同代表不同的航线
-          
-          // 添加到结果
-          seen.add(exactKey);
-          seen.add(similarKey);
-          result.push(item);
-        });
-        
-        return result;
+        // 回退到原有逻辑（不会触发，因为已导出公共函数）
+        return items;
       }
 
       // 工具函数
@@ -2822,8 +3191,28 @@
           const fileName = `Monitor-Sailing-Schedule_${year}${month}${day}`;
 
           // 使用 vendor/pdf-utils.js 中的 exportToPdf 函数
-          // 导出整个内容区域（包括AI分析部分），排除页脚
-          await exportToPdf('.content', {
+          // 导出整个页面内容，包括头部、内容区域和页脚
+          // 创建一个临时包装器包含所有需要导出的内容
+          const tempWrapper = document.createElement('div');
+          tempWrapper.style.cssText = 'position: absolute; left: -9999px; top: -9999px; width: 100%;';
+          
+          const container = document.querySelector('.container');
+          const footer = document.querySelector('.page-footer');
+          
+          if (container) {
+            const containerClone = container.cloneNode(true);
+            tempWrapper.appendChild(containerClone);
+          }
+          
+          if (footer) {
+            const footerClone = footer.cloneNode(true);
+            tempWrapper.appendChild(footerClone);
+          }
+          
+          document.body.appendChild(tempWrapper);
+          
+          try {
+            await exportToPdf(tempWrapper, {
             fileName: fileName,
             onStart: () => {
               exportBtn.disabled = true;
@@ -2842,6 +3231,12 @@
               exportBtn.disabled = false;
             }
           });
+          } finally {
+            // 清理临时包装器
+            if (tempWrapper && tempWrapper.parentNode) {
+              tempWrapper.parentNode.removeChild(tempWrapper);
+            }
+          }
         } catch (error) {
           debugError('导出PDF失败:', error);
           showError(ErrorType.API_ERROR, 'API_REQUEST_FAILED', { 

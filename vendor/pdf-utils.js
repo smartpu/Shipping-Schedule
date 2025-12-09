@@ -12,9 +12,10 @@
  * @returns {Promise<void>}
  */
 async function loadPdfLibraries() {
-    // 加载html2canvas
+    // 加载html2canvas（优先使用本地文件）
     if (typeof window.html2canvas === 'undefined') {
         const html2CanvasSources = [
+            'vendor/html2canvas.min.js',  // 本地文件优先
             'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
             'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
             'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'
@@ -30,9 +31,10 @@ async function loadPdfLibraries() {
         }
     }
 
-    // 加载jsPDF
+    // 加载jsPDF（优先使用本地文件）
     if (typeof window.jspdf === 'undefined') {
         const jsPdfSources = [
+            'vendor/jspdf.umd.min.js',  // 本地文件优先
             'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
             'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
             'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'

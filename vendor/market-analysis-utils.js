@@ -36,6 +36,243 @@ if (typeof window !== 'undefined' && typeof window.getCachedDebugMode === 'undef
 }
 
 // ============================================
+// 港口顺序常量（与 Monitor-Sailing-Schedule 保持一致）
+// ============================================
+
+/**
+ * 标准港口顺序（按照航线区域顺序排列）
+ * 用于 001-04 和 365-04 的港口排序
+ */
+const STANDARD_PORT_ORDER = [
+    // 美西
+    '长滩', '洛杉矶',
+    // 美东
+    '纽约',
+    // 加拿大
+    '温哥华',
+    // 墨西哥
+    '曼萨尼约', '墨西哥曼萨尼约',
+    // 中南美
+    '巴尔博亚', '考赛多', '库特扎尔',
+    // 南美西
+    '布埃纳文图拉', '圣安东尼奥',
+    // 南美东
+    '桑托斯',
+    // 欧基
+    '鹿特丹', '费利克斯托',
+    // 地西
+    '巴塞罗那', '巴塞罗纳', '瓦伦西亚',
+    // 黑海
+    '伊斯坦布尔',
+    // 中东
+    '杰贝阿里', '达曼',
+    // 红海
+    '吉达',
+    // 印巴
+    '吉大', '吉大港', '科伦坡', '纳瓦西瓦', '那瓦西瓦', '清奈',
+    // 澳洲
+    '布里斯班',
+    // 东非
+    '蒙巴萨',
+    // 南非
+    '德班',
+    // 西非
+    '黑角', '特马',
+    // 香港
+    '香港',
+    // 台湾
+    '高雄',
+    // 新加坡
+    '新加坡',
+    // 马来
+    '巴生西', '巴生北', '巴西古单', '槟城', '丹戎帕拉帕斯',
+    // 泰国
+    '林查班',
+    // 越南
+    '盖梅港', '盖美', '海防', '胡志明', '同奈',
+    // 柬埔寨
+    '西哈努克',
+    // 印尼
+    '雅加达', '泗水',
+    // 菲律宾
+    '马尼拉南', '马尼拉北'
+];
+
+/**
+ * 标准区域顺序（用于 365-04 的大类排序）
+ */
+const STANDARD_AREA_ORDER = [
+    '北美洲',
+    '拉丁美洲',
+    '欧洲',
+    '中东红海印巴',
+    '澳洲',
+    '非洲',
+    '东南亚'
+];
+
+/**
+ * 港口名称匹配规则（处理不同数据源的港口名称差异，与 Monitor-Sailing-Schedule 保持一致）
+ */
+const PORT_NAME_MAPPING = {
+    // 美西
+    'LONG BEACH': '长滩',
+    'LONG BEACH, CA': '长滩',
+    'LONG BEACH,CA': '长滩',
+    'LONG BEACH CA': '长滩',
+    '长滩,加利福尼亚州': '长滩',
+    'LOS ANGELES': '洛杉矶',
+    'LOS ANGELES, CA': '洛杉矶',
+    'LOS ANGELES,CA': '洛杉矶',
+    'LOS ANGELES CA': '洛杉矶',
+    '洛杉矶,加利福尼亚州': '洛杉矶',
+    // 美东
+    'NEW YORK': '纽约',
+    'NEW YORK,NY': '纽约',
+    'NEW YORK, NY': '纽约',
+    'NEW YORK NY': '纽约',
+    '纽约,纽约州': '纽约',
+    // 加拿大
+    'VANCOUVER': '温哥华',
+    'VANCOUVER.BC': '温哥华',
+    'VANCOUVER,BC': '温哥华',
+    'VANCOUVER, BC': '温哥华',
+    'VANCOUVER BC': '温哥华',
+    // 墨西哥
+    'MANZANILLO': '曼萨尼约',
+    'MANZANILLO,MX': '曼萨尼约',
+    'MANZANILLO, MX': '曼萨尼约',
+    'MANZANILLO MX': '曼萨尼约',
+    '墨西哥曼萨尼约': '曼萨尼约',
+    // 中南美
+    'BALBOA': '巴尔博亚',
+    'BALBOA(巴尔博亚)': '巴尔博亚',
+    'CAUCEDO': '考赛多',
+    'PUERTO QUETZAL': '库特扎尔',
+    // 南美西
+    'BUENAVENTURA': '布埃纳文图拉',
+    'BUENAVENTURA(布埃纳文图拉)': '布埃纳文图拉',
+    'SAN ANTONIO': '圣安东尼奥',
+    'SAN ANTONIO, CHILE': '圣安东尼奥',
+    'SAN ANTONIO,CHILE': '圣安东尼奥',
+    'SAN ANTONIO CHILE': '圣安东尼奥',
+    // 南美东
+    'SANTOS': '桑托斯',
+    'SANTOS(桑托斯)': '桑托斯',
+    // 欧基
+    'ROTTERDAM': '鹿特丹',
+    'ROTTERDAM,NL': '鹿特丹',
+    'ROTTERDAM, NL': '鹿特丹',
+    'ROTTERDAM NL': '鹿特丹',
+    'FELIXSTOWE': '费利克斯托',
+    'FELIXSTOWE(费利克斯托)': '费利克斯托',
+    // 地西
+    'BARCELONA': '巴塞罗那',
+    'BARCELONA(巴塞罗纳)': '巴塞罗那',
+    '巴塞罗纳': '巴塞罗那',
+    'VALENCIA': '瓦伦西亚',
+    'VALENCIA,ES': '瓦伦西亚',
+    'VALENCIA, ES': '瓦伦西亚',
+    'VALENCIA ES': '瓦伦西亚',
+    // 黑海
+    'ISTANBUL': '伊斯坦布尔',
+    'ISTANBUL(伊斯坦布尔)': '伊斯坦布尔',
+    // 中东
+    'JEBEL ALI': '杰贝阿里',
+    'JEBEL ALI(杰贝阿里)': '杰贝阿里',
+    'DAMMAM': '达曼',
+    'DAMMAM(达曼)': '达曼',
+    // 红海
+    'JEDDAH': '吉达',
+    'JEDDAH(吉达)': '吉达',
+    // 印巴
+    'CHATTOGRAM': '吉大',
+    'CHATTOGRAM(吉大港)': '吉大',
+    '吉大港': '吉大',
+    'COLOMBO': '科伦坡',
+    'COLOMBO(科伦坡)': '科伦坡',
+    'NHAVA SHEVA': '纳瓦西瓦',
+    'NHAVA SHEVA(那瓦西瓦)': '纳瓦西瓦',
+    '那瓦西瓦': '纳瓦西瓦',
+    'CHENNAI': '清奈',
+    'CHENNAI(清奈)': '清奈',
+    // 澳洲
+    'BRISBANE': '布里斯班',
+    'BRISBANE,AU': '布里斯班',
+    'BRISBANE, AU': '布里斯班',
+    'BRISBANE AU': '布里斯班',
+    'BRISBANE,AU(布里斯班)': '布里斯班',
+    // 东非
+    'MOMBASA': '蒙巴萨',
+    'MOMBASA(蒙巴萨)': '蒙巴萨',
+    // 南非
+    'DURBAN': '德班',
+    'DURBAN(德班)': '德班',
+    // 西非
+    'POINTE NOIRE': '黑角',
+    'POINTE NOIRE(黑角)': '黑角',
+    'TEMA': '特马',
+    'TEMA(特马)': '特马',
+    // 香港
+    'HONG KONG': '香港',
+    'HONG KONG(香港)': '香港',
+    // 台湾
+    'KAOHSIUNG': '高雄',
+    'KAOHSIUNG(高雄)': '高雄',
+    // 新加坡
+    'SINGAPORE': '新加坡',
+    'SINGAPORE(新加坡)': '新加坡',
+    // 马来
+    'PORT KELANG N': '巴生北',
+    'PORT KELANG N(巴生北)': '巴生北',
+    'PORT KELANG NORTH': '巴生北',
+    'PORT KELANG S': '巴生西',
+    'PORT KELANG S(巴生西)': '巴生西',
+    'PORT KELANG SOUTH': '巴生西',
+    'PASIR GUDANG': '巴西古单',
+    'PASIR GUDANG(巴西古单)': '巴西古单',
+    'PENANG': '槟城',
+    'PENANG(槟城)': '槟城',
+    'TANJUNG PELEPAS': '丹戎帕拉帕斯',
+    'TANJUNG PELEPAS(丹戎帕拉帕斯)': '丹戎帕拉帕斯',
+    // 泰国
+    'LAEM CHABANG': '林查班',
+    'LAEM CHABANG(林查班)': '林查班',
+    // 越南
+    'CAI MEP': '盖梅港',
+    'CAI MEP, VUNG TAU': '盖梅港',
+    'CAI MEP,VUNG TAU': '盖梅港',
+    'CAI MEP, VUNG TAU(盖梅港,头顿)': '盖梅港',
+    '盖梅港,头顿': '盖梅港',
+    '盖梅港, 头顿': '盖梅港',
+    '盖美港,头顿': '盖梅港',
+    '盖美港, 头顿': '盖梅港',
+    '盖美': '盖梅港',
+    'HAIPHONG': '海防',
+    'HAIPHONG(海防)': '海防',
+    'HOCHIMINH': '胡志明',
+    'HO CHI MINH': '胡志明',
+    'HOCHIMINH(胡志明)': '胡志明',
+    'DONG NAI': '同奈',
+    'DONG NAI(同奈)': '同奈',
+    // 柬埔寨
+    'SIHANOUKVILLE': '西哈努克',
+    'SIHANOUKVILLE(西哈努克)': '西哈努克',
+    // 印尼
+    'JAKARTA': '雅加达',
+    'JAKARTA(雅加达)': '雅加达',
+    'SURABAYA': '泗水',
+    'SURABAYA(泗水)': '泗水',
+    // 菲律宾
+    'MANILA N': '马尼拉北',
+    'MANILA N(马尼拉北)': '马尼拉北',
+    'MANILA NORTH': '马尼拉北',
+    'MANILA S': '马尼拉南',
+    'MANILA S(马尼拉南)': '马尼拉南',
+    'MANILA SOUTH': '马尼拉南'
+};
+
+// ============================================
 // 数据工具函数
 // ============================================
 
@@ -47,6 +284,139 @@ if (typeof window !== 'undefined' && typeof window.getCachedDebugMode === 'undef
 function normalizeDestinationValue(value) {
     const text = String(value ?? '').trim();
     return text || '未分配';
+}
+
+/**
+ * 标准化港口名称（更智能的匹配，与 Monitor-Sailing-Schedule 保持一致）
+ * @param {string} portName - 原始港口名称
+ * @returns {string} 标准化后的港口名称
+ */
+function normalizePortName(portName) {
+    if (!portName) return '';
+    
+    let normalized = String(portName).trim();
+    const originalNormalized = normalized;
+    
+    // 1. 先检查映射表（精确匹配）
+    if (PORT_NAME_MAPPING[normalized]) {
+        return PORT_NAME_MAPPING[normalized];
+    }
+    
+    // 2. 处理英文格式：BALBOA(巴尔博亚) 或 BRISBANE,AU(布里斯班) 或 CHATTOGRAM(吉大港)
+    if (normalized.includes('(') && normalized.includes(')')) {
+        // 提取括号前的英文部分，尝试匹配
+        const beforeBracket = normalized.split('(')[0].trim();
+        const upperBeforeBracket = beforeBracket.toUpperCase();
+        if (PORT_NAME_MAPPING[upperBeforeBracket]) {
+            return PORT_NAME_MAPPING[upperBeforeBracket];
+        }
+        // 提取括号内的中文名称
+        const match = normalized.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+            const chineseName = match[1].split(',')[0].trim(); // 如果有逗号，取第一部分
+            if (PORT_NAME_MAPPING[chineseName]) {
+                return PORT_NAME_MAPPING[chineseName];
+            }
+            // 直接使用括号内的中文名称（如果它在标准港口列表中）
+            if (STANDARD_PORT_ORDER.includes(chineseName)) {
+                return chineseName;
+            }
+            normalized = chineseName; // 更新 normalized 为中文部分，继续后续匹配
+        }
+    }
+    
+    // 3. 处理包含逗号的情况（如"盖梅港,头顿" -> "盖梅港" 或 "LOS ANGELES, CA" -> "LOS ANGELES"）
+    if (normalized.includes(',')) {
+        const mainPart = normalized.split(',')[0].trim();
+        // 先检查原始格式（带逗号的完整格式）
+        const upperFull = normalized.toUpperCase();
+        if (PORT_NAME_MAPPING[upperFull]) {
+            return PORT_NAME_MAPPING[upperFull];
+        }
+        // 检查主部分（中文或英文）
+        if (PORT_NAME_MAPPING[mainPart]) {
+            return PORT_NAME_MAPPING[mainPart];
+        }
+        // 检查英文格式：LOS ANGELES, CA -> LOS ANGELES
+        const upperPart = mainPart.toUpperCase();
+        if (PORT_NAME_MAPPING[upperPart]) {
+            return PORT_NAME_MAPPING[upperPart];
+        }
+        // 对于中文格式，尝试直接匹配标准港口名称
+        if (/[\u4e00-\u9fa5]/.test(mainPart)) {
+            // 如果主部分是中文，尝试精确匹配标准港口
+            if (STANDARD_PORT_ORDER.includes(mainPart)) {
+                return mainPart;
+            }
+            // 尝试模糊匹配（包含关系）
+            for (const standardPort of STANDARD_PORT_ORDER) {
+                if (mainPart.includes(standardPort) || standardPort.includes(mainPart)) {
+                    return standardPort;
+                }
+            }
+        }
+        normalized = mainPart; // 更新 normalized 为主部分，继续后续匹配
+    }
+    
+    // 4. 处理点号分隔：VANCOUVER.BC -> VANCOUVER
+    if (normalized.includes('.')) {
+        const mainPart = normalized.split('.')[0].trim();
+        const upperPart = mainPart.toUpperCase();
+        if (PORT_NAME_MAPPING[upperPart]) {
+            return PORT_NAME_MAPPING[upperPart];
+        }
+        normalized = mainPart; // 更新 normalized 为主部分，继续后续匹配
+    }
+    
+    // 5. 处理括号内容（如"青岛(青岛)" -> "青岛"）
+    if (normalized.includes('(')) {
+        const beforeBracket = normalized.split('(')[0].trim();
+        if (PORT_NAME_MAPPING[beforeBracket]) {
+            return PORT_NAME_MAPPING[beforeBracket];
+        }
+        normalized = beforeBracket; // 更新 normalized 为括号前部分，继续后续匹配
+    }
+    
+    // 6. 再次检查映射表（处理后的值）
+    if (normalized !== originalNormalized && PORT_NAME_MAPPING[normalized]) {
+        return PORT_NAME_MAPPING[normalized];
+    }
+    
+    // 7. 检查大写格式（英文港口名）
+    const upperNormalized = normalized.toUpperCase();
+    if (PORT_NAME_MAPPING[upperNormalized]) {
+        return PORT_NAME_MAPPING[upperNormalized];
+    }
+    
+    // 8. 对于中文格式，先尝试精确匹配标准港口名称
+    if (/[\u4e00-\u9fa5]/.test(normalized)) {
+        // 精确匹配
+        if (STANDARD_PORT_ORDER.includes(normalized)) {
+            return normalized;
+        }
+        // 去除常见后缀（如"港"、"港口"等，但保留在标准名称中的）
+        const cleaned = normalized.replace(/港$/, '').trim();
+        if (cleaned !== normalized && STANDARD_PORT_ORDER.includes(cleaned)) {
+            return cleaned;
+        }
+        // 模糊匹配（包含关系，优先匹配更长的标准名称）
+        const matches = [];
+        for (const standardPort of STANDARD_PORT_ORDER) {
+            // 检查是否包含标准港口名（双向包含）
+            if (normalized.includes(standardPort) || standardPort.includes(normalized) ||
+                cleaned.includes(standardPort) || standardPort.includes(cleaned)) {
+                matches.push({ port: standardPort, length: standardPort.length });
+            }
+        }
+        if (matches.length > 0) {
+            // 优先匹配最长的标准港口名
+            matches.sort((a, b) => b.length - a.length);
+            return matches[0].port;
+        }
+    }
+    
+    // 9. 如果以上都不匹配，返回原始值或其大写形式
+    return normalized;
 }
 
 /**
@@ -79,16 +449,128 @@ function getRouteLabel(routeId, fallback) {
 }
 
 /**
+ * 根据标准港口顺序排序
+ * @param {string[]} ports - 港口数组
+ * @returns {string[]} 排序后的港口数组
+ */
+function sortPortsByStandardOrder(ports) {
+    if (!Array.isArray(ports) || ports.length === 0) return ports;
+    
+    const portOrderMap = new Map();
+    STANDARD_PORT_ORDER.forEach((port, index) => {
+        portOrderMap.set(port, index);
+    });
+    
+    return ports.sort((a, b) => {
+        const indexA = portOrderMap.has(a) ? portOrderMap.get(a) : Infinity;
+        const indexB = portOrderMap.has(b) ? portOrderMap.get(b) : Infinity;
+        
+        if (indexA !== Infinity && indexB !== Infinity) {
+            return indexA - indexB;
+        }
+        if (indexA !== Infinity) return -1;
+        if (indexB !== Infinity) return 1;
+        return a.localeCompare(b, 'zh-Hans-CN');
+    });
+}
+
+/**
+ * 根据标准区域顺序排序
+ * @param {string[]} areas - 区域数组
+ * @returns {string[]} 排序后的区域数组
+ */
+function sortAreasByStandardOrder(areas) {
+    if (!Array.isArray(areas) || areas.length === 0) return areas;
+    
+    // 确保 STANDARD_AREA_ORDER 存在（尝试本地和全局）
+    const standardOrder = STANDARD_AREA_ORDER || 
+        (typeof window !== 'undefined' ? window.STANDARD_AREA_ORDER : null);
+    
+    if (!standardOrder || !Array.isArray(standardOrder) || standardOrder.length === 0) {
+        // 如果没有标准顺序，按字母排序
+        return [...areas].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+    }
+    
+    const areaOrderMap = new Map();
+    standardOrder.forEach((area, index) => {
+        areaOrderMap.set(area, index);
+    });
+    
+    // 处理区域名称变体（如"中东印巴红海" -> "中东红海印巴"）
+    const normalizeAreaName = (areaName) => {
+        if (!areaName) return areaName;
+        // 如果包含"中东"、"印巴"、"红海"这些关键词，统一映射到"中东红海印巴"
+        // 处理各种可能的组合：中东印巴红海、中东红海印巴、印巴红海中东等
+        if (areaName.includes('中东') && (areaName.includes('印巴') || areaName.includes('红海'))) {
+            return '中东红海印巴';
+        }
+        // 也处理只包含这些关键词的情况
+        if ((areaName.includes('印巴') || areaName.includes('红海')) && areaName.includes('中东')) {
+            return '中东红海印巴';
+        }
+        return areaName;
+    };
+    
+    // 创建排序后的数组（不修改原数组）
+    const sorted = [...areas].sort((a, b) => {
+        const normalizedA = normalizeAreaName(a);
+        const normalizedB = normalizeAreaName(b);
+        const indexA = areaOrderMap.has(normalizedA) ? areaOrderMap.get(normalizedA) : Infinity;
+        const indexB = areaOrderMap.has(normalizedB) ? areaOrderMap.get(normalizedB) : Infinity;
+        
+        if (indexA !== Infinity && indexB !== Infinity) {
+            return indexA - indexB;
+        }
+        if (indexA !== Infinity) return -1;
+        if (indexB !== Infinity) return 1;
+        return a.localeCompare(b, 'zh-Hans-CN');
+    });
+    
+    return sorted;
+}
+
+/**
  * 填充下拉选择框
  * @param {HTMLSelectElement} selectEl - 选择框元素
  * @param {string[]} options - 选项数组
  * @param {string} placeholder - 占位符文本
  * @param {string|string[]} selectedValues - 已选中的值
  * @param {boolean} shouldDisable - 是否禁用
+ * @param {boolean} usePortOrder - 是否使用标准港口顺序排序（默认 false）
+ * @param {boolean} useAreaOrder - 是否使用标准区域顺序排序（默认 false）
  */
-function populateSelect(selectEl, options, placeholder, selectedValues, shouldDisable = false) {
+function populateSelect(selectEl, options, placeholder, selectedValues, shouldDisable = false, usePortOrder = false, useAreaOrder = false) {
     if (!selectEl) return;
-    const uniqueOptions = Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
+    
+    // 先排序，再去重（保持排序后的顺序）
+    let uniqueOptions;
+    if (usePortOrder && typeof sortPortsByStandardOrder === 'function') {
+        // 先排序，再去重
+        const sorted = sortPortsByStandardOrder(options);
+        uniqueOptions = Array.from(new Set(sorted));
+    } else if (useAreaOrder) {
+        // 先排序，再去重
+        // 直接调用本地函数（它们在同一个作用域中）
+        if (typeof sortAreasByStandardOrder === 'function') {
+            const sorted = sortAreasByStandardOrder(options);
+            uniqueOptions = Array.from(new Set(sorted));
+        } else if (typeof window !== 'undefined' && typeof window.sortAreasByStandardOrder === 'function') {
+            // 如果本地函数不可用，尝试使用全局函数
+            const sorted = window.sortAreasByStandardOrder(options);
+            uniqueOptions = Array.from(new Set(sorted));
+        } else {
+            // 如果函数不可用，先去重再按字母排序
+            uniqueOptions = Array.from(new Set(options));
+            uniqueOptions.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+        }
+    } else {
+        // 先去重，再按字母排序（只有在没有指定排序方式时）
+        uniqueOptions = Array.from(new Set(options));
+        if (uniqueOptions.length > 0 && !usePortOrder && !useAreaOrder) {
+            uniqueOptions.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+        }
+    }
+    
     const selectedArray = Array.isArray(selectedValues)
         ? selectedValues
         : (selectedValues ? [selectedValues] : []);
@@ -120,9 +602,115 @@ function populateSelect(selectEl, options, placeholder, selectedValues, shouldDi
  */
 function buildShipSignature(record) {
     const shipName = record.shipName || '';
-    const shipDate = record.shipDate || '';
+    // 统一格式化日期为 YYYY/MM/DD，确保同一天、同船名航次的记录能正确去重
+    let shipDate = record.shipDate || '';
+    if (shipDate && typeof formatDateToYYYYMMDD === 'function') {
+        const formatted = formatDateToYYYYMMDD(shipDate);
+        if (formatted && formatted !== '未知') {
+            shipDate = formatted;
+        }
+    }
     const capacity = record.capacity || 0;
     return `${shipName}|${shipDate}|${capacity}`;
+}
+
+/**
+ * 提取船名（取第一段，兼容“船名/航次”或“船名 航次”）
+ * @param {string} vesselText
+ * @returns {string}
+ */
+function getVesselName(vesselText) {
+    if (!vesselText) return '';
+    const parts = String(vesselText).split(/[\/\s]+/).filter(Boolean);
+    return parts[0] || '';
+}
+
+/**
+ * 提取航次（取第二段，兼容“船名/航次”或“船名 航次”）
+ * @param {string} vesselText
+ * @returns {string}
+ */
+function getVoyageNumber(vesselText) {
+    if (!vesselText) return '';
+    const parts = String(vesselText).split(/[\/\s]+/).filter(Boolean);
+    return parts.length > 1 ? parts[1] : '';
+}
+
+/**
+ * 将日期格式化为 YYYYMMDD 的字符串，用于去重键
+ * @param {Date|string|number} date
+ * @returns {string}
+ */
+function formatDateKey(date) {
+    if (!date) return '';
+    try {
+        const d = date instanceof Date ? date : new Date(date);
+        if (isNaN(d.getTime())) return '';
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}${m}${day}`;
+    } catch (e) {
+        return '';
+    }
+}
+
+/**
+ * 船期记录去重（统一标准，参考 Monitor-Sailing-Schedule）
+ * 规则：
+ *  - 完全重复：日期+港口+船名+船型+船公司+航次 相同 => 去重
+ *  - 同船公司、同日期/港口/船名/船型，航次不同 => 视为重复（可能重复录入）
+ *  - 船公司不同但其它相同 => 保留（可能共舱）
+ * @param {Array<Object>} items
+ * @returns {Array<Object>}
+ */
+function deduplicateSailingItems(items) {
+    if (!Array.isArray(items) || items.length === 0) return [];
+
+    const seen = new Set();
+    const result = [];
+
+    items.forEach(item => {
+        const vesselText = item.vessel || item.shipName || '';
+        const vesselName = item.vesselName || getVesselName(vesselText);
+        const voyageNumber = getVoyageNumber(vesselText);
+        const shipType = item.shipType || '';
+        const carrier = item.carrier || '';
+        const port = item.port || '';
+        const dateKey = formatDateKey(item.date || item.shipDate || '');
+
+        // 完全重复键
+        const exactKey = `${dateKey}_${port}_${vesselName}_${shipType}_${carrier}_${voyageNumber}`;
+        // 同船公司但航次不同的重复键
+        const similarKey = `${dateKey}_${port}_${vesselName}_${shipType}_${carrier}`;
+
+        if (seen.has(exactKey) || seen.has(similarKey)) {
+            return;
+        }
+
+        seen.add(exactKey);
+        seen.add(similarKey);
+        result.push({
+            ...item,
+            vesselName
+        });
+    });
+
+    return result;
+}
+
+// 导出到全局，便于各页面复用
+if (typeof window !== 'undefined') {
+    window.getVesselName = window.getVesselName || getVesselName;
+    window.getVoyageNumber = window.getVoyageNumber || getVoyageNumber;
+    window.formatDateKey = window.formatDateKey || formatDateKey;
+    window.deduplicateSailingItems = window.deduplicateSailingItems || deduplicateSailingItems;
+    window.sortPortsByStandardOrder = window.sortPortsByStandardOrder || sortPortsByStandardOrder;
+    window.sortAreasByStandardOrder = window.sortAreasByStandardOrder || sortAreasByStandardOrder;
+    window.normalizePortName = window.normalizePortName || normalizePortName;
+    window.STANDARD_PORT_ORDER = window.STANDARD_PORT_ORDER || STANDARD_PORT_ORDER;
+    window.STANDARD_AREA_ORDER = window.STANDARD_AREA_ORDER || STANDARD_AREA_ORDER;
+    window.PORT_NAME_MAPPING = window.PORT_NAME_MAPPING || PORT_NAME_MAPPING;
 }
 
 // ============================================
@@ -373,6 +961,21 @@ async function loadScript(url) {
     if (loadedScripts.has(url)) {
         return;
     }
+    const isFileProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:');
+    // file:// 场景下，使用 <script src> 直接加载，避免 fetch 被 CORS 拦截
+    if (isFileProtocol && !url.startsWith('http')) {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = url;
+            script.onload = () => resolve();
+            script.onerror = (err) => reject(new Error(`无法加载脚本: ${url}, ${err?.message || err}`));
+            document.head.appendChild(script);
+        });
+        loadedScripts.add(url);
+        return;
+    }
+
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
         throw new Error(`无法加载脚本: ${url}`);
@@ -398,6 +1001,11 @@ async function loadWorkerAsBlob(url) {
     if (loadedWorkers.has(url)) {
         return loadedWorkers.get(url);
     }
+    const isFileProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:');
+    // file:// 场景下优先直接返回远程 CDN（避免本地 worker 的 fetch 被拦截）
+    if (isFileProtocol && !url.startsWith('http')) {
+        return null; // 由上层改用 CDN workerSrc
+    }
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
         throw new Error(`无法加载Worker: ${url}`);
@@ -419,8 +1027,13 @@ async function ensurePdfJsLoaded() {
     }
     if (typeof window.pdfjsLib !== 'undefined') {
         if (!pdfJsReady && pdfjsLib.GlobalWorkerOptions) {
-            // 直接使用 CDN URL，避免 Blob URL 问题
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            // 优先使用本地 worker，失败时使用 CDN
+            try {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
+            } catch (e) {
+                // 如果本地 worker 失败，使用 CDN
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
             pdfJsReady = true;
         }
         return;
@@ -429,27 +1042,59 @@ async function ensurePdfJsLoaded() {
         return pdfJsLoadingPromise;
     }
     pdfJsLoadingPromise = (async () => {
-        const sources = [
-            {
-                script: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-                worker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
-            },
-            {
-                script: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
-                worker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
-            },
-            {
-                script: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js',
-                worker: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
-            }
-        ];
+        const isFileProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:');
+        const sources = isFileProtocol
+            ? [
+                // file:// 场景直接使用 CDN，避免本地 fetch 被 CORS 拦截
+                {
+                    script: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+                    worker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+                },
+                {
+                    script: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+                    worker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+                },
+                {
+                    script: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js',
+                    worker: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+                }
+            ]
+            : [
+                {
+                    script: 'vendor/pdf.min.js',  // 本地文件优先
+                    worker: 'vendor/pdf.worker.min.js'
+                },
+                {
+                    script: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+                    worker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+                },
+                {
+                    script: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+                    worker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+                },
+                {
+                    script: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js',
+                    worker: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+                }
+            ];
         let lastError = null;
         for (const src of sources) {
             try {
                 await loadScript(src.script);
                 if (window.pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
-                    // 直接使用 CDN URL，不尝试 Blob URL
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = src.worker;
+                    // 优先使用本地 worker，失败时使用 CDN
+                    if (src.worker.startsWith('vendor/') && !isFileProtocol) {
+                        // 尝试使用本地 worker
+                        try {
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = src.worker;
+                        } catch (e) {
+                            // 如果本地 worker 失败，使用 CDN
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                        }
+                    } else {
+                        // 直接使用 CDN URL；file:// 场景也走 CDN
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = src.worker;
+                    }
                     pdfJsReady = true;
                     lastError = null;
                     break;
@@ -500,6 +1145,745 @@ async function extractTextFromPdf(file) {
 }
 
 /**
+ * 从PDF的指定页面提取文本（用于提取特定页面内容）
+ * @param {File} file - PDF文件
+ * @param {number} pageNumber - 页码（从1开始）
+ * @returns {Promise<string>} 提取的文本
+ */
+async function extractTextFromPdfPage(file, pageNumber) {
+    try {
+        await ensurePdfJsLoaded();
+    } catch (error) {
+        throw new Error('PDF 解析库加载失败：' + (error.message || error) + '。请刷新页面重试。');
+    }
+    if (!window.pdfjsLib || !pdfjsLib.getDocument) {
+        throw new Error('PDF 解析库尚未加载，请稍后重试');
+    }
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        if (pageNumber < 1 || pageNumber > pdf.numPages) {
+            return '';
+        }
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        return pageText.trim();
+    } catch (error) {
+        throw new Error('PDF 页面解析失败：' + (error.message || error));
+    }
+}
+
+/**
+ * 解析 SCFI 表格数据（从 Freight Rates Watch 表格）
+ * @param {string} text - PDF 文本内容
+ * @returns {Object|null} 解析后的 SCFI 数据
+ */
+function parseScfiTable(text) {
+    if (!text) {
+        console.warn('[SCFI] parseScfiTable: 文本为空');
+        return null;
+    }
+    
+    console.log('[SCFI] parseScfiTable: 开始解析，文本长度:', text.length);
+    console.log('[SCFI] parseScfiTable: 文本预览:', text.substring(0, 500));
+    
+    // 优先查找包含表头"Shanghai Container Freight Index"和日期列"28-Nov-25"的表格区域
+    // 这是实际的表格开始位置
+    const tableHeaderPattern = /Shanghai Container Freight Index[\s\S]{0,500}?\d{1,2}[-/]\w{3}[-/]\d{2,4}/i;
+    const tableHeaderMatch = text.match(tableHeaderPattern);
+    if (tableHeaderMatch) {
+        // 从表头开始，提取到表格结束（查找最后一个航线数据，避免包含描述性文字）
+        const headerIndex = text.indexOf(tableHeaderMatch[0]);
+        // 查找表格结束位置：最后一个航线名称后的合理距离，或者遇到明显的描述性文字
+        const endMarkers = [
+            /The Asia-Europe SCFIS rate/i,
+            /Carriers.*December GRI/i,
+            /Port congestion/i,
+            /Asia-Europe Market/i,
+            /Transpacific Market/i
+        ];
+        
+        let endIndex = text.length;
+        for (const marker of endMarkers) {
+            const markerMatch = text.substring(headerIndex).match(marker);
+            if (markerMatch && markerMatch.index < 50000) {
+                endIndex = Math.min(endIndex, headerIndex + markerMatch.index);
+            }
+        }
+        
+        // 如果没找到结束标记，提取最多40000字符（表格通常不会超过这个长度）
+        const tableText = text.substring(headerIndex, Math.min(endIndex, headerIndex + 40000));
+        console.log('[SCFI] 找到表格表头，提取表格区域，长度:', tableText.length);
+        return parseScfiTableFromText(tableText);
+    }
+    
+    // 如果没找到表头，尝试查找包含日期列的区域
+    const datePattern = /\d{1,2}[-/]\w{3}[-/]\d{2,4}/g;
+    let bestMatch = null;
+    let bestScore = 0;
+    let dateMatch;
+    
+    while ((dateMatch = datePattern.exec(text)) !== null) {
+        const dateIndex = dateMatch.index;
+        // 检查这个日期附近是否包含表格特征（航线名称、单位等）
+        const context = text.substring(Math.max(0, dateIndex - 2000), Math.min(text.length, dateIndex + 30000));
+        let score = 0;
+        if (context.includes('Shanghai Container Freight Index') || context.includes('SCFI')) score += 10;
+        if (context.includes('$/teu') || context.includes('$/FEU')) score += 5;
+        if (context.includes('Europe') || context.includes('USWC') || context.includes('USEC')) score += 3;
+        if (context.includes('Base port')) score += 2;
+        
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = { index: dateIndex, context: context };
+        }
+    }
+    
+    if (bestMatch && bestScore >= 8) {
+        console.log('[SCFI] 从日期列附近提取表格（评分:', bestScore, '），长度:', bestMatch.context.length);
+        return parseScfiTableFromText(bestMatch.context);
+    }
+    
+    // 最后尝试从 "Freight Rates Watch" 提取，但限制范围避免包含描述性文字
+    const freightRatesMatch = text.match(/Freight Rates Watch[\s\S]{0,40000}/i);
+    if (freightRatesMatch) {
+        // 查找表格结束位置
+        const freightText = freightRatesMatch[0];
+        const endMarkers = [
+            /The Asia-Europe SCFIS rate/i,
+            /Carriers.*December GRI/i,
+            /Port congestion/i
+        ];
+        
+        let endPos = freightText.length;
+        for (const marker of endMarkers) {
+            const markerMatch = freightText.match(marker);
+            if (markerMatch && markerMatch.index < 30000) {
+                endPos = Math.min(endPos, markerMatch.index);
+            }
+        }
+        
+        const tableText = freightText.substring(0, endPos);
+        console.log('[SCFI] 从 "Freight Rates Watch" 提取表格（已排除描述性文字），长度:', tableText.length);
+        return parseScfiTableFromText(tableText);
+    }
+    
+    // 查找 "SCFI : Shanghai to" 后面的表格数据
+    const scfiTableMatch = text.match(/SCFI\s*:\s*Shanghai\s+to[^\n]*[\s\S]{0,30000}/i);
+    if (scfiTableMatch) {
+        console.log('[SCFI] 找到 "SCFI : Shanghai to" 表格区域，长度:', scfiTableMatch[0].length);
+        return parseScfiTableFromText(scfiTableMatch[0]);
+    }
+    
+    // 查找 "Freight Rates Watch" 或 "SCFI" 关键词
+    const scfiMatch = text.match(/Freight Rates Watch[\s\S]{0,10000}?SCFI[\s\S]{0,20000}/i);
+    if (!scfiMatch) {
+        console.warn('[SCFI] 未找到 "Freight Rates Watch" 关键词，尝试直接查找 SCFI');
+        // 尝试直接查找 SCFI 表格
+        const scfiDirectMatch = text.match(/SCFI[\s\S]{0,20000}/i);
+        if (!scfiDirectMatch) {
+            console.warn('[SCFI] 未找到 SCFI 关键词');
+            return null;
+        }
+        console.log('[SCFI] 找到 SCFI 关键词，开始解析...');
+        return parseScfiTableFromText(scfiDirectMatch[0]);
+    }
+    console.log('[SCFI] 找到 "Freight Rates Watch"，开始解析...');
+    
+    // 尝试查找包含航线名称的区域（如 Europe, USWC, India 等）
+    // 如果提取的文本不包含航线名称，尝试从更大范围提取
+    let tableText = scfiMatch[0];
+    
+    // 检查是否包含常见的航线关键词
+    const routeKeywords = ['Europe', 'USWC', 'USEC', 'India', 'Persian Gulf', 'Australia', 'Africa', 'America', 'Japan', 'Korea', 'Southeast Asia'];
+    const hasRouteKeywords = routeKeywords.some(keyword => tableText.includes(keyword));
+    
+    if (!hasRouteKeywords) {
+        console.warn('[SCFI] 提取的文本不包含航线关键词，尝试从更大范围提取...');
+        // 尝试从 "Freight Rates Watch" 后面提取更多内容
+        const extendedMatch = text.match(/Freight Rates Watch[\s\S]{0,50000}/i);
+        if (extendedMatch) {
+            tableText = extendedMatch[0];
+            console.log('[SCFI] 使用扩展范围提取，长度:', tableText.length);
+        }
+    }
+    
+    return parseScfiTableFromText(tableText);
+}
+
+/**
+ * 从文本中解析 SCFI 表格数据
+ * @param {string} tableText - 表格文本
+ * @returns {Object|null} 解析后的数据
+ */
+function parseScfiTableFromText(tableText) {
+    if (!tableText) {
+        console.warn('[SCFI] parseScfiTableFromText: 表格文本为空');
+        return null;
+    }
+    
+    console.log('[SCFI] parseScfiTableFromText: 开始解析表格文本，长度:', tableText.length);
+    
+    // 输出完整文本用于调试（限制长度避免控制台过载）
+    if (tableText.length > 0) {
+        console.log('[SCFI] 完整提取文本（前1000字符）:', tableText.substring(0, 1000));
+        if (tableText.length > 1000) {
+            console.log('[SCFI] 完整提取文本（后500字符）:', tableText.substring(tableText.length - 500));
+        }
+    }
+    
+    const scfiData = {
+        index: null,
+        routes: []
+    };
+    
+    // 查找 SCFI 指数值
+    // 根据提取的文本格式：... 1,403 SCFI（价格在SCFI前）
+    const scfiIndexPatterns = [
+        // 匹配：数字 SCFI（价格在SCFI前）
+        /(\d{1,3}(?:,\d{3})+)\s+SCFI\b/i,
+        /(\d{1,4}(?:\.\d+)?)\s+SCFI\b/i,
+        // 匹配：SCFI 数字（传统格式）
+        /SCFI[:\s]+(\d{1,3}(?:,\d{3})+)/i,
+        /SCFI\s+(\d{1,3}(?:,\d{3})+)/i,
+        /Shanghai Container Freight Index[:\s]+(\d{1,3}(?:,\d{3})+)/i,
+        /SCFI[:\s]+(\d{1,4}(?:\.\d+)?)/i,
+        /SCFI\s+(\d{1,4}(?:\.\d+)?)/i
+    ];
+    
+    for (const pattern of scfiIndexPatterns) {
+        const match = tableText.match(pattern);
+        if (match) {
+            const value = parseFloat(match[1].replace(/,/g, ''));
+            // SCFI 指数通常在 500-10000 之间
+            if (value >= 500 && value <= 10000) {
+                scfiData.index = value;
+                console.log('[SCFI] 找到 SCFI 指数:', value);
+                
+                // 提取SCFI指数的历史数据
+                const scfiIndex = match.index + match[0].indexOf(match[1]);
+                const beforeScfi = tableText.substring(Math.max(0, scfiIndex - 800), scfiIndex);
+                
+                // 提取所有价格数字和百分比（与航线数据格式相同）
+                const allNumbers = [];
+                const allPercentages = [];
+                
+                const pricePattern = /(\d{1,3}(?:,\d{3})+|\d{1,4}(?:\.\d+)?)/g;
+                let priceMatch;
+                while ((priceMatch = pricePattern.exec(beforeScfi)) !== null) {
+                    const priceStr = priceMatch[1].replace(/[\s,]/g, '');
+                    const price = parseFloat(priceStr);
+                    if (price >= 500 && price <= 10000) {
+                        allNumbers.push({
+                            index: priceMatch.index,
+                            value: price
+                        });
+                    }
+                }
+                
+                const percentPattern = /([-+]?\d+\.?\d*)%/g;
+                let percentMatch;
+                while ((percentMatch = percentPattern.exec(beforeScfi)) !== null) {
+                    const percentValue = parseFloat(percentMatch[1]);
+                    allPercentages.push({
+                        index: percentMatch.index,
+                        value: percentValue
+                    });
+                }
+                
+                // 按索引排序（从右到左，索引大的在前）
+                allNumbers.sort((a, b) => b.index - a.index);
+                allPercentages.sort((a, b) => b.index - a.index);
+                
+                // 根据实际PDF格式，从左到右是：百分比 价格 百分比 价格...
+                // 例如：-37.2% 2,234 -2.9% 1,445 -9.5% 1,551 0.7% 1,394
+                // 从右到左看，顺序是：价格 百分比 价格 百分比...
+                // 排序后（索引从大到小）：
+                // allNumbers[0] = 1,394 (1周价格，索引最大)
+                // allPercentages[0] = 0.7% (1周百分比，索引第二大)
+                // allNumbers[1] = 1,551 (1月价格，索引第三大)
+                // allPercentages[1] = -9.5% (1月百分比，索引第四大)
+                // allNumbers[2] = 1,445 (3月价格)
+                // allPercentages[2] = -2.9% (3月百分比)
+                // allNumbers[3] = 2,234 (1年价格)
+                // allPercentages[3] = -37.2% (1年百分比)
+                
+                // 配对策略：由于格式是"百分比 价格"（从左到右），从右到左看是"价格 百分比"
+                // 排序后索引从大到小，所以价格索引 > 对应百分比的索引
+                // 但实际配对关系：allNumbers[0] 应该和 allPercentages[0] 配对（都是索引最大的两个）
+                // 验证：allNumbers[i].index > allPercentages[i].index 应该成立
+                
+                // 智能配对：为每个价格找到索引最接近的百分比
+                // 由于格式是"百分比 价格"（从左到右），所以价格索引 > 百分比索引
+                // 为每个价格找到索引小于它但最接近的百分比
+                const pairs = [];
+                for (let i = 0; i < allNumbers.length; i++) {
+                    const price = allNumbers[i];
+                    // 找到索引小于price.index的所有百分比
+                    const candidatePercentages = allPercentages.filter(p => p.index < price.index);
+                    if (candidatePercentages.length > 0) {
+                        // 找到索引最大的那个（最接近价格）
+                        const matchedPercent = candidatePercentages.reduce((max, p) => p.index > max.index ? p : max);
+                        // 检查这个百分比是否已经被使用
+                        const alreadyUsed = pairs.some(p => p.changeIndex === matchedPercent.index);
+                        if (!alreadyUsed) {
+                            pairs.push({
+                                price: price.value,
+                                change: matchedPercent.value,
+                                priceIndex: price.index,
+                                changeIndex: matchedPercent.index
+                            });
+                        }
+                    }
+                }
+                
+                // 按价格索引从大到小排序（从右到左）
+                pairs.sort((a, b) => b.priceIndex - a.priceIndex);
+                
+                // 根据实际顺序映射：从右到左是 1周、1月、3月、1年
+                // pairs[0] = 1周, pairs[1] = 1月, pairs[2] = 3月, pairs[3] = 1年
+                if (pairs.length >= 1) {
+                    // 1周数据
+                    scfiData.indexWeek1 = pairs[0].price;
+                    scfiData.indexWeek1Change = pairs[0].change;
+                }
+                if (pairs.length >= 2) {
+                    // 1月数据
+                    scfiData.indexMonth1 = pairs[1].price;
+                    scfiData.indexMonth1Change = pairs[1].change;
+                }
+                if (pairs.length >= 3) {
+                    // 3月数据
+                    scfiData.indexQuarter3 = pairs[2].price;
+                    scfiData.indexQuarter3Change = pairs[2].change;
+                }
+                if (pairs.length >= 4) {
+                    // 1年数据
+                    scfiData.indexYear1 = pairs[3].price;
+                    scfiData.indexYear1Change = pairs[3].change;
+                }
+                
+                // 调试输出
+                console.log('[SCFI] 提取的历史数据:', {
+                    current: scfiData.index,
+                    week1: scfiData.indexWeek1,
+                    week1Change: scfiData.indexWeek1Change,
+                    month1: scfiData.indexMonth1,
+                    month1Change: scfiData.indexMonth1Change,
+                    quarter3: scfiData.indexQuarter3,
+                    quarter3Change: scfiData.indexQuarter3Change,
+                    year1: scfiData.indexYear1,
+                    year1Change: scfiData.indexYear1Change,
+                    allNumbers: allNumbers.map(n => ({ index: n.index, value: n.value })),
+                    allPercentages: allPercentages.map(p => ({ index: p.index, value: p.value })),
+                    beforeScfiPreview: beforeScfi.substring(Math.max(0, beforeScfi.length - 200))
+                });
+                
+                break;
+            }
+        }
+    }
+    
+    // 如果还没找到，尝试从表格的第一行数据中提取
+    if (!scfiData.index) {
+        // 查找包含 "SCFI" 的文本，然后往前查找数字
+        const scfiMatch = tableText.match(/\bSCFI\b/i);
+        if (scfiMatch) {
+            const scfiIndex = scfiMatch.index;
+            const beforeScfi = tableText.substring(Math.max(0, scfiIndex - 800), scfiIndex);
+            // 查找最后一个带逗号的数字（当前价格）
+            const numMatch = beforeScfi.match(/(\d{1,3}(?:,\d{3})+)\s*$/);
+            if (numMatch) {
+                const value = parseFloat(numMatch[1].replace(/,/g, ''));
+                if (value >= 500 && value <= 10000) {
+                    scfiData.index = value;
+                    console.log('[SCFI] 从SCFI前找到指数:', value);
+                    
+                    // 提取SCFI指数的历史数据（格式与航线相同）
+                    const allNumbers = [];
+                    const allPercentages = [];
+                    
+                    // 提取所有价格数字
+                    const pricePattern = /(\d{1,3}(?:,\d{3})+|\d{1,4}(?:\.\d+)?)/g;
+                    let priceMatch;
+                    while ((priceMatch = pricePattern.exec(beforeScfi)) !== null) {
+                        const priceStr = priceMatch[1].replace(/[\s,]/g, '');
+                        const price = parseFloat(priceStr);
+                        if (price >= 500 && price <= 10000) {
+                            allNumbers.push({
+                                index: priceMatch.index,
+                                value: price
+                            });
+                        }
+                    }
+                    
+                    // 提取所有百分比
+                    const percentPattern = /([-+]?\d+\.?\d*)%/g;
+                    let percentMatch;
+                    while ((percentMatch = percentPattern.exec(beforeScfi)) !== null) {
+                        const percentValue = parseFloat(percentMatch[1]);
+                        allPercentages.push({
+                            index: percentMatch.index,
+                            value: percentValue
+                        });
+                    }
+                    
+                    // 按索引排序（从右到左，索引大的在前）
+                    allNumbers.sort((a, b) => b.index - a.index);
+                    allPercentages.sort((a, b) => b.index - a.index);
+                    
+                    // 使用与上面相同的智能配对逻辑
+                    // 为每个价格找到索引最接近的百分比
+                    const pairs = [];
+                    for (let i = 0; i < allNumbers.length; i++) {
+                        const price = allNumbers[i];
+                        // 找到索引小于price.index的所有百分比
+                        const candidatePercentages = allPercentages.filter(p => p.index < price.index);
+                        if (candidatePercentages.length > 0) {
+                            // 找到索引最大的那个（最接近价格）
+                            const matchedPercent = candidatePercentages.reduce((max, p) => p.index > max.index ? p : max);
+                            // 检查这个百分比是否已经被使用
+                            const alreadyUsed = pairs.some(p => p.changeIndex === matchedPercent.index);
+                            if (!alreadyUsed) {
+                                pairs.push({
+                                    price: price.value,
+                                    change: matchedPercent.value,
+                                    priceIndex: price.index,
+                                    changeIndex: matchedPercent.index
+                                });
+                            }
+                        }
+                    }
+                    
+                    // 按价格索引从大到小排序（从右到左）
+                    pairs.sort((a, b) => b.priceIndex - a.priceIndex);
+                    
+                    // 根据实际顺序映射：从右到左是 1周、1月、3月、1年
+                    if (pairs.length >= 1) {
+                        scfiData.indexWeek1 = pairs[0].price;
+                        scfiData.indexWeek1Change = pairs[0].change;
+                    }
+                    if (pairs.length >= 2) {
+                        scfiData.indexMonth1 = pairs[1].price;
+                        scfiData.indexMonth1Change = pairs[1].change;
+                    }
+                    if (pairs.length >= 3) {
+                        scfiData.indexQuarter3 = pairs[2].price;
+                        scfiData.indexQuarter3Change = pairs[2].change;
+                    }
+                    if (pairs.length >= 4) {
+                        scfiData.indexYear1 = pairs[3].price;
+                        scfiData.indexYear1Change = pairs[3].change;
+                    }
+                    
+                    // 调试输出
+                    console.log('[SCFI] 备用方法提取的历史数据:', {
+                        current: scfiData.index,
+                        week1: scfiData.indexWeek1,
+                        week1Change: scfiData.indexWeek1Change,
+                        month1: scfiData.indexMonth1,
+                        month1Change: scfiData.indexMonth1Change,
+                        quarter3: scfiData.indexQuarter3,
+                        quarter3Change: scfiData.indexQuarter3Change,
+                        year1: scfiData.indexYear1,
+                        year1Change: scfiData.indexYear1Change,
+                        allNumbers: allNumbers.map(n => ({ index: n.index, value: n.value })),
+                        allPercentages: allPercentages.map(p => ({ index: p.index, value: p.value })),
+                        beforeScfiPreview: beforeScfi.substring(Math.max(0, beforeScfi.length - 200))
+                    });
+                }
+            }
+        }
+    }
+    
+    // 针对表格结构（行内包含名称、单位与 28-Nov-25 列价格），规整空白后基于名称捕获后续数字
+    let tableArea = tableText;
+    const startIdx = tableText.search(/Shanghai Container Freight Index|SCFI/i);
+    if (startIdx >= 0) {
+        tableArea = tableText.substring(startIdx);
+    }
+    // 规整多余空白为单个空格
+    tableArea = tableArea.replace(/\s+/g, ' ').trim();
+    console.log('[SCFI] 规整后的表格长度:', tableArea.length);
+    console.log('[SCFI] 规整后预览:', tableArea.substring(0, 300));
+    
+    // 辅助：在名称前找到当前价格和历史数据（表格列顺序是反的：价格在名称前）
+    // 格式：1年变化% 1年价格 3个月变化% 3个月价格 1个月变化% 1个月价格 1周变化% 1周价格 当前价格 单位 航线名称
+    function findPriceBeforeName(area, namePattern) {
+        // 先检查名称是否存在
+        const nameRegex = new RegExp(namePattern, 'i');
+        const nameMatch = area.match(nameRegex);
+        if (!nameMatch) {
+            return { found: false, reason: '名称未找到' };
+        }
+        
+        const nameIndex = nameMatch.index;
+        // 从名称往前查找（最多800个字符，以包含所有历史数据）
+        const beforeName = area.substring(Math.max(0, nameIndex - 800), nameIndex);
+        
+        // 根据提取的文本格式：历史数据在单位前，单位在名称前
+        // 格式：-53.8% 3,039 -5.2% 1,481 4.5% 1,344 2.7% 1,367 1,404 ˚ /teu Europe (Base port)
+        // 顺序（从右到左）：当前价格 1周价格 1周变化% 1个月价格 1个月变化% 3个月价格 3个月变化% 1年价格 1年变化%
+        
+        // 查找单位（/teu 或 /FEU）
+        const unitPattern = /[\/\s](?:teu|FEU|feu)\s*$/i;
+        const unitMatch = beforeName.match(unitPattern);
+        
+        if (unitMatch) {
+            // 确定单位
+            const unitText = beforeName.substring(unitMatch.index);
+            const unit = unitText.includes('/FEU') || unitText.includes('/feu') ? 'FEU' : 'TEU';
+            
+            // 在单位前提取所有数据
+            const beforeUnit = beforeName.substring(0, unitMatch.index);
+            
+            // 解析格式：百分比 价格 百分比 价格 ... 当前价格
+            // 从右到左：当前价格 -> 1周价格 1周变化% -> 1个月价格 1个月变化% -> 3个月价格 3个月变化% -> 1年价格 1年变化%
+            
+            // 提取所有数据：从左到右格式是"变化% 价格"，从右到左（在名称前）是"价格 变化%"
+            // 格式：-53.8% 3,039 -5.2% 1,481 4.5% 1,344 2.7% 1,367 1,404 ˚ /teu
+            // 从右到左：当前价格(1,404) -> 1周价格(1,367) 1周变化%(2.7%) -> 1个月价格(1,344) 1个月变化%(4.5%) -> 3个月价格(1,481) 3个月变化%(-5.2%) -> 1年价格(3,039) 1年变化%(-53.8%)
+            
+            // 提取所有数字和百分比（从右到左）
+            const allNumbers = [];
+            const allPercentages = [];
+            
+            // 提取所有价格数字（从右到左）
+            const pricePattern = /(\d{1,3}(?:,\d{3})+|\d{1,4}(?:\.\d+)?)/g;
+            let priceMatch;
+            while ((priceMatch = pricePattern.exec(beforeUnit)) !== null) {
+                const priceStr = priceMatch[1].replace(/[\s,]/g, '');
+                const price = parseFloat(priceStr);
+                if (price >= 50 && price < 100000) {
+                    allNumbers.push({
+                        index: priceMatch.index,
+                        value: price,
+                        text: priceMatch[1]
+                    });
+                }
+            }
+            
+            // 提取所有百分比（从右到左）
+            const percentPattern = /([-+]?\d+\.?\d*)%/g;
+            let percentMatch;
+            while ((percentMatch = percentPattern.exec(beforeUnit)) !== null) {
+                const percentValue = parseFloat(percentMatch[1]);
+                allPercentages.push({
+                    index: percentMatch.index,
+                    value: percentValue,
+                    text: percentMatch[0]
+                });
+            }
+            
+            // 按索引排序（从右到左，索引大的在前）
+            allNumbers.sort((a, b) => b.index - a.index);
+            allPercentages.sort((a, b) => b.index - a.index);
+            
+            if (allNumbers.length > 0) {
+                // 当前价格是最接近单位的（最后一个数字）
+                const currentPrice = allNumbers[0].value;
+                
+                const result = {
+                    found: true,
+                    price: currentPrice,
+                    unit: unit,
+                    // 历史数据
+                    week1Price: null,
+                    week1Change: null,
+                    month1Price: null,
+                    month1Change: null,
+                    quarter3Price: null,
+                    quarter3Change: null,
+                    year1Price: null,
+                    year1Change: null
+                };
+                
+                // 从右到左解析：当前价格 -> 1周价格 1周变化% -> 1个月价格 1个月变化% -> 3个月价格 3个月变化% -> 1年价格 1年变化%
+                // 格式：价格 变化% 价格 变化% ... 当前价格
+                // 所以：allNumbers[0] = 当前价格
+                //      allNumbers[1] = 1周价格，allPercentages[0] = 1周变化%（在1周价格前）
+                //      allNumbers[2] = 1个月价格，allPercentages[1] = 1个月变化%
+                //      allNumbers[3] = 3个月价格，allPercentages[2] = 3个月变化%
+                //      allNumbers[4] = 1年价格，allPercentages[3] = 1年变化%
+                
+                if (allNumbers.length >= 2) {
+                    result.week1Price = allNumbers[1].value;
+                    if (allPercentages.length >= 1 && allPercentages[0].index < allNumbers[1].index) {
+                        result.week1Change = allPercentages[0].value;
+                    }
+                }
+                
+                if (allNumbers.length >= 3) {
+                    result.month1Price = allNumbers[2].value;
+                    if (allPercentages.length >= 2 && allPercentages[1].index < allNumbers[2].index) {
+                        result.month1Change = allPercentages[1].value;
+                    }
+                }
+                
+                if (allNumbers.length >= 4) {
+                    result.quarter3Price = allNumbers[3].value;
+                    if (allPercentages.length >= 3 && allPercentages[2].index < allNumbers[3].index) {
+                        result.quarter3Change = allPercentages[2].value;
+                    }
+                }
+                
+                if (allNumbers.length >= 5) {
+                    result.year1Price = allNumbers[4].value;
+                    if (allPercentages.length >= 4 && allPercentages[3].index < allNumbers[4].index) {
+                        result.year1Change = allPercentages[3].value;
+                    }
+                }
+                
+                return result;
+            }
+        }
+        
+        // 如果没找到单位，尝试在名称前直接查找最后一个合理数字
+        const pricePatterns = [
+            /(\d{1,3}(?:,\d{3})+)\s+(?:[\/\s]*(?:teu|FEU|feu)\s*)?$/i,
+            /(\d{1,4}(?:\.\d+)?)\s+(?:[\/\s]*(?:teu|FEU|feu)\s*)?$/i
+        ];
+        
+        for (const pricePattern of pricePatterns) {
+            const priceMatch = beforeName.match(pricePattern);
+            if (priceMatch) {
+                const numStr = priceMatch[1].replace(/[\s,]/g, '');
+                const num = parseFloat(numStr);
+                if (num >= 50 && num < 100000) {
+                    // 尝试从上下文确定单位
+                    const context = beforeName.substring(Math.max(0, priceMatch.index - 50));
+                    const unit = context.includes('/FEU') || context.includes('/feu') ? 'FEU' : 'TEU';
+                    return { found: true, price: num, unit: unit, context: context };
+                }
+            }
+        }
+        
+        // 如果都没找到，返回上下文用于调试
+        const context = beforeName.substring(Math.max(0, beforeName.length - 200));
+        return { found: false, reason: '价格未找到', context: context };
+    }
+    
+    // 航线匹配模式：先尝试完整格式，再尝试简化格式
+    const routePatterns = [
+        // 完整格式（带括号）
+        { name: 'Europe (Base port)', patterns: ['Europe\\s*\\(Base\\s*port\\)', '\\bEurope\\b(?!\\s+(?:Market|SCFI|N\\.))'], unit: 'TEU' },
+        { name: 'Mediterranean (Base port)', patterns: ['Mediterranean\\s*\\(Base\\s*port\\)', '\\bMediterranean\\b(?!\\s+US)'], unit: 'TEU' },
+        { name: 'USWC (Base port)', patterns: ['USWC\\s*\\(Base\\s*port\\)', '\\bUSWC\\b(?!\\s*[/)])'], unit: 'FEU' },
+        { name: 'USEC (Base port)', patterns: ['USEC\\s*\\(Base\\s*port\\)', '\\bUSEC\\b(?!\\s*[/)])'], unit: 'FEU' },
+        { name: 'India (Nhava Sheva)', patterns: ['India\\s*\\(Nhava\\s*Sheva\\)', '\\bIndia\\b(?!\\s+\\()'], unit: 'TEU' },
+        { name: 'Persian Gulf (Dubai)', patterns: ['Persian\\s*Gulf\\s*\\(Dubai\\)', 'Persian\\s*Gulf(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'Australia (Melbourne)', patterns: ['Australia\\s*\\(Melbourne\\)', '\\bAustralia\\b(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'East Africa (Mombasa)', patterns: ['East\\s*Africa\\s*\\(Mombasa\\)', 'East\\s*Africa(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'West Africa (Lagos)', patterns: ['West\\s*Africa\\s*\\(Lagos\\)', 'West\\s*Africa(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'South Africa (Durban)', patterns: ['South\\s*Africa\\s*\\(Durban\\)', 'South\\s*Africa(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'South America (Santos)', patterns: ['South\\s*America\\s*\\(Santos\\)', 'South\\s*America(?!\\s*\\()'], unit: 'FEU' },
+        { name: 'Central America (Manzanillo)', patterns: ['Central\\s*America\\s*\\(Manzanillo\\)', 'Central\\s*America(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'West Japan (Osaka/Kobe)', patterns: ['West\\s*Japan\\s*\\(Osaka[\\s/]*Kobe\\)', 'West\\s*Japan(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'East Japan (Tokyo/Yokohama)', patterns: ['East\\s*Japan\\s*\\(Tokyo[\\s/]*Yokohama\\)', 'East\\s*Japan(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'Southeast Asia (Singapore)', patterns: ['Southeast\\s*Asia\\s*\\(Singapore\\)', 'Southeast\\s*Asia(?!\\s*\\()'], unit: 'TEU' },
+        { name: 'Korea (Busan)', patterns: ['Korea\\s*\\(Busan\\)', '\\bKorea\\b(?!\\s*\\()'], unit: 'TEU' }
+    ];
+    
+    routePatterns.forEach(pattern => {
+        let found = false;
+        // 尝试每个模式，直到找到匹配的
+        for (const pat of pattern.patterns) {
+            const result = findPriceBeforeName(tableArea, pat);
+            if (result.found) {
+                // 检查是否已存在同名航线
+                const existing = scfiData.routes.find(r => r.name === pattern.name && r.unit === (result.unit || pattern.unit));
+                if (!existing) {
+                    // 使用从表格中提取的单位，如果没有则使用预设单位
+                    const unit = result.unit || pattern.unit;
+                    const routeData = {
+                        name: pattern.name,
+                        current: result.price,
+                        unit: unit
+                    };
+                    
+                    // 添加历史数据
+                    if (result.week1Price !== null) routeData.week1Price = result.week1Price;
+                    if (result.week1Change !== null) routeData.week1Change = result.week1Change;
+                    if (result.month1Price !== null) routeData.month1Price = result.month1Price;
+                    if (result.month1Change !== null) routeData.month1Change = result.month1Change;
+                    if (result.quarter3Price !== null) routeData.quarter3Price = result.quarter3Price;
+                    if (result.quarter3Change !== null) routeData.quarter3Change = result.quarter3Change;
+                    
+                    // 检查是否是India/East Africa/Central America，这些航线没有上年数据
+                    const routeNameLower = pattern.name.toLowerCase();
+                    const hasNoYearData = routeNameLower.includes('india') || 
+                                         routeNameLower.includes('nhava sheva') ||
+                                         routeNameLower.includes('east africa') ||
+                                         routeNameLower.includes('mombasa') ||
+                                         routeNameLower.includes('central america') ||
+                                         routeNameLower.includes('manzanillo');
+                    
+                    // 只有非India/East Africa/Central America的航线才添加上年数据
+                    if (!hasNoYearData) {
+                        if (result.year1Price !== null) routeData.year1Price = result.year1Price;
+                        if (result.year1Change !== null) routeData.year1Change = result.year1Change;
+                    }
+                    // 对于India/East Africa/Central America，year1Price和year1Change保持为null，渲染时会显示"—"
+                    
+                    scfiData.routes.push(routeData);
+                    console.log(`[SCFI] ✓ 成功添加航线 ${pattern.name}: ${result.price} ${unit}`, 
+                        result.week1Price ? `(1周: ${result.week1Price}, 1月: ${result.month1Price}, 3月: ${result.quarter3Price}, 1年: ${result.year1Price})` : '');
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            // 如果所有模式都失败，输出最后一个模式的调试信息
+            const lastResult = findPriceBeforeName(tableArea, pattern.patterns[pattern.patterns.length - 1]);
+            console.warn(`[SCFI] 航线 ${pattern.name} ${lastResult.reason}`, lastResult.context ? `上下文: ${lastResult.context.substring(0, 100)}` : '');
+        }
+    });
+    
+    // 如果还是没找到，尝试更宽松的解析
+    if (scfiData.routes.length === 0) {
+        // 将文本按行分割
+        const lines = tableArea.split(/\s+/).filter(line => line.length > 0);
+        console.log('[SCFI] 尝试宽松解析，文本片段数:', lines.length);
+        
+        // 查找包含航线关键词和数字的行
+        lines.forEach((line, index) => {
+            if (line.length > 15 && line.length < 300) {
+                // 尝试匹配航线名称 + 数字的模式
+                const routeMatch = line.match(/([A-Za-z\s]+(?:\([^)]+\))?)\s+(\d{1,4}(?:[.,]\d+)?)/);
+                if (routeMatch) {
+                    const routeName = routeMatch[1].trim();
+                    const value = parseFloat(routeMatch[2].replace(/,/g, ''));
+                    // 检查是否是合理的价格
+                    if (value >= 100 && value < 100000 && routeName.length > 3) {
+                        // 避免重复
+                        const existing = scfiData.routes.find(r => r.name === routeName);
+                        if (!existing) {
+                            const unit = line.includes('/FEU') ? 'FEU' : (line.includes('/teu') || line.includes('/TEU') ? 'TEU' : '');
+                            scfiData.routes.push({
+                                name: routeName,
+                                current: value,
+                                unit: unit
+                            });
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    const result = scfiData.routes.length > 0 || scfiData.index ? scfiData : null;
+    console.log('[SCFI] parseScfiTableFromText 最终结果:', result);
+    if (result) {
+        console.log(`[SCFI] 解析成功: SCFI指数=${result.index}, 航线数=${result.routes.length}`);
+    } else {
+        console.warn('[SCFI] 解析失败: 未找到有效的 SCFI 数据');
+    }
+    return result;
+}
+
+/**
  * 处理市场报告文件
  * @param {File} file - PDF文件
  * @returns {Promise<void>}
@@ -511,12 +1895,46 @@ async function handleMarketReportFile(file) {
     }
     try {
         const text = await extractTextFromPdf(file);
+        let scfiData = null;
+        
+        // 尝试从第6页提取 SCFI 表格
+        try {
+            const page6Text = await extractTextFromPdfPage(file, 6);
+            if (page6Text) {
+                debugLog('第6页文本提取成功，长度:', page6Text.length);
+                debugLog('第6页文本预览:', page6Text.substring(0, 1000));
+                scfiData = parseScfiTable(page6Text);
+                debugLog('从第6页解析 SCFI 结果:', scfiData);
+                // 如果第6页没找到，尝试从全文搜索
+                if (!scfiData) {
+                    debugLog('第6页未找到 SCFI，尝试从全文搜索...');
+                    scfiData = parseScfiTable(text);
+                    debugLog('从全文解析 SCFI 结果:', scfiData);
+                }
+            } else {
+                debugWarn('第6页文本为空，从全文搜索...');
+                // 如果第6页提取失败，从全文搜索
+                scfiData = parseScfiTable(text);
+                debugLog('从全文解析 SCFI 结果:', scfiData);
+            }
+        } catch (error) {
+            debugWarn('提取 SCFI 数据失败，尝试从全文搜索:', error);
+            scfiData = parseScfiTable(text);
+            debugLog('从全文解析 SCFI 结果（错误后）:', scfiData);
+        }
+        
         if (text) {
             marketReports.push({
                 name: file.name,
                 text,
-                textLength: text.length
+                textLength: text.length,
+                scfiData: scfiData || undefined
             });
+        }
+        
+        // 如果找到 SCFI 数据，触发更新事件
+        if (scfiData && typeof window !== 'undefined' && typeof window.onScfiDataExtracted === 'function') {
+            window.onScfiDataExtracted(scfiData, file.name);
         }
     } catch (error) {
         debugError('解析PDF失败', file.name, error);
@@ -2055,3 +3473,57 @@ function buildFbxDataSection(fbxData) {
     return prompt;
 }
 
+/**
+ * 构建 SCFI 数据部分（从市场报告中提取）
+ * @param {Array} marketReports - 市场报告数组
+ * @returns {string} 提示词片段
+ */
+function buildScfiDataSection(marketReports) {
+    if (!marketReports || !Array.isArray(marketReports)) {
+        return '';
+    }
+    
+    // 查找包含 SCFI 数据的报告
+    const reportsWithScfi = marketReports.filter(report => report.scfiData);
+    if (reportsWithScfi.length === 0) {
+        return '';
+    }
+    
+    // 使用最新的报告数据
+    const latestReport = reportsWithScfi[reportsWithScfi.length - 1];
+    const scfiData = latestReport.scfiData;
+    
+    let prompt = `\n【上海出口集装箱运价指数（SCFI）- 来自 ${latestReport.name}】
+`;
+    
+    if (scfiData.index) {
+        prompt += `- SCFI 综合指数：${scfiData.index.toLocaleString()}\n`;
+    }
+    
+    if (scfiData.routes && scfiData.routes.length > 0) {
+        scfiData.routes.forEach(route => {
+            const unitText = route.unit ? ` ${route.unit}` : '';
+            const currentText = typeof route.current === 'number' 
+                ? route.current.toLocaleString() 
+                : '—';
+            prompt += `- ${route.name}：${currentText}${unitText}\n`;
+        });
+    }
+    
+    return prompt;
+}
+
+// 导出函数到全局
+if (typeof window !== 'undefined') {
+    window.extractTextFromPdfPage = window.extractTextFromPdfPage || extractTextFromPdfPage;
+    window.parseScfiTable = window.parseScfiTable || parseScfiTable;
+    window.parseScfiTableFromText = window.parseScfiTableFromText || parseScfiTableFromText;
+    window.buildScfiDataSection = window.buildScfiDataSection || buildScfiDataSection;
+    window.extractTextFromPdf = window.extractTextFromPdf || extractTextFromPdf;
+    window.handleMarketReportFile = window.handleMarketReportFile || handleMarketReportFile;
+    window.renderMarketReportList = window.renderMarketReportList || renderMarketReportList;
+    window.buildMarketReportsSection = window.buildMarketReportsSection || buildMarketReportsSection;
+    window.buildBunkerDataSection = window.buildBunkerDataSection || buildBunkerDataSection;
+    window.buildWciDataSection = window.buildWciDataSection || buildWciDataSection;
+    window.buildFbxDataSection = window.buildFbxDataSection || buildFbxDataSection;
+}

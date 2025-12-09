@@ -6,14 +6,28 @@
 (function() {
     'use strict';
 
+    // 提供 debug 函数的降级实现（如果 debug-utils.js 尚未加载）
+    const debugLog = typeof window !== 'undefined' && typeof window.debugLog === 'function'
+        ? window.debugLog
+        : function(...args) { console.log('[lib-loader]', ...args); };
+    
+    const debugWarn = typeof window !== 'undefined' && typeof window.debugWarn === 'function'
+        ? window.debugWarn
+        : function(...args) { console.warn('[lib-loader]', ...args); };
+    
+    const debugError = typeof window !== 'undefined' && typeof window.debugError === 'function'
+        ? window.debugError
+        : function(...args) { console.error('[lib-loader]', ...args); };
+
     /**
      * 通用库加载函数
      * @param {string} globalName - 全局变量名（如 'XLSX' 或 'Chart'）
-     * @param {string[]} remoteSources - CDN源数组
+     * @param {string[]} localSources - 本地文件路径数组（优先使用）
+     * @param {string[]} remoteSources - CDN源数组（作为fallback）
      * @param {string} libraryName - 库名称（用于错误消息）
      * @returns {Promise<boolean>} 加载是否成功
      */
-    function loadLibrary(globalName, remoteSources, libraryName) {
+    function loadLibrary(globalName, localSources, remoteSources, libraryName) {
         // 如果库已加载，直接返回成功
         if (typeof window[globalName] !== 'undefined') {
             return Promise.resolve(true);
@@ -21,22 +35,24 @@
 
         return new Promise((resolve) => {
             let currentIndex = 0;
+            const allSources = [...localSources, ...remoteSources];
 
             function tryLoadNext() {
-                if (currentIndex >= remoteSources.length) {
+                if (currentIndex >= allSources.length) {
                     debugError(`${libraryName} 无法加载，请检查网络或手动刷新后重试`);
                     resolve(false);
                     return;
                 }
 
-                const url = remoteSources[currentIndex];
+                const url = allSources[currentIndex];
                 const script = document.createElement('script');
                 script.src = url;
                 script.async = true;
                 
                 script.onload = () => {
                     if (typeof window[globalName] !== 'undefined') {
-                        debugLog(`${libraryName} loaded from`, url);
+                        const sourceType = currentIndex < localSources.length ? '本地' : 'CDN';
+                        debugLog(`${libraryName} loaded from ${sourceType}:`, url);
                         resolve(true);
                     } else {
                         // 加载了但库未定义，尝试下一个
@@ -46,7 +62,8 @@
                 };
                 
                 script.onerror = () => {
-                    debugWarn(`${libraryName} load failed from`, url, 'trying next...');
+                    const sourceType = currentIndex < localSources.length ? '本地' : 'CDN';
+                    debugWarn(`${libraryName} load failed from ${sourceType}:`, url, 'trying next...');
                     currentIndex++;
                     tryLoadNext();
                 };
@@ -60,28 +77,46 @@
 
     /**
      * 加载XLSX库
-     * 使用 script 标签直接加载，避免浏览器的跟踪防护阻止
+     * 优先使用本地文件，失败时回退到CDN
      */
     function ensureXlsx() {
+        const localSources = [
+            'vendor/xlsx.full.min.js'
+        ];
         const remoteSources = [
+            'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
+            'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js',
+            'https://unpkg.com/xlsx@0.20.3/dist/xlsx.full.min.js',
+            // 如果最新版本不可用，回退到0.18.5
             'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
             'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
             'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
         ];
-        return loadLibrary('XLSX', remoteSources, 'XLSX');
+        return loadLibrary('XLSX', localSources, remoteSources, 'XLSX');
     }
 
     /**
      * 加载Chart.js库
-     * 使用 script 标签直接加载，避免浏览器的跟踪防护阻止
+     * 优先使用本地文件，失败时回退到CDN
      */
     function ensureChartJs() {
+        const localSources = [
+            'vendor/chart.umd.min.js'
+        ];
         const remoteSources = [
+            'https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js',
+            'https://unpkg.com/chart.js@4.5.1/dist/chart.umd.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js',
+            // 如果4.5.1不可用，回退到4.4.6
+            'https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js',
+            'https://unpkg.com/chart.js@4.4.6/dist/chart.umd.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.6/chart.umd.min.js',
+            // 如果4.4.6不可用，回退到4.4.0
             'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
             'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js',
             'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
         ];
-        return loadLibrary('Chart', remoteSources, 'Chart.js');
+        return loadLibrary('Chart', localSources, remoteSources, 'Chart.js');
     }
 
     // 导出到全局

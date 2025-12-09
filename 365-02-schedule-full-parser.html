@@ -177,13 +177,40 @@
             for (const item2 of item2s) {
                 const h4s = findAll(item2, 'h4');
                 
-                // First check for "实际开航：11/21(周五)" format (history voyages)
+                let actualEtd = '';
+                let estimatedEtd = '';
+                
+                // First check for "实际开航：11/21(周五)" or "实际开航：--/--" format (history voyages)
                 for (const h4 of h4s) {
                     const t = text(h4);
                     if (t.includes('实际开航：')) {
-                        const match = t.match(/实际开航：\s*(\d{1,2}\/\d{1,2}\([^)]+\))/);
-                        if (match) return match[1];
+                        // Check if it's "--/--" (no actual date)
+                        if (t.includes('实际开航：--/--')) {
+                            actualEtd = '--/--';
+                        } else {
+                            // Try to extract actual date
+                            const match = t.match(/实际开航：\s*(\d{1,2}\/\d{1,2}\([^)]+\))/);
+                            if (match) {
+                                actualEtd = match[1];
+                            }
+                        }
                     }
+                    // Also check for "预计开航：12/03(周三)" format
+                    if (t.includes('预计开航：')) {
+                        const match = t.match(/预计开航：\s*(\d{1,2}\/\d{1,2}\([^)]+\))/);
+                        if (match) {
+                            estimatedEtd = match[1];
+                        }
+                    }
+                }
+                
+                // If actual ETD is "--/--" or empty, use estimated ETD
+                if (actualEtd === '--/--' || !actualEtd) {
+                    if (estimatedEtd) {
+                        return estimatedEtd;
+                    }
+                } else if (actualEtd) {
+                    return actualEtd;
                 }
                 
                 // Then check for regular ETD format like "11/28(周五)" (AI voyages)

@@ -569,10 +569,11 @@
       // 注意：Monitor-Rate-Trends.html 需要 Chart.js 4.4.6，而公共加载器使用 4.4.0
       // 如果需要特定版本，可以在这里覆盖（目前使用 4.4.0 应该也兼容）
 
-      // 动态加载 html2canvas 库（多个备用源）
+      // 动态加载 html2canvas 库（优先使用本地文件）
       (function ensureHtml2Canvas() {
         if (typeof window.html2canvas !== "undefined") return;
         const sources = [
+          "vendor/html2canvas.min.js",  // 本地文件优先
           "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
           "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js",
           "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
@@ -597,10 +598,11 @@
         tryLoad();
       })();
 
-      // 动态加载 jsPDF 库（多个备用源）
+      // 动态加载 jsPDF 库（优先使用本地文件）
       (function ensureJsPdf() {
         if (typeof window.jspdf !== "undefined") return;
         const sources = [
+          "vendor/jspdf.umd.min.js",  // 本地文件优先
           "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js",
           "https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js",
           "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
@@ -966,19 +968,129 @@
         try {
           dom.exportBtn.disabled = true;
           dom.exportBtn.textContent = "导出中...";
-          // 选择要导出的内容区域（排除 header 和 footer）
-          const target = document.querySelector(".content");
-          if (!target) {
+          
+          // 将 Chart.js 图表转换为图片（在克隆前）
+          const chartCanvases = document.querySelectorAll('.content canvas');
+          const canvasToImageMap = new Map();
+          
+          for (const canvas of chartCanvases) {
+            try {
+              const chart = Chart.getChart(canvas);
+              if (chart) {
+                // 将图表 canvas 转换为 base64 图片
+                const imageData = canvas.toDataURL('image/png', 1.0);
+                canvasToImageMap.set(canvas, imageData);
+              }
+            } catch (e) {
+              console.warn('无法转换图表:', e);
+            }
+          }
+          
+          // 创建临时容器，包含 header、content 和 footer
+          const header = document.querySelector(".header");
+          const content = document.querySelector(".content");
+          const footer = document.querySelector(".page-footer");
+          
+          if (!header || !content) {
             throw new Error("找不到要导出的内容区域");
           }
+          
+          // 创建临时包装容器
+          const tempContainer = document.createElement("div");
+          tempContainer.style.position = "absolute";
+          tempContainer.style.left = "-9999px";
+          tempContainer.style.top = "0";
+          tempContainer.style.width = content.offsetWidth + "px";
+          tempContainer.style.backgroundColor = "#ffffff";
+          tempContainer.style.padding = "0";
+          tempContainer.style.margin = "0";
+          
+          // 克隆 header
+          const headerClone = header.cloneNode(true);
+          headerClone.style.margin = "0";
+          headerClone.style.padding = window.getComputedStyle(header).padding;
+          tempContainer.appendChild(headerClone);
+          
+          // 深度克隆 content，并替换 canvas 为图片
+          const contentClone = content.cloneNode(true);
+          contentClone.style.margin = "0";
+          contentClone.style.padding = window.getComputedStyle(content).padding;
+          
+          // 在克隆的 content 中查找所有 canvas，并用对应的图片替换
+          const clonedCanvases = contentClone.querySelectorAll('canvas');
+          const originalCanvasArray = Array.from(chartCanvases);
+          
+          clonedCanvases.forEach((clonedCanvas, index) => {
+            // 通过索引匹配（因为克隆保持了相同的结构）
+            if (index < originalCanvasArray.length) {
+              const originalCanvas = originalCanvasArray[index];
+              if (canvasToImageMap.has(originalCanvas)) {
+                const img = document.createElement('img');
+                img.src = canvasToImageMap.get(originalCanvas);
+                const computedStyle = window.getComputedStyle(originalCanvas);
+                img.style.width = computedStyle.width || originalCanvas.width + 'px';
+                img.style.height = computedStyle.height || originalCanvas.height + 'px';
+                img.style.display = 'block';
+                img.style.maxWidth = '100%';
+                // Keep aspect ratio
+                if (computedStyle.height && computedStyle.width) {
+                  img.style.height = 'auto';
+                }
+                clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
+              }
+            }
+          });
+          
+          tempContainer.appendChild(contentClone);
+          
+          if (footer) {
+            const footerClone = footer.cloneNode(true);
+            footerClone.style.margin = "0";
+            footerClone.style.padding = window.getComputedStyle(footer).padding;
+            tempContainer.appendChild(footerClone);
+          }
+          
+          document.body.appendChild(tempContainer);
+          
+          // 等待图片加载完成
+          await new Promise(resolve => {
+            const images = tempContainer.querySelectorAll('img');
+            if (images.length === 0) {
+              resolve();
+              return;
+            }
+            let loaded = 0;
+            const checkComplete = () => {
+              loaded++;
+              if (loaded === images.length) {
+                setTimeout(resolve, 100); // 额外等待100ms确保渲染完成
+              }
+            };
+            images.forEach(img => {
+              if (img.complete) {
+                checkComplete();
+              } else {
+                img.onload = checkComplete;
+                img.onerror = checkComplete;
+              }
+            });
+          });
+          
           const previousScroll = window.scrollY;
           window.scrollTo(0, 0);
-          const canvas = await html2canvas(target, {
+          
+          const canvas = await html2canvas(tempContainer, {
             scale: Math.min(window.devicePixelRatio || 1, 1.5),
             useCORS: true,
             backgroundColor: "#ffffff",
             logging: false,
+            windowWidth: tempContainer.scrollWidth,
+            windowHeight: tempContainer.scrollHeight,
+            allowTaint: true,
           });
+          
+          // 清理临时容器
+          document.body.removeChild(tempContainer);
           window.scrollTo(0, previousScroll);
 
           const maxBytes = 2 * 1024 * 1024;

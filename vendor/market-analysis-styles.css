@@ -212,6 +212,32 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
+/* 筛选器操作按钮容器（与 Monitor-Sailing-Schedule 保持一致） */
+.filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* 筛选器操作按钮（与 Monitor-Sailing-Schedule 保持一致） */
+.filter-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
 button.file-btn {
     border: none;
     font-family: inherit;

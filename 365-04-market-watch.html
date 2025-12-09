@@ -187,14 +187,22 @@
                                 <select id="marketRegionSelect" multiple size="6" class="multi-select">
                                     <option value="">全部区域</option>
                                 </select>
-                                <small class="multi-hint">可多选（点击即可勾选或取消）</small>
+                            <div class="filter-actions">
+                                <button type="button" class="filter-btn" id="marketRegionSelectAll">全部选择</button>
+                                <button type="button" class="filter-btn" id="marketRegionClear">清除选择</button>
+                            </div>
+                            <small class="multi-hint">可多选（点击即可勾选或取消）</small>
                             </div>
                             <div class="filter-group">
                                 <label>选择港口</label>
                                 <select id="marketPortSelect" multiple size="6" class="multi-select" disabled>
                                     <option value="">请先加载数据</option>
                                 </select>
-                                <small class="multi-hint">可多选（点击即可勾选或取消）</small>
+                            <div class="filter-actions">
+                                <button type="button" class="filter-btn" id="marketPortSelectAll">全部选择</button>
+                                <button type="button" class="filter-btn" id="marketPortClear">清除选择</button>
+                            </div>
+                            <small class="multi-hint">可多选（点击即可勾选或取消）</small>
                             </div>
                         </div>
                     </div>
@@ -241,28 +249,44 @@
                             <select id="areaSelect" multiple size="6" class="multi-select">
                                 <option value="">全部区域</option>
                             </select>
-                            <small class="multi-hint">可多选（点击即可勾选）</small>
+                            <div class="filter-actions">
+                                <button type="button" class="filter-btn" id="areaSelectAll">全部选择</button>
+                                <button type="button" class="filter-btn" id="areaClearAll">清除选择</button>
+                            </div>
+                            <small class="multi-hint">可多选（点击即可勾选或取消）</small>
                         </div>
                         <div class="filter-group">
                             <label for="subAreaSelect">子区域</label>
                             <select id="subAreaSelect" disabled multiple size="6" class="multi-select">
                                 <option value="">全部子区域</option>
                             </select>
-                            <small class="multi-hint">可多选（点击即可勾选）</small>
+                            <div class="filter-actions">
+                                <button type="button" class="filter-btn" id="subAreaSelectAll">全部选择</button>
+                                <button type="button" class="filter-btn" id="subAreaClearAll">清除选择</button>
+                            </div>
+                            <small class="multi-hint">可多选（点击即可勾选或取消）</small>
                         </div>
                         <div class="filter-group">
                             <label for="countrySelect">国家 / 地区</label>
                             <select id="countrySelect" disabled multiple size="6" class="multi-select">
                                 <option value="">全部国家 / 地区</option>
                             </select>
-                            <small class="multi-hint">可多选（点击即可勾选）</small>
+                            <div class="filter-actions">
+                                <button type="button" class="filter-btn" id="countrySelectAll">全部选择</button>
+                                <button type="button" class="filter-btn" id="countryClearAll">清除选择</button>
+                            </div>
+                            <small class="multi-hint">可多选（点击即可勾选或取消）</small>
                         </div>
                         <div class="filter-group">
                             <label for="portSelect">港口</label>
                             <select id="portSelect" disabled multiple size="6" class="multi-select">
                                 <option value="">全部港口</option>
                             </select>
-                            <small class="multi-hint">可多选（点击即可勾选）</small>
+                            <div class="filter-actions">
+                                <button type="button" class="filter-btn" id="portSelectAll">全部选择</button>
+                                <button type="button" class="filter-btn" id="portClearAll">清除选择</button>
+                            </div>
+                            <small class="multi-hint">可多选（点击即可勾选或取消）</small>
                         </div>
                     </div>
                     <div id="infoBox" class="info-box hidden">
@@ -360,14 +384,6 @@
                             </div>
                             <div class="index-info">
                                 <div>
-                                    <h4>中国出口集装箱运价指数（CCFI）</h4>
-                                    <p id="ccfiStatus">尚未抓取 CCFI 数据</p>
-                                    <small id="ccfiUpdated" class="index-meta">最近更新时间：—</small>
-                                </div>
-                                <button class="action-btn" id="refreshCcfiBtn">更新 CCFI</button>
-                            </div>
-                            <div class="index-info">
-                                <div>
                                     <h4>WCI 主要航线现货价</h4>
                                     <p id="wciStatus">尚未抓取 WCI 数据</p>
                                     <small id="wciUpdated" class="index-meta">最近更新时间：—</small>
@@ -381,6 +397,13 @@
                                     <small id="fbxUpdated" class="index-meta">最近更新时间：—</small>
                                 </div>
                                 <button class="action-btn" id="refreshFbxBtn">更新 FBX</button>
+                            </div>
+                            <div class="index-info" id="scfiInfoContainer" style="display: none;">
+                                <div>
+                                    <h4>SCFI 运价指数（来自市场报告）</h4>
+                                    <div id="scfiTableContainer"></div>
+                                    <small id="scfiSource" class="index-meta">数据来源：—</small>
+                                </div>
                             </div>
                             <div class="ai-tabs">
                                 <div class="ai-tab-buttons">
@@ -522,11 +545,19 @@
         let marketSelectedPorts = [];
         let marketSelectorsInitialized = false;
 
+        // 自定义区域顺序（用于市场运价与运力区域）
+        const CUSTOM_REGION_ORDER = ['北美洲', '拉丁美洲', '欧洲', '中东红海印巴', '澳洲', '非洲', '东南亚'];
+
         let pdfJsReady = false;
         let pdfJsLoadingPromise = null;
 
         if (window.pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            // 优先使用本地 worker，失败时使用 CDN
+            try {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
+            } catch (e) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
             pdfJsReady = true;
         }
 
@@ -537,7 +568,6 @@
 
         let marketReports = [];
         let bunkerData = null;
-        let ccfiData = null;
         let wciData = null;
         let fbxData = null;
         const excelLoadState = { market: false, schedule: false };
@@ -558,9 +588,6 @@
         const bunkerStatusEl = document.getElementById('bunkerStatus');
         const bunkerUpdatedEl = document.getElementById('bunkerUpdated');
         const refreshBunkerBtn = document.getElementById('refreshBunkerBtn');
-        const ccfiStatusEl = document.getElementById('ccfiStatus');
-        const ccfiUpdatedEl = document.getElementById('ccfiUpdated');
-        const refreshCcfiBtn = document.getElementById('refreshCcfiBtn');
         const wciStatusEl = document.getElementById('wciStatus');
         const wciUpdatedEl = document.getElementById('wciUpdated');
         const refreshWciBtn = document.getElementById('refreshWciBtn');
@@ -598,13 +625,6 @@
                 bunkerUpdatedEl && (bunkerUpdatedEl.textContent = '最近更新时间：—');
             });
         });
-        refreshCcfiBtn?.addEventListener('click', () => {
-            fetchCcfiData(true).catch(error => {
-                debugWarn('CCFI 数据抓取失败', error);
-                ccfiStatusEl && (ccfiStatusEl.textContent = '抓取失败，请稍后重试或检查网络');
-                ccfiUpdatedEl && (ccfiUpdatedEl.textContent = '最近更新时间：—');
-            });
-        });
         refreshWciBtn?.addEventListener('click', () => {
             fetchWciData(true).catch(error => {
                 debugWarn('WCI 抓取失败', error);
@@ -619,13 +639,18 @@
         });
 
         const CACHE_KEYS = {
-            ccfi: 'ccfiDataCache',
             wci: 'wciDataCache',
             fbx: 'fbxDataCache'
         };
 
         // escapeRegex, computePercentChange, formatPercent, loadCachedData, saveCachedData 已从 vendor/common-utils.js 加载
-        // applyWoWFromCache, extractTextFromPdf, handleMarketReportFile 已从 vendor/market-analysis-utils.js 加载
+        // applyWoWFromCache, extractTextFromPdf, handleMarketReportFile, parseScfiTable, buildScfiDataSection 已从 vendor/market-analysis-utils.js 加载
+
+        // 注册 SCFI 数据提取回调
+        window.onScfiDataExtracted = (data, fileName) => {
+            scfiData = data;
+            renderScfiTable(data, fileName);
+        };
 
         if (marketReportInput) {
             marketReportInput.addEventListener('change', async (e) => {
@@ -637,6 +662,38 @@
                 for (const file of files) {
                     try {
                         await handleMarketReportFile(file);
+                        // 检查是否提取到 SCFI 数据
+                        const latestReport = marketReports[marketReports.length - 1];
+                        if (latestReport) {
+                            debugLog('市场报告解析完成:', {
+                                name: latestReport.name,
+                                hasScfiData: !!latestReport.scfiData,
+                                scfiData: latestReport.scfiData
+                            });
+                            if (latestReport.scfiData) {
+                                scfiData = latestReport.scfiData;
+                                renderScfiTable(latestReport.scfiData, file.name);
+                            } else {
+                                debugWarn('未找到 SCFI 数据，尝试手动提取...');
+                                // 如果自动提取失败，尝试手动从全文提取
+                                try {
+                                    const fullText = latestReport.text;
+                                    if (fullText) {
+                                        const extractedScfi = parseScfiTable(fullText);
+                                        if (extractedScfi) {
+                                            debugLog('手动提取 SCFI 数据成功:', extractedScfi);
+                                            scfiData = extractedScfi;
+                                            latestReport.scfiData = extractedScfi;
+                                            renderScfiTable(extractedScfi, file.name);
+                                        } else {
+                                            debugWarn('手动提取也失败，文本内容:', fullText.substring(0, 500));
+                                        }
+                                    }
+                                } catch (extractError) {
+                                    debugError('手动提取 SCFI 失败:', extractError);
+                                }
+                            }
+                        }
                     } catch (error) {
                         debugError('解析PDF失败:', error);
                         showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', { message: error.message || String(error) }, error);
@@ -645,6 +702,128 @@
                 renderMarketReportList();
                 marketReportInput.value = '';
             });
+        }
+
+        /**
+         * 渲染 SCFI 表格
+         * @param {Object} data - SCFI 数据
+         * @param {string} source - 数据来源文件名
+         */
+        function renderScfiTable(data, source) {
+            const container = document.getElementById('scfiTableContainer');
+            const sourceEl = document.getElementById('scfiSource');
+            const infoContainer = document.getElementById('scfiInfoContainer');
+            
+            if (!container || !infoContainer) {
+                debugWarn('SCFI 表格容器未找到');
+                return;
+            }
+            
+            debugLog('渲染 SCFI 表格，数据:', data);
+            
+            if (!data || (!data.index && (!data.routes || data.routes.length === 0))) {
+                debugWarn('SCFI 数据为空，隐藏表格');
+                infoContainer.style.display = 'none';
+                return;
+            }
+            
+            infoContainer.style.display = 'block';
+            let html = '<table class="scfi-table" style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; table-layout: fixed;">';
+            
+            // 表头
+            html += '<tr style="background: #f5f5f5;">';
+            html += '<th style="padding: 8px; text-align: left; border: 1px solid #ddd; width: 15%;">航线</th>';
+            html += '<th style="padding: 8px; text-align: center; border: 1px solid #ddd; width: 5%;">单位</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">当期指数</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上期指数</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上期对比%</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上月指数</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上月对比%</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上季度指数</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上季度对比%</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上年指数</th>';
+            html += '<th style="padding: 8px; text-align: right; border: 1px solid #ddd; width: 8%;">上年对比%</th>';
+            html += '</tr>';
+            
+            // SCFI 综合指数行（作为第一行数据，在表头下面）
+            if (data.index) {
+                const formatValue = (val) => typeof val === 'number' ? val.toLocaleString() : '—';
+                const formatPercent = (val) => {
+                    if (val === null || val === undefined) return '—';
+                    const sign = val >= 0 ? '+' : '';
+                    return sign + val.toFixed(1) + '%';
+                };
+                
+                html += '<tr style="background: #f9f9f9; font-weight: bold;">';
+                html += '<td style="padding: 8px; border: 1px solid #ddd;">SCFI 综合指数</td>';
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">—</td>'; // 单位列
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatValue(data.index) + '</td>';
+                // 上期指数 = 1周指数 (indexWeek1)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatValue(data.indexWeek1) + '</td>';
+                // 上期对比% = 1周变化% (indexWeek1Change)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatPercent(data.indexWeek1Change) + '</td>';
+                // 上月指数 = 1个月指数 (indexMonth1)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatValue(data.indexMonth1) + '</td>';
+                // 上月对比% = 1个月变化% (indexMonth1Change)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatPercent(data.indexMonth1Change) + '</td>';
+                // 上季度指数 = 3个月指数 (indexQuarter3)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatValue(data.indexQuarter3) + '</td>';
+                // 上季度对比% = 3个月变化% (indexQuarter3Change)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatPercent(data.indexQuarter3Change) + '</td>';
+                // 上年指数 = 1年指数 (indexYear1)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatValue(data.indexYear1) + '</td>';
+                // 上年对比% = 1年变化% (indexYear1Change)
+                html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + formatPercent(data.indexYear1Change) + '</td>';
+                html += '</tr>';
+            }
+            
+            if (data.routes && data.routes.length > 0) {
+                // 数据行
+                data.routes.forEach(route => {
+                    const formatValue = (val) => typeof val === 'number' ? val.toLocaleString() : '—';
+                    const formatPercent = (val) => {
+                        if (val === null || val === undefined) return '—';
+                        const sign = val >= 0 ? '+' : '';
+                        return sign + val.toFixed(1) + '%';
+                    };
+                    
+                    // 检查是否是India/East Africa/Central America，这些航线没有上年数据
+                    const routeNameLower = (route.name || '').toLowerCase();
+                    const hasNoYearData = routeNameLower.includes('india') || 
+                                         routeNameLower.includes('nhava sheva') ||
+                                         routeNameLower.includes('east africa') ||
+                                         routeNameLower.includes('mombasa') ||
+                                         routeNameLower.includes('central america') ||
+                                         routeNameLower.includes('manzanillo');
+                    
+                    html += '<tr>';
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd;">${route.name}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center;">${route.unit || '—'}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatValue(route.current)}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatValue(route.week1Price)}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatPercent(route.week1Change)}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatValue(route.month1Price)}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatPercent(route.month1Change)}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatValue(route.quarter3Price)}</td>`;
+                    html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatPercent(route.quarter3Change)}</td>`;
+                    // 如果是India/East Africa/Central America，上年数据显示为"—"
+                    if (hasNoYearData) {
+                        html += '<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">—</td>';
+                        html += '<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">—</td>';
+                    } else {
+                        html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatValue(route.year1Price)}</td>`;
+                        html += `<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${formatPercent(route.year1Change)}</td>`;
+                    }
+                    html += '</tr>';
+                });
+            }
+            
+            html += '</table>';
+            container.innerHTML = html;
+            
+            if (sourceEl) {
+                sourceEl.textContent = `数据来源：${source}`;
+            }
         }
 
         function initMarketSelectors() {
@@ -677,7 +856,11 @@
                 (marketRegionPortMap[region] || []).forEach(port => portSet.add(port));
             });
 
-            const uniquePorts = Array.from(portSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+            // 使用标准港口顺序排序
+            const allPorts = Array.from(portSet);
+            const uniquePorts = (typeof sortPortsByStandardOrder === 'function')
+                ? sortPortsByStandardOrder(allPorts)
+                : allPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
             const filteredSelection = marketSelectedPorts.filter(port => uniquePorts.includes(port));
             marketSelectedPorts = filteredSelection;
             const selectedSet = new Set(filteredSelection);
@@ -773,7 +956,43 @@
                     marketRegionPortMap[region].add(port);
                 });
 
-                marketRegions = Object.keys(marketRegionPortMap).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+                // 使用标准区域顺序排序（严格按照 STANDARD_AREA_ORDER 的顺序）
+                const allRegions = Object.keys(marketRegionPortMap);
+                // 处理区域名称变体（如"中东印巴红海" -> "中东红海印巴"）
+                const normalizeAreaName = (areaName) => {
+                    if (!areaName) return areaName;
+                    // 如果包含"中东"、"印巴"、"红海"这些关键词，统一映射到"中东红海印巴"
+                    if (areaName.includes('中东') && (areaName.includes('印巴') || areaName.includes('红海'))) {
+                        return '中东红海印巴';
+                    }
+                    return areaName;
+                };
+                
+                // 确保使用标准区域顺序排序
+                if (typeof sortAreasByStandardOrder === 'function') {
+                    marketRegions = sortAreasByStandardOrder(allRegions);
+                } else if (typeof STANDARD_AREA_ORDER !== 'undefined') {
+                    // 如果 sortAreasByStandardOrder 不可用，手动排序
+                    const areaOrderMap = new Map();
+                    STANDARD_AREA_ORDER.forEach((area, index) => {
+                        areaOrderMap.set(area, index);
+                    });
+                    // 创建新数组进行排序，不修改原数组
+                    marketRegions = [...allRegions].sort((a, b) => {
+                        const normalizedA = normalizeAreaName(a);
+                        const normalizedB = normalizeAreaName(b);
+                        const indexA = areaOrderMap.has(normalizedA) ? areaOrderMap.get(normalizedA) : Infinity;
+                        const indexB = areaOrderMap.has(normalizedB) ? areaOrderMap.get(normalizedB) : Infinity;
+                        if (indexA !== Infinity && indexB !== Infinity) {
+                            return indexA - indexB;
+                        }
+                        if (indexA !== Infinity) return -1;
+                        if (indexB !== Infinity) return 1;
+                        return a.localeCompare(b, 'zh-Hans-CN');
+                    });
+                } else {
+                    marketRegions = [...allRegions].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+                }
                 const totalPorts = marketRegions.reduce((sum, region) => sum + marketRegionPortMap[region].size, 0);
                 marketRegions.forEach(region => {
                     marketRegionPortMap[region] = Array.from(marketRegionPortMap[region]).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
@@ -786,6 +1005,7 @@
                     placeholder.textContent = '全部区域';
                     placeholder.selected = true;
                     marketRegionSelect.appendChild(placeholder);
+                    // marketRegions 已经按标准顺序排序，直接使用
                     marketRegions.forEach(region => {
                         const option = document.createElement('option');
                         option.value = region;
@@ -1227,32 +1447,9 @@
                 .add(portKey);
         }
 
-        function populateSelect(selectEl, options, placeholder, selectedValues, shouldDisable = false) {
-            if (!selectEl) return;
-            const uniqueOptions = Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
-            const selectedArray = Array.isArray(selectedValues)
-                ? selectedValues
-                : (selectedValues ? [selectedValues] : []);
-            const selectedSet = new Set(selectedArray);
-            selectEl.innerHTML = '';
-            const placeholderOption = document.createElement('option');
-            placeholderOption.value = '';
-            placeholderOption.textContent = placeholder;
-            if (!selectedSet.size) {
-                placeholderOption.selected = true;
-            }
-            selectEl.appendChild(placeholderOption);
-            uniqueOptions.forEach(optionValue => {
-                const option = document.createElement('option');
-                option.value = optionValue;
-                option.textContent = optionValue;
-                if (selectedSet.has(optionValue)) {
-                    option.selected = true;
-                }
-                selectEl.appendChild(option);
-            });
-            selectEl.disabled = shouldDisable || uniqueOptions.length === 0;
-        }
+        // populateSelect 函数已从 vendor/market-analysis-utils.js 加载
+        // 本地的 populateSelect 函数已被移除，统一使用 vendor 中的版本以支持 useAreaOrder 和 usePortOrder 参数
+        // 如果需要调用，直接使用 populateSelect 即可（它会使用全局函数）
 
         function collectCountryOptions(area, selectedSubAreas) {
             if (!area || !selectedSubAreas || !selectedSubAreas.length) return [];
@@ -1356,7 +1553,21 @@
                 : [];
             destinationFilters.ports = destinationFilters.ports.filter(value => portOptions.includes(value));
 
-            populateSelect(areaSelect, areaOptions, '全部区域', destinationFilters.areas, false);
+            // 使用标准区域顺序排序（严格按照 STANDARD_AREA_ORDER 的顺序）
+            // 处理区域名称变体（如"中东印巴红海" -> "中东红海印巴"）
+            const normalizeAreaName = (areaName) => {
+                if (!areaName) return areaName;
+                // 如果包含"中东"、"印巴"、"红海"这些关键词，统一映射到"中东红海印巴"
+                if (areaName.includes('中东') && (areaName.includes('印巴') || areaName.includes('红海'))) {
+                    return '中东红海印巴';
+                }
+                return areaName;
+            };
+            
+            // 确保使用标准区域顺序排序
+            // 注意：直接使用 useAreaOrder=true，让 populateSelect 内部处理排序
+            // 这样可以确保排序逻辑统一，避免重复排序
+            populateSelect(areaSelect, areaOptions, '全部区域', destinationFilters.areas, false, false, true);
             populateSelect(
                 subAreaSelect,
                 subAreaOptions,
@@ -1392,7 +1603,7 @@
         function getFilteredRecords() {
             const routeFilterText = routeFilterValue.trim().toLowerCase();
             const weekCodes = getWeekRange();
-            return processedRecords.filter(record => {
+            const filtered = processedRecords.filter(record => {
                 if (destinationFilters.areas.length && !destinationFilters.areas.includes(record.area)) return false;
                 if (destinationFilters.subAreas.length && !destinationFilters.subAreas.includes(record.subArea)) return false;
                 if (destinationFilters.countries.length && !destinationFilters.countries.includes(record.country)) return false;
@@ -1404,6 +1615,11 @@
                 }
                 return true;
             });
+            // 统一去重（使用 vendor 中的标准函数）
+            if (typeof deduplicateSailingItems === 'function') {
+                return deduplicateSailingItems(filtered);
+            }
+            return filtered;
         }
 
         // buildShipSignature 已从 vendor/market-analysis-utils.js 加载
@@ -1573,6 +1789,61 @@
                 updateDestinationFilterOptions();
                 renderTable();
             });
+        }
+
+        // 绑定"全部选择"和"清除选择"按钮事件
+        // 运费走势模块
+        const marketRegionSelectAll = document.getElementById('marketRegionSelectAll');
+        const marketRegionClear = document.getElementById('marketRegionClear');
+        const marketPortSelectAll = document.getElementById('marketPortSelectAll');
+        const marketPortClear = document.getElementById('marketPortClear');
+        
+        if (marketRegionSelectAll && marketRegionSelect) {
+            marketRegionSelectAll.addEventListener('click', () => selectAllOptions(marketRegionSelect));
+        }
+        if (marketRegionClear && marketRegionSelect) {
+            marketRegionClear.addEventListener('click', () => clearSelectOptions(marketRegionSelect));
+        }
+        if (marketPortSelectAll && marketPortSelect) {
+            marketPortSelectAll.addEventListener('click', () => selectAllOptions(marketPortSelect));
+        }
+        if (marketPortClear && marketPortSelect) {
+            marketPortClear.addEventListener('click', () => clearSelectOptions(marketPortSelect));
+        }
+        
+        // 航线运力分析模块
+        const areaSelectAll = document.getElementById('areaSelectAll');
+        const areaClearAll = document.getElementById('areaClearAll');
+        const subAreaSelectAll = document.getElementById('subAreaSelectAll');
+        const subAreaClearAll = document.getElementById('subAreaClearAll');
+        const countrySelectAll = document.getElementById('countrySelectAll');
+        const countryClearAll = document.getElementById('countryClearAll');
+        const portSelectAll = document.getElementById('portSelectAll');
+        const portClearAll = document.getElementById('portClearAll');
+        
+        if (areaSelectAll && areaSelect) {
+            areaSelectAll.addEventListener('click', () => selectAllOptions(areaSelect));
+        }
+        if (areaClearAll && areaSelect) {
+            areaClearAll.addEventListener('click', () => clearSelectOptions(areaSelect));
+        }
+        if (subAreaSelectAll && subAreaSelect) {
+            subAreaSelectAll.addEventListener('click', () => selectAllOptions(subAreaSelect));
+        }
+        if (subAreaClearAll && subAreaSelect) {
+            subAreaClearAll.addEventListener('click', () => clearSelectOptions(subAreaSelect));
+        }
+        if (countrySelectAll && countrySelect) {
+            countrySelectAll.addEventListener('click', () => selectAllOptions(countrySelect));
+        }
+        if (countryClearAll && countrySelect) {
+            countryClearAll.addEventListener('click', () => clearSelectOptions(countrySelect));
+        }
+        if (portSelectAll && portSelect) {
+            portSelectAll.addEventListener('click', () => selectAllOptions(portSelect));
+        }
+        if (portClearAll && portSelect) {
+            portClearAll.addEventListener('click', () => clearSelectOptions(portSelect));
         }
 
         async function readExcelFile(file) {
@@ -2242,24 +2513,6 @@
 
         // fetchBunkerData, extractBunkerTables, parseBunkerTable, updateBunkerStatus, describeBunkerLine 已从 vendor/market-analysis-utils.js 加载
 
-        const ccfiRoutes = [
-            { label: '综合指数', match: 'CHINA CONTAINERIZED FREIGHT INDEX', parenthesized: false },
-            { label: '日本航线', match: 'JAPAN SERVICE', parenthesized: true },
-            { label: '欧洲航线', match: 'EUROPE SERVICE', parenthesized: true },
-            { label: '美西航线', match: 'W/C AMERICA SERVICE', parenthesized: true },
-            { label: '美东航线', match: 'E/C AMERICA SERVICE', parenthesized: true },
-            { label: '韩国航线', match: 'KOREA SERVICE', parenthesized: true },
-            { label: '东南亚航线', match: 'SOUTHEAST ASIA SERVICE', parenthesized: true },
-            { label: '地中海航线', match: 'MEDITERRANEAN SERVICE', parenthesized: true },
-            { label: '澳新航线', match: 'AUSTRALIA/NEW ZEALAND SERVICE', parenthesized: true },
-            { label: '南非航线', match: 'SOUTH AFRICA SERVICE', parenthesized: true },
-            { label: '南美航线', match: 'SOUTH AMERICA SERVICE', parenthesized: true },
-            { label: '东西非航线', match: 'WEST EAST AFRICA SERVICE', parenthesized: true },
-            { label: '波红航线', match: 'PERSIAN GULF/RED SEA SERVICE', parenthesized: true }
-        ];
-
-        // fetchCcfiData, parseCcfiText, renderCcfiStatus 已从 vendor/market-analysis-utils.js 加载
-
         // fetchWciData, parseWciText, renderWciStatus 已从 vendor/market-analysis-utils.js 加载
 
         const wciCodeMap = {
@@ -2292,11 +2545,6 @@
 
         // fetchFbxData, parseFbxText, renderFbxStatus 已从 vendor/market-analysis-utils.js 加载
 
-        const cachedCcfi = loadCachedData(CACHE_KEYS.ccfi);
-        if (cachedCcfi) {
-            ccfiData = cachedCcfi;
-            renderCcfiStatus();
-        }
         const cachedWci = loadCachedData(CACHE_KEYS.wci);
         if (cachedWci) {
             wciData = cachedWci;
@@ -2348,7 +2596,6 @@
                         // 分析前获取数据
                         await Promise.allSettled([
                             fetchBunkerData(false),
-                            fetchCcfiData(false),
                             fetchWciData(false),
                             fetchFbxData(false)
                         ]);
@@ -2457,9 +2704,10 @@
             // 使用公共函数构建提示词（继续）
             prompt += buildMarketReportsSection(marketReports);
             prompt += buildBunkerDataSection(bunkerData);
-            prompt += buildCcfiDataSection(ccfiData);
             prompt += buildWciDataSection(wciData);
             prompt += buildFbxDataSection(fbxData);
+            // 添加 SCFI 数据（从市场报告中提取，替代之前的 CCFI）
+            prompt += buildScfiDataSection(marketReports);
 
             prompt += aiInstructionTemplate;
             return prompt;
@@ -2542,7 +2790,6 @@
             
             Promise.allSettled([
                 fetchBunkerData(false),
-                fetchCcfiData(false),
                 fetchWciData(false),
                 fetchFbxData(false)
             ]);

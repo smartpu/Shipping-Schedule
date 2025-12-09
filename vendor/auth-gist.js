@@ -36,6 +36,10 @@
     // 存储键名
     const AUTH_STORAGE_KEY = 'shipping_tools_auth';
     const AUTH_EXPIRY_DAYS = 7;
+    
+    // 检测是否为本地测试模式（file:// 协议或 URL 参数 localtest=true）
+    const isLocalTestMode = window.location.protocol === 'file:' || 
+                           new URLSearchParams(window.location.search).get('localtest') === 'true';
     // ==============================
 
     // 用户白名单（从 Gist 加载）
@@ -89,6 +93,13 @@
      * 从 Gist 加载用户白名单
      */
     async function loadWhitelist() {
+        // 本地测试模式：跳过白名单加载
+        if (isLocalTestMode) {
+            debugLog('[Auth] 本地测试模式：跳过白名单加载');
+            userWhitelist = [];
+            return [];
+        }
+        
         const url = `${GIST_API_URL}?type=whitelist`;
         debugLog(`[Auth] 加载白名单: ${url}`);
         
@@ -135,6 +146,12 @@
      * 检查用户是否在白名单中
      */
     function isUserInWhitelist(name, phone, email) {
+        // 本地测试模式：允许所有用户访问
+        if (isLocalTestMode) {
+            debugLog('[Auth] 本地测试模式：允许访问');
+            return true;
+        }
+        
         if (userWhitelist.length === 0) {
             debugWarn('白名单未加载，拒绝访问');
             return false;
@@ -196,6 +213,12 @@
      * 保存访问记录到 Gist
      */
     async function saveLogToGist(logEntry) {
+        // 本地测试模式：跳过记录保存
+        if (isLocalTestMode) {
+            debugLog('[Auth] 本地测试模式：跳过访问记录保存');
+            return true;
+        }
+        
         debugLog('[Auth] 保存访问记录:', logEntry);
         
         try {
@@ -277,6 +300,18 @@
 
         if (!authOverlay || !authForm) {
             debugWarn('验证模态框元素未找到');
+            return;
+        }
+
+        // 本地测试模式：自动通过验证
+        if (isLocalTestMode) {
+            debugLog('[Auth] 本地测试模式：自动通过验证');
+            // 自动保存一个测试用户信息
+            if (!checkAuth()) {
+                saveAuth('本地测试用户', '13800138000', 'test@localhost.local');
+            }
+            authOverlay.classList.add('hidden');
+            enableAllLinks();
             return;
         }
 

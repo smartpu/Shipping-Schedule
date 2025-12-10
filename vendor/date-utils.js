@@ -32,14 +32,19 @@ function parseExcelDateSerial(dateValue) {
     }
     
     // 备用方法：Excel 日期从 1900-01-01 开始，但 Excel 错误地认为 1900 是闰年
+    // Excel 序列号 1 = 1900-01-01，序列号 0 = 1899-12-30（但 Excel 不支持 0）
     // 检查数字是否在合理范围内（1900-01-01 到 2100-12-31）
     if (dateValue > 0 && dateValue < 80000) {
-        const excelEpoch = new Date(1899, 11, 30);
-        const date = new Date(excelEpoch.getTime() + dateValue * 86400000);
+        // Excel 的日期系统：序列号 1 = 1900-01-01
+        // 使用 1899-12-30 作为基准（序列号 0 对应 1899-12-30）
+        // 注意：序列号 1 需要 +2 天才能得到 1900-01-01（因为 1899-12-30 + 1天 = 1899-12-31）
+        // 所以公式是：1899-12-30 + (dateValue + 1) 天
+        const excelEpoch = new Date(1899, 11, 30); // 1899-12-30
+        const date = new Date(excelEpoch.getTime() + (dateValue + 1) * 86400000);
         
         // Excel 错误地认为 1900 是闰年，所以对于序列号 >= 61 的日期，需要减 1 天
-        // 但使用 XLSX 库时不需要这个调整，因为 XLSX 已经处理了
-        // 这里只在使用备用方法时处理
+        // 但序列号 1-60 不受影响（因为 1900-02-29 是序列号 60）
+        // 序列号 61 开始需要减 1 天
         if (dateValue >= 61) {
             date.setDate(date.getDate() - 1);
         }

@@ -1410,6 +1410,19 @@
           }
         }
 
+        // 提取航线ID（001模式：C列，365模式：G列）
+        // 清理航线ID：去除无效字符，只保留数字、字母和常见分隔符
+        let routeId = '';
+        if (routeIdCol && row[routeIdCol]) {
+          const rawRouteId = String(row[routeIdCol]).trim();
+          // 只保留数字、字母、连字符、下划线，过滤掉乱码和特殊字符
+          const cleaned = rawRouteId.replace(/[^\w\-]/g, '');
+          // 如果清理后还有有效内容（至少包含数字或字母），才使用
+          if (cleaned && /[0-9A-Za-z]/.test(cleaned)) {
+            routeId = cleaned;
+          }
+        }
+
         // 构建基础数据对象
         const baseData = {
           port,
@@ -1421,12 +1434,12 @@
           voyageDays,
           originTerminal,
           destTerminal,
-          mode
+          mode,
+          routeId
         };
 
         // 365模式特有字段
         if (mode === MODE_365) {
-          baseData.routeId = routeIdCol && row[routeIdCol] ? String(row[routeIdCol]).trim() : '';
           baseData.vesselName = vesselNameCol && row[vesselNameCol] ? String(row[vesselNameCol]).trim() : '';
           baseData.year = yearCol && row[yearCol] ? String(row[yearCol]).trim() : '';
           baseData.routePath = routePathCol && row[routePathCol] ? String(row[routePathCol]).trim() : '';
@@ -1456,9 +1469,14 @@
           return null;
         };
 
-        // 001文件列定义
+        // 001文件列定义（参照365模式，使用索引作为fallback）
         const portCol = getColumnKey(['港口', '目的港', 'pod'], 'B'); // B列
         const carrierCol = getColumnKey(['共舱船公司', '共舱', '船公司'], 'G'); // G列
+        
+        // 航线ID：参照365模式，使用索引2（C列）作为fallback
+        const cColIndex = columnLetterToIndex('C');
+        const routeIdCol = getColumnKey(['航线id', '航线ID', 'route id', 'group_id', 'groupid'], 'C') || 
+                          (cColIndex !== null && columnKeys[cColIndex] ? columnKeys[cColIndex] : null); // C列（索引2）- 航线ID
         // 强制使用M列（索引12）作为日期列，避免关键词匹配到错误列
         const mColIndexForDate = columnLetterToIndex('M');
         const dateCol = (mColIndexForDate !== null && columnKeys[mColIndexForDate]) ? columnKeys[mColIndexForDate] : getColumnKey(['船期', '开船', '离港', 'etd'], 'M'); // M列
@@ -1483,6 +1501,7 @@
         debugLog('001文件列映射:');
         debugLog('所有列:', columnKeys);
         debugLog('B列索引:', columnLetterToIndex('B'), '港口列:', portCol, '索引:', columnKeys.indexOf(portCol));
+        debugLog('C列索引:', columnLetterToIndex('C'), '航线ID列:', routeIdCol, '索引:', routeIdCol ? columnKeys.indexOf(routeIdCol) : 'N/A');
         debugLog('G列索引:', columnLetterToIndex('G'), '船公司列:', carrierCol, '索引:', columnKeys.indexOf(carrierCol));
         debugLog('M列索引:', mColIndexForDate, '日期列:', dateCol, '索引:', columnKeys.indexOf(dateCol));
         debugLog('K列索引:', columnLetterToIndex('K'), '船名列:', vesselCol, '索引:', vesselCol ? columnKeys.indexOf(vesselCol) : 'N/A');
@@ -1530,7 +1549,8 @@
           weekdayCol,
           voyageDaysCol,
           originTerminalCol,
-          destTerminalCol
+          destTerminalCol,
+          routeIdCol
         };
 
         jsonData.forEach(row => {
@@ -2041,8 +2061,8 @@
         });
       }
 
-      // 处理筛选变化（联动更新）
-      function handleFilterChange() {
+      // 处理筛选变化（联动更新）- 使用防抖优化性能
+      const handleFilterChange = debounce(() => {
         state.selectedRegions = Array.from(dom.regionFilter.selectedOptions).map(o => o.value);
         state.selectedCarriers = Array.from(dom.carrierFilter.selectedOptions).map(o => o.value);
         state.selectedPorts = Array.from(dom.portFilter.selectedOptions).map(o => o.value);
@@ -2052,10 +2072,13 @@
         updateCarrierFilter();
         updatePortFilter();
         
-        renderCalendar();
-        renderMonthlySummary(); // 渲染月度汇总表格
-        updateAiModuleVisibility(); // 更新 AI 模块可见性
-      }
+        // 使用 requestAnimationFrame 优化渲染性能
+        requestAnimationFrame(() => {
+          renderCalendar();
+          renderMonthlySummary(); // 渲染月度汇总表格
+          updateAiModuleVisibility(); // 更新 AI 模块可见性
+        });
+      }, 150); // 150ms 防抖延迟
 
       /**
        * 渲染日历视图
@@ -2282,6 +2305,10 @@
                   grouped[groupKey].carriers.push(item.carrier);
                   grouped[groupKey].carriersSet.add(item.carrier);
                 }
+                // 365模式：记录航线路径（优先保留已有的非空路径）
+                if (item.mode === MODE_365 && !grouped[groupKey].routePath && item.routePath) {
+                  grouped[groupKey].routePath = item.routePath;
+                }
               });
               
               // 转换为数组，合并多个港口的标记为需要合并显示
@@ -2473,6 +2500,10 @@
                 if (item.mode === MODE_365 && item.carrier && !grouped[groupKey].carriersSet.has(item.carrier)) {
                   grouped[groupKey].carriers.push(item.carrier);
                   grouped[groupKey].carriersSet.add(item.carrier);
+                }
+                // 365模式：记录航线路径（优先保留已有的非空路径）
+                if (item.mode === MODE_365 && !grouped[groupKey].routePath && item.routePath) {
+                  grouped[groupKey].routePath = item.routePath;
                 }
               });
               
@@ -2735,6 +2766,10 @@
               grouped[groupKey].carriers.push(item.carrier);
               grouped[groupKey].carriersSet.add(item.carrier);
             }
+            // 365模式：记录航线路径（优先保留已有的非空路径）
+            if (item.mode === MODE_365 && !grouped[groupKey].routePath && item.routePath) {
+              grouped[groupKey].routePath = item.routePath;
+            }
           });
           
           return Object.values(grouped).map(group => {
@@ -2765,20 +2800,32 @@
 
         const mergedData = mergeByVessel(uniqueData);
 
-        // 定义航线（使用与日历相同的规则）
+        // 定义航线：使用航线ID作为分组键
         const getRouteKey = (item) => {
-          // 001和365模式都只显示共舱船公司
+          // 使用航线ID作为分组键（001模式：C列，365模式：G列）
+          // 如果航线ID为空或无效，使用共舱船公司作为分组键（作为fallback）
+          if (item.routeId && item.routeId.trim()) {
+            return item.routeId.trim();
+          }
+          // 如果没有有效的航线ID，使用共舱船公司作为分组键
           return item.carrier || '未知';
         };
 
-        // 按航线分组
-        const routesMap = new Map();
+        // 按航线ID分组，并收集每个航线ID下的所有共舱船公司
+        const routesMap = new Map(); // key: routeId, value: { items: [], carriers: Set }
         mergedData.forEach(item => {
           const routeKey = getRouteKey(item);
           if (!routesMap.has(routeKey)) {
-            routesMap.set(routeKey, []);
+            routesMap.set(routeKey, {
+              items: [],
+              carriers: new Set()
+            });
           }
-          routesMap.get(routeKey).push(item);
+          const routeData = routesMap.get(routeKey);
+          routeData.items.push(item);
+          if (item.carrier) {
+            routeData.carriers.add(item.carrier);
+          }
         });
 
         // 获取所有月份（从数据中提取）
@@ -2802,9 +2849,19 @@
         });
         tableHTML += '</tr></thead><tbody>';
 
-        // 按航线排序
+        // 按航线ID排序
         const sortedRoutes = Array.from(routesMap.entries()).sort((a, b) => {
-          return a[0].localeCompare(b[0], 'zh-Hans-CN');
+          // 先按航线ID排序（数字优先，然后字母）
+          const aKey = a[0];
+          const bKey = b[0];
+          const aNum = parseInt(aKey);
+          const bNum = parseInt(bKey);
+          if (!isNaN(aNum) && !isNaN(bNum)) {
+            return aNum - bNum;
+          }
+          if (!isNaN(aNum)) return -1;
+          if (!isNaN(bNum)) return 1;
+          return aKey.localeCompare(bKey, 'zh-Hans-CN');
         });
 
         // 统计每个月的总船次（用于总计行）
@@ -2813,9 +2870,32 @@
           monthlyTotals.set(month, 0);
         });
 
-        sortedRoutes.forEach(([routeKey, items]) => {
+        sortedRoutes.forEach(([routeKey, routeData]) => {
+          const items = routeData.items;
+          // 选择该航线ID下共舱船公司名字最长的作为显示名称
+          const carriers = Array.from(routeData.carriers);
+          const longestCarrier = carriers.reduce((longest, current) => {
+            return current.length > longest.length ? current : longest;
+          }, carriers[0] || '未知');
+          
           tableHTML += '<tr>';
-          tableHTML += `<td>${routeKey}</td>`;
+          const routePathRaw = items.find(item => item.routePath)?.routePath || '';
+          const routePath = normalizeRoutePath(routePathRaw);
+          const routePathAttr = routePath ? ` data-route-path="${escapeAttr(routePath)}"` : '';
+          
+          // 判断当前模式
+          const is365Mode = state.currentMode === MODE_365;
+          
+          // 判断routeKey是否是有效的航线ID（数字或字母数字组合）
+          const isValidRouteId = routeKey && routeKey !== '未知' && /^[0-9A-Za-z\-_]+$/.test(routeKey) && /[0-9A-Za-z]/.test(routeKey);
+          
+          // 显示格式：
+          // 365模式：只显示共舱船公司（最长的），不显示航线ID
+          // 001模式：如果有有效的航线ID，显示"航线ID - 共舱船公司（最长的）"，否则只显示共舱船公司
+          const displayText = is365Mode
+            ? longestCarrier
+            : (isValidRouteId ? `${routeKey} - ${longestCarrier}` : longestCarrier);
+          tableHTML += `<td class="route-cell"${routePathAttr}>${escapeHtml(displayText)}</td>`;
 
           // 按月份填充数据
           months.forEach(month => {
@@ -2865,6 +2945,9 @@
         });
         tableHTML += '</tr></tfoot></table>';
         dom.monthlySummaryTable.innerHTML = tableHTML;
+
+        // 绑定航线路径悬停提示
+        bindMonthlyRouteTooltips();
       }
 
       /**
@@ -2876,6 +2959,51 @@
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${month}/${day}`;
+      }
+
+      /**
+       * 转义HTML字符串，避免标题中的特殊字符破坏结构
+       * @param {string} str - 待转义的字符串
+       * @returns {string} 转义后的字符串
+       */
+      function escapeHtml(str) {
+        if (typeof str !== 'string') return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      /**
+       * 转义用于 HTML 属性的字符串（包含换行处理）
+       * @param {string} str - 原始字符串
+       * @returns {string} 转义后的字符串
+       */
+      function escapeAttr(str) {
+        if (typeof str !== 'string') return '';
+        return escapeHtml(str).replace(/\r?\n/g, '&#10;');
+      }
+
+      /**
+       * 规范化航线路径文本：去除重复空白、合并重复行
+       * @param {string} str
+       * @returns {string}
+       */
+      function normalizeRoutePath(str) {
+        if (typeof str !== 'string') return '';
+        const lines = str
+          .split(/\r?\n/)
+          .map(s => s.trim())
+          .filter(Boolean);
+        const uniq = [];
+        lines.forEach(line => {
+          if (!uniq.includes(line)) {
+            uniq.push(line);
+          }
+        });
+        return uniq.join('\n');
       }
 
       /**
@@ -3468,6 +3596,79 @@
         return fullPrompt;
       }
 
+      /**
+       * 为月度汇总中的航线列绑定悬停提示
+       */
+      function bindMonthlyRouteTooltips() {
+        const routeCells = dom.monthlySummaryTable?.querySelectorAll('.route-cell') || [];
+        routeCells.forEach(cell => {
+          const routePath = normalizeRoutePath(cell.dataset.routePath || '');
+          if (!routePath) return;
+          cell.dataset.routePath = routePath; // 同步规范化后的文本
+
+          // 懒创建 tooltip
+          let tooltip = null;
+          let hideTimer = null;
+          let moveHandler = null;
+
+          const show = () => {
+            clearTimeout(hideTimer);
+            if (!tooltip) {
+              tooltip = document.createElement('div');
+              tooltip.className = 'tooltip';
+              tooltip.style.display = 'none';
+              const span = document.createElement('span');
+              span.textContent = routePath;
+              span.style.whiteSpace = 'pre-wrap';
+              span.style.display = 'block';
+              span.style.lineHeight = '1.5';
+              span.style.fontSize = '12px';
+              tooltip.appendChild(span);
+              document.body.appendChild(tooltip);
+            }
+
+            const updatePosition = (event) => {
+              if (!tooltip || !tooltip.parentNode) return;
+              const mouseX = event.clientX;
+              const mouseY = event.clientY;
+              const rect = tooltip.getBoundingClientRect();
+              const width = rect.width || tooltip.offsetWidth;
+              const height = rect.height || tooltip.offsetHeight;
+              const pad = 10;
+
+              let left = mouseX + pad;
+              let top = mouseY + pad;
+              if (left + width > window.innerWidth) left = mouseX - width - pad;
+              if (left < 0) left = (window.innerWidth - width) / 2;
+              if (top + height > window.innerHeight) top = mouseY - height - pad;
+              if (top < 0) top = mouseY + pad;
+
+              tooltip.style.left = `${left}px`;
+              tooltip.style.top = `${top}px`;
+            };
+
+            moveHandler = updatePosition;
+            tooltip.style.display = 'block';
+            requestAnimationFrame(() => updatePosition(window.event || { clientX: cell.getBoundingClientRect().right, clientY: cell.getBoundingClientRect().bottom }));
+            eventListeners.add(cell, 'mousemove', moveHandler);
+          };
+
+          const hide = () => {
+            hideTimer = setTimeout(() => {
+              if (tooltip) tooltip.style.display = 'none';
+              if (moveHandler) {
+                cell.removeEventListener('mousemove', moveHandler);
+                moveHandler = null;
+              }
+            }, 100);
+          };
+
+          eventListeners.add(cell, 'mouseenter', show);
+          eventListeners.add(cell, 'mouseleave', hide);
+          // mousemove 在 show 里绑定
+        });
+      }
+
       // 获取周键（用于分组）
       function getWeekKey(date) {
         const year = date.getFullYear();
@@ -3508,16 +3709,32 @@
         eventListeners.cleanup();
       });
 
-      // 初始化
+      // 初始化 - 使用 requestIdleCallback 优化初始加载性能
+      const initializeApp = () => {
+        init();
+        // AI模块延迟初始化，避免阻塞主线程
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(() => {
+            initSailingAiModule();
+          }, { timeout: 2000 });
+        } else {
+          // 降级方案：使用 setTimeout
+          setTimeout(() => {
+            initSailingAiModule();
+          }, 100);
+        }
+      };
+
       if (document.readyState === 'loading') {
         const handleDOMContentLoaded = () => {
-          init();
-          initSailingAiModule();
+          initializeApp();
         };
         eventListeners.add(document, 'DOMContentLoaded', handleDOMContentLoaded);
       } else {
-        init();
-        initSailingAiModule();
+        // 如果文档已加载，使用 requestAnimationFrame 延迟初始化
+        requestAnimationFrame(() => {
+          initializeApp();
+        });
       }
     </script>
 

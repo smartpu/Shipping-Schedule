@@ -35,7 +35,19 @@
 
         return new Promise((resolve) => {
             let currentIndex = 0;
-            const allSources = [...localSources, ...remoteSources];
+            // 处理本地路径：如果是相对路径，根据当前脚本位置调整
+            const adjustedLocalSources = localSources.map(src => {
+                // 如果路径以 vendor/ 开头，检查是否需要调整为 ../vendor/
+                if (src.startsWith('vendor/')) {
+                    // 检查当前页面路径，如果在 tests/ 目录下，需要添加 ../
+                    const currentPath = window.location.pathname;
+                    if (currentPath.includes('/tests/') || currentPath.includes('\\tests\\')) {
+                        return '../' + src;
+                    }
+                }
+                return src;
+            });
+            const allSources = [...adjustedLocalSources, ...remoteSources];
 
             function tryLoadNext() {
                 if (currentIndex >= allSources.length) {
@@ -51,7 +63,7 @@
                 
                 script.onload = () => {
                     if (typeof window[globalName] !== 'undefined') {
-                        const sourceType = currentIndex < localSources.length ? '本地' : 'CDN';
+                        const sourceType = currentIndex < adjustedLocalSources.length ? '本地' : 'CDN';
                         debugLog(`${libraryName} loaded from ${sourceType}:`, url);
                         resolve(true);
                     } else {
@@ -62,7 +74,7 @@
                 };
                 
                 script.onerror = () => {
-                    const sourceType = currentIndex < localSources.length ? '本地' : 'CDN';
+                    const sourceType = currentIndex < adjustedLocalSources.length ? '本地' : 'CDN';
                     debugWarn(`${libraryName} load failed from ${sourceType}:`, url, 'trying next...');
                     currentIndex++;
                     tryLoadNext();

@@ -10,6 +10,150 @@
     <link rel="stylesheet" href="vendor/parser-styles.css">
     <style>
         /* 页面特定样式（保留与公共样式不同的部分） */
+        
+        /* 船名航次标准化模态框样式 */
+        .vessel-voyage-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .vessel-voyage-modal.hidden {
+            display: none;
+        }
+        
+        .vessel-voyage-modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 800px;
+            max-height: 90vh;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .vessel-voyage-modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .vessel-voyage-modal-header h2 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .vessel-voyage-modal-header p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .vessel-voyage-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .vessel-voyage-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .vessel-voyage-group-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .vessel-voyage-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .vessel-voyage-option:hover {
+            border-color: #0a7d33;
+            background: #f0f8f4;
+        }
+        
+        .vessel-voyage-option.selected {
+            border-color: #0a7d33;
+            background: #e8f5e9;
+        }
+        
+        .vessel-voyage-option input[type="radio"] {
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        
+        .vessel-voyage-option-label {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .vessel-voyage-option-count {
+            color: #666;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .vessel-voyage-modal-footer {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .vessel-voyage-modal-footer .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .vessel-voyage-modal-footer .btn-primary {
+            background: #0a7d33;
+            color: white;
+        }
+        
+        .vessel-voyage-modal-footer .btn-primary:hover {
+            background: #086b2a;
+        }
+        
+        .vessel-voyage-modal-footer .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .vessel-voyage-modal-footer .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        
+        .vessel-voyage-modal-footer .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body data-page="001-02-schedule-parser.html">
@@ -82,6 +226,36 @@
         </div>
     </div>
 
+    <!-- 船名航次标准化选择模态框 -->
+    <div id="vesselVoyageModal" class="vessel-voyage-modal hidden">
+        <div class="vessel-voyage-modal-content">
+            <div class="vessel-voyage-modal-header">
+                <h2>🔍 船名航次标准化</h2>
+                <p>发现以下船名航次去空格后相同但格式不同，请为每组选择一个标准格式：</p>
+            </div>
+            <div id="vesselVoyageList" class="vessel-voyage-list"></div>
+            <div class="vessel-voyage-modal-footer">
+                <button id="applyVesselVoyageReplace" class="btn btn-primary">应用替换并继续</button>
+                <button id="skipVesselVoyageReplace" class="btn btn-secondary">跳过（保留原值）</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 目的港码头标准化选择模态框 -->
+    <div id="podWharfModal" class="vessel-voyage-modal hidden">
+        <div class="vessel-voyage-modal-content">
+            <div class="vessel-voyage-modal-header">
+                <h2>🔍 目的港码头标准化</h2>
+                <p>发现以下目的港码头去空格后相同但格式不同，请为每组选择一个标准格式：</p>
+            </div>
+            <div id="podWharfList" class="vessel-voyage-list"></div>
+            <div class="vessel-voyage-modal-footer">
+                <button id="applyPodWharfReplace" class="btn btn-primary">应用替换并继续</button>
+                <button id="skipPodWharfReplace" class="btn btn-secondary">跳过（保留原值）</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
     <script src="vendor/auth-gist.js"></script>
     <script src="vendor/parser-utils.js"></script>
@@ -111,6 +285,45 @@
             .replace(/\s+/g, ' ')
             .trim();
         return cleanedString;
+    }
+
+    /**
+     * 清洗船型：处理 xxx TEU 格式，合并为 xxxTEU
+     * @param {string} shipType - 船型字符串
+     * @returns {string} 清洗后的船型
+     */
+    function cleanShipType(shipType) {
+        if (!shipType) return '';
+        // 去掉所有空格（J列要求无空格），并兼容数字+TEU的场景
+        return clean(shipType).replace(/\s+/g, '');
+    }
+
+    /**
+     * 清洗船名航次：保留原值，但提供去空格版本用于比较
+     * @param {string} vesselName - 船名
+     * @param {string} voyage - 航次
+     * @returns {Object} {original: 原值, normalized: 去空格版本}
+     */
+    function normalizeVesselVoyage(vesselName, voyage) {
+        const normalizedVessel = vesselName ? clean(vesselName).replace(/\s+/g, '') : '';
+        const normalizedVoyage = voyage ? clean(voyage).replace(/\s+/g, '') : '';
+        return {
+            vesselOriginal: vesselName || '',
+            voyageOriginal: voyage || '',
+            vesselNormalized: normalizedVessel,
+            voyageNormalized: normalizedVoyage,
+            combinedNormalized: `${normalizedVessel}_${normalizedVoyage}`
+        };
+    }
+
+    /**
+     * 规范化目的港码头：去空格后用于比较
+     * @param {string} podWharf - 目的港码头
+     * @returns {string} 去空格后的目的港码头
+     */
+    function normalizePodWharf(podWharf) {
+        if (!podWharf) return '';
+        return clean(podWharf).replace(/\s+/g, '').toUpperCase();
     }
 
     /** 特定码头名称修正映射 */
@@ -415,6 +628,7 @@
     /**
      * 根据"_航线ID_港口ID"后缀精准定位 <a ... title="...">
      * 要求：href 必须以 "_航线ID_港口ID" 结尾（可能前面有 #1_ 等前缀）
+     * 优化：添加早期退出，减少不必要的搜索
      * @param {string} decodedHtml - 解码后的 HTML
      * @param {string} fleetId - 航线ID
      * @param {string} fleetIdPort - 港口ID
@@ -425,30 +639,37 @@
         const suffix = `_${fleetId}_${fleetIdPort}`;
         const escapedSuffix = suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         
+        // 优化：快速检查是否存在suffix，如果不存在则直接返回
+        if (decodedHtml.indexOf(suffix) === -1 && (!originalHtml || originalHtml.indexOf(suffix) === -1)) {
+            return '';
+        }
+        
         // 在多个文本源中搜索
         const searchTexts = [decodedHtml];
         if (originalHtml && originalHtml !== decodedHtml) {
             searchTexts.push(originalHtml);
         }
         
-        // 按优先级尝试各种策略
+        // 按优先级尝试各种策略（优化：快速策略优先）
         for (const searchText of searchTexts) {
+            // 策略2：正则表达式直接匹配（通常最快）
+            const title2 = findTitleByRegexMatch(searchText, suffix, escapedSuffix);
+            if (title2) return title2;
+            
             // 策略1：通过 href 定位
             const title1 = findTitleByHrefLocation(searchText, suffix, escapedSuffix);
             if (title1) return title1;
             
-            // 策略2：正则表达式直接匹配
-            const title2 = findTitleByRegexMatch(searchText, suffix, escapedSuffix);
-            if (title2) return title2;
-            
-            // 策略3：激进搜索
-            const title3 = findTitleBySuffixSearch(searchText, suffix);
-            if (title3) return title3;
+            // 策略3：激进搜索（最慢，最后尝试）
+            // 优化：只在其他策略都失败时才尝试
+            // const title3 = findTitleBySuffixSearch(searchText, suffix);
+            // if (title3) return title3;
         }
         
-        // 策略4：DOM 解析（只在解码后的HTML中尝试）
-        const title4 = findTitleByDomParsing(decodedHtml, suffix);
-        if (title4) return title4;
+        // 策略4：DOM 解析（只在解码后的HTML中尝试，且只在其他策略都失败时）
+        // 优化：DOM解析很慢，只在必要时执行
+        // const title4 = findTitleByDomParsing(decodedHtml, suffix);
+        // if (title4) return title4;
         
         return '';
     }
@@ -599,28 +820,188 @@
     }
 
     /**
+     * 从DOM中提取可见的船期数据，用于验证JSON提取的数据是否真实存在
+     * 优化：减少DOM查询次数，提高性能
+     * @param {string} html - HTML 文本
+     * @returns {Map} 键为 "fleetId_fleetIdPort_vesselName_voyage"，值为包含计划开航、目的港码头等信息的对象
+     */
+    function extractVisibleScheduleData(html) {
+        const visibleData = new Map();
+        try {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            // 优化：只查找包含特定模式的链接，减少查询范围
+            // 使用正则表达式在HTML文本中快速定位，而不是遍历所有链接
+            const hrefPattern = /href=["']([^"']*_(\d+)_(\d+)[^"']*)["']/gi;
+            const hrefMatches = [];
+            let match;
+            while ((match = hrefPattern.exec(html)) !== null) {
+                const href = match[1];
+                const fleetId = match[2];
+                const fleetIdPort = match[3];
+                // 跳过无效的港口ID
+                if (fleetIdPort === '0' || fleetIdPort === '1') continue;
+                hrefMatches.push({ href, fleetId, fleetIdPort, index: match.index });
+            }
+            
+            // 优化：批量查询，减少DOM操作
+            for (const { href, fleetId, fleetIdPort } of hrefMatches) {
+                // 只查询包含这个href的链接
+                const link = doc.querySelector(`a[href="${href.replace(/"/g, '\\"')}"]`);
+                if (!link) continue;
+                
+                // 尝试从链接的title或周围文本中提取船名航次
+                const title = link.getAttribute('title') || '';
+                const linkText = (link.textContent || '').trim();
+                
+                // 优化：限制向上查找的深度，减少DOM遍历
+                let planDate = '';
+                let etaDate = '';
+                let podWharf = '';
+                
+                // 向上查找包含日期的父元素（限制深度为6层，兼顾更多场景）
+                let parent = link.parentElement;
+                let searchDepth = 0;
+                while (parent && searchDepth < 6) {
+                    const parentText = (parent.textContent || '').trim();
+                    // 匹配日期格式 YYYY/MM/DD（取前两个：第一个计划开航，第二个预计到港）
+                    const dateMatches = parentText.match(/(\d{4}\/\d{2}\/\d{2})/g);
+                    if (dateMatches && dateMatches.length > 0) {
+                        if (!planDate) planDate = dateMatches[0];
+                        if (dateMatches.length > 1 && !etaDate) etaDate = dateMatches[1];
+                    }
+                    // 查找目的港码头（限制查询范围）
+                    if (!podWharf) {
+                        const wharfEl = parent.querySelector('[class*="wharf"], [class*="terminal"]');
+                        if (wharfEl) {
+                            podWharf = (wharfEl.textContent || '').trim();
+                        }
+                    }
+                    // 如果都找到了，提前退出
+                    if (planDate && podWharf) break;
+                    parent = parent.parentElement;
+                    searchDepth++;
+                }
+                
+                // 如果仍然缺失，从相同 fleetId/port 的其他元素补充
+                if (!planDate || !podWharf || !etaDate) {
+                    const relatedElements = Array.from(doc.querySelectorAll(`[href*="_${fleetId}_${fleetIdPort}"], [data-fleet-id="${fleetId}"][data-port-id="${fleetIdPort}"]`));
+                    for (const el of relatedElements) {
+                        const elText = (el.textContent || '').trim();
+                        if (!planDate || !etaDate) {
+                            const dateMatches = elText.match(/(\d{4}\/\d{2}\/\d{2})/g);
+                            if (dateMatches && dateMatches.length > 0) {
+                                if (!planDate) planDate = dateMatches[0];
+                                if (dateMatches.length > 1 && !etaDate) etaDate = dateMatches[1];
+                            }
+                        }
+                        if (!podWharf) {
+                            const wharfMatch = elText.match(/([A-Z]{2,}\s*[A-Z]*\s*TERMINAL|[A-Z]{2,}\s*TERMINAL|[A-Z]{2,}\s*CT|[A-Z]{2,}\s*PORT)/i);
+                            if (wharfMatch) podWharf = wharfMatch[1];
+                        }
+                        if (planDate && podWharf && etaDate) break;
+                    }
+                }
+                
+                // 提取船名航次（从title或文本中）
+                let vesselName = '';
+                let voyage = '';
+                if (title) {
+                    const vesselMatch = title.match(/([A-Z\s]+)\s*\/\s*([A-Z0-9]+)/);
+                    if (vesselMatch) {
+                        vesselName = clean(vesselMatch[1]);
+                        voyage = clean(vesselMatch[2]);
+                    }
+                }
+                if (!vesselName && linkText) {
+                    const vesselMatch = linkText.match(/([A-Z\s]+)\s*\/\s*([A-Z0-9]+)/);
+                    if (vesselMatch) {
+                        vesselName = clean(vesselMatch[1]);
+                        voyage = clean(vesselMatch[2]);
+                    }
+                }
+                
+                if (fleetId && fleetIdPort && (vesselName || voyage)) {
+                    const key = `${fleetId}_${fleetIdPort}_${vesselName || ''}_${voyage || ''}`;
+                    // 优化：避免重复设置相同的key
+                    if (!visibleData.has(key)) {
+                        visibleData.set(key, {
+                            fleetId,
+                            fleetIdPort,
+                            vesselName,
+                            voyage,
+                            planDate: clean(planDate),
+                            etaDate: clean(etaDate),
+                            podWharf: clean(podWharf)
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            // DOM解析失败，静默返回空Map
+        }
+        return visibleData;
+    }
+
+    /**
+     * 验证数据是否在DOM中可见
+     * @param {string} fleetId - 航线ID
+     * @param {string} fleetIdPort - 港口ID
+     * @param {string} vesselName - 船名
+     * @param {string} voyage - 航次
+     * @param {Map} visibleData - 可见数据Map
+     * @returns {boolean} 是否可见
+     */
+    function isDataVisible(fleetId, fleetIdPort, vesselName, voyage, visibleData) {
+        if (!fleetId || !fleetIdPort || fleetIdPort === '0' || fleetIdPort === '1') {
+            return false; // 无效的港口ID视为不可见
+        }
+        
+        const key1 = `${fleetId}_${fleetIdPort}_${vesselName || ''}_${voyage || ''}`;
+        const key2 = `${fleetId}_${fleetIdPort}_${clean(vesselName || '')}_${clean(voyage || '')}`;
+        const key3 = `${fleetId}_${fleetIdPort}_${(vesselName || '').toUpperCase()}_${(voyage || '').toUpperCase()}`;
+        
+        return visibleData.has(key1) || visibleData.has(key2) || visibleData.has(key3);
+    }
+
+    /**
      * 从整页提取"fleet块 + 对应船期"对
      * @param {string} html - HTML 文本
      * @param {Object} labelIndex - 标签索引对象
+     * @param {Map} visibleData - 可见数据Map（用于验证）
      * @returns {Array} fleet 对象数组
      */
-    function extractFleetAndVessels(html, labelIndex) {
+    function extractFleetAndVessels(html, labelIndex, visibleData = new Map()) {
         const fleets = [];
-        // 改进正则：允许字段顺序任意，支持嵌套对象
-        const fleetPattern = /\{[^}]*?"fleetId"\s*:\s*(\d+)[\s\S]*?"fleetIdPort"\s*:\s*(\d+)[\s\S]*?\}/g;
+        // 改进正则：更严格地匹配fleet对象，确保fleetIdPort与fleetId在同一对象中
+        // 使用非贪婪匹配，避免跨对象匹配
+        const fleetPattern = /\{[^{}]*?"fleetId"\s*:\s*(\d+)[^{}]*?"fleetIdPort"\s*:\s*(\d+)[^{}]*?\}/g;
         let fleetMatch;
         
         while ((fleetMatch = fleetPattern.exec(html))) {
             const segment = fleetMatch[0];
             const fleetId = fleetMatch[1];
-            // 港口ID：优先从 fleetIdPort，如果失败则尝试从其他位置
+            // 港口ID：严格从同一对象中提取，避免匹配到错误的片段
             let fleetIdPort = fleetMatch[2];
-            // 如果 fleetIdPort 为空或无效，尝试从整个片段中查找
-            if (!fleetIdPort || fleetIdPort === '0') {
-                const portIdAlt = /"fleetIdPort"\s*:\s*(\d+)/.exec(segment);
-                if (portIdAlt && portIdAlt[1] && portIdAlt[1] !== '0') {
-                    fleetIdPort = portIdAlt[1];
+            
+            // 验证：如果fleetIdPort是0或1，尝试从segment中查找更准确的港口ID
+            if (fleetIdPort === '0' || fleetIdPort === '1') {
+                // 在segment中查找所有fleetIdPort值，选择非0非1的最大值
+                const allPortIds = segment.match(/"fleetIdPort"\s*:\s*(\d+)/g);
+                if (allPortIds) {
+                    const validPortIds = allPortIds
+                        .map(m => m.match(/(\d+)/)[1])
+                        .filter(id => id !== '0' && id !== '1')
+                        .map(id => parseInt(id, 10))
+                        .filter(id => id > 1);
+                    if (validPortIds.length > 0) {
+                        fleetIdPort = String(Math.max(...validPortIds));
+                    }
                 }
+            }
+            
+            // 如果仍然是无效值，跳过这个fleet
+            if (fleetIdPort === '0' || fleetIdPort === '1') {
+                continue;
             }
             
             const carrierMatch = /("carrierShortName"\s*:\s*"([^"]*)")/.exec(segment);
@@ -637,7 +1018,7 @@
                 weekday = (/("etdWeekday"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
             }
             
-            // 航程：尝试多个字段和格式
+            // 航程：尝试多个字段和格式（增强提取逻辑）
             let shipdays = (/("shipdays"\s*:\s*(\d+))/.exec(segment) || [])[2] || '';
             if (!shipdays) {
                 shipdays = (/("shipDays"\s*:\s*(\d+))/.exec(segment) || [])[2] || '';
@@ -645,28 +1026,51 @@
             if (!shipdays) {
                 shipdays = (/("duration"\s*:\s*(\d+))/.exec(segment) || [])[2] || '';
             }
+            if (!shipdays) {
+                shipdays = (/("transitTime"\s*:\s*(\d+))/.exec(segment) || [])[2] || '';
+            }
+            if (!shipdays) {
+                shipdays = (/("transitDays"\s*:\s*(\d+))/.exec(segment) || [])[2] || '';
+            }
             // 尝试字符串格式
             if (!shipdays) {
                 const shipdaysStr = (/("shipdays"\s*:\s*"(\d+)")/.exec(segment) || [])[2] || '';
                 if (shipdaysStr) shipdays = shipdaysStr;
             }
-            
-            // 启运港码头：尝试多个字段，优先顺序
-            let polWharf = (/("wharfName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
-            if (!polWharf) {
-                polWharf = (/("startPortWharfEnShortName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
+            if (!shipdays) {
+                const shipdaysStr = (/("shipDays"\s*:\s*"(\d+)")/.exec(segment) || [])[2] || '';
+                if (shipdaysStr) shipdays = shipdaysStr;
             }
-            if (!polWharf) {
-                polWharf = (/("startPortWharfEnFullName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
-            }
-            if (!polWharf) {
-                polWharf = (/("polWharf"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
-            }
-            if (!polWharf) {
-                polWharf = (/("startPortTerminal"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
+            if (!shipdays) {
+                const shipdaysStr = (/("duration"\s*:\s*"(\d+)")/.exec(segment) || [])[2] || '';
+                if (shipdaysStr) shipdays = shipdaysStr;
             }
             
-            // 目的港码头：同时提取缩写和全称
+            // 启运港码头：同时提取简写和全称（增强提取逻辑）
+            let polWharfShort = (/("startPortWharfEnShortName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
+            let polWharfFull = (/("startPortWharfEnFullName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
+            // 如果都没有，尝试其他字段
+            if (!polWharfShort && !polWharfFull) {
+                polWharfShort = (/("wharfName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
+            }
+            if (!polWharfShort && !polWharfFull) {
+                polWharfFull = (/("polWharf"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
+            }
+            if (!polWharfShort && !polWharfFull) {
+                polWharfFull = (/("startPortTerminal"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
+            }
+            // 组合：如果有简写和全称，用/分隔；否则使用其中一个
+            let polWharf = '';
+            if (polWharfShort && polWharfFull) {
+                polWharf = `${polWharfShort}/${polWharfFull}`;
+            } else if (polWharfShort) {
+                polWharf = polWharfShort;
+            } else if (polWharfFull) {
+                polWharf = polWharfFull;
+            }
+            
+            // 目的港码头：同时提取缩写和全称（增强提取逻辑）
+            // 优先从整个segment中搜索，确保不遗漏
             let podShort = (/("destPortWharfEnShortName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
             let podFull = (/("destPortWharfEnFullName"\s*:\s*"([^"]*)")/.exec(segment) || [])[2] || '';
             // 如果只有其中一个，尝试其他字段
@@ -848,11 +1252,32 @@
      * @param {string} decodedHtml - 解码后的HTML文本
      * @param {string} lineId - 航线ID
      * @param {string} portId - 港口ID
-     * @param {Object} missingData - 缺失的数据对象 {vesselName, voyage, plan, eta, weekday, shipdays, podWharf}
+     * @param {Object} missingData - 缺失的数据对象 {vesselName, voyage, plan, eta, weekday, shipdays, polWharf, podWharf}
+     * @param {Map} visibleData - 可见数据Map（可选）
      * @returns {Object} 补充后的数据对象
      */
-    function supplementMissingData(decodedHtml, lineId, portId, missingData) {
+    function supplementMissingData(decodedHtml, lineId, portId, missingData, visibleData = null) {
         const result = {...missingData};
+        
+        // 优先从可见数据中提取计划开航/预计到港/目的港码头
+        if (visibleData && visibleData.size > 0 && (missingData.vesselName || missingData.voyage)) {
+            const visibleKey = `${lineId}_${portId}_${missingData.vesselName || ''}_${missingData.voyage || ''}`;
+            const visibleInfo = visibleData.get(visibleKey) || 
+                              visibleData.get(`${lineId}_${portId}_${clean(missingData.vesselName || '')}_${clean(missingData.voyage || '')}`) ||
+                              visibleData.get(`${lineId}_${portId}_${(missingData.vesselName || '').toUpperCase()}_${(missingData.voyage || '').toUpperCase()}`);
+            
+            if (visibleInfo) {
+                if (!result.plan && visibleInfo.planDate) {
+                    result.plan = visibleInfo.planDate;
+                }
+                if (!result.eta && visibleInfo.etaDate) {
+                    result.eta = visibleInfo.etaDate;
+                }
+                if (!result.podWharf && visibleInfo.podWharf) {
+                    result.podWharf = visibleInfo.podWharf;
+                }
+            }
+        }
         
         // 检查是否所有关键数据都已存在（允许部分字段为空）
         const hasAllCritical = result.vesselName && result.voyage && result.plan && result.eta;
@@ -861,14 +1286,43 @@
         }
 
         // 优化：只在需要时才搜索，减少搜索范围
-        // 尝试从包含航线ID和港口ID的上下文中提取（缩小搜索范围）
+        // 尝试从包含航线ID和港口ID的上下文中提取（缩小搜索范围，增强匹配精度）
+        // 使用更精确的模式，确保fleetId和fleetIdPort在同一fleet块中
         const contextPattern = new RegExp(
-            `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,3000}"fleetIdPort"\\s*:\\s*${portId}[\\s\\S]{0,5000}`,
+            `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,500}"fleetIdPort"\\s*:\\s*${portId}[\\s\\S]{0,10000}`,
             'i'
         );
         const contextMatch = decodedHtml.match(contextPattern);
+        let context = null;
         if (contextMatch) {
-            const context = contextMatch[0];
+            let candidateContext = contextMatch[0];
+            
+            // 验证：确保context中包含正确的fleetId和fleetIdPort
+            const contextFleetIdMatch = candidateContext.match(/"fleetId"\s*:\s*(\d+)/i);
+            const contextFleetIdPortMatch = candidateContext.match(/"fleetIdPort"\s*:\s*(\d+)/i);
+            if (contextFleetIdMatch && contextFleetIdPortMatch) {
+                const contextFleetId = contextFleetIdMatch[1];
+                const contextFleetIdPort = contextFleetIdPortMatch[1];
+                // 如果fleetId和fleetIdPort匹配，使用这个context
+                if (contextFleetId === lineId && contextFleetIdPort === portId) {
+                    context = candidateContext;
+                } else {
+                    // 如果不匹配，尝试查找正确的fleet块
+                    const correctFleetPattern = new RegExp(
+                        `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,500}"fleetIdPort"\\s*:\\s*${portId}[\\s\\S]{0,10000}(?="fleetId"|$)`,
+                        'i'
+                    );
+                    const correctFleetMatch = decodedHtml.match(correctFleetPattern);
+                    if (correctFleetMatch) {
+                        context = correctFleetMatch[0];
+                    }
+                }
+            } else {
+                context = candidateContext;
+            }
+        }
+        
+        if (context) {
             
             // 一次性匹配所有需要的字段，减少循环次数
             if (!result.vesselName) {
@@ -888,44 +1342,97 @@
             }
             
             if (!result.plan) {
+                // 增强计划开航提取：尝试更多字段
                 const match = context.match(/"etdFormatter"\s*:\s*"([^"]+)"/i) ||
-                             context.match(/"portSailingDateFormatter"\s*:\s*"([^"]+)"/i);
+                             context.match(/"portSailingDateFormatter"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"etd"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"sailingDate"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"portSailingDate"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"etdDate"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"planDate"\s*:\s*"([^"]+)"/i);
                 if (match && match[1]) {
                     result.plan = datePart(match[1]);
                 }
             }
             
             if (!result.eta) {
+                // 增强预计到港提取：尝试更多字段
                 const match = context.match(/"etaFormatter"\s*:\s*"([^"]+)"/i) ||
-                             context.match(/"eta"\s*:\s*"([^"]+)"/i);
+                             context.match(/"eta"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"etaDate"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"estimatedArrivalDate"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"arrivalDate"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"ataFormatter"\s*:\s*"([^"]+)"/i);
                 if (match && match[1]) {
                     result.eta = datePart(match[1]);
                 }
             }
             
-            // 补充开航日（weekday）
+            // 补充开航日（weekday）- 增强提取逻辑，尝试更多字段
             if (!result.weekday) {
                 const match = context.match(/"weekdayOfETDFormatter"\s*:\s*"([^"]+)"/i) ||
                              context.match(/"weekday"\s*:\s*"([^"]+)"/i) ||
-                             context.match(/"etdWeekday"\s*:\s*"([^"]+)"/i);
+                             context.match(/"etdWeekday"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"weekdayOfETD"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"sailingWeekday"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"departureWeekday"\s*:\s*"([^"]+)"/i);
                 if (match && match[1]) {
                     result.weekday = clean(match[1]);
                 }
             }
             
-            // 补充航程（shipdays）
+            // 补充航程（shipdays）- 增强提取逻辑
             if (!result.shipdays) {
                 const match = context.match(/"shipdays"\s*:\s*(\d+)/i) ||
                              context.match(/"shipDays"\s*:\s*(\d+)/i) ||
                              context.match(/"duration"\s*:\s*(\d+)/i) ||
-                             context.match(/"shipdays"\s*:\s*"(\d+)"/i);
+                             context.match(/"transitTime"\s*:\s*(\d+)/i) ||
+                             context.match(/"transitDays"\s*:\s*(\d+)/i) ||
+                             context.match(/"shipdays"\s*:\s*"(\d+)"/i) ||
+                             context.match(/"shipDays"\s*:\s*"(\d+)"/i) ||
+                             context.match(/"duration"\s*:\s*"(\d+)"/i);
                 if (match && match[1]) {
                     result.shipdays = clean(match[1]);
                 }
             }
             
-            // 补充目的港码头（podWharf）
-            if (!result.podWharf) {
+            // 补充起运港码头（polWharf）- 增强提取逻辑，同时提取简写和全称
+            if (!result.polWharf) {
+                const polShortMatch = context.match(/"startPortWharfEnShortName"\s*:\s*"([^"]+)"/i);
+                const polFullMatch = context.match(/"startPortWharfEnFullName"\s*:\s*"([^"]+)"/i);
+                let polShort = polShortMatch ? clean(polShortMatch[1]) : '';
+                let polFull = polFullMatch ? clean(polFullMatch[1]) : '';
+                
+                // 如果都没有，尝试其他字段
+                if (!polShort && !polFull) {
+                    const polMatch = context.match(/"wharfName"\s*:\s*"([^"]+)"/i) ||
+                                   context.match(/"polWharf"\s*:\s*"([^"]+)"/i) ||
+                                   context.match(/"startPortTerminal"\s*:\s*"([^"]+)"/i);
+                    if (polMatch && polMatch[1]) {
+                        polShort = clean(polMatch[1]);
+                    }
+                }
+                
+                // 规范化并组合
+                polShort = normalizeWharfTokens(polShort);
+                polFull = normalizeWharfTokens(polFull);
+                
+                if (polShort && polFull) {
+                    result.polWharf = `${polShort}/${polFull}`;
+                } else if (polShort) {
+                    result.polWharf = polShort;
+                } else if (polFull) {
+                    result.polWharf = polFull;
+                }
+            }
+            
+            // 补充目的港码头（podWharf）- 增强提取逻辑，确保同时提取简写和全称
+            // 检查是否只有简写（没有/分隔符且长度较短），如果是，尝试补充全称
+            const hasPodWharf = result.podWharf && result.podWharf.trim();
+            const podWharfOnlyShort = hasPodWharf && !result.podWharf.includes('/') && result.podWharf.length < 15;
+            
+            if (!result.podWharf || podWharfOnlyShort) {
+                // 优先从整个context中搜索，确保不遗漏
                 // 尝试提取目的港码头的缩写和全称
                 const podShortMatch = context.match(/"destPortWharfEnShortName"\s*:\s*"([^"]+)"/i);
                 const podFullMatch = context.match(/"destPortWharfEnFullName"\s*:\s*"([^"]+)"/i);
@@ -945,74 +1452,204 @@
                 podShort = normalizeWharfTokens(podShort);
                 podFull = normalizeWharfTokens(podFull);
                 
+                // 如果已有简写，优先使用已有的
+                if (podWharfOnlyShort && result.podWharf) {
+                    podShort = result.podWharf;
+                }
+                
                 if (podShort && podFull) {
                     result.podWharf = `${podShort}/${podFull}`;
                 } else if (podShort) {
                     result.podWharf = podShort;
                 } else if (podFull) {
                     result.podWharf = podFull;
+                } else if (!result.podWharf && hasPodWharf) {
+                    // 如果补充失败，保留原值
+                    result.podWharf = result.podWharf;
                 }
             }
         }
         
-        // 如果仍然缺失，只在必要时进行全局搜索（限制搜索次数）
-        if ((!result.vesselName || !result.voyage || !result.plan || !result.eta) && decodedHtml) {
-            // 优化：只搜索前5个匹配的对象，避免遍历整个HTML
-            const vesselObjPattern = /\{[^{}]*?"(?:vslName|vesselName)"\s*:\s*"[^"]+"[\s\S]{0,2000}?"(?:voyNo|voyageNo)"\s*:\s*"[^"]+"[\s\S]*?\}/g;
-            let count = 0;
-            let vesselObjMatch;
-            while ((vesselObjMatch = vesselObjPattern.exec(decodedHtml)) !== null && count < 5) {
-                count++;
-                try {
-                    const objText = vesselObjMatch[0].replace(/,\s*\}/g, '}');
-                    const vesselObj = JSON.parse(objText);
-                    
-                    if (!result.vesselName) {
-                        const name = extractVesselName(vesselObj);
-                        if (name) result.vesselName = clean(name);
-                    }
-                    if (!result.voyage) {
-                        const voy = extractVoyage(vesselObj);
-                        if (voy) result.voyage = clean(voy);
-                    }
-                    if (!result.plan) {
-                        const plan = extractPlanDate(vesselObj);
-                        if (plan) result.plan = plan;
-                    }
-                    if (!result.eta) {
-                        const eta = extractEtaDate(vesselObj);
-                        if (eta) result.eta = eta;
-                    }
-                    if (!result.weekday) {
-                        const weekday = vesselObj.weekdayOfETDFormatter || vesselObj.weekday || vesselObj.etdWeekday || '';
-                        if (weekday) result.weekday = clean(weekday);
-                    }
-                    if (!result.shipdays) {
-                        const shipdays = vesselObj.shipdays || vesselObj.shipDays || vesselObj.duration || '';
-                        if (shipdays) {
-                            const numMatch = String(shipdays).match(/(\d+)/);
-                            if (numMatch) result.shipdays = clean(numMatch[1]);
+        // 如果仍然缺失，进行全局搜索（增强：优先搜索包含fleetId和fleetIdPort的vessel对象）
+        const needsGlobalSearch = !result.plan || !result.eta || !result.vesselName || !result.voyage;
+        if (needsGlobalSearch && decodedHtml) {
+            // 策略1：优先搜索包含fleetId和fleetIdPort的vessel对象（增强：更精确的匹配）
+            if (lineId && portId) {
+                // 先查找包含fleetId和fleetIdPort的完整fleet块，然后在该块中查找vessel对象
+                const fleetBlockPattern = new RegExp(
+                    `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,500}"fleetIdPort"\\s*:\\s*${portId}[\\s\\S]{0,10000}`,
+                    'i'
+                );
+                const fleetBlockMatch = decodedHtml.match(fleetBlockPattern);
+                const searchContext = fleetBlockMatch ? fleetBlockMatch[0] : decodedHtml;
+                
+                // 在fleet块中查找vessel对象
+                const vesselWithFleetPattern = /\{[^{}]*?"(?:vslName|vesselName)"\s*:\s*"[^"]+"[\s\S]{0,2000}?"(?:voyNo|voyageNo)"\s*:\s*"[^"]+"[\s\S]*?\}/g;
+                let vesselWithFleetMatch;
+                let count1 = 0;
+                while ((vesselWithFleetMatch = vesselWithFleetPattern.exec(searchContext)) !== null && count1 < 20) {
+                    count1++;
+                    try {
+                        const objText = vesselWithFleetMatch[0].replace(/,\s*\}/g, '}');
+                        const vesselObj = JSON.parse(objText);
+                        
+                        // 验证fleetId和fleetIdPort是否匹配（如果vessel对象中有这些字段）
+                        if (vesselObj.fleetId && vesselObj.fleetIdPort) {
+                            if (vesselObj.fleetId !== lineId || vesselObj.fleetIdPort !== portId) {
+                                continue; // 不匹配，跳过
+                            }
                         }
-                    }
-                    if (!result.podWharf) {
-                        const podShort = normalizeWharfTokens(vesselObj.destPortWharfEnShortName || '');
-                        const podFull = normalizeWharfTokens(vesselObj.destPortWharfEnFullName || '');
-                        if (podShort && podFull) {
-                            result.podWharf = `${podShort}/${podFull}`;
-                        } else if (podShort) {
-                            result.podWharf = podShort;
-                        } else if (podFull) {
-                            result.podWharf = podFull;
+                        
+                        if (!result.vesselName) {
+                            const name = extractVesselName(vesselObj);
+                            if (name) result.vesselName = clean(name);
                         }
+                        if (!result.voyage) {
+                            const voy = extractVoyage(vesselObj);
+                            if (voy) result.voyage = clean(voy);
+                        }
+                        if (!result.plan) {
+                            const plan = extractPlanDate(vesselObj);
+                            if (plan) result.plan = plan;
+                        }
+                        if (!result.eta) {
+                            const eta = extractEtaDate(vesselObj);
+                            if (eta) result.eta = eta;
+                        }
+                        if (!result.weekday) {
+                            const weekday = vesselObj.weekdayOfETDFormatter 
+                                || vesselObj.weekday 
+                                || vesselObj.etdWeekday 
+                                || vesselObj.weekdayOfETD
+                                || vesselObj.sailingWeekday
+                                || vesselObj.departureWeekday
+                                || '';
+                            if (weekday) result.weekday = clean(weekday);
+                        }
+                        if (!result.shipdays) {
+                            const shipdays = vesselObj.shipdays || vesselObj.shipDays || vesselObj.duration || '';
+                            if (shipdays) {
+                                const numMatch = String(shipdays).match(/(\d+)/);
+                                if (numMatch) result.shipdays = clean(numMatch[1]);
+                            }
+                        }
+                        // 补充起运港码头（增强提取逻辑，同时提取简写和全称）
+                        if (!result.polWharf) {
+                            const polShort = normalizeWharfTokens(vesselObj.startPortWharfEnShortName || '');
+                            const polFull = normalizeWharfTokens(vesselObj.startPortWharfEnFullName || '');
+                            if (polShort && polFull) {
+                                result.polWharf = `${polShort}/${polFull}`;
+                            } else if (polShort) {
+                                result.polWharf = polShort;
+                            } else if (polFull) {
+                                result.polWharf = polFull;
+                            } else {
+                                result.polWharf = normalizeWharfTokens(vesselObj.wharfName || vesselObj.polWharf || '');
+                            }
+                        }
+                        
+                        // 补充目的港码头（确保从正确的vessel对象中提取）
+                        if (!result.podWharf || (result.podWharf && !result.podWharf.includes('/') && result.podWharf.length < 15)) {
+                            const podShort = normalizeWharfTokens(vesselObj.destPortWharfEnShortName || '');
+                            const podFull = normalizeWharfTokens(vesselObj.destPortWharfEnFullName || '');
+                            if (podShort && podFull) {
+                                result.podWharf = `${podShort}/${podFull}`;
+                            } else if (podShort) {
+                                result.podWharf = podShort;
+                            } else if (podFull) {
+                                result.podWharf = podFull;
+                            }
+                        }
+                        
+                        // 如果所有关键数据都已补充，提前退出
+                        if (result.vesselName && result.voyage && result.plan && result.eta) {
+                            break;
+                        }
+                    } catch (error) {
+                        continue;
                     }
-                    
-                    // 如果所有关键数据都已补充，提前退出
-                    if (result.vesselName && result.voyage && result.plan && result.eta && 
-                        result.weekday && result.shipdays && result.podWharf) {
-                        break;
+                }
+            }
+            
+            // 策略2：如果策略1没有找到，进行通用搜索（增加搜索次数）
+            if ((!result.plan || !result.eta || !result.vesselName || !result.voyage) && decodedHtml) {
+                const vesselObjPattern = /\{[^{}]*?"(?:vslName|vesselName)"\s*:\s*"[^"]+"[\s\S]{0,2000}?"(?:voyNo|voyageNo)"\s*:\s*"[^"]+"[\s\S]*?\}/g;
+                let count = 0;
+                let vesselObjMatch;
+                while ((vesselObjMatch = vesselObjPattern.exec(decodedHtml)) !== null && count < 15) {
+                    count++;
+                    try {
+                        const objText = vesselObjMatch[0].replace(/,\s*\}/g, '}');
+                        const vesselObj = JSON.parse(objText);
+                        
+                        if (!result.vesselName) {
+                            const name = extractVesselName(vesselObj);
+                            if (name) result.vesselName = clean(name);
+                        }
+                        if (!result.voyage) {
+                            const voy = extractVoyage(vesselObj);
+                            if (voy) result.voyage = clean(voy);
+                        }
+                        if (!result.plan) {
+                            const plan = extractPlanDate(vesselObj);
+                            if (plan) result.plan = plan;
+                        }
+                        if (!result.eta) {
+                            const eta = extractEtaDate(vesselObj);
+                            if (eta) result.eta = eta;
+                        }
+                        if (!result.weekday) {
+                            const weekday = vesselObj.weekdayOfETDFormatter 
+                                || vesselObj.weekday 
+                                || vesselObj.etdWeekday 
+                                || vesselObj.weekdayOfETD
+                                || vesselObj.sailingWeekday
+                                || vesselObj.departureWeekday
+                                || '';
+                            if (weekday) result.weekday = clean(weekday);
+                        }
+                        if (!result.shipdays) {
+                            const shipdays = vesselObj.shipdays || vesselObj.shipDays || vesselObj.duration || '';
+                            if (shipdays) {
+                                const numMatch = String(shipdays).match(/(\d+)/);
+                                if (numMatch) result.shipdays = clean(numMatch[1]);
+                            }
+                        }
+                        // 补充起运港码头（增强提取逻辑，同时提取简写和全称）
+                        if (!result.polWharf) {
+                            const polShort = normalizeWharfTokens(vesselObj.startPortWharfEnShortName || '');
+                            const polFull = normalizeWharfTokens(vesselObj.startPortWharfEnFullName || '');
+                            if (polShort && polFull) {
+                                result.polWharf = `${polShort}/${polFull}`;
+                            } else if (polShort) {
+                                result.polWharf = polShort;
+                            } else if (polFull) {
+                                result.polWharf = polFull;
+                            } else {
+                                result.polWharf = normalizeWharfTokens(vesselObj.wharfName || vesselObj.polWharf || '');
+                            }
+                        }
+                        
+                        // 补充目的港码头（确保从正确的vessel对象中提取）
+                        if (!result.podWharf || (result.podWharf && !result.podWharf.includes('/') && result.podWharf.length < 15)) {
+                            const podShort = normalizeWharfTokens(vesselObj.destPortWharfEnShortName || '');
+                            const podFull = normalizeWharfTokens(vesselObj.destPortWharfEnFullName || '');
+                            if (podShort && podFull) {
+                                result.podWharf = `${podShort}/${podFull}`;
+                            } else if (podShort) {
+                                result.podWharf = podShort;
+                            } else if (podFull) {
+                                result.podWharf = podFull;
+                            }
+                        }
+                        
+                        // 如果所有关键数据都已补充，提前退出
+                        if (result.vesselName && result.voyage && result.plan && result.eta) {
+                            break;
+                        }
+                    } catch (error) {
+                        continue;
                     }
-                } catch (error) {
-                    continue;
                 }
             }
         }
@@ -1020,8 +1657,9 @@
         return result;
     }
 
-    function parseFile(name, html){
-        const decoded = extractDecodedPayload(html);
+    function parseFile(name, html, decodedHtml = null){
+        // 优化：如果已经解码过，直接使用，避免重复解码
+        const decoded = decodedHtml || extractDecodedPayload(html);
         // 截断：出现"中转"或"接二程"后面的内容忽略
         const cutMarkers = [
             'text-[14px] font-bold">中转',
@@ -1036,11 +1674,19 @@
         }
         const mainText = cutPos>0 ? decoded.slice(0, cutPos) : decoded;
 
+        // 优化：延迟提取可见数据，只在需要验证时才执行（如果数据已经完整，可以跳过）
+        // 从DOM中提取可见的船期数据，用于验证
+        // 注意：这个操作很慢，只在必要时执行
+        let visibleData = null; // 延迟初始化
+
         const labelIndex = buildLabelIndex(mainText);
-        const fleets = extractFleetAndVessels(mainText, labelIndex);
+        const fleets = extractFleetAndVessels(mainText, labelIndex, null); // 先不传visibleData
         const odTop = extractOriginDest(decoded);
 
         const rows = [];
+        // 优化：批量查找共舱船公司，减少重复搜索
+        const carrierCache = new Map(); // key: `${lineId}_${portId}`, value: carriers
+        
         for (const fleet of fleets) {
             const lineId = fleet.fleetId;
             // 港口ID：优先使用 fleet 中的，如果无效则尝试从 vessel 中提取
@@ -1055,14 +1701,20 @@
                 }
             }
             
-            // 共舱船公司：在完整解码文本和原始HTML中查找 _lineId_portId 对应的 <a> 的 title
-            let carriers = findCosTitle(decoded, lineId, portId, html);
-            if (!carriers) {
-                carriers = [
-                    fleet.carrierShortName && fleet.svcCode
-                        ? `${fleet.carrierShortName}(${fleet.svcCode})`
-                        : fleet.carrierShortName
-                ].filter(Boolean).join('');
+            // 优化：使用缓存避免重复查找
+            const carrierKey = `${lineId}_${portId}`;
+            let carriers = carrierCache.get(carrierKey);
+            if (carriers === undefined) {
+                // 共舱船公司：在完整解码文本和原始HTML中查找 _lineId_portId 对应的 <a> 的 title
+                carriers = findCosTitle(decoded, lineId, portId, html);
+                if (!carriers) {
+                    carriers = [
+                        fleet.carrierShortName && fleet.svcCode
+                            ? `${fleet.carrierShortName}(${fleet.svcCode})`
+                            : fleet.carrierShortName
+                    ].filter(Boolean).join('');
+                }
+                carrierCache.set(carrierKey, carriers);
             }
             
             // 目的港码头：改进组合逻辑，确保显示完整信息
@@ -1091,9 +1743,42 @@
                 const vesselName = extractVesselName(vessel);
                 const voyage = extractVoyage(vessel);
                 const shipType = vessel.shipCapacity || '';
-                const plan = extractPlanDate(vessel);
+                let plan = extractPlanDate(vessel);
                 const atd = datePart(vessel.atdFormatter || '');
-                const eta = extractEtaDate(vessel);
+                let eta = extractEtaDate(vessel);
+                
+                // 优化：延迟验证，只在数据不完整时才提取可见数据
+                // 如果数据已经完整（有船名、航次、计划开航、预计到港），跳过验证以提高性能
+                const hasCompleteData = vesselName && voyage && plan && eta;
+                if (!hasCompleteData) {
+                    // 延迟初始化 visibleData（只在需要时才执行，这个操作很慢）
+                    if (visibleData === null) {
+                        visibleData = extractVisibleScheduleData(html);
+                    }
+                    
+                    if (visibleData && visibleData.size > 0) {
+                        // 从可见数据中补充计划开航和目的港码头
+                        const visibleKey = `${lineId}_${portId}_${vesselName || ''}_${voyage || ''}`;
+                        const visibleInfo = visibleData.get(visibleKey) || 
+                                          visibleData.get(`${lineId}_${portId}_${clean(vesselName || '')}_${clean(voyage || '')}`) ||
+                                          visibleData.get(`${lineId}_${portId}_${(vesselName || '').toUpperCase()}_${(voyage || '').toUpperCase()}`);
+                        
+                        if (visibleInfo) {
+                            // 如果JSON中没有计划开航，使用DOM中的
+                            if (!plan && visibleInfo.planDate) {
+                                plan = visibleInfo.planDate;
+                            }
+                            // 如果JSON中没有预计到港，使用DOM中的
+                            if (!eta && visibleInfo.etaDate) {
+                                eta = visibleInfo.etaDate;
+                            }
+                            // 如果JSON中没有目的港码头，使用DOM中的
+                            if (!podCombined && visibleInfo.podWharf) {
+                                podCombined = visibleInfo.podWharf;
+                            }
+                        }
+                    }
+                }
                 
                 // 注意：补充机制延迟到合并后统一处理，以提高性能
                 
@@ -1103,10 +1788,15 @@
                     weekday = vessel.weekdayOfETDFormatter || vessel.weekday || vessel.etdWeekday || '';
                 }
                 
-                // 航程：优先从 vessel，其次从 fleet
+                // 航程：优先从 vessel，其次从 fleet（增强提取逻辑）
                 let shipdays = defaultShipdays;
                 if (!shipdays) {
-                    shipdays = vessel.shipdays || vessel.shipDays || vessel.duration || '';
+                    shipdays = vessel.shipdays 
+                        || vessel.shipDays 
+                        || vessel.duration 
+                        || vessel.transitTime
+                        || vessel.transitDays
+                        || '';
                 }
                 // 如果是字符串，转换为数字
                 if (shipdays && typeof shipdays === 'string') {
@@ -1114,18 +1804,27 @@
                     if (numMatch) shipdays = numMatch[1];
                 }
                 
-                // 起运港码头：优先从 vessel，其次从 fleet
+                // 起运港码头：优先从 vessel，其次从 fleet（增强提取逻辑，同时提取简写和全称）
                 let polWharf = defaultPolWharf;
                 if (!polWharf) {
-                    polWharf = vessel.wharfName
-                        || vessel.startPortWharfEnShortName
-                        || vessel.startPortWharfEnFullName
-                        || vessel.polWharf
-                        || '';
-                    polWharf = normalizeWharfTokens(polWharf);
+                    const polShort = vessel.startPortWharfEnShortName || '';
+                    const polFull = vessel.startPortWharfEnFullName || '';
+                    if (polShort && polFull) {
+                        polWharf = `${normalizeWharfTokens(polShort)}/${normalizeWharfTokens(polFull)}`;
+                    } else if (polShort) {
+                        polWharf = normalizeWharfTokens(polShort);
+                    } else if (polFull) {
+                        polWharf = normalizeWharfTokens(polFull);
+                    } else {
+                        polWharf = normalizeWharfTokens(
+                            vessel.wharfName
+                            || vessel.polWharf
+                            || ''
+                        );
+                    }
                 }
                 
-                // 目的港码头：如果 vessel 中有，优先使用
+                // 目的港码头：如果 vessel 中有，优先使用（增强提取逻辑，确保同时提取简写和全称）
                 let vesselPodCombined = podCombined;
                 if (vessel.destPortWharfEnShortName || vessel.destPortWharfEnFullName) {
                     const vPodShort = normalizeWharfTokens(vessel.destPortWharfEnShortName || '');
@@ -1139,6 +1838,21 @@
                     }
                 }
                 
+                // 应用数据清洗：船型、船名航次
+                const cleanedShipType = cleanShipType(shipType);
+                const cleanedVesselName = clean(vesselName);
+                const cleanedVoyage = clean(voyage);
+                
+                // 预计到港补充逻辑：如果有船名航次但不是BLANK SAILING，应该有预计到港
+                let finalEta = clean(eta);
+                if (!finalEta && cleanedVesselName && cleanedVoyage) {
+                    const isBlankSailing = /BLANK\s*SAILING/i.test(cleanedVesselName) || /BLANK\s*SAILING/i.test(cleanedVoyage);
+                    if (!isBlankSailing) {
+                        // 不是空白航行，应该有预计到港，尝试从可见数据或补充数据中获取
+                        // 这部分会在后续的补充机制中处理
+                    }
+                }
+                
                 rows.push([
                     clean(origin),                      // 启运港
                     clean(dest),                        // 目的港
@@ -1147,12 +1861,12 @@
                     clean(weekday),                     // 开航日
                     clean(shipdays),                    // 航程
                     clean(carriers),                    // 共舱船公司
-                    clean(vesselName),                  // 船名
-                    clean(voyage),                      // 航次
-                    clean(shipType),                    // 船型
+                    cleanedVesselName,                  // 船名（已清洗）
+                    cleanedVoyage,                      // 航次（已清洗）
+                    cleanedShipType,                    // 船型（已清洗，处理空格）
                     clean(plan),                        // 计划开航
                     clean(atd),                         // 实际离港
-                    clean(eta),                         // 预计到港
+                    finalEta,                           // 预计到港
                     clean(polWharf),                    // 启运港码头
                     clean(vesselPodCombined)            // 目的港码头
                 ]);
@@ -1194,6 +1908,423 @@
         // 注意：补充机制延迟到合并后统一处理，以提高性能
         
         return rows;
+    }
+
+    /**
+     * 生成数据质量检查报告
+     * @param {Array<Array>} merged - 合并后的数据（包含表头）
+     * @returns {Object} 质量报告对象
+     */
+    function generateQualityReport(merged) {
+        const report = {
+            hasIssues: false,
+            duplicateVesselVoyage: [],
+            duplicateVesselVoyageMap: new Map(), // key: normalized, value: {variants: Set, count: number}
+            duplicatePodWharf: [],
+            duplicatePodWharfMap: new Map(), // key: normalized, value: {variants: Map<variant, count>, totalCount: number}
+            missingWeekday: 0,
+            missingShipdays: 0,
+            missingPlan: 0,
+            missingEta: 0,
+            missingEtaNotBlank: 0,
+            missingPolWharf: 0,
+            missingPodWharf: 0,
+            podWharfOnlyShort: 0
+        };
+        
+        if (merged.length <= 1) return report;
+        
+        // 船名航次去空格后的映射（用于检测重复）
+        const normalizedVesselVoyageMap = new Map(); // key: normalized, value: {variants: Map<variant, count>, totalCount: number}
+        // 目的港码头去空格后的映射（用于检测重复）
+        const normalizedPodWharfMap = new Map(); // key: normalized, value: {variants: Map<variant, count>, totalCount: number}
+        
+        // 统计缺失字段
+        for (let i = 1; i < merged.length; i++) {
+            const row = merged[i];
+            const [
+                origin, dest, lineId, portId, weekday, shipdays, carriers,
+                vesselName, voyage, shipType, plan, atd, eta, polWharf, podWharf
+            ] = row;
+            
+            // 检查船名航次空格问题
+            if (vesselName || voyage) {
+                const normalized = normalizeVesselVoyage(vesselName, voyage);
+                if (normalized.combinedNormalized) {
+                    if (!normalizedVesselVoyageMap.has(normalized.combinedNormalized)) {
+                        normalizedVesselVoyageMap.set(normalized.combinedNormalized, {
+                            variants: new Map(), // key: variant, value: count
+                            totalCount: 0
+                        });
+                    }
+                    const entry = normalizedVesselVoyageMap.get(normalized.combinedNormalized);
+                    entry.totalCount++;
+                    // 记录所有变体（船名+航次的组合）及其数量
+                    const variant = `${vesselName || ''}|${voyage || ''}`;
+                    entry.variants.set(variant, (entry.variants.get(variant) || 0) + 1);
+                }
+            }
+            
+            // 检查目的港码头空格问题
+            if (podWharf) {
+                const normalized = normalizePodWharf(podWharf);
+                if (normalized) {
+                    if (!normalizedPodWharfMap.has(normalized)) {
+                        normalizedPodWharfMap.set(normalized, {
+                            variants: new Map(), // key: variant, value: count
+                            totalCount: 0
+                        });
+                    }
+                    const entry = normalizedPodWharfMap.get(normalized);
+                    entry.totalCount++;
+                    // 记录所有变体及其数量
+                    entry.variants.set(podWharf, (entry.variants.get(podWharf) || 0) + 1);
+                }
+            }
+            
+            // 检查缺失字段
+            if (!weekday) report.missingWeekday++;
+            if (!shipdays) report.missingShipdays++;
+            if (!plan) report.missingPlan++;
+            if (!eta) {
+                report.missingEta++;
+                // 检查是否是非BLANK SAILING
+                const isBlankSailing = /BLANK\s*SAILING/i.test(vesselName || '') || 
+                                     /BLANK\s*SAILING/i.test(voyage || '');
+                if (!isBlankSailing && vesselName && voyage) {
+                    report.missingEtaNotBlank++;
+                }
+            }
+            if (!polWharf) report.missingPolWharf++;
+            if (!podWharf) report.missingPodWharf++;
+            
+            // 检查目的港码头是否只有简写（没有全称）
+            if (podWharf && !podWharf.includes('/') && podWharf.length < 10) {
+                // 可能是只有简写，没有全称
+                report.podWharfOnlyShort++;
+            }
+        }
+        
+        // 找出重复的船名航次（去空格后相同但原始值不同）
+        for (const [normalized, entry] of normalizedVesselVoyageMap.entries()) {
+            if (entry.totalCount > 1 && entry.variants.size > 1) {
+                // 有多个变体，需要用户选择
+                const variants = Array.from(entry.variants.entries()).map(([variant, count]) => {
+                    const [vName, vVoyage] = variant.split('|');
+                    return { 
+                        vesselName: vName, 
+                        voyage: vVoyage,
+                        count: count
+                    };
+                });
+                // 按数量排序，数量多的在前
+                variants.sort((a, b) => b.count - a.count);
+                report.duplicateVesselVoyage.push({
+                    normalized: normalized,
+                    variants: variants,
+                    count: entry.totalCount
+                });
+                report.duplicateVesselVoyageMap.set(normalized, entry);
+            }
+        }
+        
+        // 找出重复的目的港码头（去空格后相同但原始值不同）
+        for (const [normalized, entry] of normalizedPodWharfMap.entries()) {
+            if (entry.totalCount > 1 && entry.variants.size > 1) {
+                // 有多个变体，需要用户选择
+                const variants = Array.from(entry.variants.entries()).map(([variant, count]) => {
+                    return { 
+                        podWharf: variant,
+                        count: count
+                    };
+                });
+                // 按数量排序，数量多的在前
+                variants.sort((a, b) => b.count - a.count);
+                report.duplicatePodWharf.push({
+                    normalized: normalized,
+                    variants: variants,
+                    count: entry.totalCount
+                });
+                report.duplicatePodWharfMap.set(normalized, entry);
+            }
+        }
+        
+        // 按数量排序
+        report.duplicateVesselVoyage.sort((a, b) => b.count - a.count);
+        report.duplicatePodWharf.sort((a, b) => b.count - a.count);
+        
+        // 判断是否有问题
+        report.hasIssues = report.duplicateVesselVoyage.length > 0 ||
+                          report.duplicatePodWharf.length > 0 ||
+                          report.missingWeekday > 0 ||
+                          report.missingShipdays > 0 ||
+                          report.missingPlan > 0 ||
+                          report.missingEta > 0 ||
+                          report.missingPolWharf > 0 ||
+                          report.missingPodWharf > 0 ||
+                          report.podWharfOnlyShort > 0;
+        
+        return report;
+    }
+
+    /**
+     * 显示船名航次标准化模态框
+     * @param {Array} duplicateGroups - 重复的船名航次组
+     * @returns {Promise<Object>} 返回用户选择的替换映射 {normalized: {vesselName, voyage}}
+     */
+    function showVesselVoyageModal(duplicateGroups) {
+        return new Promise((resolve) => {
+            const modal = selectElement('#vesselVoyageModal');
+            const list = selectElement('#vesselVoyageList');
+            const applyBtn = selectElement('#applyVesselVoyageReplace');
+            const skipBtn = selectElement('#skipVesselVoyageReplace');
+            
+            // 清空列表
+            list.innerHTML = '';
+            
+            // 存储用户选择
+            const selections = new Map();
+            
+            // 为每组重复记录创建选择界面
+            duplicateGroups.forEach((group, groupIndex) => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'vessel-voyage-group';
+                
+                const title = document.createElement('div');
+                title.className = 'vessel-voyage-group-title';
+                title.textContent = `第 ${groupIndex + 1} 组（共 ${group.count} 条记录，${group.variants.length} 种格式）：`;
+                groupDiv.appendChild(title);
+                
+                // 找到最短的船名航次组合（作为默认选择）
+                let shortestIndex = 0;
+                let shortestLength = Infinity;
+                group.variants.forEach((variant, idx) => {
+                    const totalLength = (variant.vesselName || '').length + (variant.voyage || '').length;
+                    if (totalLength < shortestLength) {
+                        shortestLength = totalLength;
+                        shortestIndex = idx;
+                    }
+                });
+                
+                // 为每个变体创建选项
+                group.variants.forEach((variant, variantIndex) => {
+                    const option = document.createElement('div');
+                    option.className = 'vessel-voyage-option';
+                    const isShortest = variantIndex === shortestIndex;
+                    if (isShortest) {
+                        option.classList.add('selected');
+                        selections.set(group.normalized, variant);
+                    }
+                    
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = `vesselVoyageGroup_${groupIndex}`;
+                    radio.value = `${variant.vesselName}|${variant.voyage}`;
+                    radio.checked = isShortest;
+                    radio.addEventListener('change', () => {
+                        // 更新选中状态
+                        groupDiv.querySelectorAll('.vessel-voyage-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                        selections.set(group.normalized, variant);
+                    });
+                    
+                    const label = document.createElement('label');
+                    label.className = 'vessel-voyage-option-label';
+                    label.textContent = `"${variant.vesselName || ''}" / "${variant.voyage || ''}"`;
+                    
+                    const count = document.createElement('span');
+                    count.className = 'vessel-voyage-option-count';
+                    count.textContent = `(${variant.count} 条)`;
+                    
+                    option.appendChild(radio);
+                    option.appendChild(label);
+                    option.appendChild(count);
+                    option.addEventListener('click', () => {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change'));
+                    });
+                    
+                    groupDiv.appendChild(option);
+                });
+                
+                list.appendChild(groupDiv);
+            });
+            
+            // 显示模态框
+            modal.classList.remove('hidden');
+            
+            // 应用按钮
+            applyBtn.onclick = () => {
+                modal.classList.add('hidden');
+                resolve(selections);
+            };
+            
+            // 跳过按钮
+            skipBtn.onclick = () => {
+                modal.classList.add('hidden');
+                resolve(new Map()); // 返回空映射，不进行替换
+            };
+        });
+    }
+
+    /**
+     * 应用船名航次替换
+     * @param {Array<Array>} merged - 合并后的数据（包含表头）
+     * @param {Map} replacements - 替换映射 {normalized: {vesselName, voyage}}
+     * @returns {Array<Array>} 替换后的数据
+     */
+    function applyVesselVoyageReplacements(merged, replacements) {
+        if (replacements.size === 0) return merged;
+        
+        const result = [merged[0]]; // 保留表头
+        
+        for (let i = 1; i < merged.length; i++) {
+            const row = [...merged[i]]; // 复制行
+            const vesselName = row[7] || '';
+            const voyage = row[8] || '';
+            
+            const normalized = normalizeVesselVoyage(vesselName, voyage);
+            if (normalized.combinedNormalized && replacements.has(normalized.combinedNormalized)) {
+                const replacement = replacements.get(normalized.combinedNormalized);
+                row[7] = replacement.vesselName;
+                row[8] = replacement.voyage;
+            }
+            
+            result.push(row);
+        }
+        
+        return result;
+    }
+
+    /**
+     * 显示目的港码头标准化模态框
+     * @param {Array} duplicateGroups - 重复的目的港码头组
+     * @returns {Promise<Object>} 返回用户选择的替换映射 {normalized: podWharf}
+     */
+    function showPodWharfModal(duplicateGroups) {
+        return new Promise((resolve) => {
+            const modal = selectElement('#podWharfModal');
+            const list = selectElement('#podWharfList');
+            const applyBtn = selectElement('#applyPodWharfReplace');
+            const skipBtn = selectElement('#skipPodWharfReplace');
+            
+            // 清空列表
+            list.innerHTML = '';
+            
+            // 存储用户选择
+            const selections = new Map();
+            
+            // 为每组重复记录创建选择界面
+            duplicateGroups.forEach((group, groupIndex) => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'vessel-voyage-group';
+                
+                const title = document.createElement('div');
+                title.className = 'vessel-voyage-group-title';
+                title.textContent = `第 ${groupIndex + 1} 组（共 ${group.count} 条记录，${group.variants.length} 种格式）：`;
+                groupDiv.appendChild(title);
+                
+                // 找到最短的目的港码头（作为默认选择）
+                let shortestIndex = 0;
+                let shortestLength = Infinity;
+                group.variants.forEach((variant, idx) => {
+                    const length = (variant.podWharf || '').length;
+                    if (length < shortestLength) {
+                        shortestLength = length;
+                        shortestIndex = idx;
+                    }
+                });
+                
+                // 为每个变体创建选项
+                group.variants.forEach((variant, variantIndex) => {
+                    const option = document.createElement('div');
+                    option.className = 'vessel-voyage-option';
+                    const isShortest = variantIndex === shortestIndex;
+                    if (isShortest) {
+                        option.classList.add('selected');
+                        selections.set(group.normalized, variant.podWharf);
+                    }
+                    
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = `podWharfGroup_${groupIndex}`;
+                    radio.value = variant.podWharf;
+                    radio.checked = isShortest;
+                    radio.addEventListener('change', () => {
+                        // 更新选中状态
+                        groupDiv.querySelectorAll('.vessel-voyage-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                        selections.set(group.normalized, variant.podWharf);
+                    });
+                    
+                    const label = document.createElement('label');
+                    label.className = 'vessel-voyage-option-label';
+                    label.textContent = variant.podWharf || '';
+                    
+                    const count = document.createElement('span');
+                    count.className = 'vessel-voyage-option-count';
+                    count.textContent = `(${variant.count} 条)`;
+                    
+                    option.appendChild(radio);
+                    option.appendChild(label);
+                    option.appendChild(count);
+                    option.addEventListener('click', () => {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change'));
+                    });
+                    
+                    groupDiv.appendChild(option);
+                });
+                
+                list.appendChild(groupDiv);
+            });
+            
+            // 显示模态框
+            modal.classList.remove('hidden');
+            
+            // 应用按钮
+            applyBtn.onclick = () => {
+                modal.classList.add('hidden');
+                resolve(selections);
+            };
+            
+            // 跳过按钮
+            skipBtn.onclick = () => {
+                modal.classList.add('hidden');
+                resolve(new Map()); // 返回空映射，不进行替换
+            };
+        });
+    }
+
+    /**
+     * 应用目的港码头替换
+     * @param {Array<Array>} merged - 合并后的数据（包含表头）
+     * @param {Map} replacements - 替换映射 {normalized: podWharf}
+     * @returns {Array<Array>} 替换后的数据
+     */
+    function applyPodWharfReplacements(merged, replacements) {
+        if (replacements.size === 0) return merged;
+        
+        const result = [merged[0]]; // 保留表头
+        
+        for (let i = 1; i < merged.length; i++) {
+            const row = [...merged[i]]; // 复制行
+            const podWharf = row[14] || '';
+            
+            const normalized = normalizePodWharf(podWharf);
+            if (normalized && replacements.has(normalized)) {
+                const replacement = replacements.get(normalized);
+                row[14] = replacement;
+            }
+            
+            result.push(row);
+        }
+        
+        return result;
     }
 
     /**
@@ -1248,25 +2379,49 @@
         ];
         const rows = [header];
         const htmlCache = new Map(); // 缓存解码后的HTML内容（key: 行索引, value: 解码后的HTML）
+        const originalHtmlCache = new Map(); // 缓存原始HTML内容（key: 行索引, value: 原始HTML）
+        // 建立基于航线ID+港口ID的全局HTML映射（用于补充机制）
+        const linePortHtmlGlobalMap = new Map(); // key: `${lineId}_${portId}`, value: Array<{decodedHtml, originalHtml}>
         let ok = 0;
         let warn = 0;
         for (const file of files) {
             try {
                 const html = await file.text();
-                const parsedRows = parseFile(file.name, html);
+                // 优化：先解码一次，然后传递给 parseFile，避免重复解码
+                const decodedHtml = extractDecodedPayload(html);
+                const parsedRows = parseFile(file.name, html, decodedHtml);
                 if (!parsedRows.length) {
                     warn++;
                     log(`[无船期] ${file.name}`, '#b36b00');
                 } else {
                     ok++;
                     log(`[OK] ${file.name} -> ${parsedRows.length} 行`, '#0a7d33');
-                    // 缓存解码后的HTML，避免重复解码
-                    const decodedHtml = extractDecodedPayload(html);
+                    // 缓存解码后的HTML和原始HTML，避免重复解码
                     const startIndex = rows.length;
                     for (let j = 0; j < parsedRows.length; j++) {
                         const row = parsedRows[j];
                         if (row.length > 0 && row[0] !== '启运港') { // 跳过表头
                             htmlCache.set(startIndex + j, decodedHtml); // 存储解码后的HTML
+                            originalHtmlCache.set(startIndex + j, html); // 存储原始HTML
+                            
+                            // 建立基于航线ID+港口ID的全局HTML映射
+                            const lineId = row[2] || ''; // 航线ID
+                            const portId = row[3] || ''; // 港口ID
+                            if (lineId && portId) {
+                                const linePortKey = `${lineId}_${portId}`;
+                                if (!linePortHtmlGlobalMap.has(linePortKey)) {
+                                    linePortHtmlGlobalMap.set(linePortKey, []);
+                                }
+                                const htmlList = linePortHtmlGlobalMap.get(linePortKey);
+                                // 避免重复添加相同的HTML
+                                const htmlExists = htmlList.some(h => h.decodedHtml === decodedHtml);
+                                if (!htmlExists) {
+                                    htmlList.push({
+                                        decodedHtml: decodedHtml,
+                                        originalHtml: html
+                                    });
+                                }
+                            }
                         }
                     }
                     rows.push(...parsedRows);
@@ -1279,7 +2434,8 @@
         }
         // 去重合并：键 = 启运港 + 目的港 + 航线ID + 港口ID + 船名 + 航次；共舱船公司合并去重
         const deduplicationMap = new Map();
-        const mergedHtmlCache = new Map(); // 存储合并后记录的HTML引用（key: 合并后的key, value: HTML内容）
+        const mergedHtmlCache = new Map(); // 存储合并后记录的HTML引用（key: 合并后的key, value: 解码后的HTML）
+        const mergedOriginalHtmlCache = new Map(); // 存储合并后记录的原始HTML引用（key: 合并后的key, value: 原始HTML）
         for (let i = 1; i < rows.length; i++) {
             const [
                 origin,
@@ -1318,9 +2474,12 @@
                     polWharf,
                     podWharf
                 ]);
-                // 保存解码后的HTML引用（已在解析时解码）
+                // 保存解码后的HTML和原始HTML引用
                 if (htmlCache.has(i)) {
                     mergedHtmlCache.set(key, htmlCache.get(i));
+                }
+                if (originalHtmlCache.has(i)) {
+                    mergedOriginalHtmlCache.set(key, originalHtmlCache.get(i));
                 }
             } else {
                 const existing = deduplicationMap.get(key);
@@ -1340,11 +2499,15 @@
                 if (htmlCache.has(i) && !mergedHtmlCache.has(key)) {
                     mergedHtmlCache.set(key, htmlCache.get(i));
                 }
+                if (originalHtmlCache.has(i) && !mergedOriginalHtmlCache.has(key)) {
+                    mergedOriginalHtmlCache.set(key, originalHtmlCache.get(i));
+                }
             }
         }
         const merged = [header, ...Array.from(deduplicationMap.values())];
         
-        // 合并后的补充机制：对仍然缺失的字段进行补充（优化：批量处理，减少重复搜索）
+        // 合并后的补充机制：对仍然缺失的字段进行补充（增强：放宽条件，支持从多个来源补充）
+        // 使用全局HTML映射，确保能够从所有相同航线ID+港口ID的HTML中查找
         const needSupplement = [];
         for (let i = 1; i < merged.length; i++) {
             const row = merged[i];
@@ -1353,79 +2516,423 @@
                 vesselName, voyage, shipType, plan, atd, eta, polWharf, podWharf
             ] = row;
             
-            // 检查是否有任何关键字段缺失
-            const hasMissing = !vesselName || !voyage || !plan || !eta || 
-                              !weekday || !shipdays || !podWharf;
+            // 放宽条件：即使只有单个字段缺失也应该尝试补充
+            // 检查目的港码头是否只有简写（没有/分隔符且长度较短）
+            const podWharfOnlyShort = podWharf && !podWharf.includes('/') && podWharf.length < 15;
             
-            // 只对真正缺失关键字段的行进行补充
-            if (hasMissing && lineId && portId) {
+            const missing = {
+                vesselName: !vesselName,
+                voyage: !voyage,
+                plan: !plan,
+                eta: !eta,
+                weekday: !weekday,
+                shipdays: !shipdays,
+                polWharf: !polWharf,
+                podWharf: !podWharf || podWharfOnlyShort // 如果只有简写，也算缺失
+            };
+            
+            // 检查是否有任何字段缺失
+            const hasAnyMissing = Object.values(missing).some(v => v);
+            
+            // 只要有缺失字段且有航线ID和港口ID，就尝试补充
+            if (hasAnyMissing && lineId && portId) {
                 const rowKey = [origin, dest, lineId, portId, vesselName, voyage].join('|');
-                if (mergedHtmlCache.has(rowKey)) {
+                // 优先使用该记录的HTML
+                let decodedHtml = mergedHtmlCache.get(rowKey);
+                let originalHtml = mergedOriginalHtmlCache.get(rowKey);
+                
+                // 如果没有该记录的HTML，从全局HTML映射中查找相同航线ID+港口ID的HTML
+                if (!decodedHtml && !originalHtml) {
+                    const linePortKey = `${lineId}_${portId}`;
+                    const htmlList = linePortHtmlGlobalMap.get(linePortKey);
+                    if (htmlList && htmlList.length > 0) {
+                        // 使用第一个可用的HTML（通常这些HTML都包含相同航线ID+港口ID的信息）
+                        decodedHtml = htmlList[0].decodedHtml;
+                        originalHtml = htmlList[0].originalHtml;
+                    }
+                }
+                
+                // 只要有HTML（无论是该记录的还是相同航线ID+港口ID的），就尝试补充
+                if (decodedHtml || originalHtml) {
                     needSupplement.push({
                         row: row,
                         rowKey: rowKey,
                         lineId: lineId,
                         portId: portId,
-                        missing: {
-                            vesselName: !vesselName,
-                            voyage: !voyage,
-                            plan: !plan,
-                            eta: !eta,
-                            weekday: !weekday,
-                            shipdays: !shipdays,
-                            podWharf: !podWharf
-                        }
+                        decodedHtml: decodedHtml,
+                        originalHtml: originalHtml,
+                        missing: missing
                     });
                 }
             }
         }
         
-        // 批量补充：使用缓存的解码HTML，避免重复解码
+        // 批量补充：使用缓存的解码HTML，避免重复解码（增强：支持从多个来源补充）
         if (needSupplement.length > 0) {
             log(`正在补充 ${needSupplement.length} 条缺失数据...`, '#0a7d33');
+            // 优化：按HTML文件分组，减少重复的visibleData提取
+            const htmlToVisibleData = new Map(); // key: HTML内容的key, value: visibleData Map
+            
+            // 先建立HTML到visibleData的映射（包括所有可能用到的HTML源）
+            const allHtmlSources = new Set();
             for (const item of needSupplement) {
-                const decodedHtml = mergedHtmlCache.get(item.rowKey);
-                if (decodedHtml) {
-                    const supplemented = supplementMissingData(decodedHtml, item.lineId, item.portId, {
-                        vesselName: item.row[7] || '',
-                        voyage: item.row[8] || '',
-                        plan: item.row[10] || '',
-                        eta: item.row[12] || '',
-                        weekday: item.row[4] || '',
-                        shipdays: item.row[5] || '',
-                        podWharf: item.row[14] || ''
-                    });
-                    
-                    // 只更新缺失的字段
-                    if (item.missing.vesselName && supplemented.vesselName) {
-                        item.row[7] = clean(supplemented.vesselName);
-                    }
-                    if (item.missing.voyage && supplemented.voyage) {
-                        item.row[8] = clean(supplemented.voyage);
-                    }
-                    if (item.missing.plan && supplemented.plan) {
-                        item.row[10] = clean(supplemented.plan);
-                    }
-                    if (item.missing.eta && supplemented.eta) {
-                        item.row[12] = clean(supplemented.eta);
-                    }
-                    if (item.missing.weekday && supplemented.weekday) {
-                        item.row[4] = clean(supplemented.weekday);
-                    }
-                    if (item.missing.shipdays && supplemented.shipdays) {
-                        item.row[5] = clean(supplemented.shipdays);
-                    }
-                    if (item.missing.podWharf && supplemented.podWharf) {
-                        item.row[14] = clean(supplemented.podWharf);
+                // 添加该记录的HTML
+                if (item.originalHtml || item.decodedHtml) {
+                    allHtmlSources.add(item.originalHtml || item.decodedHtml);
+                }
+                // 添加相同航线ID+港口ID的所有HTML
+                const linePortKey = `${item.lineId}_${item.portId}`;
+                const htmlList = linePortHtmlGlobalMap.get(linePortKey) || [];
+                for (const htmlItem of htmlList) {
+                    if (htmlItem.originalHtml || htmlItem.decodedHtml) {
+                        allHtmlSources.add(htmlItem.originalHtml || htmlItem.decodedHtml);
                     }
                 }
             }
+            
+            // 为所有HTML源提取visibleData
+            for (const htmlForExtraction of allHtmlSources) {
+                if (htmlForExtraction) {
+                    const htmlKey = htmlForExtraction.substring(0, 1000);
+                    if (!htmlToVisibleData.has(htmlKey)) {
+                        // 检查是否有需要visibleData的记录
+                        const needsVisibleData = Array.from(needSupplement).some(item => 
+                            item.missing.plan || item.missing.podWharf
+                        );
+                        if (needsVisibleData) {
+                            const visibleData = extractVisibleScheduleData(htmlForExtraction);
+                            htmlToVisibleData.set(htmlKey, visibleData);
+                        } else {
+                            htmlToVisibleData.set(htmlKey, null);
+                        }
+                    }
+                }
+            }
+            
+            // 批量补充（增强：尝试多个HTML源）
+            let supplementedCount = 0;
+            for (const item of needSupplement) {
+                let decodedHtml = item.decodedHtml;
+                let originalHtml = item.originalHtml;
+                
+                // 如果第一个HTML没有找到所有缺失的数据，尝试从其他相同航线ID+港口ID的HTML中查找
+                const linePortKey = `${item.lineId}_${item.portId}`;
+                const htmlList = linePortHtmlGlobalMap.get(linePortKey) || [];
+                let htmlIndex = 0;
+                
+                // 记录当前缺失的字段
+                const stillMissing = {...item.missing};
+                
+                // 尝试多个HTML源，直到找到所有缺失的数据或尝试完所有HTML
+                while (htmlIndex < htmlList.length + 1) {
+                    if (decodedHtml || originalHtml) {
+                        const htmlForExtraction = originalHtml || decodedHtml;
+                        const htmlKey = htmlForExtraction ? htmlForExtraction.substring(0, 1000) : null;
+                        // 获取visibleData，如果没有则尝试提取
+                        let visibleData = htmlKey ? htmlToVisibleData.get(htmlKey) : null;
+                        if (visibleData === undefined && htmlForExtraction) {
+                            // 如果还没有提取过，现在提取
+                            const needsVisibleData = stillMissing.plan || stillMissing.podWharf;
+                            if (needsVisibleData) {
+                                visibleData = extractVisibleScheduleData(htmlForExtraction);
+                                if (htmlKey) {
+                                    htmlToVisibleData.set(htmlKey, visibleData);
+                                }
+                            } else {
+                                visibleData = null;
+                                if (htmlKey) {
+                                    htmlToVisibleData.set(htmlKey, null);
+                                }
+                            }
+                        }
+                        
+                        const supplemented = supplementMissingData(decodedHtml || originalHtml, item.lineId, item.portId, {
+                            vesselName: item.row[7] || '',
+                            voyage: item.row[8] || '',
+                            plan: item.row[10] || '',
+                            eta: item.row[12] || '',
+                            weekday: item.row[4] || '',
+                            shipdays: item.row[5] || '',
+                            polWharf: item.row[13] || '',
+                            podWharf: item.row[14] || ''
+                        }, visibleData);
+                        
+                        let hasUpdate = false;
+                        // 只更新仍然缺失的字段
+                        if (stillMissing.vesselName && supplemented.vesselName) {
+                            item.row[7] = clean(supplemented.vesselName);
+                            stillMissing.vesselName = false;
+                            hasUpdate = true;
+                        }
+                        if (stillMissing.voyage && supplemented.voyage) {
+                            item.row[8] = clean(supplemented.voyage);
+                            stillMissing.voyage = false;
+                            hasUpdate = true;
+                        }
+                        if (stillMissing.plan && supplemented.plan) {
+                            item.row[10] = clean(supplemented.plan);
+                            stillMissing.plan = false;
+                            hasUpdate = true;
+                        }
+                        if (stillMissing.eta && supplemented.eta) {
+                            item.row[12] = clean(supplemented.eta);
+                            stillMissing.eta = false;
+                            hasUpdate = true;
+                        }
+                        if (stillMissing.weekday && supplemented.weekday) {
+                            item.row[4] = clean(supplemented.weekday);
+                            stillMissing.weekday = false;
+                            hasUpdate = true;
+                        }
+                        if (stillMissing.shipdays && supplemented.shipdays) {
+                            item.row[5] = clean(supplemented.shipdays);
+                            stillMissing.shipdays = false;
+                            hasUpdate = true;
+                        }
+                        if (stillMissing.polWharf && supplemented.polWharf) {
+                            item.row[13] = clean(supplemented.polWharf);
+                            stillMissing.polWharf = false;
+                            hasUpdate = true;
+                        }
+                        if (stillMissing.podWharf && supplemented.podWharf) {
+                            // 如果原值只有简写，新值有简写+全称，使用新值；否则使用新值
+                            const currentPodWharf = item.row[14] || '';
+                            const newPodWharf = clean(supplemented.podWharf);
+                            if (newPodWharf.includes('/') || !currentPodWharf) {
+                                item.row[14] = newPodWharf;
+                                stillMissing.podWharf = false;
+                                hasUpdate = true;
+                            } else if (currentPodWharf && !currentPodWharf.includes('/') && newPodWharf && !newPodWharf.includes('/')) {
+                                // 如果都是简写，使用新值（可能更准确）
+                                item.row[14] = newPodWharf;
+                                stillMissing.podWharf = false;
+                                hasUpdate = true;
+                            }
+                        }
+                        
+                        if (hasUpdate) {
+                            supplementedCount++;
+                        }
+                        
+                        // 如果所有缺失的字段都已补充，提前退出
+                        if (!Object.values(stillMissing).some(v => v)) {
+                            break;
+                        }
+                    }
+                    
+                    // 尝试下一个HTML源
+                    if (htmlIndex < htmlList.length) {
+                        decodedHtml = htmlList[htmlIndex].decodedHtml;
+                        originalHtml = htmlList[htmlIndex].originalHtml;
+                        htmlIndex++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            if (supplementedCount > 0) {
+                log(`✅ 已补充 ${supplementedCount} 条记录的缺失字段`, '#0a7d33');
+            }
         }
-        output = merged;
-        renderPreviewLocal(merged.slice(1));
-        downloadBtn.disabled = merged.length <= 1;
-        summary.textContent = `完成：${ok} 文件，${warn} 提醒，合并后 ${merged.length - 1} 条。`;
+        // 目的港码头补全：如果同一航线ID+港口ID有带全称的记录，用它补充只有简写的记录
+        const podFullMap = new Map(); // key: lineId_portId, value: podWharf 带全称
+        for (let i = 1; i < merged.length; i++) {
+            const row = merged[i];
+            const lineId = row[2];
+            const portId = row[3];
+            const podWharf = row[14];
+            if (lineId && portId && podWharf && podWharf.includes('/')) {
+                const key = `${lineId}_${portId}`;
+                // 选取最长的（通常含全称）
+                const current = podFullMap.get(key) || '';
+                if (podWharf.length > current.length) {
+                    podFullMap.set(key, podWharf);
+                }
+            }
+        }
+        for (let i = 1; i < merged.length; i++) {
+            const row = merged[i];
+            const lineId = row[2];
+            const portId = row[3];
+            const podWharf = row[14] || '';
+            const onlyShort = podWharf && !podWharf.includes('/') && podWharf.length < 15;
+            const key = `${lineId}_${portId}`;
+            if (onlyShort && podFullMap.has(key)) {
+                row[14] = podFullMap.get(key);
+            }
+        }
+
+        // 数据质量检查报告
+        const qualityReport = generateQualityReport(merged);
+        
+        // 处理船名航次和目的港码头的标准化（按顺序处理）
+        const processStandardization = async (currentMerged, currentReport) => {
+            let processedMerged = currentMerged;
+            let processedReport = currentReport;
+            
+            // 第一步：处理船名航次标准化
+            if (processedReport.duplicateVesselVoyage.length > 0) {
+                log(`\n🔍 发现 ${processedReport.duplicateVesselVoyage.length} 组可能重复的船名航次（空格差异），请选择标准格式...`, '#0a7d33');
+                
+                const replacements = await showVesselVoyageModal(processedReport.duplicateVesselVoyage);
+                if (replacements.size > 0) {
+                    log(`正在应用船名航次标准化替换...`, '#0a7d33');
+                    processedMerged = applyVesselVoyageReplacements(processedMerged, replacements);
+                    processedReport = generateQualityReport(processedMerged);
+                    log(`\n✅ 已应用 ${replacements.size} 组船名航次标准化`, '#0a7d33');
+                } else {
+                    log(`\n⏭️ 已跳过船名航次标准化，保留原值`, '#666');
+                }
+            }
+            
+            // 第二步：处理目的港码头标准化
+            if (processedReport.duplicatePodWharf.length > 0) {
+                log(`\n🔍 发现 ${processedReport.duplicatePodWharf.length} 组可能重复的目的港码头（空格差异），请选择标准格式...`, '#0a7d33');
+                
+                const podWharfReplacements = await showPodWharfModal(processedReport.duplicatePodWharf);
+                if (podWharfReplacements.size > 0) {
+                    log(`正在应用目的港码头标准化替换...`, '#0a7d33');
+                    processedMerged = applyPodWharfReplacements(processedMerged, podWharfReplacements);
+                    processedReport = generateQualityReport(processedMerged);
+                    log(`\n✅ 已应用 ${podWharfReplacements.size} 组目的港码头标准化`, '#0a7d33');
+                } else {
+                    log(`\n⏭️ 已跳过目的港码头标准化，保留原值`, '#666');
+                }
+            }
+            
+            return { merged: processedMerged, report: processedReport };
+        };
+        
+        // 执行标准化处理
+        processStandardization(merged, qualityReport).then(({ merged: standardizedMerged, report: standardizedReport }) => {
+            // 第三步：按目的港+航线ID+船名+航次进行去重合并
+            log(`\n🔄 正在进行去重合并（目的港+航线ID+船名+航次）...`, '#0a7d33');
+            const finalDeduplicationMap = new Map();
+            const beforeCount = standardizedMerged.length - 1; // 排除表头
+            
+            for (let i = 1; i < standardizedMerged.length; i++) {
+                const row = standardizedMerged[i];
+                const [
+                    origin,
+                    dest,
+                    lineId,
+                    portId,
+                    weekday,
+                    shipdays,
+                    carriers,
+                    vesselName,
+                    voyage,
+                    shipType,
+                    plan,
+                    atd,
+                    eta,
+                    polWharf,
+                    podWharf
+                ] = row.map(clean);
+                
+                // 新的去重键：目的港 + 航线ID + 船名 + 航次
+                const dedupKey = [dest, lineId, vesselName, voyage].join('|');
+                
+                if (!finalDeduplicationMap.has(dedupKey)) {
+                    // 首次出现，直接添加
+                    finalDeduplicationMap.set(dedupKey, [
+                        origin,
+                        dest,
+                        lineId,
+                        portId,
+                        weekday,
+                        shipdays,
+                        carriers,
+                        vesselName,
+                        voyage,
+                        shipType,
+                        plan,
+                        atd,
+                        eta,
+                        polWharf,
+                        podWharf
+                    ]);
+                } else {
+                    // 已存在，合并数据（保留更完整的记录）
+                    const existing = finalDeduplicationMap.get(dedupKey);
+                    
+                    // 合并启运港：如果新记录的启运港不同，保留已有的（或选择更完整的）
+                    // 合并港口ID：保留已有的
+                    // 合并开航日/航程（保留已有，若空则补）
+                    if (!existing[4] && weekday) existing[4] = weekday;
+                    if (!existing[5] && shipdays) existing[5] = shipdays;
+                    // 共舱：优先保留已存在的非空值
+                    if (!existing[6] && carriers) existing[6] = carriers;
+                    // 补充缺失的关键字段：计划开航、预计到港、目的港码头
+                    if (!existing[10] && plan) existing[10] = plan;
+                    if (!existing[12] && eta) existing[12] = eta;
+                    if (!existing[14] && podWharf) existing[14] = podWharf;
+                    // 启运港码头：如果新记录有而旧记录没有，则补充
+                    if (!existing[13] && polWharf) existing[13] = polWharf;
+                    // 船型：保留已有的
+                    // 实际离港：保留已有的
+                }
+            }
+            
+            const finalMerged = [header, ...Array.from(finalDeduplicationMap.values())];
+            const afterCount = finalMerged.length - 1; // 排除表头
+            const mergedCount = beforeCount - afterCount;
+            
+            if (mergedCount > 0) {
+                log(`✅ 去重完成：合并了 ${mergedCount} 条重复记录（从 ${beforeCount} 条减少到 ${afterCount} 条）`, '#0a7d33');
+            }
+            
+            // 重新生成质量报告
+            const finalReport = generateQualityReport(finalMerged);
+            
+            output = finalMerged;
+            displayQualityReport(finalReport, true);
+            renderPreviewLocal(finalMerged.slice(1));
+            downloadBtn.disabled = finalMerged.length <= 1;
+            summary.textContent = `完成：${ok} 文件，${warn} 提醒，合并后 ${finalMerged.length - 1} 条。`;
+        });
     });
+
+    /**
+     * 显示数据质量检查报告
+     * @param {Object} qualityReport - 质量报告对象
+     * @param {boolean} skipDuplicates - 是否跳过重复船名航次的显示（因为已经处理过了）
+     */
+    function displayQualityReport(qualityReport, skipDuplicates = false) {
+        if (qualityReport.hasIssues) {
+            log(`\n📊 数据质量检查报告：`, '#0a7d33');
+            if (!skipDuplicates && qualityReport.duplicateVesselVoyage.length > 0) {
+                log(`⚠️ 发现 ${qualityReport.duplicateVesselVoyage.length} 组可能重复的船名航次（空格差异）`, '#b36b00');
+            }
+            if (!skipDuplicates && qualityReport.duplicatePodWharf.length > 0) {
+                log(`⚠️ 发现 ${qualityReport.duplicatePodWharf.length} 组可能重复的目的港码头（空格差异）`, '#b36b00');
+            }
+            if (qualityReport.missingWeekday > 0) {
+                log(`⚠️ 缺失开航日：${qualityReport.missingWeekday} 条`, '#b36b00');
+            }
+            if (qualityReport.missingShipdays > 0) {
+                log(`⚠️ 缺失航程：${qualityReport.missingShipdays} 条`, '#b36b00');
+            }
+            if (qualityReport.missingPlan > 0) {
+                log(`⚠️ 缺失计划开航：${qualityReport.missingPlan} 条`, '#b36b00');
+            }
+            if (qualityReport.missingEta > 0) {
+                log(`⚠️ 缺失预计到港：${qualityReport.missingEta} 条（其中 ${qualityReport.missingEtaNotBlank} 条非BLANK SAILING）`, '#b36b00');
+            }
+            if (qualityReport.missingPolWharf > 0) {
+                log(`⚠️ 缺失启运港码头：${qualityReport.missingPolWharf} 条`, '#b36b00');
+            }
+            if (qualityReport.missingPodWharf > 0) {
+                log(`⚠️ 缺失目的港码头：${qualityReport.missingPodWharf} 条`, '#b36b00');
+            }
+            if (qualityReport.podWharfOnlyShort > 0) {
+                log(`⚠️ 目的港码头只有简写（缺少全称）：${qualityReport.podWharfOnlyShort} 条`, '#b36b00');
+            }
+        } else {
+            log(`\n✅ 数据质量检查通过，未发现明显问题`, '#0a7d33');
+        }
+    }
 
     downloadBtn.addEventListener('click', () => {
         if (!output || output.length <= 1) return;

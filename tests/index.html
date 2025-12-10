@@ -372,9 +372,19 @@
             consoleDiv.innerHTML = '';
         }
 
-        function runAllTests() {
+        async function runAllTests() {
             clearConsole();
             console.log('开始运行所有测试...\n');
+
+            // 确保必要的库已加载（如果可用）
+            if (typeof ensureXlsx === 'function' && typeof XLSX === 'undefined') {
+                console.log('正在加载 XLSX 库（用于日期解析测试）...');
+                try {
+                    await ensureXlsx();
+                } catch (error) {
+                    console.warn('XLSX 库加载失败，日期解析测试可能使用备用方法:', error);
+                }
+            }
 
             const testSuites = {
                 '错误处理模块': () => {

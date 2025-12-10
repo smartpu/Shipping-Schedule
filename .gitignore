@@ -22,10 +22,3 @@ desktop.ini
 
 # Python 脚本目录
 python/
-
-# 敏感配置文件（包含 API Key）
-vendor/ai-config.js
-
-# 数据文件目录（可能包含敏感数据）
-Data/
-

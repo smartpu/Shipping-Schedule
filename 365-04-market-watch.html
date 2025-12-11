@@ -212,12 +212,6 @@
                     <div class="chart-container hidden" id="marketChartContainer">
                         <div class="chart-header">
                             <h3 style="color:#495057;">运费走势图</h3>
-                            <div class="chart-date-controls hidden" id="marketDateControls">
-                                <label>开始时间：</label>
-                                <input type="date" id="marketStartDate">
-                                <label>结束时间：</label>
-                                <input type="date" id="marketEndDate">
-                            </div>
                         </div>
                         <div class="chart-wrapper">
                             <canvas id="marketTrendChart"></canvas>
@@ -580,9 +574,9 @@
         const marketChartContainer = document.getElementById('marketChartContainer');
         const marketInfoBox = document.getElementById('marketInfoBox');
         const marketInfoText = document.getElementById('marketInfoText');
-        const marketStartDate = document.getElementById('marketStartDate');
-        const marketEndDate = document.getElementById('marketEndDate');
-        const marketDateControls = document.getElementById('marketDateControls');
+        const marketStartDate = null;
+        const marketEndDate = null;
+        const marketDateControls = null;
         const marketReportInput = document.getElementById('marketReportInput');
         const marketReportList = document.getElementById('marketReportList');
         const bunkerStatusEl = document.getElementById('bunkerStatus');
@@ -1025,31 +1019,6 @@
                     marketInfoText.textContent = `已加载 ${data.length} 条数据，共 ${marketRegions.length} 个区域，${totalPorts} 个港口`;
                 }
 
-                if (dateCol && marketStartDate && marketEndDate) {
-                    const dates = data
-                        .map(row => marketParseDate(row[dateCol]))
-                        .filter(value => value instanceof Date && !isNaN(value))
-                        .sort((a, b) => a - b);
-
-                    if (dates.length) {
-                        const minDate = dates[0];
-                        const maxDate = dates[dates.length - 1];
-                        const minStr = marketFormatDateForInput(minDate);
-                        const maxStr = marketFormatDateForInput(maxDate);
-
-                        marketStartDate.min = minStr;
-                        marketStartDate.max = maxStr;
-                        marketStartDate.value = minStr;
-
-                        marketEndDate.min = minStr;
-                        marketEndDate.max = maxStr;
-                        marketEndDate.value = maxStr;
-                    } else {
-                        marketStartDate.value = '';
-                        marketEndDate.value = '';
-                    }
-                }
-
                 marketChartContainer?.classList.add('hidden');
                 marketDateControls?.classList.remove('hidden');
                 excelLoadState.market = true;
@@ -1078,21 +1047,7 @@
             marketChartContainer?.classList.add('hidden');
         });
 
-        marketStartDate?.addEventListener('change', () => {
-            if (marketSelectedPorts.length) {
-                updateMarketChart(marketSelectedPorts);
-            } else {
-                updateMarketChartFromSelection(false);
-            }
-        });
-
-        marketEndDate?.addEventListener('change', () => {
-            if (marketSelectedPorts.length) {
-                updateMarketChart(marketSelectedPorts);
-            } else {
-                updateMarketChartFromSelection(false);
-            }
-        });
+        // 日期筛选已移除
 
         async function readMarketExcelFile(file) {
             return new Promise((resolve, reject) => {
@@ -1131,7 +1086,47 @@
 
         // 使用统一的日期解析函数（从 vendor/date-utils.js）
         function marketParseDate(value) {
-            return parseDateValue(value);
+            if (value === null || value === undefined) return null;
+            // 如果是数字（Excel 序列号）走通用解析
+            if (typeof value === 'number') {
+                const d = parseDateValue(value);
+                return d instanceof Date && !isNaN(d) ? d : null;
+            }
+            const s = String(value).trim();
+            if (!s) return null;
+            // 1) yyyy/mm/dd 或 yyyy-m-d
+            let m = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+            if (m) {
+                let y = +m[1], mo = +m[2], d = +m[3];
+                // 如果写成 2025/5/11 但实际应为 2025/11/5（mo>12 情况），尝试交换
+                if (mo > 12 && d <= 12) {
+                    [mo, d] = [d, mo];
+                }
+                const dt = new Date(y, mo - 1, d);
+                return dt instanceof Date && !isNaN(dt) ? dt : null;
+            }
+            // 2) dd/mm/yyyy 或 d-m-yyyy
+            m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+            if (m) {
+                let d = +m[1], mo = +m[2], y = +m[3];
+                // 如果写成 5/11/2025 但实际应为 11/5/2025（mo>12 情况），尝试交换
+                if (mo > 12 && d <= 12) {
+                    [d, mo] = [mo, d];
+                }
+                const dt = new Date(y, mo - 1, d);
+                return dt instanceof Date && !isNaN(dt) ? dt : null;
+            }
+            // 其他格式，尝试通用解析
+            const dt = new Date(s);
+            return dt instanceof Date && !isNaN(dt) ? dt : null;
+        }
+
+        function formatDateLabel(date) {
+            if (!(date instanceof Date) || isNaN(date)) return '';
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}/${m}/${d}`;
         }
 
         function updateMarketChart(ports) {
@@ -1147,71 +1142,49 @@
             }
 
             const { portCol, dateCol } = marketColumnConfig;
-            const startValue = marketStartDate?.value;
-            const endValue = marketEndDate?.value;
-            const startDateObj = startValue ? new Date(startValue + 'T00:00:00') : null;
-            const endDateObj = endValue ? new Date(endValue + 'T23:59:59') : null;
+            const labelMeta = new Map(); // label -> { ts, index }
+            let rowIndex = 0;
+            const seriesData = selectedPorts.map(port => ({
+                port,
+                values: new Map() // label -> {gp20, gp40}
+            }));
 
-            const labelMap = new Map(); // label -> Date
-            const seriesData = [];
+            // 单次遍历，按 Excel 原始行顺序收集
+            marketData.forEach(row => {
+                const portVal = String(row[portCol] || '').trim();
+                if (!selectedPorts.includes(portVal)) return;
 
-            selectedPorts.forEach(port => {
-                let rows = marketData.filter(row => String(row[portCol] || '').trim() === port);
-
-                if (!rows.length) {
-                    return;
+                const rawDate = dateCol ? row[dateCol] : '';
+                const parsedDate = dateCol ? marketParseDate(rawDate) : null;
+                let label = (rawDate ?? '').toString().trim();
+                let ts = null;
+                if (parsedDate instanceof Date && !isNaN(parsedDate)) {
+                    label = formatDateLabel(parsedDate) || label;
+                    ts = parsedDate.getTime();
                 }
+                if (!label) return;
 
-                if (dateCol) {
-                    rows = rows.filter(row => {
-                        const rowDate = marketParseDate(row[dateCol]);
-                        if (!(rowDate instanceof Date) || isNaN(rowDate)) return false;
-                        const rowDateOnly = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate());
-                        if (startDateObj && rowDateOnly < startDateObj) return false;
-                        if (endDateObj && rowDateOnly > endDateObj) return false;
-                        return true;
-                    });
-                }
-
-                if (!rows.length) {
-                    return;
-                }
-
-                rows.sort((a, b) => {
-                    const dateA = marketParseDate(a[dateCol]);
-                    const dateB = marketParseDate(b[dateCol]);
-                    if (dateA && dateB) {
-                        return dateA - dateB;
+                if (!labelMeta.has(label)) {
+                    labelMeta.set(label, { ts, index: rowIndex });
+                } else {
+                    const meta = labelMeta.get(label);
+                    if (ts !== null && (meta.ts === null || ts < meta.ts)) {
+                        meta.ts = ts;
+                        labelMeta.set(label, meta);
                     }
-                    return 0;
-                });
+                }
 
-                const valueMap = new Map(); // label -> {gp20, gp40}
-
-                rows.forEach(row => {
-                    const date = dateCol ? marketParseDate(row[dateCol]) : null;
-                    let label;
-                    if (date) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        label = `${year}/${month}/${day}`;
-                        labelMap.set(label, date);
-                    } else {
-                        label = row[dateCol] ? String(row[dateCol]) : '';
-                    }
-                    const gp20 = row['20GP'] || row['20gp'] || row['GP20'];
-                    const gp40 = row['40GP'] || row['40gp'] || row['GP40'];
-                    valueMap.set(label, {
+                const gp20 = row['20GP'] || row['20gp'] || row['GP20'];
+                const gp40 = row['40GP'] || row['40gp'] || row['GP40'];
+                const targetSeries = seriesData.find(s => s.port === portVal);
+                if (targetSeries) {
+                    targetSeries.values.set(label, {
                         gp20: gp20 ? parseFloat(gp20) : null,
                         gp40: gp40 ? parseFloat(gp40) : null
                     });
-                });
+                }
 
-                seriesData.push({
-                    port,
-                    values: valueMap
-                });
+                rowIndex++;
             });
 
             if (!seriesData.length) {
@@ -1224,8 +1197,13 @@
                 return;
             }
 
-            const sortedLabels = Array.from(labelMap.entries())
-                .sort((a, b) => a[1] - b[1])
+            const sortedLabels = Array.from(labelMeta.entries())
+                .sort((a, b) => {
+                    const aKey = a[1].ts !== null ? a[1].ts : Number.MAX_SAFE_INTEGER;
+                    const bKey = b[1].ts !== null ? b[1].ts : Number.MAX_SAFE_INTEGER;
+                    if (aKey !== bKey) return aKey - bKey;
+                    return a[1].index - b[1].index;
+                })
                 .map(entry => entry[0]);
 
             if (!sortedLabels.length) {

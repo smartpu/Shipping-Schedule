@@ -22,3 +22,6 @@ desktop.ini
 
 # Python 脚本目录
 python/
+
+# 数据目录（保密数据，不纳入版本控制）
+Data/

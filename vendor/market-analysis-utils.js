@@ -1949,7 +1949,7 @@ async function handleMarketReportFile(file) {
 function renderMarketReportList() {
     if (typeof marketReportList === 'undefined' || !marketReportList) return;
     if (typeof marketReports === 'undefined' || !marketReports.length) {
-        marketReportList.innerHTML = '<li>尚未上传市场报告</li>';
+        marketReportList.innerHTML = '<li>尚未载入市场报告</li>';
         return;
     }
     marketReportList.innerHTML = marketReports.map(report => `

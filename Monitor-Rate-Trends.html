@@ -356,7 +356,7 @@
         <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
         <a href="Monitor-Rate-Trends-README.html" class="readme-btn">使用说明 →</a>
         <h1>Monitor · 运价趋势面板</h1>
-        <p>上传 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。</p>
+        <p>载入 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。</p>
       </div>
 
       <div class="content">
@@ -399,7 +399,7 @@
               </defs>
             </svg>
             <span>
-              <strong>上传 Excel</strong><br />
+              <strong>载入 Excel</strong><br />
               <small>支持 .xlsx / .xls，数据仅在本地浏览器解析</small>
             </span>
             <input id="file-input" type="file" accept=".xlsx,.xls" />
@@ -498,7 +498,7 @@
             <tbody id="data-body">
               <tr>
                 <td colspan="5" style="text-align: center; color: #6c757d">
-                  尚无数据，请先上传 Excel。
+                  尚无数据，请先载入 Excel。
                 </td>
               </tr>
             </tbody>
@@ -933,7 +933,7 @@
           state.lastFiltered = [];
           dom.recordCount.textContent = "0";
           dom.tableBody.innerHTML =
-            '<tr><td colspan="5" style="text-align:center;color:#6c757d">尚无数据，请上传 Excel。</td></tr>';
+            '<tr><td colspan="5" style="text-align:center;color:#6c757d">尚无数据，请载入 Excel。</td></tr>';
           updateRangeChart([]);
           updateHistoryChart([]);
           updateYearlyChart([]);

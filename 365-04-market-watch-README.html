@@ -53,18 +53,18 @@
             <h2>快速开始</h2>
             <h3>前置准备</h3>
             <ol>
-                <li><strong>上传 Excel 数据源</strong>：文件需同时包含 <strong>market / schedule</strong> 工作表，并具备区域、港口、航线、周别、运力、船名航次、20GP / 40GP 等字段。</li>
-                <li><strong>上传市场周报</strong>：支持一次选择多份 PDF（如 Alphaliner Newsletter、Linerlytica Weekly 等），便于 AI 参考最新情报。</li>
+                <li><strong>载入 Excel 数据源</strong>：文件需同时包含 <strong>market / schedule</strong> 工作表，并具备区域、港口、航线、周别、运力、船名航次、20GP / 40GP 等字段。</li>
+                <li><strong>载入市场周报</strong>：支持一次选择多份 PDF（如 Alphaliner Newsletter、Linerlytica Weekly 等），便于 AI 参考最新情报。</li>
                 <li><strong>AI 密钥</strong>：工具已集成临时 API Key（服务器配置），可直接使用。使用临时 API Key 时会弹出提示，<strong>强烈建议自行申请 API Key 自用</strong>（临时 API Key 随时可能过期），用户输入的 API Key 优先级高于配置文件中的临时 API Key。调用费用及合规责任由使用方承担。详细说明见下方"Module 03 · AI 趋势分析"部分。</li>
             </ol>
 
             <h3>基本使用流程</h3>
             <ol>
                 <li>双击打开 <code>365-04-market-watch.html</code></li>
-                <li>在顶部上传区域：
+                <li>在顶部载入区域：
                     <ul>
                         <li>点击"选择Excel文件"，选择包含 <code>market</code> 和 <code>schedule</code> 工作表的 Excel 文件</li>
-                        <li>点击"上传市场周报 (PDF)"，可一次选择多份 PDF 报告（可选）</li>
+                        <li>点击"载入市场周报 (PDF)"，可一次选择多份 PDF 报告（可选）</li>
                     </ul>
                 </li>
                 <li>等待数据加载完成后，三个模块的筛选控件将自动显示</li>
@@ -260,7 +260,7 @@
 
     <div class="page-footer">
         <h2>Market Watch · 市场观察使用声明</h2>
-        <p>资料整合自用户 Excel、用户上传市场周报、Ship & Bunker、上海航运交易所、Drewry、Freightos 等公开渠道，仅供内部研判，不构成对外报价或投资建议。</p>
+        <p>资料整合自用户 Excel、用户载入市场周报、Ship & Bunker、上海航运交易所、Drewry、Freightos 等公开渠道，仅供内部研判，不构成对外报价或投资建议。</p>
         <p>AI 服务由 DeepSeek / KIMI / 通义千问 API 驱动，所有调用费用与合规责任由使用者自担，涉及客户或敏感数据时请先完成脱敏处理。</p>
     </div>
 </body>

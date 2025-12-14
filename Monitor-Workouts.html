@@ -16,50 +16,7 @@
     <style>
       /* 页面特定样式 */
 
-      .upload-area {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background: rgba(102, 126, 234, 0.1);
-        border-radius: 10px;
-        border: 2px dashed rgba(102, 126, 234, 0.3);
-      }
-
-      .file-btn {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        background: #667eea;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 20px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-      }
-
-      .file-btn:hover {
-        background: #5568d3;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-      }
-
-      .file-btn input {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-      }
-
-      .status-info {
-        color: #6c757d;
-        font-size: 14px;
-      }
+      /* upload-area, upload-card, status-card 样式已移至 vendor/monitor-styles.css */
 
       .view-controls {
         display: flex;
@@ -162,17 +119,59 @@
       </div>
 
       <div class="content">
-        <div class="card">
+        <section class="panel">
           <div class="upload-area">
-            <label class="file-btn">
-              <span>📁 选择 CSV 文件</span>
-              <input type="file" id="fileInput" accept=".csv" />
+            <label class="upload-card" for="fileInput">
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="4"
+                  y="4"
+                  width="28"
+                  height="28"
+                  rx="8"
+                  fill="url(#grad)"
+                ></rect>
+                <path
+                  d="M18 11v14M11 18h14"
+                  stroke="#fff"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                ></path>
+                <defs>
+                  <linearGradient
+                    id="grad"
+                    x1="4"
+                    y1="4"
+                    x2="32"
+                    y2="32"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="#0071e3" />
+                    <stop offset="1" stop-color="#54a4ff" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span>
+                <strong>载入 CSV</strong><br />
+                <small>支持 .csv，数据仅在本地浏览器解析</small>
+              </span>
+              <input id="fileInput" type="file" accept=".csv" />
             </label>
-            <span class="status-info" id="statusInfo">请选择健身记录 CSV 文件</span>
+            <div class="status-card">
+              <span class="status-label">数据状态</span>
+              <span class="status-value" id="statusInfo">尚未载入数据</span>
+              <small class="status-detail" id="status-detail" style="display: none">—</small>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div class="card hidden" id="chartSection">
+        <section class="panel hidden" id="chartSection">
           <div class="view-controls">
             <div style="flex: 1;">
               <h3 style="margin: 0; color: #1f2d3d;">健身记录趋势</h3>
@@ -190,7 +189,7 @@
           </div>
 
           <div class="legend-container" id="legendContainer"></div>
-        </div>
+        </section>
       </div>
     </div>
 
@@ -611,30 +610,43 @@
         }
 
         /**
-         * 处理文件上传
+         * 处理文件载入
          */
         fileInput.addEventListener('change', async (e) => {
           const file = e.target.files[0];
           if (!file) return;
 
           try {
-            statusInfo.textContent = '正在读取文件...';
+            statusInfo.textContent = '解析中...';
+            const statusDetail = document.getElementById('status-detail');
+            if (statusDetail) statusDetail.style.display = 'none';
+            
             const text = await file.text();
             const data = parseCSV(text);
             
             if (!data.length) {
               showError(ErrorType.FILE_LOAD, 'FILE_EMPTY');
-              statusInfo.textContent = '文件中没有有效数据';
+              statusInfo.textContent = '文件为空';
+              if (statusDetail) {
+                statusDetail.textContent = '文件中没有有效数据';
+                statusDetail.style.display = 'block';
+              }
               return;
             }
 
             workoutData = data;
             statusInfo.textContent = `已加载 ${data.length} 条记录`;
+            if (statusDetail) statusDetail.style.display = 'none';
             chartSection.classList.remove('hidden');
             updateChart();
           } catch (error) {
             showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
-            statusInfo.textContent = '文件读取失败';
+            statusInfo.textContent = '解析失败';
+            const statusDetail = document.getElementById('status-detail');
+            if (statusDetail) {
+              statusDetail.textContent = error.message || '文件读取失败';
+              statusDetail.style.display = 'block';
+            }
             debugError('读取文件失败:', error);
           }
         });

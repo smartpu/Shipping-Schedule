@@ -13,51 +13,8 @@
     <script src="vendor/error-handler.js"></script>
     <style>
       /* 页面特定样式（保留与公共样式不同的部分） */
-
-      .upload-area {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background: rgba(102, 126, 234, 0.1);
-        border-radius: 10px;
-        border: 2px dashed rgba(102, 126, 234, 0.3);
-      }
-
-      .file-btn {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        background: #667eea;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 20px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-      }
-
-      .file-btn:hover {
-        background: #5568d3;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-      }
-
-      .file-btn input {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-      }
-
-      .status-info {
-        color: #6c757d;
-        font-size: 14px;
-      }
+      
+      /* upload-area, upload-card, status-card 样式已移至 vendor/monitor-styles.css */
 
       .controls {
         display: flex;
@@ -128,15 +85,57 @@
       </div>
 
       <div class="content">
-        <section class="panel">
-          <div class="upload-area">
-            <label class="file-btn">
-              选择 SCFI.xlsx 文件
-              <input id="fileInput" type="file" accept=".xlsx,.xls">
-            </label>
-            <span class="status-info" id="statusInfo">请选择 SCFI 文件</span>
+      <section class="panel">
+        <div class="upload-area">
+          <label class="upload-card">
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 36 36"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="4"
+                y="4"
+                width="28"
+                height="28"
+                rx="8"
+                fill="url(#grad)"
+              ></rect>
+              <path
+                d="M18 11v14M11 18h14"
+                stroke="#fff"
+                stroke-width="2.2"
+                stroke-linecap="round"
+              ></path>
+              <defs>
+                <linearGradient
+                  id="grad"
+                  x1="4"
+                  y1="4"
+                  x2="32"
+                  y2="32"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stop-color="#0071e3" />
+                  <stop offset="1" stop-color="#54a4ff" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span>
+              <strong>载入 Excel</strong><br />
+              <small>支持 .xlsx / .xls，数据仅在本地浏览器解析</small>
+            </span>
+            <input id="fileInput" type="file" accept=".xlsx,.xls" />
+          </label>
+          <div class="status-card">
+            <span class="status-label">数据状态</span>
+            <span class="status-value" id="statusInfo">尚未载入数据</span>
+            <small class="status-detail" id="status-detail" style="display: none">—</small>
           </div>
-        </section>
+        </div>
+      </section>
 
         <section class="panel hidden" id="chartSection">
           <div class="controls">
@@ -223,6 +222,7 @@
 
       const fileInput = document.getElementById('fileInput');
       const statusInfo = document.getElementById('statusInfo');
+      const statusDetail = document.getElementById('status-detail');
       const chartSection = document.getElementById('chartSection');
       const comparisonSection = document.getElementById('comparisonSection');
       const startDate = document.getElementById('startDate');
@@ -237,21 +237,29 @@
 
         if (typeof XLSX === 'undefined') {
           showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
+          statusInfo.textContent = 'XLSX 库未加载';
+          if (statusDetail) {
+            statusDetail.textContent = '请刷新页面重试';
+            statusDetail.style.display = 'block';
+          }
           return;
         }
 
         try {
-          statusInfo.textContent = '正在读取文件...';
+          statusInfo.textContent = '正在解析文件...';
+          statusDetail.style.display = 'none';
           const data = await readExcelFile(file);
           
           if (!data.length) {
             showError(ErrorType.FILE_LOAD, 'FILE_EMPTY');
+            statusInfo.textContent = '文件为空';
             return;
           }
 
           scfiData = data;
           processData();
           statusInfo.textContent = `已加载 ${data.length} 条数据`;
+          statusDetail.style.display = 'none';
           chartSection.classList.remove('hidden');
           comparisonSection.classList.remove('hidden');
           
@@ -265,8 +273,12 @@
           }
         } catch (error) {
           showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
-          debugError('读取文件失败:', error);
-          statusInfo.textContent = '文件读取失败';
+          debugError('解析文件失败:', error);
+          statusInfo.textContent = '解析失败';
+          if (statusDetail) {
+            statusDetail.textContent = error.message;
+            statusDetail.style.display = 'block';
+          }
         }
       });
 

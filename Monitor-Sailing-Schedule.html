@@ -395,23 +395,91 @@
       </div>
 
       <div class="content">
-        <!-- 文件上传区域 -->
+        <!-- 文件载入区域 -->
         <section class="panel">
           <div class="upload-area">
             <label class="upload-card" for="file001">
-              <span class="file-icon">📄</span>
-              <div class="file-info">
-                <div class="file-name">001-03-market-analysis.xlsx</div>
-                <div class="file-status" id="status001">未加载</div>
-              </div>
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="4"
+                  y="4"
+                  width="28"
+                  height="28"
+                  rx="8"
+                  fill="url(#grad001)"
+                ></rect>
+                <path
+                  d="M18 11v14M11 18h14"
+                  stroke="#fff"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                ></path>
+                <defs>
+                  <linearGradient
+                    id="grad001"
+                    x1="4"
+                    y1="4"
+                    x2="32"
+                    y2="32"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="#0071e3" />
+                    <stop offset="1" stop-color="#54a4ff" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span>
+                <strong>001-03 文件</strong><br />
+                <small id="status001">001-03文件未加载</small>
+              </span>
               <input type="file" id="file001" accept=".xlsx,.xls">
             </label>
             <label class="upload-card" for="file365">
-              <span class="file-icon">📄</span>
-              <div class="file-info">
-                <div class="file-name">365-03-market-watch.xlsx</div>
-                <div class="file-status" id="status365">未加载</div>
-              </div>
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="4"
+                  y="4"
+                  width="28"
+                  height="28"
+                  rx="8"
+                  fill="url(#grad365)"
+                ></rect>
+                <path
+                  d="M18 11v14M11 18h14"
+                  stroke="#fff"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                ></path>
+                <defs>
+                  <linearGradient
+                    id="grad365"
+                    x1="4"
+                    y1="4"
+                    x2="32"
+                    y2="32"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="#0071e3" />
+                    <stop offset="1" stop-color="#54a4ff" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span>
+                <strong>365-03 文件</strong><br />
+                <small id="status365">365-03文件未加载</small>
+              </span>
               <input type="file" id="file365" accept=".xlsx,.xls">
             </label>
           </div>
@@ -1088,8 +1156,8 @@
         
         // 验证必要的 DOM 元素是否存在
         const requiredElements = [
-          { key: 'file001', name: '001文件上传' },
-          { key: 'file365', name: '365文件上传' },
+          { key: 'file001', name: '001文件载入' },
+          { key: 'file365', name: '365文件载入' },
           { key: 'regionFilter', name: '区域筛选器' },
           { key: 'carrierFilter', name: '船公司筛选器' },
           { key: 'portFilter', name: '港口筛选器' },
@@ -1226,7 +1294,7 @@
         });
       }
 
-      // 处理文件上传
+      // 处理文件载入
       async function handleFileUpload(event, mode) {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -1237,7 +1305,8 @@
         }
 
         const statusEl = mode === '001' ? dom.status001 : dom.status365;
-        statusEl.textContent = "解析中...";
+        const filePrefix = mode === '001' ? '001-03文件' : '365-03文件';
+        statusEl.textContent = `${filePrefix}解析中...`;
 
         try {
           const data = await file.arrayBuffer();
@@ -1306,7 +1375,8 @@
             state.data365 = parsedData;
           }
 
-          statusEl.textContent = `已加载 ${parsedData.length} 条记录`;
+          const filePrefix = mode === '001' ? '001-03文件' : '365-03文件';
+          statusEl.textContent = `${filePrefix}已加载 ${parsedData.length} 条记录`;
           
           // 更新筛选器（联动更新）
           updateRegionFilter();
@@ -1317,7 +1387,8 @@
           updateAiModuleVisibility(); // 更新 AI 模块可见性
         } catch (error) {
           debugError('解析文件失败:', error);
-          statusEl.textContent = "加载失败";
+          const filePrefix = mode === '001' ? '001-03文件' : '365-03文件';
+          statusEl.textContent = `${filePrefix}加载失败`;
           showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', {}, error);
         }
       }

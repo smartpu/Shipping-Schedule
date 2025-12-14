@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor · 地理贸易航线</title>
+    <link rel="stylesheet" href="vendor/auth.css">
+    <link rel="stylesheet" href="vendor/common-styles.css">
+    <link rel="stylesheet" href="vendor/monitor-styles.css">
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <style>
+        /* 页面特定样式 */
+        /* 4个筛选器并排显示 */
+        .filters-container {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        @media (max-width: 1280px) {
+            .filters-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .filters-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .data-table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .data-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        /* Deployed 列宽度设置 */
+        .data-table th.col-deployed,
+        .data-table td.col-deployed {
+            min-width: 180px;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Service列样式 - 可悬停显示port rotation */
+        .service-cell {
+            position: relative;
+            cursor: help;
+        }
+
+        .service-cell:hover {
+            background: #e7f3ff !important;
+        }
+
+        /* Partners列样式 - 可悬停显示Service Branding */
+        .partners-cell {
+            position: relative;
+            cursor: help;
+        }
+
+        .partners-cell:hover {
+            background: #e7f3ff !important;
+        }
+
+        /* Ships列样式 - 显示数字，悬停显示Vessel Name */
+        .ship-number {
+            position: relative;
+            padding: 4px 8px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            color: #1976d2;
+            font-weight: 500;
+            cursor: help;
+            transition: all 0.2s ease;
+            display: inline-block;
+            margin-right: 8px;
+            margin-bottom: 4px;
+        }
+
+        .ship-number:hover {
+            background: #1976d2;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+        }
+
+        /* 使用tooltip样式 */
+        .tooltip-custom {
+            position: fixed;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            font-size: 12px;
+            line-height: 1.6;
+            pointer-events: none;
+            display: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        /* Ships列的tooltip宽度减半 */
+        .tooltip-custom.ships-tooltip {
+            min-width: 400px;
+            max-width: 600px;
+        }
+        
+        /* 其他tooltip保持原宽度 */
+        .tooltip-custom:not(.ships-tooltip) {
+            min-width: 800px;
+            max-width: 1200px;
+        }
+
+        .fleet-varies {
+            padding: 4px 8px;
+            background: #fff3cd;
+            border-radius: 4px;
+            color: #856404;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        /* fleet-varies如果有ship-number类，也要有悬停效果 */
+        .fleet-varies.ship-number {
+            cursor: help;
+        }
+
+        .fleet-varies.ship-number:hover {
+            background: #856404;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(133, 100, 4, 0.3);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+            <a href="Monitor-Geo-Trades-Service-README.html" class="readme-btn">使用说明 →</a>
+            <h1>Monitor · 地理贸易航线</h1>
+            <p>载入 Excel 文件后，可筛选 Trade、Service、Service Branding，悬停查看详细信息。</p>
+        </div>
+
+        <div class="content">
+        <section class="panel">
+            <div class="upload-area">
+                <label class="upload-card" for="excelFile">
+                    <svg
+                        width="36"
+                        height="36"
+                        viewBox="0 0 36 36"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <rect
+                            x="4"
+                            y="4"
+                            width="28"
+                            height="28"
+                            rx="8"
+                            fill="url(#grad)"
+                        ></rect>
+                        <path
+                            d="M18 11v14M11 18h14"
+                            stroke="#fff"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                        ></path>
+                        <defs>
+                            <linearGradient
+                                id="grad"
+                                x1="4"
+                                y1="4"
+                                x2="32"
+                                y2="32"
+                                gradientUnits="userSpaceOnUse"
+                            >
+                                <stop stop-color="#0071e3" />
+                                <stop offset="1" stop-color="#54a4ff" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>
+                        <strong>载入 Excel</strong><br />
+                        <small>支持 .xlsx / .xls，数据仅在本地浏览器解析</small>
+                    </span>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls">
+                </label>
+                <div class="status-card">
+                    <span class="status-label">数据状态</span>
+                    <span class="status-value" id="statusValue">尚未载入数据</span>
+                    <small class="status-detail" id="statusDetail" style="display: none">—</small>
+                </div>
+            </div>
+
+            <div class="filters-container" id="filtersContainer" style="display: none; margin-top: 32px;">
+                <div class="filter-group">
+                    <label for="tradeFilter">Trade 筛选（可多选）</label>
+                    <input type="text" id="tradeSearch" class="filter-search" placeholder="搜索 Trade...">
+                    <select id="tradeFilter" multiple>
+                        <!-- 动态填充 -->
+                    </select>
+                    <div class="filter-actions">
+                        <button type="button" class="filter-btn" data-filter="trade" data-action="select-all">全部选择</button>
+                        <button type="button" class="filter-btn" data-filter="trade" data-action="clear-all">清除选择</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label for="serviceFilter">Service 筛选（可多选）</label>
+                    <input type="text" id="serviceSearch" class="filter-search" placeholder="搜索 Service...">
+                    <select id="serviceFilter" multiple>
+                        <!-- 动态填充 -->
+                    </select>
+                    <div class="filter-actions">
+                        <button type="button" class="filter-btn" data-filter="service" data-action="select-all">全部选择</button>
+                        <button type="button" class="filter-btn" data-filter="service" data-action="clear-all">清除选择</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label for="serviceBrandingFilter">Service Branding 筛选（可多选）</label>
+                    <input type="text" id="serviceBrandingSearch" class="filter-search" placeholder="搜索 Service Branding...">
+                    <select id="serviceBrandingFilter" multiple>
+                        <!-- 动态填充 -->
+                    </select>
+                    <div class="filter-actions">
+                        <button type="button" class="filter-btn" data-filter="serviceBranding" data-action="select-all">全部选择</button>
+                        <button type="button" class="filter-btn" data-filter="serviceBranding" data-action="clear-all">清除选择</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label for="portRotationFilter">Port Rotation 筛选（可多选）</label>
+                    <input type="text" id="portRotationSearch" class="filter-search" placeholder="搜索 Port Rotation...">
+                    <select id="portRotationFilter" multiple>
+                        <!-- 动态填充 -->
+                    </select>
+                    <div class="filter-actions">
+                        <button type="button" class="filter-btn" data-filter="portRotation" data-action="select-all">全部选择</button>
+                        <button type="button" class="filter-btn" data-filter="portRotation" data-action="clear-all">清除选择</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="data-table-container" id="tableContainer" style="display: none;">
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr id="tableHeader"></tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="100" class="no-data">请先载入 Excel 文件</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // 状态管理
+            const state = {
+                rawData: [],
+                filteredData: [],
+                columnMap: {}, // 列名映射
+                filters: {
+                    trade: [],
+                    service: [],
+                    serviceBranding: [],
+                    portRotation: []
+                }
+            };
+
+            // DOM 元素
+            const dom = {
+                excelFile: document.getElementById('excelFile'),
+                statusValue: document.getElementById('statusValue'),
+                statusDetail: document.getElementById('statusDetail'),
+                filtersContainer: document.getElementById('filtersContainer'),
+                tableContainer: document.getElementById('tableContainer'),
+                tradeSearch: document.getElementById('tradeSearch'),
+                tradeFilter: document.getElementById('tradeFilter'),
+                serviceSearch: document.getElementById('serviceSearch'),
+                serviceFilter: document.getElementById('serviceFilter'),
+                serviceBrandingSearch: document.getElementById('serviceBrandingSearch'),
+                serviceBrandingFilter: document.getElementById('serviceBrandingFilter'),
+                portRotationSearch: document.getElementById('portRotationSearch'),
+                portRotationFilter: document.getElementById('portRotationFilter'),
+                tableHeader: document.getElementById('tableHeader'),
+                tableBody: document.getElementById('tableBody')
+            };
+
+            // 初始化
+            async function init() {
+                // 确保 XLSX 库已加载
+                if (typeof window.ensureXlsx === 'function') {
+                    await window.ensureXlsx();
+                }
+
+                // 绑定事件
+                dom.excelFile.addEventListener('change', handleFileUpload);
+                
+                // 搜索框事件
+                dom.tradeSearch.addEventListener('input', () => filterOptions('trade', dom.tradeSearch.value));
+                dom.serviceSearch.addEventListener('input', () => filterOptions('service', dom.serviceSearch.value));
+                dom.serviceBrandingSearch.addEventListener('input', () => filterOptions('serviceBranding', dom.serviceBrandingSearch.value));
+                dom.portRotationSearch.addEventListener('input', () => filterOptions('portRotation', dom.portRotationSearch.value));
+                
+                // 筛选器change事件
+                dom.tradeFilter.addEventListener('change', () => {
+                    state.filters.trade = getSelectedValues(dom.tradeFilter);
+                    applyFilters();
+                });
+                dom.serviceFilter.addEventListener('change', () => {
+                    state.filters.service = getSelectedValues(dom.serviceFilter);
+                    applyFilters();
+                });
+                dom.serviceBrandingFilter.addEventListener('change', () => {
+                    state.filters.serviceBranding = getSelectedValues(dom.serviceBrandingFilter);
+                    applyFilters();
+                });
+                dom.portRotationFilter.addEventListener('change', () => {
+                    state.filters.portRotation = getSelectedValues(dom.portRotationFilter);
+                    applyFilters();
+                });
+                
+                // 筛选器按钮事件
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const filterType = btn.dataset.filter;
+                        const action = btn.dataset.action;
+                        handleFilterAction(filterType, action);
+                    });
+                });
+            }
+
+            // 获取选中的值
+            function getSelectedValues(select) {
+                return Array.from(select.selectedOptions).map(opt => opt.value).filter(Boolean);
+            }
+
+            // 处理筛选器按钮操作
+            function handleFilterAction(filterType, action) {
+                let select;
+                if (filterType === 'trade') select = dom.tradeFilter;
+                else if (filterType === 'service') select = dom.serviceFilter;
+                else if (filterType === 'serviceBranding') select = dom.serviceBrandingFilter;
+                else if (filterType === 'portRotation') select = dom.portRotationFilter;
+                else return;
+
+                if (action === 'select-all') {
+                    // 全部选择（只选择可见的选项）
+                    Array.from(select.options).forEach(option => {
+                        if (!option.classList.contains('hidden') && option.style.display !== 'none') {
+                            option.selected = true;
+                        }
+                    });
+                } else if (action === 'clear-all') {
+                    // 清除选择
+                    Array.from(select.options).forEach(option => {
+                        option.selected = false;
+                    });
+                }
+
+                // 触发change事件以更新筛选
+                select.dispatchEvent(new Event('change'));
+            }
+
+            // 搜索筛选选项
+            function filterOptions(type, searchText) {
+                const searchLower = searchText.toLowerCase();
+                let select;
+                if (type === 'trade') select = dom.tradeFilter;
+                else if (type === 'service') select = dom.serviceFilter;
+                else if (type === 'serviceBranding') select = dom.serviceBrandingFilter;
+                else if (type === 'portRotation') select = dom.portRotationFilter;
+                else return;
+
+                Array.from(select.options).forEach(option => {
+                    const text = option.textContent.toLowerCase();
+                    if (text.includes(searchLower)) {
+                        option.classList.remove('hidden');
+                    } else {
+                        option.classList.add('hidden');
+                    }
+                });
+            }
+
+            // 处理文件载入
+            async function handleFileUpload(event) {
+                const file = event.target.files?.[0];
+                if (!file) return;
+
+                if (typeof window.XLSX === 'undefined') {
+                    dom.statusValue.textContent = 'XLSX 库未加载';
+                    dom.statusDetail.textContent = '请刷新页面重试';
+                    return;
+                }
+
+                dom.statusValue.textContent = '解析中...';
+                dom.statusDetail.style.display = 'none';
+
+                try {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[firstSheetName];
+                    
+                    // 读取数据，保留原始值
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: '' });
+                    
+                    if (jsonData.length === 0) {
+                        dom.statusValue.textContent = '文件为空';
+                        dom.statusDetail.style.display = 'none';
+                        return;
+                    }
+
+                    // 识别列名
+                    identifyColumns(jsonData[0]);
+                    
+                    state.rawData = jsonData;
+                    populateFilters();
+                    applyFilters();
+                    
+                    dom.statusValue.textContent = `已加载 ${jsonData.length} 条记录`;
+                    dom.statusDetail.textContent = '';
+                    dom.filtersContainer.style.display = 'grid';
+                    dom.tableContainer.style.display = 'block';
+                } catch (error) {
+                    console.error('解析文件失败:', error);
+                    dom.statusValue.textContent = '解析失败';
+                    dom.statusDetail.textContent = error.message;
+                    dom.statusDetail.style.display = 'block';
+                }
+            }
+
+            // 识别列名（支持中英文）
+            function identifyColumns(firstRow) {
+                const keys = Object.keys(firstRow);
+                
+                // 查找各列的索引
+                const findColumn = (keywords) => {
+                    for (const key of keys) {
+                        const lowerKey = key.toLowerCase();
+                        for (const keyword of keywords) {
+                            if (lowerKey.includes(keyword.toLowerCase())) {
+                                return key;
+                            }
+                        }
+                    }
+                    return null;
+                };
+
+                // 识别列
+                state.columnMap = {
+                    trade: findColumn(['trade', '航线', '贸易']) || keys[0],
+                    service: findColumn(['service', '服务', '航线服务']) || keys[1],
+                    serviceBranding: findColumn(['service branding', 'branding', '品牌', '服务品牌']) || keys[2],
+                    partners: findColumn(['partners', 'alliance partners', 'alliance', '合作伙伴', '联盟伙伴', 'partner']) || null,
+                    ships: findColumn(['ships', '船舶', '船数']) || keys[4], // E列（索引4）
+                    portRotation: findColumn(['port rotation', 'rotation', '港口', '港口轮换', 'port']) || keys[9], // J列（索引9）
+                    vesselName: findColumn(['vessel name', 'vessel', '船名', '船舶名称']) || keys[10] // K列（索引10）
+                };
+                
+                // 如果找不到partners列，尝试查找包含"partner"的列
+                if (!state.columnMap.partners) {
+                    for (const key of keys) {
+                        if (key.toLowerCase().includes('partner')) {
+                            state.columnMap.partners = key;
+                            break;
+                        }
+                    }
+                }
+
+                // 如果找不到特定列，尝试通过索引获取
+                if (!state.columnMap.ships && keys.length > 4) {
+                    state.columnMap.ships = keys[4];
+                }
+                if (!state.columnMap.portRotation && keys.length > 9) {
+                    state.columnMap.portRotation = keys[9];
+                }
+                if (!state.columnMap.vesselName && keys.length > 10) {
+                    state.columnMap.vesselName = keys[10];
+                }
+
+                console.log('识别的列映射:', state.columnMap);
+            }
+
+            // 简化Service Branding文本
+            function simplifyServiceBranding(text) {
+                if (!text) return '';
+                // 去掉 "Vessel providers: / Alliance partners: / Slotters:" 这些前缀
+                return String(text)
+                    .replace(/Vessel providers:\s*/gi, '')
+                    .replace(/Alliance partners:\s*/gi, '')
+                    .replace(/Slotters:\s*/gi, '')
+                    .replace(/\s*\/\s*/g, ' / ')
+                    .trim();
+            }
+
+            // 填充筛选器选项
+            function populateFilters() {
+                // 获取所有唯一值（简化Service Branding）
+                const trades = [...new Set(state.rawData.map(row => row[state.columnMap.trade]).filter(Boolean))].sort();
+                const services = [...new Set(state.rawData.map(row => row[state.columnMap.service]).filter(Boolean))].sort();
+                const serviceBrandings = [...new Set(
+                    state.rawData.map(row => simplifyServiceBranding(row[state.columnMap.serviceBranding])).filter(Boolean)
+                )].sort();
+                const portRotations = [...new Set(state.rawData.map(row => row[state.columnMap.portRotation]).filter(Boolean))].sort();
+
+                // 填充 Trade 筛选器
+                dom.tradeFilter.innerHTML = trades.map(trade => 
+                    `<option value="${escapeHtml(trade)}">${escapeHtml(trade)}</option>`
+                ).join('');
+
+                // 填充 Service 筛选器
+                dom.serviceFilter.innerHTML = services.map(service => 
+                    `<option value="${escapeHtml(service)}">${escapeHtml(service)}</option>`
+                ).join('');
+
+                // 填充 Service Branding 筛选器
+                dom.serviceBrandingFilter.innerHTML = serviceBrandings.map(branding => 
+                    `<option value="${escapeHtml(branding)}">${escapeHtml(branding)}</option>`
+                ).join('');
+
+                // 填充 Port Rotation 筛选器
+                dom.portRotationFilter.innerHTML = portRotations.map(rotation => 
+                    `<option value="${escapeHtml(rotation)}">${escapeHtml(rotation)}</option>`
+                ).join('');
+            }
+
+            // 应用筛选
+            function applyFilters() {
+                state.filteredData = state.rawData.filter(row => {
+                    // Trade筛选
+                    if (state.filters.trade.length > 0) {
+                        const tradeValue = row[state.columnMap.trade] || '';
+                        if (!state.filters.trade.includes(tradeValue)) {
+                            return false;
+                        }
+                    }
+                    
+                    // Service筛选
+                    if (state.filters.service.length > 0) {
+                        const serviceValue = row[state.columnMap.service] || '';
+                        if (!state.filters.service.includes(serviceValue)) {
+                            return false;
+                        }
+                    }
+                    
+                    // Service Branding筛选（需要简化后比较）
+                    if (state.filters.serviceBranding.length > 0) {
+                        const brandingValue = simplifyServiceBranding(row[state.columnMap.serviceBranding] || '');
+                        if (!state.filters.serviceBranding.includes(brandingValue)) {
+                            return false;
+                        }
+                    }
+                    
+                    // Port Rotation筛选
+                    if (state.filters.portRotation.length > 0) {
+                        const portRotationValue = row[state.columnMap.portRotation] || '';
+                        if (!state.filters.portRotation.includes(portRotationValue)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                });
+
+                renderTable();
+            }
+
+            // 渲染表格
+            function renderTable() {
+                if (state.filteredData.length === 0) {
+                    dom.tableBody.innerHTML = '<tr><td colspan="100" class="no-data">没有匹配的数据</td></tr>';
+                    return;
+                }
+
+                // 渲染表头（排除Port Rotation、Vessel Name和Service Branding列）
+                const firstRow = state.filteredData[0];
+                const allColumns = Object.keys(firstRow);
+                const columns = allColumns.filter(col => 
+                    col !== state.columnMap.portRotation && 
+                    col !== state.columnMap.vesselName &&
+                    col !== state.columnMap.serviceBranding
+                );
+                
+                // 获取列名对应的CSS类名
+                const getColumnClass = (colName) => {
+                    const lowerName = colName.toLowerCase();
+                    if (lowerName.includes('deployed')) return 'col-deployed';
+                    return '';
+                };
+                
+                dom.tableHeader.innerHTML = columns.map(col => {
+                    const colClass = getColumnClass(col);
+                    return `<th class="${colClass}">${escapeHtml(col)}</th>`;
+                }).join('');
+
+                // 渲染表体
+                dom.tableBody.innerHTML = state.filteredData.map(row => {
+                    const cells = columns.map((col) => {
+                        let cellContent = formatCellContent(row, col);
+                        const colClass = getColumnClass(col);
+                        return `<td class="${colClass}">${cellContent}</td>`;
+                    }).join('');
+                    return `<tr>${cells}</tr>`;
+                }).join('');
+
+                // 为 Service 列添加悬停效果
+                const serviceColIndex = columns.indexOf(state.columnMap.service);
+                if (serviceColIndex !== -1) {
+                    const serviceCells = dom.tableBody.querySelectorAll(`td:nth-child(${serviceColIndex + 1})`);
+                    state.filteredData.forEach((row, rowIndex) => {
+                        const portRotation = row[state.columnMap.portRotation] || '';
+                        if (serviceCells[rowIndex]) {
+                            serviceCells[rowIndex].classList.add('service-cell');
+                            serviceCells[rowIndex].setAttribute('data-port-rotation', escapeHtml(portRotation));
+                        }
+                    });
+                }
+
+                // 为 Partners 列添加悬停效果（显示Service Branding）
+                // 如果没有partners列，使用Service列来显示Service Branding
+                let partnersColIndex = state.columnMap.partners ? columns.indexOf(state.columnMap.partners) : -1;
+                if (partnersColIndex === -1) {
+                    // 如果没有partners列，使用Service列
+                    partnersColIndex = serviceColIndex;
+                }
+                
+                if (partnersColIndex !== -1) {
+                    const partnersCells = dom.tableBody.querySelectorAll(`td:nth-child(${partnersColIndex + 1})`);
+                    state.filteredData.forEach((row, rowIndex) => {
+                        const serviceBranding = simplifyServiceBranding(row[state.columnMap.serviceBranding] || '');
+                        if (partnersCells[rowIndex] && serviceBranding) {
+                            partnersCells[rowIndex].classList.add('partners-cell');
+                            partnersCells[rowIndex].setAttribute('data-service-branding', escapeHtml(serviceBranding));
+                        }
+                    });
+                }
+            }
+
+            // 格式化单元格内容
+            function formatCellContent(row, col) {
+                const value = row[col];
+                
+                // 如果是 Ships 列，特殊处理
+                if (col === state.columnMap.ships) {
+                    return formatShipsCell(value, row[state.columnMap.vesselName] || '');
+                }
+                
+                // 如果是 Deployed 列，特殊处理
+                if (col && col.toLowerCase().includes('deployed')) {
+                    return formatDeployedCell(value);
+                }
+                
+                // Service Branding 列不在表格中显示（改为在partners悬停显示）
+                
+                return escapeHtml(value || '');
+            }
+            
+            // 格式化 Deployed 列：去掉 "from" "to"，用 "~" 连接
+            function formatDeployedCell(value) {
+                if (!value) return '';
+                const valueStr = String(value).trim();
+                // 去掉 "from" 和 "to"，提取数字
+                const cleaned = valueStr
+                    .replace(/from\s*/gi, '')
+                    .replace(/to\s*/gi, '~')
+                    .trim();
+                return escapeHtml(cleaned);
+            }
+
+            // 格式化 Ships 列
+            function formatShipsCell(shipsValue, vesselName) {
+                if (!shipsValue) return '';
+                
+                const shipsStr = String(shipsValue).trim();
+                
+                // 统计K列Vessel Name中的船个数
+                const countVessels = (vesselStr) => {
+                    if (!vesselStr) return 0;
+                    return vesselStr.split(',').map(v => v.trim()).filter(Boolean).length;
+                };
+                
+                const vesselCount = countVessels(vesselName);
+                
+                // 处理 vessel name，将逗号转换为换行符
+                const formatVesselNames = (vesselStr) => {
+                    if (!vesselStr) return '';
+                    // 将逗号分隔的船名转换为换行符分隔
+                    return vesselStr.split(',').map(v => v.trim()).filter(Boolean).join('\n');
+                };
+                
+                // 如果是 "fleet varies"
+                if (shipsStr.toLowerCase().includes('fleet varies')) {
+                    // 如果K列有船，添加悬停效果
+                    if (vesselCount > 0) {
+                        const vesselNames = formatVesselNames(vesselName);
+                        return `<span class="fleet-varies ship-number" data-vessel-names="${escapeHtml(vesselNames)}">fleet varies</span>`;
+                    }
+                    return '<span class="fleet-varies">fleet varies</span>';
+                }
+                
+                // 去掉 "ships" 文字，提取数字
+                const numbers = shipsStr.replace(/ships/gi, '').trim();
+                
+                // 如果包含逗号，说明有多个数字
+                if (numbers.includes(',')) {
+                    const numberList = numbers.split(',').map(n => n.trim()).filter(Boolean);
+                    const vesselList = vesselName ? vesselName.split(',').map(v => v.trim()).filter(Boolean) : [];
+                    
+                    return numberList.map((num, idx) => {
+                        // 如果数字和船名数量一致，每个数字显示对应的船名
+                        // 如果不一致，显示所有船名
+                        let vesselNames = '';
+                        let displayCount = 0;
+                        
+                        if (vesselList.length === numberList.length && vesselList[idx]) {
+                            // 数量一致，显示对应的船名
+                            vesselNames = vesselList[idx];
+                            // 计算当前数字对应的船数（单个船名，所以是1）
+                            displayCount = 1;
+                        } else if (vesselList.length > 0) {
+                            // 数量不一致，显示所有船名（按逗号换行）
+                            vesselNames = formatVesselNames(vesselName);
+                            // 使用总船数
+                            displayCount = vesselCount;
+                        }
+                        
+                        // 显示格式：统计个数 / 原本数字（去掉x）
+                        // 如果K列没有船，显示 0 / 数字
+                        const displayText = displayCount > 0 ? `${displayCount} / ${escapeHtml(num)}` : `0 / ${escapeHtml(num)}`;
+                        return `<span class="ship-number" data-vessel-names="${escapeHtml(vesselNames)}">${displayText}</span>`;
+                    }).join('');
+                } else {
+                    // 单个数字，显示所有vessel name（按逗号换行）
+                    const vesselNames = formatVesselNames(vesselName);
+                    // 显示格式：统计个数 / 原本数字（去掉x）
+                    // 如果K列没有船，显示 0 / 数字
+                    const displayText = vesselCount > 0 ? `${vesselCount} / ${escapeHtml(numbers)}` : `0 / ${escapeHtml(numbers)}`;
+                    return `<span class="ship-number" data-vessel-names="${escapeHtml(vesselNames)}">${displayText}</span>`;
+                }
+            }
+
+            // HTML 转义
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // 启动
+            init();
+
+            // 创建tooltip元素
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip-custom';
+            document.body.appendChild(tooltip);
+
+            // 显示tooltip的函数
+            function showTooltip(element, content, event, isShips = false) {
+                if (!content) return;
+                tooltip.textContent = content;
+                tooltip.style.display = 'block';
+                
+                // 设置tooltip类型
+                if (isShips) {
+                    tooltip.classList.add('ships-tooltip');
+                } else {
+                    tooltip.classList.remove('ships-tooltip');
+                }
+                
+                // 强制重新计算尺寸
+                tooltip.style.left = '-9999px';
+                tooltip.style.top = '-9999px';
+                const tooltipRect = tooltip.getBoundingClientRect();
+                
+                // 使用鼠标位置，而不是元素位置
+                const mouseX = event.clientX || event.pageX;
+                const mouseY = event.clientY || event.pageY;
+                
+                let left = mouseX + 15;
+                let top = mouseY + 15;
+                
+                // 如果右侧空间不够，显示在左侧
+                if (left + tooltipRect.width > window.innerWidth) {
+                    left = mouseX - tooltipRect.width - 15;
+                }
+                
+                // 如果左侧也不够，居中显示
+                if (left < 0) {
+                    left = (window.innerWidth - tooltipRect.width) / 2;
+                }
+                
+                // 如果下方空间不够，向上调整
+                if (top + tooltipRect.height > window.innerHeight) {
+                    top = mouseY - tooltipRect.height - 15;
+                }
+                
+                // 如果上方也不够，居中显示
+                if (top < 0) {
+                    top = (window.innerHeight - tooltipRect.height) / 2;
+                }
+                
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            }
+
+            // 隐藏tooltip的函数
+            function hideTooltip() {
+                tooltip.style.display = 'none';
+            }
+
+            // 为Service列添加悬停事件
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.classList.contains('service-cell')) {
+                    const portRotation = e.target.getAttribute('data-port-rotation');
+                    if (portRotation) {
+                        showTooltip(e.target, portRotation, e);
+                    }
+                } else if (e.target.classList.contains('partners-cell')) {
+                    const serviceBranding = e.target.getAttribute('data-service-branding');
+                    if (serviceBranding) {
+                        showTooltip(e.target, serviceBranding, e);
+                    }
+                } else if (e.target.classList.contains('ship-number')) {
+                    const vesselNames = e.target.getAttribute('data-vessel-names');
+                    if (vesselNames) {
+                        showTooltip(e.target, vesselNames, e, true);
+                    }
+                }
+            }, true);
+
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.classList.contains('service-cell') || 
+                    e.target.classList.contains('partners-cell') || 
+                    e.target.classList.contains('ship-number')) {
+                    hideTooltip();
+                }
+            }, true);
+        })();
+    </script>
+
+    <div class="page-footer">
+        <h2>Monitor · 地理贸易航线使用声明</h2>
+        <p>资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+        <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+    </div>
+
+    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
+    <script src="vendor/auth-gist.js"></script>
+</body>
+</html>

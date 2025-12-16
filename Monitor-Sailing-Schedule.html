@@ -1202,6 +1202,66 @@
         const handleFile365Change = (e) => handleFileUpload(e, '365');
         eventListeners.add(dom.file001, 'change', handleFile001Change);
         eventListeners.add(dom.file365, 'change', handleFile365Change);
+
+        // 自动加载 Data 目录下的 Excel 文件
+        async function loadDefaultExcelFiles() {
+          // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+          if (window.location.protocol === 'file:') {
+            console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+            return;
+          }
+
+          // 加载 001-03 文件
+          try {
+            const response001 = await fetch('Data/001-03-market-analysis.xlsx');
+            if (response001.ok) {
+              const blob001 = await response001.blob();
+              const file001 = new File([blob001], '001-03-market-analysis.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+              // 创建模拟事件对象
+              const event001 = { target: { files: [file001] } };
+              await handleFileUpload(event001, '001');
+            }
+          } catch (error) {
+            // 如果是CORS错误，静默处理（本地文件系统环境）
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+              console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+            } else {
+              console.log('自动加载 001-03 Excel 文件失败:', error);
+            }
+          }
+
+          // 加载 365-03 文件
+          try {
+            const response365 = await fetch('Data/365-03-market-watch.xlsx');
+            if (response365.ok) {
+              const blob365 = await response365.blob();
+              const file365 = new File([blob365], '365-03-market-watch.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+              // 创建模拟事件对象
+              const event365 = { target: { files: [file365] } };
+              await handleFileUpload(event365, '365');
+            }
+          } catch (error) {
+            // 如果是CORS错误，静默处理（本地文件系统环境）
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+              console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+            } else {
+              console.log('自动加载 365-03 Excel 文件失败:', error);
+            }
+          }
+        }
+
+        // 等待 XLSX 库加载完成后自动加载文件
+        if (typeof window.ensureXlsx === 'function') {
+          window.ensureXlsx().then(() => {
+            loadDefaultExcelFiles();
+          });
+        } else {
+          setTimeout(() => {
+            if (typeof XLSX !== 'undefined') {
+              loadDefaultExcelFiles();
+            }
+          }, 1000);
+        }
         
         dom.modeBtns.forEach(btn => {
           const handleModeClick = () => {

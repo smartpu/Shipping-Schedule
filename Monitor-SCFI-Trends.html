@@ -231,6 +231,91 @@
       const legendContainer = document.getElementById('legendContainer');
       const comparisonTableBody = document.getElementById('comparisonTableBody');
 
+      // 自动加载 Data 目录下的 Excel 文件
+      async function loadDefaultExcelFile() {
+        // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+        if (window.location.protocol === 'file:') {
+          console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+          return;
+        }
+
+        try {
+          const response = await fetch('Data/Monitor-SCFI-Trends.xlsx');
+          if (!response.ok) {
+            console.log('默认 Excel 文件不存在，等待用户手动选择');
+            return;
+          }
+          const blob = await response.blob();
+          const file = new File([blob], 'Monitor-SCFI-Trends.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          
+          // 直接调用处理函数
+          if (typeof XLSX === 'undefined') {
+            showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
+            statusInfo.textContent = 'XLSX 库未加载';
+            if (statusDetail) {
+              statusDetail.textContent = '请刷新页面重试';
+              statusDetail.style.display = 'block';
+            }
+            return;
+          }
+
+          try {
+            statusInfo.textContent = '正在解析文件...';
+            statusDetail.style.display = 'none';
+            const data = await readExcelFile(file);
+            
+            if (!data.length) {
+              showError(ErrorType.FILE_LOAD, 'FILE_EMPTY');
+              statusInfo.textContent = '文件为空';
+              return;
+            }
+
+            scfiData = data;
+            processData();
+            statusInfo.textContent = `已加载 ${data.length} 条数据`;
+            statusDetail.style.display = 'none';
+            chartSection.classList.remove('hidden');
+            comparisonSection.classList.remove('hidden');
+            
+            // 设置对比日期默认为最新日期
+            if (scfiData.length > 0) {
+              const latestDate = scfiData[scfiData.length - 1].date;
+              comparisonDate.value = formatDateForInput(latestDate);
+              comparisonDate.max = formatDateForInput(latestDate);
+              comparisonDate.min = formatDateForInput(scfiData[0].date);
+              updateComparisonTable();
+            }
+          } catch (error) {
+            showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
+            statusInfo.textContent = '解析失败';
+            if (statusDetail) {
+              statusDetail.textContent = error.message;
+              statusDetail.style.display = 'block';
+            }
+          }
+        } catch (error) {
+          // 如果是CORS错误，静默处理（本地文件系统环境）
+          if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+          } else {
+            console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
+          }
+        }
+      }
+
+      // 等待 XLSX 库加载完成后自动加载文件
+      if (typeof window.ensureXlsx === 'function') {
+        window.ensureXlsx().then(() => {
+          loadDefaultExcelFile();
+        });
+      } else {
+        setTimeout(() => {
+          if (typeof XLSX !== 'undefined') {
+            loadDefaultExcelFile();
+          }
+        }, 1000);
+      }
+
       fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;

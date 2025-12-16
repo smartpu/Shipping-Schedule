@@ -336,6 +336,71 @@
                 tableBody: document.getElementById('tableBody')
             };
 
+            // 自动加载 Data 目录下的 Excel 文件
+            async function loadDefaultExcelFile() {
+                // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+                if (window.location.protocol === 'file:') {
+                    console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('Data/Monitor-Geo-Trades-Service.xlsx');
+                    if (!response.ok) {
+                        console.log('默认 Excel 文件不存在，等待用户手动选择');
+                        return;
+                    }
+                    const blob = await response.blob();
+                    const file = new File([blob], 'Monitor-Geo-Trades-Service.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    
+                    // 直接调用处理函数
+                    if (typeof window.XLSX === 'undefined') {
+                        dom.statusValue.textContent = 'XLSX 库未加载';
+                        dom.statusDetail.textContent = '请刷新页面重试';
+                        return;
+                    }
+
+                    dom.statusValue.textContent = '解析中...';
+                    dom.statusDetail.style.display = 'none';
+
+                    try {
+                        const data = await file.arrayBuffer();
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[firstSheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: '' });
+                        
+                        if (jsonData.length === 0) {
+                            dom.statusValue.textContent = '文件为空';
+                            dom.statusDetail.style.display = 'none';
+                            return;
+                        }
+
+                        identifyColumns(jsonData[0]);
+                        state.rawData = jsonData;
+                        populateFilters();
+                        applyFilters();
+                        
+                        dom.statusValue.textContent = `已加载 ${jsonData.length} 条记录`;
+                        dom.statusDetail.textContent = '';
+                        dom.filtersContainer.style.display = 'grid';
+                        dom.tableContainer.style.display = 'block';
+                    } catch (error) {
+                        console.error('解析文件失败:', error);
+                        dom.statusValue.textContent = '解析失败';
+                        dom.statusDetail.textContent = error.message;
+                        dom.statusDetail.style.display = 'block';
+                    }
+                } catch (error) {
+                    // 如果是CORS错误，静默处理（本地文件系统环境）
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+                    } else {
+                        console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
+                    }
+                }
+            }
+
             // 初始化
             async function init() {
                 // 确保 XLSX 库已加载
@@ -345,6 +410,9 @@
 
                 // 绑定事件
                 dom.excelFile.addEventListener('change', handleFileUpload);
+                
+                // 自动加载默认文件
+                loadDefaultExcelFile();
                 
                 // 搜索框事件
                 dom.tradeSearch.addEventListener('input', () => filterOptions('trade', dom.tradeSearch.value));

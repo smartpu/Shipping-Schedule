@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -389,6 +389,67 @@
 
         // renderMarketReportList 已从 vendor/market-analysis-utils.js 加载
         renderMarketReportList();
+
+        // 自动加载 Data 目录下的 Excel 文件
+        async function loadDefaultExcelFile() {
+            // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+            if (window.location.protocol === 'file:') {
+                console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+                return;
+            }
+
+            try {
+                const response = await fetch('Data/001-03-market-analysis.xlsx');
+                if (!response.ok) {
+                    console.log('默认 Excel 文件不存在，等待用户手动选择');
+                    return;
+                }
+                const blob = await response.blob();
+                const file = new File([blob], '001-03-market-analysis.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                
+                // 直接调用处理函数（模拟文件选择）
+                if (typeof XLSX === 'undefined') {
+                    showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
+                    return;
+                }
+
+                try {
+                    const data = await readExcelFile(file);
+                    scheduleData = data;
+                    generatePivotTable(data);
+                    const infoText = document.getElementById('infoText');
+                    const infoBox = document.getElementById('infoBox');
+                    if (infoText) infoText.textContent = `已加载 ${data.length} 条船期数据`;
+                    if (infoBox) infoBox.classList.remove('hidden');
+                    excelLoadState.schedule = true;
+                    tryRevealModules();
+                } catch (error) {
+                    showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
+                    debugError(error);
+                }
+            } catch (error) {
+                // 如果是CORS错误，静默处理（本地文件系统环境）
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+                } else {
+                    console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
+                }
+            }
+        }
+        
+        // 等待 XLSX 库加载完成后自动加载文件
+        if (typeof window.ensureXlsx === 'function') {
+            window.ensureXlsx().then(() => {
+                loadDefaultExcelFile();
+            });
+        } else {
+            // 如果 ensureXlsx 不存在，等待一段时间后尝试加载
+            setTimeout(() => {
+                if (typeof XLSX !== 'undefined') {
+                    loadDefaultExcelFile();
+                }
+            }, 1000);
+        }
         function tryRevealModules() {
             if (modulesVisible) return;
             if (excelLoadState.schedule) {

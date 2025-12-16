@@ -53,8 +53,8 @@
         <div class="instructions">
             <h3>📋 使用说明</h3>
             <ol>
-                <li><strong>准备工作</strong>：首先需要使用"明日数航 船期网页手动下载工具"下载并保存所有船期网页到 <strong>365-view-source</strong> 文件夹中</li>
-                <li><strong>选择文件夹</strong>：点击"选择 view-source 文件夹"按钮，选择包含所有 HTML 文件的 <strong>365-view-source</strong> 文件夹</li>
+                <li><strong>准备工作</strong>：首先需要使用"明日数航 船期网页手动下载工具"下载并保存所有船期网页到 <strong>data/365-view-full</strong> 文件夹中</li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择包含所有 HTML 文件的 <strong>data/365-view-full</strong> 文件夹</li>
                 <li><strong>开始解析</strong>：选择文件夹后，点击"开始解析"按钮，工具会自动解析所有 HTML 文件中"同航线其他港口行情"模块的价格信息</li>
                 <li><strong>查看结果</strong>：解析完成后，可以在下方预览表格中查看解析结果（最多显示前50条）</li>
                 <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"按钮，将数据保存为 CSV 文件</li>
@@ -67,7 +67,7 @@
             <div class="card">
                 <div class="controls">
                     <label class="file-btn">
-                        选择 view-source 文件夹
+                        选择 view-full 文件夹
                         <input id="picker" type="file" webkitdirectory multiple accept=".html,.htm">
                     </label>
                     <button id="run" class="btn" disabled>开始解析</button>
@@ -161,7 +161,7 @@
     picker.addEventListener('change', ()=>{
         if (logBox) logBox.innerHTML=''; output=[]; summary.textContent='';
         files = Array.from(picker.files).filter(f=>/\.html?$/i.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name));
-        if (!files.length){ log('未选择到 HTML 文件，请重新选择 view-source。', '#b00020'); runBtn.disabled=true; downloadBtn.disabled=true; return; }
+        if (!files.length){ log('未选择到 HTML 文件，请重新选择 view-full。', '#b00020'); runBtn.disabled=true; downloadBtn.disabled=true; return; }
         log(`已选择 ${files.length} 个 HTML 文件。`, '#0a7d33');
         runBtn.disabled=false; downloadBtn.disabled=true; $('#preview').classList.add('hidden');
     });

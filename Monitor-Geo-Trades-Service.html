@@ -274,7 +274,7 @@
                 </div>
                 <div class="filter-group">
                     <label for="portRotationFilter">Port Rotation 筛选（可多选）</label>
-                    <input type="text" id="portRotationSearch" class="filter-search" placeholder="搜索 Port Rotation...">
+                    <input type="text" id="portRotationSearch" class="filter-search" placeholder="搜索 Port Rotation（可用逗号分隔多个港口，如：港口1,港口2）...">
                     <select id="portRotationFilter" multiple>
                         <!-- 动态填充 -->
                     </select>
@@ -414,7 +414,6 @@
 
             // 搜索筛选选项
             function filterOptions(type, searchText) {
-                const searchLower = searchText.toLowerCase();
                 let select;
                 if (type === 'trade') select = dom.tradeFilter;
                 else if (type === 'service') select = dom.serviceFilter;
@@ -422,14 +421,43 @@
                 else if (type === 'portRotation') select = dom.portRotationFilter;
                 else return;
 
-                Array.from(select.options).forEach(option => {
-                    const text = option.textContent.toLowerCase();
-                    if (text.includes(searchLower)) {
-                        option.classList.remove('hidden');
-                    } else {
-                        option.classList.add('hidden');
-                    }
-                });
+                // Port Rotation 特殊处理：支持逗号分隔的多个港口搜索
+                if (type === 'portRotation') {
+                    // 将搜索文本按逗号分割，去除空白并转为小写
+                    const searchPorts = searchText.split(',')
+                        .map(port => port.trim().toLowerCase())
+                        .filter(port => port.length > 0);
+                    
+                    Array.from(select.options).forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        
+                        // 如果搜索文本为空，显示所有选项
+                        if (searchPorts.length === 0) {
+                            option.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        // 检查 port rotation 是否包含所有搜索的港口
+                        const containsAllPorts = searchPorts.every(port => text.includes(port));
+                        
+                        if (containsAllPorts) {
+                            option.classList.remove('hidden');
+                        } else {
+                            option.classList.add('hidden');
+                        }
+                    });
+                } else {
+                    // 其他筛选器保持原有逻辑
+                    const searchLower = searchText.toLowerCase();
+                    Array.from(select.options).forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        if (text.includes(searchLower)) {
+                            option.classList.remove('hidden');
+                        } else {
+                            option.classList.add('hidden');
+                        }
+                    });
+                }
             }
 
             // 处理文件载入
@@ -602,10 +630,57 @@
                         }
                     }
                     
-                    // Port Rotation筛选
+                    // Port Rotation筛选（支持多港口匹配）
                     if (state.filters.portRotation.length > 0) {
-                        const portRotationValue = row[state.columnMap.portRotation] || '';
-                        if (!state.filters.portRotation.includes(portRotationValue)) {
+                        const portRotationValue = String(row[state.columnMap.portRotation] || '').trim();
+                        
+                        // 如果 port rotation 为空或无效，排除该行
+                        if (!portRotationValue || portRotationValue.length === 0) {
+                            return false;
+                        }
+                        
+                        const portRotationLower = portRotationValue.toLowerCase();
+                        
+                        // 检查是否至少有一个选中的 port rotation 完全匹配当前行的 port rotation
+                        const matches = state.filters.portRotation.some(selectedRotation => {
+                            if (!selectedRotation || String(selectedRotation).trim().length === 0) {
+                                return false;
+                            }
+                            
+                            const selectedLower = String(selectedRotation).toLowerCase().trim();
+                            
+                            // 完全匹配（最优先）
+                            if (portRotationLower === selectedLower) {
+                                return true;
+                            }
+                            
+                            // 如果选中的 port rotation 包含逗号（多港口搜索），检查当前行是否包含所有港口
+                            if (String(selectedRotation).includes(',')) {
+                                const searchPorts = String(selectedRotation).split(',')
+                                    .map(port => port.trim().toLowerCase())
+                                    .filter(port => port.length > 0);
+                                
+                                // 确保当前行的 port rotation 包含所有搜索的港口
+                                if (searchPorts.length > 0) {
+                                    const containsAllPorts = searchPorts.every(port => portRotationLower.includes(port));
+                                    if (containsAllPorts) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            
+                            // 部分匹配（当前行的 port rotation 包含选中的值，或反之）
+                            // 但只在不包含逗号的情况下使用，避免误匹配
+                            if (!String(selectedRotation).includes(',')) {
+                                if (portRotationLower.includes(selectedLower) || selectedLower.includes(portRotationLower)) {
+                                    return true;
+                                }
+                            }
+                            
+                            return false;
+                        });
+                        
+                        if (!matches) {
                             return false;
                         }
                     }

@@ -1,9 +1,3 @@
-# 下载的网页文件（view-source 和 view-full 文件夹）
-# 这些文件是用户手动下载的，不需要版本控制
-001-view-source/
-365-view-source/
-365-view-full/
-
 # 临时文件
 *.tmp
 *.log
@@ -17,6 +11,12 @@ Thumbs.db
 *.swo
 *~
 
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # 系统文件
 desktop.ini
 
@@ -24,4 +24,4 @@ desktop.ini
 python/
 
 # 数据目录（保密数据，不纳入版本控制）
-Data/
+data/

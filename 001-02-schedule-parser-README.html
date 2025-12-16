@@ -45,15 +45,15 @@
 
         <div class="content">
             <h2>工具简介</h2>
-            <p><strong>维运网 船期解析工具</strong> 是一个零安装、基于浏览器的客户端工具，用于将 <code>001-view-source</code> 目录下的 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具会自动提取船期信息，包括启运港、目的港、航线信息、船名航次、开航日期、码头信息等，并自动去重合并重复记录。</p>
+            <p><strong>维运网 船期解析工具</strong> 是一个零安装、基于浏览器的客户端工具，用于将 <code>data/001-view-full</code> 目录下的 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具会自动提取船期信息，包括启运港、目的港、航线信息、船名航次、开航日期、码头信息等，并自动去重合并重复记录。</p>
 
             <hr>
 
             <h2>快速开始</h2>
             <ol>
-                <li><strong>准备工作</strong>：首先需要使用"维运网 船期网页手动下载工具"（<code>001-01-manual-download.html</code>）下载并保存所有船期网页到 <code>001-view-source</code> 文件夹中</li>
+                <li><strong>准备工作</strong>：首先需要使用"维运网 船期网页手动下载工具"（<code>001-01-manual-download.html</code>）下载并保存所有船期网页到 <code>data/001-view-full</code> 文件夹中</li>
                 <li><strong>打开工具</strong>：双击打开 <code>001-02-schedule-parser.html</code>（或在浏览器中打开）</li>
-                <li><strong>选择文件夹</strong>：点击"选择 view-source 文件夹"按钮，选择项目中的 <code>001-view-source</code> 目录</li>
+                <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择项目中的 <code>data/001-view-full</code> 目录</li>
                 <li><strong>开始解析</strong>：点击"开始解析"按钮，等待进度完成</li>
                 <li><strong>查看结果</strong>：预览下方会显示前 50 行样例</li>
                 <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"保存全部结果</li>
@@ -67,8 +67,8 @@
 
             <h3>步骤 2：选择文件夹</h3>
             <ol>
-                <li>点击"选择 view-source 文件夹"按钮</li>
-                <li>在文件选择对话框中选择 <code>001-view-source</code> 文件夹</li>
+                <li>点击"选择 view-full 文件夹"按钮</li>
+                <li>在文件选择对话框中选择 <code>data/001-view-full</code> 文件夹</li>
                 <li>选择后，工具会自动识别文件夹中的所有 HTML 文件</li>
                 <li>"开始解析"按钮将变为可用状态</li>
                 <li>工具会显示已选择的文件数量</li>

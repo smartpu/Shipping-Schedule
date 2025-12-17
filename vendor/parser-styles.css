@@ -87,3 +87,151 @@ body[data-page*="market-rate-parser"] tbody tr:hover {
     background: #f8f9fa;
 }
 
+/* ==========================================================================
+   3. 标准化模态框样式（船名航次、目的港码头）
+   ========================================================================== */
+
+/* 船名航次标准化模态框和目的港码头标准化模态框共用样式 */
+.vessel-voyage-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.vessel-voyage-modal.hidden {
+    display: none;
+}
+
+.vessel-voyage-modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 800px;
+    max-height: 90vh;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.vessel-voyage-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.vessel-voyage-modal-header h2 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.vessel-voyage-modal-header p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.vessel-voyage-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.vessel-voyage-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.vessel-voyage-group-title {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.vessel-voyage-option {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vessel-voyage-option:hover {
+    border-color: #0a7d33;
+    background: #f0f8f4;
+}
+
+.vessel-voyage-option.selected {
+    border-color: #0a7d33;
+    background: #e8f5e9;
+}
+
+.vessel-voyage-option input[type="radio"] {
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.vessel-voyage-option-label {
+    flex: 1;
+    font-size: 14px;
+}
+
+.vessel-voyage-option-count {
+    color: #666;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.vessel-voyage-modal-footer {
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.vessel-voyage-modal-footer .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.vessel-voyage-modal-footer .btn-primary {
+    background: #0a7d33;
+    color: white;
+}
+
+.vessel-voyage-modal-footer .btn-primary:hover {
+    background: #086b2a;
+}
+
+.vessel-voyage-modal-footer .btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.vessel-voyage-modal-footer .btn-secondary:hover {
+    background: #d0d0d0;
+}
+
+.vessel-voyage-modal-footer .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+

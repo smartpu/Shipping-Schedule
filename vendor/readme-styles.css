@@ -141,7 +141,8 @@
 }
 
 /* README页面头部样式 */
-.readme-header h1 {
+.readme-header h1,
+body[data-page*="-README.html"] .header h1 {
     font-size: 30px;
     margin-bottom: 10px;
     font-weight: 700;

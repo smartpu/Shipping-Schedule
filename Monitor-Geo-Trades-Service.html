@@ -12,172 +12,11 @@
     <script src="vendor/error-handler.js"></script>
     <script src="vendor/debug-utils.js"></script>
     <style>
-        /* 页面特定样式 */
-        /* 4个筛选器并排显示 */
-        .filters-container {
-            grid-template-columns: repeat(4, 1fr);
-        }
-
-        @media (max-width: 1280px) {
-            .filters-container {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 640px) {
-            .filters-container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .data-table-container {
-            background: white;
-            border-radius: 10px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        .data-table thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .data-table th {
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .data-table td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        /* Deployed 列宽度设置 */
-        .data-table th.col-deployed,
-        .data-table td.col-deployed {
-            min-width: 180px;
-            white-space: nowrap;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        .data-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* Service列样式 - 可悬停显示port rotation */
-        .service-cell {
-            position: relative;
-            cursor: help;
-        }
-
-        .service-cell:hover {
-            background: #e7f3ff !important;
-        }
-
-        /* Partners列样式 - 可悬停显示Service Branding */
-        .partners-cell {
-            position: relative;
-            cursor: help;
-        }
-
-        .partners-cell:hover {
-            background: #e7f3ff !important;
-        }
-
-        /* Ships列样式 - 显示数字，悬停显示Vessel Name */
-        .ship-number {
-            position: relative;
-            padding: 4px 8px;
-            background: #e3f2fd;
-            border-radius: 4px;
-            color: #1976d2;
-            font-weight: 500;
-            cursor: help;
-            transition: all 0.2s ease;
-            display: inline-block;
-            margin-right: 8px;
-            margin-bottom: 4px;
-        }
-
-        .ship-number:hover {
-            background: #1976d2;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
-        }
-
-        /* 使用tooltip样式 */
-        .tooltip-custom {
-            position: fixed;
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 10000;
-            font-size: 12px;
-            line-height: 1.6;
-            pointer-events: none;
-            display: none;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        
-        /* Ships列的tooltip宽度减半 */
-        .tooltip-custom.ships-tooltip {
-            min-width: 400px;
-            max-width: 600px;
-        }
-        
-        /* 其他tooltip保持原宽度 */
-        .tooltip-custom:not(.ships-tooltip) {
-            min-width: 800px;
-            max-width: 1200px;
-        }
-
-        .fleet-varies {
-            padding: 4px 8px;
-            background: #fff3cd;
-            border-radius: 4px;
-            color: #856404;
-            font-weight: 500;
-            display: inline-block;
-        }
-
-        /* fleet-varies如果有ship-number类，也要有悬停效果 */
-        .fleet-varies.ship-number {
-            cursor: help;
-        }
-
-        .fleet-varies.ship-number:hover {
-            background: #856404;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(133, 100, 4, 0.3);
-        }
-
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-            font-size: 16px;
-        }
+        /* 页面特定样式（保留与公共样式不同的部分） */
+        /* 注意：筛选器和数据表格样式已移至 vendor/monitor-styles.css */
     </style>
 </head>
-<body>
+<body data-page="Monitor-Geo-Trades-Service.html">
     <div class="container">
         <div class="header">
             <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
@@ -337,22 +176,9 @@
             };
 
             // 自动加载 Data 目录下的 Excel 文件
+            // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
             async function loadDefaultExcelFile() {
-                // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
-                if (window.location.protocol === 'file:') {
-                    console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
-                    return;
-                }
-
-                try {
-                    const response = await fetch('Data/Monitor-Geo-Trades-Service.xlsx');
-                    if (!response.ok) {
-                        console.log('默认 Excel 文件不存在，等待用户手动选择');
-                        return;
-                    }
-                    const blob = await response.blob();
-                    const file = new File([blob], 'Monitor-Geo-Trades-Service.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                    
+                await window.loadDefaultExcelFile('Monitor-Geo-Trades-Service', async (file) => {
                     // 直接调用处理函数
                     if (typeof window.XLSX === 'undefined') {
                         dom.statusValue.textContent = 'XLSX 库未加载';
@@ -391,14 +217,7 @@
                         dom.statusDetail.textContent = error.message;
                         dom.statusDetail.style.display = 'block';
                     }
-                } catch (error) {
-                    // 如果是CORS错误，静默处理（本地文件系统环境）
-                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                        console.log('本地文件系统环境，无法自动加载，请手动选择文件');
-                    } else {
-                        console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
-                    }
-                }
+                });
             }
 
             // 初始化

@@ -9,320 +9,11 @@
     <link rel="stylesheet" href="vendor/monitor-styles.css">
     <script src="vendor/lib-loader.js"></script>
     <script src="vendor/common-utils.js"></script>
+    <script src="vendor/pdf-utils.js"></script>
     <script src="vendor/error-handler.js"></script>
     <style>
       /* 页面特定样式（保留与公共样式不同的部分） */
-
-      label span {
-        display: block;
-      }
-
-      .record-pill {
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-        padding: 12px 14px;
-        font-size: 0.95rem;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      .record-pill strong {
-        font-size: 1.2rem;
-        color: #667eea;
-      }
-
-      .ghost-btn {
-        border-radius: 8px;
-        border: 2px solid #667eea;
-        background: white;
-        color: #667eea;
-        padding: 10px 18px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 14px;
-      }
-
-      .ghost-btn:hover:not(:disabled) {
-        background: #f0f0ff;
-        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.2);
-      }
-
-      .ghost-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      button.reset {
-        border: none;
-        border-radius: 8px;
-        padding: 10px 18px;
-        background: #667eea;
-        color: #fff;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 14px;
-      }
-
-      button.reset:hover:not(:disabled) {
-        background: #5568d3;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-      }
-
-      button.reset:disabled {
-        background: #d2d2d7;
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-      }
-
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
-        margin-top: 24px;
-      }
-
-      .metric-card {
-        border-radius: 10px;
-        padding: 20px;
-        background: white;
-        border: 1px solid #e9ecef;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .metric-card h3 {
-        margin: 0;
-        font-size: 0.95rem;
-        color: #6c757d;
-      }
-
-      .metric-card p {
-        margin: 12px 0 0;
-        font-size: 1.8rem;
-        font-weight: 600;
-        color: #667eea;
-      }
-
-      .metric-card small {
-        display: block;
-        margin-top: 6px;
-        font-size: 0.85rem;
-        color: #6c757d;
-      }
-
-      .metric-card small.metric-extra {
-        font-size: 0.78rem;
-        opacity: 0.8;
-      }
-
-      .metric-group-stack {
-        margin-top: 16px;
-        display: grid;
-        gap: 16px;
-      }
-
-      .metric-group {
-        border-radius: 10px;
-        border: 1px solid #e9ecef;
-        padding: 16px;
-        background: white;
-      }
-
-      .metric-group-title {
-        margin: 0 0 12px;
-        font-weight: 600;
-        color: #495057;
-      }
-
-      canvas {
-        width: 100%;
-        max-height: 420px;
-      }
-
-      .chart-stack {
-        display: grid;
-        gap: 24px;
-      }
-
-      .chart-panel {
-        border: 1px solid #e9ecef;
-        border-radius: 10px;
-        padding: 16px;
-        background: white;
-      }
-
-      .yearly-port-panel {
-        border: 1px solid #e9ecef;
-        border-radius: 10px;
-        padding: 16px;
-        background: white;
-      }
-
-      .yearly-port-header {
-        font-weight: 600;
-        margin-bottom: 12px;
-        color: #495057;
-      }
-
-      .yearly-type-stack {
-        display: grid;
-        gap: 16px;
-      }
-
-      .chart-panel-title {
-        margin: 0 0 12px;
-        font-weight: 600;
-        color: #495057;
-      }
-
-      .chart-empty {
-        padding: 32px;
-        text-align: center;
-        color: #6c757d;
-        border: 1px dashed #e9ecef;
-        border-radius: 10px;
-      }
-
-      .panel h2 {
-        margin: 0 0 16px;
-        font-size: 1.35rem;
-        font-weight: 600;
-        color: #1f2d3d;
-      }
-
-      .table-wrap {
-        margin-top: 24px;
-        border-radius: 10px;
-        overflow: hidden;
-        border: 1px solid #e9ecef;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.95rem;
-      }
-
-      th,
-      td {
-        text-align: left;
-        padding: 12px 16px;
-      }
-
-      th {
-        background: #667eea;
-        color: white;
-        font-weight: 600;
-      }
-
-      tr:nth-child(even) {
-        background: #f8f9fa;
-      }
-
-      tbody tr:hover {
-        background: #e9ecef;
-      }
-
-      tbody tr:not(:last-child) {
-        border-bottom: 1px solid #e9ecef;
-      }
-
-      details {
-        margin-top: 24px;
-      }
-
-      summary {
-        cursor: pointer;
-        font-weight: 600;
-        color: #667eea;
-      }
-
-      .trend-table-wrap {
-        margin-top: 8px;
-        border-radius: 10px;
-        border: 1px solid #e9ecef;
-        overflow: hidden;
-      }
-
-      .trend-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.92rem;
-      }
-
-      .trend-table th,
-      .trend-table td {
-        padding: 12px 14px;
-        text-align: left;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        vertical-align: top;
-      }
-
-      .trend-table thead th {
-        background: #667eea;
-        color: white;
-        font-weight: 600;
-      }
-
-      .trend-table thead th small {
-        display: block;
-        font-weight: 400;
-        color: rgba(255, 255, 255, 0.9);
-        margin-top: 4px;
-      }
-
-      .trend-table tbody tr:last-child td {
-        border-bottom: none;
-      }
-
-      .trend-value {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        line-height: 1.3;
-      }
-
-      .trend-value span {
-        display: block;
-      }
-
-      .trend-range {
-        font-size: 0.75rem;
-        color: #6c757d;
-      }
-
-      .trend-change {
-        display: block;
-        font-size: 0.85rem;
-        margin-top: 4px;
-      }
-
-      .trend-up {
-        color: #dc3545;
-      }
-
-      .trend-down {
-        color: #28a745;
-      }
-
-      .trend-flat {
-        color: #6c757d;
-      }
-
-      .empty-row {
-        text-align: center;
-        color: #6c757d;
-        padding: 24px 0;
-      }
-
-
-      
+      /* 注意：record-pill、ghost-btn、metrics、chart-panel、trend-table 等样式已移至 vendor/monitor-styles.css */
     </style>
   </head>
   <body data-page="Monitor-Rate-Trends.html">
@@ -569,63 +260,9 @@
       // 注意：Monitor-Rate-Trends.html 需要 Chart.js 4.4.6，而公共加载器使用 4.4.0
       // 如果需要特定版本，可以在这里覆盖（目前使用 4.4.0 应该也兼容）
 
-      // 动态加载 html2canvas 库（优先使用本地文件）
-      (function ensureHtml2Canvas() {
-        if (typeof window.html2canvas !== "undefined") return;
-        const sources = [
-          "vendor/html2canvas.min.js",  // 本地文件优先
-          "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
-          "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js",
-          "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-        ];
-        let index = 0;
-        function tryLoad() {
-          if (index >= sources.length) {
-            console.error("html2canvas 库无法加载，PDF 导出功能将不可用");
-            return;
-          }
-          const script = document.createElement("script");
-          script.src = sources[index];
-          script.onerror = () => {
-            index++;
-            tryLoad();
-          };
-          script.onload = () => {
-            console.log("html2canvas 加载成功:", sources[index]);
-          };
-          document.head.appendChild(script);
-        }
-        tryLoad();
-      })();
-
-      // 动态加载 jsPDF 库（优先使用本地文件）
-      (function ensureJsPdf() {
-        if (typeof window.jspdf !== "undefined") return;
-        const sources = [
-          "vendor/jspdf.umd.min.js",  // 本地文件优先
-          "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js",
-          "https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js",
-          "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-        ];
-        let index = 0;
-        function tryLoad() {
-          if (index >= sources.length) {
-            console.error("jsPDF 库无法加载，PDF 导出功能将不可用");
-            return;
-          }
-          const script = document.createElement("script");
-          script.src = sources[index];
-          script.onerror = () => {
-            index++;
-            tryLoad();
-          };
-          script.onload = () => {
-            console.log("jsPDF 加载成功:", sources[index]);
-          };
-          document.head.appendChild(script);
-        }
-        tryLoad();
-      })();
+      // PDF 库加载已统一到 vendor/pdf-utils.js
+      // 使用 loadPdfLibraries() 函数来加载 html2canvas 和 jsPDF
+      // 注意：如果页面需要 PDF 导出功能，会在使用时自动加载
     </script>
     <script>
       const TARGET_TYPES = ["2SD", "4SH"];
@@ -961,13 +598,21 @@
           showError(ErrorType.DATA_VALIDATION, 'NO_DATA_LOADED');
           return;
         }
-        if (!window.html2canvas || !window.jspdf) {
-          showError(ErrorType.FILE_LOAD, 'PDF_LIBS_NOT_LOADED');
-          return;
-        }
         try {
           dom.exportBtn.disabled = true;
           dom.exportBtn.textContent = "导出中...";
+          
+          // 使用 vendor/pdf-utils.js 中的 loadPdfLibraries 函数加载 PDF 库
+          if (typeof window.loadPdfLibraries === 'function') {
+            await window.loadPdfLibraries();
+          } else if (typeof loadPdfLibraries === 'function') {
+            await loadPdfLibraries();
+          }
+          
+          if (!window.html2canvas || !window.jspdf) {
+            showError(ErrorType.FILE_LOAD, 'PDF_LIBS_NOT_LOADED');
+            return;
+          }
           
           // 将 Chart.js 图表转换为图片（在克隆前）
           const chartCanvases = document.querySelectorAll('.content canvas');

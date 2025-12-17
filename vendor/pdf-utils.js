@@ -5,7 +5,36 @@
  * 依赖：
  * - html2canvas (动态加载)
  * - jsPDF (动态加载)
+ * - loadScript (从 common-utils.js 或 window.loadScript)
+ * - debugWarn (从 debug-utils.js 或 window.debugWarn)
  */
+
+/**
+ * 加载脚本（如果 common-utils.js 未加载，使用本地实现）
+ * @param {string} src - 脚本URL
+ * @returns {Promise<void>} 加载完成的Promise
+ */
+function loadScriptForPdf(src) {
+    // 优先使用 common-utils.js 中的 loadScript
+    if (typeof window !== 'undefined' && typeof window.loadScript === 'function') {
+        return window.loadScript(src);
+    }
+    
+    // 降级实现（如果 common-utils.js 未加载）
+    return new Promise((resolve, reject) => {
+        const existingScript = document.querySelector(`script[src="${src}"]`);
+        if (existingScript) {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
 
 /**
  * 加载 PDF 导出所需的库（html2canvas 和 jsPDF）
@@ -23,10 +52,13 @@ async function loadPdfLibraries() {
 
         for (const src of html2CanvasSources) {
             try {
-                await loadScript(src);
+                await loadScriptForPdf(src);
                 if (typeof window.html2canvas !== 'undefined') break;
             } catch (error) {
-                debugWarn('html2canvas 加载失败', src, error);
+                const warnFn = typeof window !== 'undefined' && typeof window.debugWarn === 'function' 
+                    ? window.debugWarn 
+                    : (typeof console !== 'undefined' ? console.warn : () => {});
+                warnFn('html2canvas 加载失败', src, error);
             }
         }
     }
@@ -42,10 +74,13 @@ async function loadPdfLibraries() {
 
         for (const src of jsPdfSources) {
             try {
-                await loadScript(src);
+                await loadScriptForPdf(src);
                 if (typeof window.jspdf !== 'undefined') break;
             } catch (error) {
-                debugWarn('jsPDF 加载失败', src, error);
+                const warnFn = typeof window !== 'undefined' && typeof window.debugWarn === 'function' 
+                    ? window.debugWarn 
+                    : (typeof console !== 'undefined' ? console.warn : () => {});
+                warnFn('jsPDF 加载失败', src, error);
             }
         }
     }
@@ -61,6 +96,69 @@ async function loadPdfLibraries() {
  * @param {Function} options.onError - 导出失败时的回调
  * @returns {Promise<void>}
  */
+/**
+ * 创建标准的 PDF 导出函数（用于页面导出按钮）
+ * @param {string} fileNamePrefix - 文件名前缀（如 "市场分析报告"）
+ * @param {string} [buttonId='exportPdfBtn'] - 导出按钮 ID
+ * @param {string} [targetSelector='.container'] - 要导出的目标选择器
+ * @returns {Function} 返回导出函数
+ */
+function createExportPageToPdfFunction(fileNamePrefix, buttonId = 'exportPdfBtn', targetSelector = '.container') {
+    return async function exportPageToPdf() {
+        const exportBtn = document.getElementById(buttonId);
+        if (!exportBtn) return;
+        
+        try {
+            // 生成文件名：前缀_年月日.pdf
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const fileName = `${fileNamePrefix}_${year}${month}${day}`;
+            
+            // 使用 vendor/pdf-utils.js 中的 exportToPdf 函数
+            await exportToPdf(targetSelector, {
+                fileName: fileName,
+                onStart: () => {
+                    exportBtn.disabled = true;
+                    exportBtn.textContent = '正在导出...';
+                },
+                onComplete: () => {
+                    exportBtn.textContent = '导出整页 PDF';
+                    exportBtn.disabled = false;
+                },
+                onError: (error) => {
+                    const errorFn = typeof window !== 'undefined' && typeof window.debugError === 'function' 
+                        ? window.debugError 
+                        : (typeof console !== 'undefined' ? console.error : () => {});
+                    errorFn('导出PDF失败:', error);
+                    if (typeof window !== 'undefined' && typeof window.showError === 'function' && typeof window.ErrorType !== 'undefined') {
+                        window.showError(window.ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+                            message: error.message || String(error) 
+                        }, error);
+                    }
+                    exportBtn.textContent = '导出整页 PDF';
+                    exportBtn.disabled = false;
+                }
+            });
+        } catch (error) {
+            const errorFn = typeof window !== 'undefined' && typeof window.debugError === 'function' 
+                ? window.debugError 
+                : (typeof console !== 'undefined' ? console.error : () => {});
+            errorFn('导出PDF失败:', error);
+            if (typeof window !== 'undefined' && typeof window.showError === 'function' && typeof window.ErrorType !== 'undefined') {
+                window.showError(window.ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+                    message: error.message || String(error) 
+                }, error);
+            }
+            if (exportBtn) {
+                exportBtn.textContent = '导出整页 PDF';
+                exportBtn.disabled = false;
+            }
+        }
+    };
+}
+
 async function exportToPdf(target, options = {}) {
     const {
         fileName = `导出_${new Date().toISOString().split('T')[0]}`,
@@ -144,9 +242,19 @@ async function exportToPdf(target, options = {}) {
 
         if (onComplete) onComplete();
     } catch (error) {
-        debugError('导出PDF失败:', error);
+        const errorFn = typeof window !== 'undefined' && typeof window.debugError === 'function' 
+            ? window.debugError 
+            : (typeof console !== 'undefined' ? console.error : () => {});
+        errorFn('导出PDF失败:', error);
         if (onError) onError(error);
         throw error;
     }
+}
+
+// 导出函数到全局
+if (typeof window !== 'undefined') {
+    window.exportToPdf = window.exportToPdf || exportToPdf;
+    window.createExportPageToPdfFunction = window.createExportPageToPdfFunction || createExportPageToPdfFunction;
+    window.loadPdfLibraries = window.loadPdfLibraries || loadPdfLibraries;
 }
 

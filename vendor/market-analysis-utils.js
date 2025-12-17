@@ -3401,6 +3401,35 @@ function buildBunkerDataSection(bunkerData) {
 }
 
 /**
+ * 从页面获取"其他影响因素"表格数据
+ * @param {string} [tableBodyId='bookingDataBody'] - 表格 tbody 的 ID
+ * @returns {Array<Object>} 数据数组，每个对象包含 remark 和 description
+ */
+function getBookingData(tableBodyId = 'bookingDataBody') {
+    const tbody = document.getElementById(tableBodyId);
+    if (!tbody) return [];
+    
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const data = [];
+    
+    rows.forEach(row => {
+        const remarkInput = row.querySelector('.booking-remark');
+        const descInput = row.querySelector('.booking-desc');
+        const remark = remarkInput ? remarkInput.value.trim() : '';
+        const description = descInput ? descInput.value.trim() : '';
+        
+        if (remark || description) {
+            data.push({
+                remark,
+                description
+            });
+        }
+    });
+    
+    return data;
+}
+
+/**
  * 构建CCFI数据部分
  * @param {Object} ccfiData - CCFI数据
  * @returns {string} 提示词片段
@@ -3515,6 +3544,7 @@ function buildScfiDataSection(marketReports) {
 
 // 导出函数到全局
 if (typeof window !== 'undefined') {
+    window.getBookingData = window.getBookingData || getBookingData;
     window.extractTextFromPdfPage = window.extractTextFromPdfPage || extractTextFromPdfPage;
     window.parseScfiTable = window.parseScfiTable || parseScfiTable;
     window.parseScfiTableFromText = window.parseScfiTableFromText || parseScfiTableFromText;
@@ -3526,4 +3556,5 @@ if (typeof window !== 'undefined') {
     window.buildBunkerDataSection = window.buildBunkerDataSection || buildBunkerDataSection;
     window.buildWciDataSection = window.buildWciDataSection || buildWciDataSection;
     window.buildFbxDataSection = window.buildFbxDataSection || buildFbxDataSection;
+    window.buildBookingDataSection = window.buildBookingDataSection || buildBookingDataSection;
 }

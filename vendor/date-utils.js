@@ -180,3 +180,9 @@ function formatDateToYYYYMMDD(dateValue) {
     return `${year}/${month}/${day}`;
 }
 
+// 导出函数到全局
+if (typeof window !== 'undefined') {
+    window.parseDateValue = window.parseDateValue || parseDateValue;
+    window.formatDateToYYYYMMDD = window.formatDateToYYYYMMDD || formatDateToYYYYMMDD;
+}
+

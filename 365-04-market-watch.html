@@ -17,97 +17,10 @@
     <script src="vendor/ai-prompts.js"></script>
     <script src="vendor/ai-utils.js"></script>
     <script src="vendor/market-analysis-utils.js"></script>
+    <script src="vendor/template-utils.js"></script>
     <style>
         /* 页面特定样式（保留与公共样式不同的部分） */
-
-        /* #marketModule 特定样式（仅 365-04 使用） */
-        #marketModule {
-            margin-bottom: 60px;
-        }
-
-        #marketModule .filter-controls {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            width: 100%;
-        }
-
-        #marketModule .filter-group {
-            flex: 1 1 260px;
-            min-width: 220px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        #marketModule .filter-group label {
-            font-weight: 500;
-            color: #495057;
-        }
-
-        #marketModule .filter-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 2px solid #e9ecef;
-            font-size: 13px;
-            background: white;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        #marketModule .filter-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        #marketModule .chart-container {
-            margin-top: 20px;
-        }
-
-        #marketModule .chart-wrapper {
-            height: 400px;
-            margin-top: 20px;
-        }
-
-        #marketModule .chart-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-
-        #marketModule .chart-date-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 13px;
-            color: #495057;
-        }
-
-        #marketModule .chart-date-controls label {
-            font-weight: 500;
-        }
-
-        #marketModule .chart-date-controls input[type="date"] {
-            padding: 8px 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 13px;
-            background: white;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        #marketModule .chart-date-controls input[type="date"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        /* .page-footer 样式已在 market-analysis-styles.css 中定义，此处不再重复 */
-
+        /* 注意：#marketModule 样式已移至 vendor/market-analysis-styles.css */
     </style>
 </head>
 <body data-page="365-04-market-watch.html">
@@ -325,182 +238,13 @@
                             请先加载数据文件并选择筛选条件以启用 AI 分析
                         </div>
                         <div id="aiConfigSection" style="display: none;">
-                            <div class="booking-data-table">
-                                <h4>其他影响因素</h4>
-                                <table class="booking-table" id="bookingDataTable">
-                                    <thead>
-                                        <tr>
-                                            <th>项目</th>
-                                            <th class="description-header">说明</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="bookingDataBody">
-                                        <tr>
-                                            <td><input type="text" value="收货情况" class="booking-remark" readonly style="background: #f8f9fa; cursor: default;"></td>
-                                            <td class="description-cell">
-                                                <textarea class="booking-desc" placeholder="当周及未来2周订舱情况；主观判断目前处于旺季或淡季、重点流向表现、装载率预估等"></textarea>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="text" value="码头情况" class="booking-remark" readonly style="background: #f8f9fa; cursor: default;"></td>
-                                            <td class="description-cell">
-                                                <textarea class="booking-desc" placeholder="起运港/目的港的拥堵情况、靠泊等待平均时间、天气或其他码头运营影响"></textarea>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="text" value="额外运力" class="booking-remark" readonly style="background: #f8f9fa; cursor: default;"></td>
-                                            <td class="description-cell">
-                                                <textarea class="booking-desc" placeholder="具体船公司在某周临时加开/取消/减舱的情况（航线运力分析未覆盖的部分）"></textarea>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="text" value="市场运费" class="booking-remark" readonly style="background: #f8f9fa; cursor: default;"></td>
-                                            <td class="description-cell">
-                                                <textarea class="booking-desc" placeholder="填写现行报价，市场上较为激进的高价或低价（如 XX 公司报价表）"></textarea>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="text" value="其他事件" class="booking-remark" readonly style="background: #f8f9fa; cursor: default;"></td>
-                                            <td class="description-cell">
-                                                <textarea class="booking-desc" placeholder="如调高关税、出口退税、查验力度、环保政策变化等特殊事件"></textarea>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <!-- 其他影响因素表格 - 使用公共模板（vendor/template-utils.js） -->
+                            <div id="bookingDataTableContainer"></div>
+                            <!-- 市场数据信息块 - 使用公共模板（vendor/template-utils.js） -->
+                            <div id="marketDataInfoBlocksContainer"></div>
+                            <!-- AI 配置面板 - 使用公共模板（vendor/template-utils.js） -->
+                            <div id="aiConfigPanelsContainer"></div>
                             </div>
-                            <div class="bunker-info">
-                                <div class="bunker-copy">
-                                    <h4>燃油行情（Ship & Bunker · 新加坡）</h4>
-                                    <p id="bunkerStatus">尚未抓取燃油报价</p>
-                                    <small id="bunkerUpdated" class="bunker-meta">最近更新时间：—</small>
-                                </div>
-                                <button class="action-btn" id="refreshBunkerBtn">更新燃油价格</button>
-                            </div>
-                            <div class="index-info">
-                                <div>
-                                    <h4>WCI 主要航线现货价</h4>
-                                    <p id="wciStatus">尚未抓取 WCI 数据</p>
-                                    <small id="wciUpdated" class="index-meta">最近更新时间：—</small>
-                                </div>
-                                <button class="action-btn" id="refreshWciBtn">更新 WCI</button>
-                            </div>
-                            <div class="index-info">
-                                <div>
-                                    <h4>FBX 全球航线指数</h4>
-                                    <p id="fbxStatus">尚未抓取 FBX 数据</p>
-                                    <small id="fbxUpdated" class="index-meta">最近更新时间：—</small>
-                                </div>
-                                <button class="action-btn" id="refreshFbxBtn">更新 FBX</button>
-                            </div>
-                            <div class="index-info" id="scfiInfoContainer" style="display: none;">
-                                <div>
-                                    <h4>SCFI 运价指数（来自市场报告）</h4>
-                                    <div id="scfiTableContainer"></div>
-                                    <small id="scfiSource" class="index-meta">数据来源：—</small>
-                                </div>
-                            </div>
-                            <div class="ai-tabs">
-                                <div class="ai-tab-buttons">
-                                    <button class="ai-tab-btn active" data-provider="deepseek">DeepSeek</button>
-                                    <button class="ai-tab-btn" data-provider="kimi">KIMI (Moonshot)</button>
-                                    <button class="ai-tab-btn" data-provider="qwen">通义千问 (Qwen)</button>
-                                </div>
-                                <span class="ai-tab-hint">可切换不同模型对比观点一致性</span>
-                            </div>
-                            <div class="ai-panels">
-                                <div class="ai-panel active" data-provider="deepseek">
-                                    <div class="api-config">
-                                        <h4>DeepSeek API 配置</h4>
-                                        <div class="api-input-group">
-                                            <label>API Key:</label>
-                                            <input type="password" id="apiKeyInput" placeholder="请输入 DeepSeek API Key">
-                                        </div>
-                                        <div class="api-input-group">
-                                            <label>API URL:</label>
-                                            <input type="text" id="apiUrlInput" placeholder="https://api.deepseek.com/v1/chat/completions" value="https://api.deepseek.com/v1/chat/completions">
-                                        </div>
-                                            <div class="api-input-group">
-                                            <label>模型 ID:</label>
-                                            <input type="text" id="apiModelInput" placeholder="deepseek-chat" value="deepseek-chat" list="deepseekModelOptions">
-                                        </div>
-                                        <button class="api-save-btn" onclick="saveAiConfig('deepseek')">保存配置</button>
-                                    </div>
-                                    <button class="ai-analysis-btn" id="aiAnalysisBtn" onclick="runAiAnalysis('deepseek')">使用 DeepSeek 分析</button>
-                                    <div id="aiLoading" class="ai-loading hidden">正在分析中</div>
-                                    <div id="aiResult" class="ai-result hidden">
-                                        <h4>DeepSeek 分析结果</h4>
-                                        <div class="ai-result-content" id="aiResultContent"></div>
-                                    </div>
-                                </div>
-                                <div class="ai-panel" data-provider="kimi">
-                                    <div class="api-config">
-                                        <h4>KIMI (Moonshot) API 配置</h4>
-                                        <div class="api-input-group">
-                                            <label>API Key:</label>
-                                            <input type="password" id="kimiApiKeyInput" placeholder="请输入 KIMI / Moonshot API Key">
-                                        </div>
-                                        <div class="api-input-group">
-                                            <label>API URL:</label>
-                                            <input type="text" id="kimiApiUrlInput" placeholder="https://api.moonshot.cn/v1/chat/completions" value="https://api.moonshot.cn/v1/chat/completions">
-                                        </div>
-                                        <div class="api-input-group">
-                                            <label>模型 ID:</label>
-                                            <input type="text" id="kimiModelInput" placeholder="moonshot-v1-32k" value="moonshot-v1-32k" list="kimiModelOptions">
-                                        </div>
-                                        <button class="api-save-btn" onclick="saveAiConfig('kimi')">保存配置</button>
-                                    </div>
-                                    <button class="ai-analysis-btn secondary" id="kimiAnalysisBtn" onclick="runAiAnalysis('kimi')">使用 KIMI 分析</button>
-                                    <div id="kimiAiLoading" class="ai-loading hidden">正在分析中</div>
-                                    <div id="kimiAiResult" class="ai-result hidden">
-                                        <h4>KIMI 分析结果</h4>
-                                        <div class="ai-result-content" id="kimiAiResultContent"></div>
-                                    </div>
-                                </div>
-                                <div class="ai-panel" data-provider="qwen">
-                                    <div class="api-config">
-                                        <h4>通义千问 (Qwen) API 配置</h4>
-                                        <div class="api-input-group">
-                                            <label>API Key:</label>
-                                            <input type="password" id="qwenApiKeyInput" placeholder="请输入通义千问 API Key">
-                                        </div>
-                                        <div class="api-input-group">
-                                            <label>API URL:</label>
-                                            <input type="text" id="qwenApiUrlInput" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" value="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions">
-                                        </div>
-                                        <div class="api-input-group">
-                                            <label>模型 ID:</label>
-                                            <input type="text" id="qwenModelInput" placeholder="qwen-max" value="qwen-max" list="qwenModelOptions">
-                                        </div>
-                                        <button class="api-save-btn" onclick="saveAiConfig('qwen')">保存配置</button>
-                                    </div>
-                                    <button class="ai-analysis-btn" id="qwenAnalysisBtn" onclick="runAiAnalysis('qwen')" style="background: #ff6b35;">使用通义千问分析</button>
-                                    <div id="qwenAiLoading" class="ai-loading hidden">正在分析中</div>
-                                    <div id="qwenAiResult" class="ai-result hidden">
-                                        <h4>通义千问 分析结果</h4>
-                                        <div class="ai-result-content" id="qwenAiResultContent"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <datalist id="deepseekModelOptions">
-                                <option value="deepseek-chat">基础对话模型（推荐）</option>
-                                <option value="deepseek-v3">V3 高性能模型（2024年12月发布）</option>
-                                <option value="deepseek-reasoner">推理模型（逻辑推理）</option>
-                                <option value="deepseek-r1">R1 推理模型（2025年1月发布）</option>
-                                <option value="deepseek-coder">代码模型</option>
-                            </datalist>
-                            <datalist id="kimiModelOptions">
-                                <option value="moonshot-v1-8k">8K 上下文（经济型）</option>
-                                <option value="moonshot-v1-32k">32K 上下文（推荐）</option>
-                                <option value="moonshot-v1-128k">128K 上下文（长文档）</option>
-                                <option value="moonshot-v1-k2">K2 模型（320亿参数，需确认API可用性）</option>
-                            </datalist>
-                            <datalist id="qwenModelOptions">
-                                <option value="qwen-turbo">Turbo 快速模型（经济型）</option>
-                                <option value="qwen-plus">Plus 平衡模型</option>
-                                <option value="qwen-max">Max 高性能模型（推荐，最佳性能）</option>
-                                <option value="qwen-max-longcontext">Max 长上下文模型</option>
-                            </datalist>
-                        </div>
     </div>
     </div>
     <div class="page-footer">
@@ -579,36 +323,22 @@
         const marketDateControls = null;
         const marketReportInput = document.getElementById('marketReportInput');
         const marketReportList = document.getElementById('marketReportList');
-        const bunkerStatusEl = document.getElementById('bunkerStatus');
-        const bunkerUpdatedEl = document.getElementById('bunkerUpdated');
-        const refreshBunkerBtn = document.getElementById('refreshBunkerBtn');
-        const wciStatusEl = document.getElementById('wciStatus');
-        const wciUpdatedEl = document.getElementById('wciUpdated');
-        const refreshWciBtn = document.getElementById('refreshWciBtn');
-        const fbxStatusEl = document.getElementById('fbxStatus');
-        const fbxUpdatedEl = document.getElementById('fbxUpdated');
-        const refreshFbxBtn = document.getElementById('refreshFbxBtn');
+        // 状态元素引用将在模板生成后重新获取（在 window.addEventListener('load') 中）
+        // 使用 let 以便在模板生成后更新
+        let bunkerStatusEl = null;
+        let bunkerUpdatedEl = null;
+        let wciStatusEl = null;
+        let wciUpdatedEl = null;
+        let fbxStatusEl = null;
+        let fbxUpdatedEl = null;
 
         // renderMarketReportList 已从 vendor/market-analysis-utils.js 加载
         renderMarketReportList();
 
         // 自动加载 Data 目录下的 Excel 文件
-        async function loadDefaultExcelFile() {
-            // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
-            if (window.location.protocol === 'file:') {
-                console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
-                return;
-            }
-
-            try {
-                const response = await fetch('Data/365-03-market-watch.xlsx');
-                if (!response.ok) {
-                    console.log('默认 Excel 文件不存在，等待用户手动选择');
-                    return;
-                }
-                const blob = await response.blob();
-                const file = new File([blob], '365-03-market-watch.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                
+        // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
+        async function loadExcelFile() {
+            await window.loadDefaultExcelFile('365-04-market-watch', async (file) => {
                 // 直接调用处理函数（模拟文件选择）
                 if (typeof XLSX === 'undefined') {
                     showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
@@ -619,7 +349,7 @@
                     // 先加载 market 数据
                     const marketDataResult = await readMarketExcelFile(file);
                     if (marketDataResult && marketDataResult.length) {
-                        // 处理 market 数据（调用第一个 change 事件的处理逻辑）
+                        // 处理 market 数据（完全复制手动加载的逻辑）
                         const firstRow = marketDataResult[0] || {};
                         const columnKeys = Object.keys(firstRow);
                         const findColumn = (keywords, fallbackIndex = null) => {
@@ -638,6 +368,7 @@
                         if (regionCol && portCol) {
                             marketColumnConfig = { portCol, dateCol };
                             marketRegionPortMap = {};
+
                             marketDataResult.forEach(row => {
                                 const region = String(row[regionCol] || '').trim();
                                 const port = String(row[portCol] || '').trim();
@@ -647,15 +378,80 @@
                                 }
                                 marketRegionPortMap[region].add(port);
                             });
-                            // 更新下拉框
-                            if (marketRegionSelect) {
-                                marketRegionSelect.innerHTML = '<option value="">全部区域</option>' +
-                                    Object.keys(marketRegionPortMap).sort().map(region =>
-                                        `<option value="${region}">${region}</option>`
-                                    ).join('');
+
+                            // 使用标准区域顺序排序（严格按照 STANDARD_AREA_ORDER 的顺序）
+                            const allRegions = Object.keys(marketRegionPortMap);
+                            // 处理区域名称变体（如"中东印巴红海" -> "中东红海印巴"）
+                            const normalizeAreaName = (areaName) => {
+                                if (!areaName) return areaName;
+                                // 如果包含"中东"、"印巴"、"红海"这些关键词，统一映射到"中东红海印巴"
+                                if (areaName.includes('中东') && (areaName.includes('印巴') || areaName.includes('红海'))) {
+                                    return '中东红海印巴';
+                                }
+                                return areaName;
+                            };
+                            
+                            // 确保使用标准区域顺序排序
+                            if (typeof sortAreasByStandardOrder === 'function') {
+                                marketRegions = sortAreasByStandardOrder(allRegions);
+                            } else if (typeof STANDARD_AREA_ORDER !== 'undefined') {
+                                // 如果 sortAreasByStandardOrder 不可用，手动排序
+                                const areaOrderMap = new Map();
+                                STANDARD_AREA_ORDER.forEach((area, index) => {
+                                    areaOrderMap.set(area, index);
+                                });
+                                // 创建新数组进行排序，不修改原数组
+                                marketRegions = [...allRegions].sort((a, b) => {
+                                    const normalizedA = normalizeAreaName(a);
+                                    const normalizedB = normalizeAreaName(b);
+                                    const indexA = areaOrderMap.has(normalizedA) ? areaOrderMap.get(normalizedA) : Infinity;
+                                    const indexB = areaOrderMap.has(normalizedB) ? areaOrderMap.get(normalizedB) : Infinity;
+                                    if (indexA !== Infinity && indexB !== Infinity) {
+                                        return indexA - indexB;
+                                    }
+                                    if (indexA !== Infinity) return -1;
+                                    if (indexB !== Infinity) return 1;
+                                    return a.localeCompare(b, 'zh-Hans-CN');
+                                });
+                            } else {
+                                marketRegions = [...allRegions].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
                             }
+                            const totalPorts = marketRegions.reduce((sum, region) => sum + marketRegionPortMap[region].size, 0);
+                            // 将Set转换为数组（关键步骤！）
+                            marketRegions.forEach(region => {
+                                marketRegionPortMap[region] = Array.from(marketRegionPortMap[region]).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+                            });
+
+                            if (marketRegionSelect) {
+                                marketRegionSelect.innerHTML = '';
+                                const placeholder = document.createElement('option');
+                                placeholder.value = '';
+                                placeholder.textContent = '全部区域';
+                                placeholder.selected = true;
+                                marketRegionSelect.appendChild(placeholder);
+                                // marketRegions 已经按标准顺序排序，直接使用
+                                marketRegions.forEach(region => {
+                                    const option = document.createElement('option');
+                                    option.value = region;
+                                    option.textContent = `${region} (${marketRegionPortMap[region].length}个港口)`;
+                                    marketRegionSelect.appendChild(option);
+                                });
+                            }
+
+                            // 初始化选择器并更新港口选项（关键步骤！）
+                            initMarketSelectors();
+                            marketSelectedRegions = [];
+                            marketSelectedPorts = [];
+                            updateMarketPortOptions();
+
                             marketData = marketDataResult;
                             excelLoadState.market = true;
+                            
+                            // 显示信息
+                            marketInfoBox?.classList.remove('hidden');
+                            if (marketInfoText) {
+                                marketInfoText.textContent = `已加载 ${marketDataResult.length} 条数据，共 ${marketRegions.length} 个区域，${totalPorts} 个港口`;
+                            }
                         }
                     }
                     
@@ -675,25 +471,68 @@
                     showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
                     debugError(error);
                 }
-            } catch (error) {
-                // 如果是CORS错误，静默处理（本地文件系统环境）
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    console.log('本地文件系统环境，无法自动加载，请手动选择文件');
-                } else {
-                    console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
-                }
-            }
+            });
         }
         
-        // 等待 XLSX 库加载完成后自动加载文件
+        // 使用公共函数加载市场周报 PDF 文件（从 vendor/common-utils.js）
+        async function loadMarketReports() {
+            if (marketReportList) {
+                marketReportList.innerHTML = '<li>正在自动加载市场周报...</li>';
+            }
+            
+            await window.loadDefaultMarketReports(async (file) => {
+                await handleMarketReportFile(file);
+                // 检查是否提取到 SCFI 数据
+                const latestReport = marketReports[marketReports.length - 1];
+                if (latestReport) {
+                    if (latestReport.scfiData) {
+                        scfiData = latestReport.scfiData;
+                        renderScfiTable(latestReport.scfiData, file.name);
+                    } else {
+                        // 尝试手动提取
+                        try {
+                            const fullText = latestReport.text;
+                            if (fullText) {
+                                const extractedScfi = parseScfiTable(fullText);
+                                if (extractedScfi) {
+                                    scfiData = extractedScfi;
+                                    renderScfiTable(extractedScfi, file.name);
+                                }
+                            }
+                        } catch (e) {
+                            // 忽略提取错误
+                        }
+                    }
+                }
+            });
+            
+            // 更新市场周报列表显示
+            renderMarketReportList();
+        }
+
+        // 等待 XLSX 和 PDF.js 库加载完成后自动加载文件
         if (typeof window.ensureXlsx === 'function') {
-            window.ensureXlsx().then(() => {
-                loadDefaultExcelFile();
+            window.ensureXlsx().then(async () => {
+                await loadExcelFile();
+                // 等待 PDF.js 加载完成后再加载市场周报
+                if (typeof window.ensurePdfJsLoaded === 'function') {
+                    await window.ensurePdfJsLoaded();
+                }
+                // 延迟一下，确保 PDF.js 完全初始化
+                setTimeout(() => {
+                    loadMarketReports();
+                }, 500);
             });
         } else {
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (typeof XLSX !== 'undefined') {
-                    loadDefaultExcelFile();
+                    await loadExcelFile();
+                    if (typeof window.ensurePdfJsLoaded === 'function') {
+                        await window.ensurePdfJsLoaded();
+                    }
+                    setTimeout(() => {
+                        loadMarketReports();
+                    }, 500);
                 }
             }, 1000);
         }
@@ -719,25 +558,7 @@
             }
         }
 
-        refreshBunkerBtn?.addEventListener('click', () => {
-            fetchBunkerData(true).catch(error => {
-                debugWarn('燃油行情抓取失败', error);
-                bunkerStatusEl && (bunkerStatusEl.textContent = '抓取失败，请稍后重试或检查网络');
-                bunkerUpdatedEl && (bunkerUpdatedEl.textContent = '最近更新时间：—');
-            });
-        });
-        refreshWciBtn?.addEventListener('click', () => {
-            fetchWciData(true).catch(error => {
-                debugWarn('WCI 抓取失败', error);
-                if (wciStatusEl) wciStatusEl.textContent = '抓取失败，请稍后重试';
-            });
-        });
-        refreshFbxBtn?.addEventListener('click', () => {
-            fetchFbxData(true).catch(error => {
-                debugWarn('FBX 抓取失败', error);
-                if (fbxStatusEl) fbxStatusEl.textContent = '抓取失败，请稍后重试';
-            });
-        });
+        // 按钮事件绑定已移至 initMarketAnalysisPage 函数中（模板生成后）
 
         const CACHE_KEYS = {
             wci: 'wciDataCache',
@@ -2565,16 +2386,34 @@
         let setActiveAiPanelBound = null;
 
         // 初始化 AI 模块
-        // 注意：initAiModule 返回的函数内部会调用 ai-utils.js 中的 setActiveAiPanel
-        // 我们直接使用返回的函数，并创建一个包装函数来更新本地状态
-        setActiveAiPanelBound = initAiModule(aiProviders);
-
-        // 包装函数，用于更新本地 activeAiProvider 状态
-        // 现在可以安全地调用 setActiveAiPanelBound，因为它内部不再依赖全局的 setActiveAiPanel
+        // 注意：initAiModule 需要在模板生成后调用，所以移到 window.addEventListener('load') 中
+        // 这里先定义一个包装函数
         function setActiveAiPanel(providerId = 'deepseek') {
-            const result = setActiveAiPanelBound(providerId);
-            if (result) {
-                activeAiProvider = result;
+            if (setActiveAiPanelBound) {
+                const result = setActiveAiPanelBound(providerId);
+                if (result) {
+                    activeAiProvider = result;
+                }
+            } else {
+                // 降级方案：如果 initAiModule 未调用，使用本地实现
+                if (!aiProviders[providerId]) return;
+                activeAiProvider = providerId;
+                const aiTabButtons = document.querySelectorAll('.ai-tab-btn');
+                const aiPanels = document.querySelectorAll('.ai-panel');
+                aiTabButtons.forEach(btn => {
+                    if (btn.dataset.provider === providerId) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                aiPanels.forEach(panel => {
+                    if (panel.dataset.provider === providerId) {
+                        panel.classList.add('active');
+                    } else {
+                        panel.classList.remove('active');
+                    }
+                });
             }
         }
 
@@ -2595,6 +2434,9 @@
                 showSuccess(configSavedMsg);
             });
         }
+        
+        // 导出到全局，供模板中的 onclick 使用
+        window.saveAiConfig = saveAiConfig;
 
         // fetchBunkerData, extractBunkerTables, parseBunkerTable, updateBunkerStatus, describeBunkerLine 已从 vendor/market-analysis-utils.js 加载
 
@@ -2688,6 +2530,9 @@
                 }
             );
         }
+        
+        // 导出到全局，供模板中的 onclick 使用
+        window.runAiAnalysis = runAiAnalysis;
 
         function buildAiPrompt() {
             if (!destinationFilters.areas.length) {
@@ -2721,7 +2566,7 @@
             // 使用公共函数构建提示词
             let prompt = buildDataOverview(destinationSummary, analysisData.length, analysisWeekCodes, analysisWeekLabels, weeklySummary);
             prompt += buildDetailedData365(analysisData, analysisWeekCodes, analysisWeekLabels);
-            prompt += buildBookingDataSection(getBookingData());
+            prompt += buildBookingDataSection(getBookingDataLocal());
 
             if (
                 typeof marketData !== 'undefined' &&
@@ -2799,85 +2644,94 @@
         }
 
 
-        function getBookingData() {
-            const tbody = document.getElementById('bookingDataBody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            const data = [];
-            
-            rows.forEach(row => {
-                const remarkInput = row.querySelector('.booking-remark');
-                const descInput = row.querySelector('.booking-desc');
-                const remark = remarkInput ? remarkInput.value.trim() : '';
-                const description = descInput ? descInput.value.trim() : '';
-                
-                if (remark || description) {
-                    data.push({
-                        remark,
-                        description
-                    });
-                }
-            });
-            
-            return data;
+        // 使用公共函数获取订舱数据（从 vendor/market-analysis-utils.js）
+        // 直接使用全局函数，避免命名冲突
+        function getBookingDataLocal() {
+            return window.getBookingData ? window.getBookingData('bookingDataBody') : [];
         }
 
         /**
          * 导出整页 PDF（使用 vendor/pdf-utils.js）
          */
-        async function exportPageToPdf() {
-            const exportBtn = document.getElementById('exportPdfBtn');
-            if (!exportBtn) return;
-            
-            try {
-                // 生成文件名：运费走势及航线运力分析_年月日.pdf
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const fileName = `运费走势及航线运力分析_${year}${month}${day}`;
-                
-                // 使用 vendor/pdf-utils.js 中的 exportToPdf 函数
-                await exportToPdf('.container', {
-                    fileName: fileName,
-                    onStart: () => {
-                        exportBtn.disabled = true;
-                        exportBtn.textContent = '正在导出...';
-                    },
-                    onComplete: () => {
-                        exportBtn.textContent = '导出整页 PDF';
-                        exportBtn.disabled = false;
-                    },
-                    onError: (error) => {
-                        debugError('导出PDF失败:', error);
+        // 使用公共函数创建 PDF 导出函数（从 vendor/pdf-utils.js）
+        const exportPageToPdf = window.createExportPageToPdfFunction 
+            ? window.createExportPageToPdfFunction('运费走势及航线运力分析')
+            : async function() {
                         showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
-                            message: error.message || String(error) 
-                        }, error);
-                        exportBtn.textContent = '导出整页 PDF';
-                        exportBtn.disabled = false;
-                    }
+                    message: 'PDF 导出功能未加载' 
                 });
-            } catch (error) {
-                debugError('导出PDF失败:', error);
-                showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
-                    message: error.message || String(error) 
-                }, error);
-                if (exportBtn) {
-                    exportBtn.textContent = '导出整页 PDF';
-                    exportBtn.disabled = false;
-                }
-            }
-        }
+            };
 
         document.getElementById('exportPdfBtn')?.addEventListener('click', exportPageToPdf);
         window.addEventListener('load', () => {
-            // 页面加载时显示 AI 模块（默认显示）
-            updateAiAnalysis(false);
+            // 使用公共模板生成市场数据信息块
+            if (typeof window.generateMarketDataInfoBlocks === 'function') {
+                const marketDataContainer = document.getElementById('marketDataInfoBlocksContainer');
+                if (marketDataContainer) {
+                    marketDataContainer.innerHTML = window.generateMarketDataInfoBlocks();
+                    }
+            }
             
+            // 重新获取状态元素引用（模板生成后）
+            bunkerStatusEl = document.getElementById('bunkerStatus');
+            bunkerUpdatedEl = document.getElementById('bunkerUpdated');
+            wciStatusEl = document.getElementById('wciStatus');
+            wciUpdatedEl = document.getElementById('wciUpdated');
+            fbxStatusEl = document.getElementById('fbxStatus');
+            fbxUpdatedEl = document.getElementById('fbxUpdated');
+            
+            // 使用公共初始化函数（从 vendor/template-utils.js）
+            if (typeof window.initMarketAnalysisPage === 'function') {
+                window.initMarketAnalysisPage({
+                    updateAiAnalysis,
+                    fetchBunkerData,
+                    fetchWciData,
+                    fetchFbxData,
+                    bunkerStatusEl,
+                    bunkerUpdatedEl,
+                    wciStatusEl,
+                    fbxStatusEl
+                });
+                
+                // 模板生成后，初始化 AI 模块（绑定标签页切换事件）
+                if (typeof window.initAiModule === 'function') {
+                    setActiveAiPanelBound = window.initAiModule(aiProviders);
+                    // 设置默认激活的提供商
+                    if (setActiveAiPanelBound) {
+                        setActiveAiPanelBound(activeAiProvider);
+                    }
+                }
+            } else {
+                // 降级方案：如果公共函数未加载，使用本地实现
+                if (typeof window.generateBookingDataTable === 'function') {
+                    const container = document.getElementById('bookingDataTableContainer');
+                    if (container) {
+                        container.innerHTML = window.generateBookingDataTable();
+                    }
+                }
+                if (typeof window.generateAiConfigPanels === 'function') {
+                    const aiContainer = document.getElementById('aiConfigPanelsContainer');
+                    if (aiContainer) {
+                        aiContainer.innerHTML = window.generateAiConfigPanels();
+                    }
+                }
+                
+                // 降级方案：模板生成后，初始化 AI 模块（绑定标签页切换事件）
+                if (typeof window.initAiModule === 'function') {
+                    setActiveAiPanelBound = window.initAiModule(aiProviders);
+                    // 设置默认激活的提供商
+                    if (setActiveAiPanelBound) {
+                        setActiveAiPanelBound(activeAiProvider);
+                    }
+                }
+                
+            updateAiAnalysis(false);
             Promise.allSettled([
                 fetchBunkerData(false),
                 fetchWciData(false),
                 fetchFbxData(false)
             ]);
+            }
         });
 
         // 筛选功能在renderTable中已实现

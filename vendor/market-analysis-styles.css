@@ -791,3 +791,93 @@ body.pdf-export .container {
 
 /* 注意：.hidden 样式已在 common-styles.css 中定义（display: none !important），此处不再重复 */
 
+/* ==========================================================================
+   9. 365-04-market-watch 特定样式（#marketModule）
+   ========================================================================== */
+
+/* #marketModule 特定样式（仅 365-04-market-watch.html 使用） */
+#marketModule {
+    margin-bottom: 60px;
+}
+
+#marketModule .filter-controls {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+#marketModule .filter-group {
+    flex: 1 1 260px;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#marketModule .filter-group label {
+    font-weight: 500;
+    color: #495057;
+}
+
+#marketModule .filter-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    font-size: 13px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#marketModule .filter-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#marketModule .chart-container {
+    margin-top: 20px;
+}
+
+#marketModule .chart-wrapper {
+    height: 400px;
+    margin-top: 20px;
+}
+
+#marketModule .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+#marketModule .chart-date-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #495057;
+}
+
+#marketModule .chart-date-controls label {
+    font-weight: 500;
+}
+
+#marketModule .chart-date-controls input[type="date"] {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 13px;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#marketModule .chart-date-controls input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+

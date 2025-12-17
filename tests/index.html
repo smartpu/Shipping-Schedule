@@ -332,6 +332,8 @@
     <script src="../vendor/ai-utils.js"></script>
     <script src="../vendor/pdf-utils.js"></script>
     <script src="../vendor/market-analysis-utils.js"></script>
+    <script src="../vendor/template-utils.js"></script>
+    <script src="../vendor/debug-utils.js"></script>
     
     <!-- 加载测试工具和测试文件 -->
     <script src="test-utils.js"></script>
@@ -343,6 +345,8 @@
     <script src="test-ai-utils.js"></script>
     <script src="test-pdf-utils.js"></script>
     <script src="test-market-analysis-utils.js"></script>
+    <script src="test-template-utils.js"></script>
+    <script src="test-debug-utils.js"></script>
 
     <script>
         // 重写 console.log 和 console.error 以显示在页面上
@@ -441,6 +445,20 @@
                         testMarketAnalysisUtils();
                     } else {
                         console.error('testMarketAnalysisUtils 函数未找到');
+                    }
+                },
+                '模板工具函数': () => {
+                    if (typeof testTemplateUtils === 'function') {
+                        testTemplateUtils();
+                    } else {
+                        console.error('testTemplateUtils 函数未找到');
+                    }
+                },
+                '调试工具函数': () => {
+                    if (typeof testDebugUtils === 'function') {
+                        testDebugUtils();
+                    } else {
+                        console.error('testDebugUtils 函数未找到');
                     }
                 }
             };

@@ -14,74 +14,8 @@
     <script src="vendor/error-handler.js"></script>
     <script src="vendor/debug-utils.js"></script>
     <style>
-      /* 页面特定样式 */
-
-      /* upload-area, upload-card, status-card 样式已移至 vendor/monitor-styles.css */
-
-      .view-controls {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-        justify-content: flex-end;
-      }
-
-      .view-btn {
-        padding: 8px 16px;
-        border: 2px solid #667eea;
-        background: white;
-        color: #667eea;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-      }
-
-      .view-btn:hover {
-        background: #f0f0ff;
-      }
-
-      .view-btn.active {
-        background: #667eea;
-        color: white;
-      }
-
-      #exportPdfBtn {
-        margin-left: 12px;
-        padding: 8px 16px;
-        font-size: 14px;
-      }
-
-      .legend-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-top: 20px;
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 8px;
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-      }
-
-      .legend-color {
-        width: 16px;
-        height: 16px;
-        border-radius: 3px;
-      }
-
-      .chart-container {
-        position: relative;
-        height: 1000px; /* 2倍高度，减少间隙 */
-        margin-top: 20px;
-      }
+      /* 页面特定样式（保留与公共样式不同的部分） */
+      /* 注意：view-controls、legend-container、chart-container 等样式已移至 vendor/monitor-styles.css */
     </style>
   </head>
   <body data-page="Monitor-Workouts.html">
@@ -114,6 +48,7 @@
     <div class="container">
       <div class="header">
         <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+        <a href="Monitor-Workouts-README.html" class="readme-btn">使用说明 →</a>
         <h1>Monitor · 健身记录面板</h1>
         <p>可视化您的苹果健身记录数据，追踪运动距离和时间趋势</p>
       </div>

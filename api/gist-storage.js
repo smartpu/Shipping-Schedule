@@ -15,6 +15,17 @@
  *    - GITHUB_TOKEN: 你的 GitHub Token
  *    - ACCESS_LOG_GIST_ID: 访问记录 Gist ID
  *    - USER_WHITELIST_GIST_ID: 用户白名单 Gist ID
+ * 
+ * 访问记录管理策略：
+ * - 时间窗口：自动保留最近 90 天的记录，过期记录自动清理
+ * - 文件大小限制：GitHub Gists 单个文件最大 1MB，系统限制为 0.95MB（留出安全余量）
+ * - 存储格式：使用压缩 JSON 格式（不格式化）以节省空间
+ * - 自动清理：如果文件仍超过限制，按时间从旧到新删除记录
+ * 
+ * 如果访问量很大（如一周超过 1000 条），系统会：
+ * 1. 优先清理超过 90 天的旧记录
+ * 2. 如果仍超过文件大小限制，自动删除最旧的记录
+ * 3. 确保文件大小始终在限制范围内
  */
 
 // 从环境变量读取配置
@@ -322,14 +333,77 @@ module.exports = async function handler(req, res) {
                 // 添加新记录
                 logs.unshift(data.logEntry);
                 
-                // 限制记录数量（最多保留 1000 条）
-                const MAX_LOGS = 1000;
-                if (logs.length > MAX_LOGS) {
-                    logs = logs.slice(0, MAX_LOGS);
+                // 数据管理策略：
+                // 1. 时间窗口：只保留最近 90 天的记录（自动清理过期数据）
+                // 2. 文件大小限制：GitHub Gists 单个文件最大 1MB，系统限制为 0.95MB（留出安全余量）
+                // 3. 压缩存储：使用压缩 JSON 格式（不格式化）以节省空间，可存储更多记录
+                // 4. 智能清理：如果文件仍超过限制，按时间从旧到新删除记录
+                
+                const RETENTION_DAYS = 90; // 保留最近 90 天的记录
+                const MAX_FILE_SIZE_MB = 0.95; // 最大文件大小 0.95MB（留出安全余量）
+                const currentTime = Date.now();
+                const retentionTime = currentTime - (RETENTION_DAYS * 24 * 60 * 60 * 1000);
+                
+                // 1. 清理过期记录（超过保留期的记录）
+                const beforeCleanup = logs.length;
+                logs = logs.filter(log => {
+                    const logTime = log.timestamp || (log.date ? new Date(log.date).getTime() : 0);
+                    return logTime >= retentionTime;
+                });
+                const cleanedCount = beforeCleanup - logs.length;
+                if (cleanedCount > 0) {
+                    console.log(`[Gist API] 已清理 ${cleanedCount} 条超过 ${RETENTION_DAYS} 天的过期记录`);
                 }
-
-                // 更新 Gist
-                await updateGist(ACCESS_LOG_GIST_ID, 'access-logs.json', JSON.stringify(logs, null, 2));
+                
+                // 2. 检查文件大小（使用压缩格式）
+                let jsonString = JSON.stringify(logs); // 压缩格式，不使用格式化
+                let fileSizeMB = Buffer.byteLength(jsonString, 'utf8') / (1024 * 1024);
+                
+                // 3. 如果文件仍然过大，按时间从旧到新删除记录
+                if (fileSizeMB > MAX_FILE_SIZE_MB) {
+                    console.warn(`[Gist API] 文件大小 ${fileSizeMB.toFixed(2)}MB 超过限制（${MAX_FILE_SIZE_MB}MB），开始清理旧记录`);
+                    
+                    // 按时间戳排序（最新的在前）
+                    logs.sort((a, b) => {
+                        const timeA = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+                        const timeB = b.timestamp || (b.date ? new Date(b.date).getTime() : 0);
+                        return timeB - timeA;
+                    });
+                    
+                    // 二分查找合适的记录数量
+                    let left = 0;
+                    let right = logs.length;
+                    let optimalCount = logs.length;
+                    
+                    while (left < right) {
+                        const mid = Math.floor((left + right) / 2);
+                        const testLogs = logs.slice(0, mid);
+                        const testJson = JSON.stringify(testLogs);
+                        const testSizeMB = Buffer.byteLength(testJson, 'utf8') / (1024 * 1024);
+                        
+                        if (testSizeMB <= MAX_FILE_SIZE_MB) {
+                            optimalCount = mid;
+                            left = mid + 1;
+                        } else {
+                            right = mid;
+                        }
+                    }
+                    
+                    if (optimalCount < logs.length) {
+                        const removedCount = logs.length - optimalCount;
+                        logs = logs.slice(0, optimalCount);
+                        console.warn(`[Gist API] 已自动删除 ${removedCount} 条最旧的记录，保留 ${optimalCount} 条记录`);
+                        
+                        // 重新计算文件大小
+                        jsonString = JSON.stringify(logs);
+                        fileSizeMB = Buffer.byteLength(jsonString, 'utf8') / (1024 * 1024);
+                    }
+                }
+                
+                // 4. 更新 Gist（使用压缩格式存储）
+                await updateGist(ACCESS_LOG_GIST_ID, 'access-logs.json', jsonString);
+                
+                console.log(`[Gist API] 访问记录已保存：${logs.length} 条记录，文件大小 ${fileSizeMB.toFixed(3)}MB`);
 
                 res.status(200).json({
                     success: true,

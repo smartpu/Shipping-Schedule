@@ -13,41 +13,7 @@
     <script src="vendor/error-handler.js"></script>
     <style>
       /* 页面特定样式（保留与公共样式不同的部分） */
-      
-      /* upload-area, upload-card, status-card 样式已移至 vendor/monitor-styles.css */
-
-      .controls {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-      }
-
-      .legend-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-top: 20px;
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 8px;
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-      }
-
-      .legend-color {
-        width: 16px;
-        height: 16px;
-        border-radius: 3px;
-      }
-
-      
+      /* 注意：controls、legend-container 等样式已移至 vendor/monitor-styles.css */
     </style>
   </head>
   <body data-page="Monitor-SCFI-Trends.html">
@@ -232,22 +198,10 @@
       const comparisonTableBody = document.getElementById('comparisonTableBody');
 
       // 自动加载 Data 目录下的 Excel 文件
-      async function loadDefaultExcelFile() {
-        // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
-        if (window.location.protocol === 'file:') {
-          console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
-          return;
-        }
-
-        try {
-          const response = await fetch('Data/Monitor-SCFI-Trends.xlsx');
-          if (!response.ok) {
-            console.log('默认 Excel 文件不存在，等待用户手动选择');
-            return;
-          }
-          const blob = await response.blob();
-          const file = new File([blob], 'Monitor-SCFI-Trends.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-          
+      // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
+      // 重命名本地函数，避免与全局函数冲突
+      async function loadExcelFile() {
+        await window.loadDefaultExcelFile('Monitor-SCFI-Trends', async (file) => {
           // 直接调用处理函数
           if (typeof XLSX === 'undefined') {
             showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
@@ -293,25 +247,18 @@
               statusDetail.style.display = 'block';
             }
           }
-        } catch (error) {
-          // 如果是CORS错误，静默处理（本地文件系统环境）
-          if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
-          } else {
-            console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
-          }
-        }
+        });
       }
 
       // 等待 XLSX 库加载完成后自动加载文件
       if (typeof window.ensureXlsx === 'function') {
         window.ensureXlsx().then(() => {
-          loadDefaultExcelFile();
+          loadExcelFile();
         });
       } else {
         setTimeout(() => {
           if (typeof XLSX !== 'undefined') {
-            loadDefaultExcelFile();
+            loadExcelFile();
           }
         }, 1000);
       }

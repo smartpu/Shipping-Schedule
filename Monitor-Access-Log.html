@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitor · 访客统计</title>
+    <link rel="stylesheet" href="vendor/auth.css">
+    <link rel="stylesheet" href="vendor/common-styles.css">
+    <link rel="stylesheet" href="vendor/monitor-styles.css">
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/date-utils.js"></script>
+    <script src="vendor/pdf-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <style>
+      /* 页面特定样式（保留与公共样式不同的部分） */
+      /* 注意：访客统计样式已移至 vendor/monitor-styles.css */
+    </style>
+  </head>
+  <body data-page="Monitor-Access-Log.html">
+    <!-- 用户验证模态框 -->
+    <div id="authOverlay" class="auth-overlay">
+      <div class="auth-modal">
+        <h2>🔐 访问验证</h2>
+        <p>为了了解工具使用情况，请填写以下信息</p>
+        <form id="authForm">
+          <div class="auth-form-group">
+            <label for="userName">姓名 *</label>
+            <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
+            <div class="auth-error" id="nameError">请输入您的姓名</div>
+          </div>
+          <div class="auth-form-group">
+            <label for="userPhone">手机号 *</label>
+            <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
+            <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+          </div>
+          <div class="auth-form-group">
+            <label for="userEmail">邮箱 *</label>
+            <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
+            <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+          </div>
+          <button type="submit" class="auth-submit-btn">确认并继续</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="header">
+        <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
+        <a href="Monitor-Access-Log-README.html" class="readme-btn">使用说明 →</a>
+        <h1>Monitor · 访客统计</h1>
+        <p>分析访问日志，统计用户访问行为和页面访问热度</p>
+      </div>
+
+      <div class="content">
+        <section class="panel">
+          <div class="upload-area">
+            <label class="upload-card" for="fileInput">
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="4"
+                  y="4"
+                  width="28"
+                  height="28"
+                  rx="8"
+                  fill="url(#grad)"
+                ></rect>
+                <path
+                  d="M18 11v14M11 18h14"
+                  stroke="#fff"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                ></path>
+                <defs>
+                  <linearGradient
+                    id="grad"
+                    x1="4"
+                    y1="4"
+                    x2="32"
+                    y2="32"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="#0071e3" />
+                    <stop offset="1" stop-color="#54a4ff" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span>
+                <strong>载入访问日志</strong><br />
+                <small>支持 .json，数据仅在本地浏览器解析</small>
+              </span>
+              <input id="fileInput" type="file" accept=".json" />
+            </label>
+            <div class="status-card">
+              <span class="status-label">数据状态</span>
+              <span class="status-value" id="statusInfo">尚未载入数据</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 统计概览 -->
+        <section class="panel hidden" id="statsSection">
+          <h2>统计概览</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>总访问次数</h3>
+              <p class="stat-value" id="totalVisits">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>独立访客</h3>
+              <p class="stat-value" id="uniqueUsers">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>访问页面数</h3>
+              <p class="stat-value" id="uniquePages">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>平均访问次数</h3>
+              <p class="stat-value" id="avgVisits">0</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 用户访问排名 -->
+        <section class="panel hidden" id="userRankingSection">
+          <div class="ranking-section">
+            <h2>👤 用户访问排名</h2>
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th class="rank">排名</th>
+                  <th>姓名</th>
+                  <th>手机号</th>
+                  <th>邮箱</th>
+                  <th class="count">访问次数</th>
+                  <th>最后访问</th>
+                </tr>
+              </thead>
+              <tbody id="userRankingBody">
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 页面访问排名 -->
+        <section class="panel hidden" id="pageRankingSection">
+          <div class="ranking-section">
+            <h2>📄 页面访问排名</h2>
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th class="rank">排名</th>
+                  <th>页面</th>
+                  <th class="count">访问次数</th>
+                  <th>独立访客</th>
+                  <th>访问占比</th>
+                </tr>
+              </thead>
+              <tbody id="pageRankingBody">
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 访问时间分析 -->
+        <section class="panel hidden" id="timeAnalysisSection">
+          <div class="ranking-section">
+            <h2>⏰ 访问时间分析</h2>
+            <div class="time-filter">
+              <button class="time-filter-btn" data-period="hour">按小时</button>
+              <button class="time-filter-btn active" data-period="day">按日期</button>
+              <button class="time-filter-btn" data-period="week">按周</button>
+              <button class="time-filter-btn" data-period="month">按月</button>
+            </div>
+            <div class="time-chart-container">
+              <canvas id="timeChart"></canvas>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <h2>Monitor · 访客统计使用声明</h2>
+      <p>访问日志数据仅用于内部统计分析，所有数据仅在本地浏览器解析，不会上传至任何服务器。</p>
+      <p>统计数据仅供参考，不构成任何商业决策依据。</p>
+    </div>
+
+    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
+    <script src="vendor/auth-gist.js"></script>
+    <script>
+      // ==================== 调试模式 ====================
+      // 调试函数已统一到 vendor/debug-utils.js
+      // 使用：debugLog(), debugWarn(), debugError()
+
+      // ==================== 错误处理 ====================
+      // 错误处理已统一到 vendor/error-handler.js
+      // 使用：showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED')
+      // ErrorType 和 showError 函数已从 error-handler.js 加载
+
+      let accessLogs = [];
+      let timeChart = null;
+      let currentTimePeriod = 'day';
+
+      const fileInput = document.getElementById('fileInput');
+      const statusInfo = document.getElementById('statusInfo');
+      const statsSection = document.getElementById('statsSection');
+      const userRankingSection = document.getElementById('userRankingSection');
+      const pageRankingSection = document.getElementById('pageRankingSection');
+      const timeAnalysisSection = document.getElementById('timeAnalysisSection');
+      const userRankingBody = document.getElementById('userRankingBody');
+      const pageRankingBody = document.getElementById('pageRankingBody');
+      const timeFilterBtns = document.querySelectorAll('.time-filter-btn');
+
+      // 注意：access-logs.json 是隐私文件，不上传 GitHub，不自动加载
+      // 用户需要手动选择文件来加载访问日志
+
+      // 文件选择处理
+      fileInput.addEventListener('change', async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+          statusInfo.textContent = '正在读取文件...';
+          const text = await file.text();
+          const data = JSON.parse(text);
+          
+          if (!Array.isArray(data)) {
+            throw new Error('访问日志格式错误：应为数组格式');
+          }
+
+          accessLogs = data;
+          processData();
+          statusInfo.textContent = `已加载 ${data.length} 条访问记录`;
+        } catch (error) {
+          showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
+          statusInfo.textContent = '读取失败';
+        }
+      });
+
+      // 处理数据
+      function processData() {
+        if (!accessLogs.length) return;
+
+        // 显示所有统计区域
+        statsSection.classList.remove('hidden');
+        userRankingSection.classList.remove('hidden');
+        pageRankingSection.classList.remove('hidden');
+        timeAnalysisSection.classList.remove('hidden');
+
+        // 同步按钮状态和变量状态
+        timeFilterBtns.forEach(btn => {
+          btn.classList.remove('active');
+          if (btn.dataset.period === currentTimePeriod) {
+            btn.classList.add('active');
+          }
+        });
+
+        // 更新统计概览
+        updateStatsOverview();
+
+        // 更新用户排名
+        updateUserRanking();
+
+        // 更新页面排名
+        updatePageRanking();
+
+        // 更新时间分析图表
+        updateTimeChart();
+      }
+
+      // 更新统计概览
+      function updateStatsOverview() {
+        const totalVisits = accessLogs.length;
+        const uniqueUsers = new Set(accessLogs.map(log => `${log.name}|${log.phone}|${log.email}`)).size;
+        const uniquePages = new Set(accessLogs.map(log => log.page)).size;
+        const avgVisits = uniqueUsers > 0 ? (totalVisits / uniqueUsers).toFixed(1) : 0;
+
+        document.getElementById('totalVisits').textContent = totalVisits.toLocaleString();
+        document.getElementById('uniqueUsers').textContent = uniqueUsers.toLocaleString();
+        document.getElementById('uniquePages').textContent = uniquePages.toLocaleString();
+        document.getElementById('avgVisits').textContent = avgVisits;
+      }
+
+      // 更新用户排名
+      function updateUserRanking() {
+        // 按用户统计访问次数
+        const userStats = new Map();
+        
+        accessLogs.forEach(log => {
+          const userKey = `${log.name}|${log.phone}|${log.email}`;
+          if (!userStats.has(userKey)) {
+            userStats.set(userKey, {
+              name: log.name,
+              phone: log.phone,
+              email: log.email,
+              count: 0,
+              lastVisit: log.timestamp
+            });
+          }
+          const stats = userStats.get(userKey);
+          stats.count++;
+          if (log.timestamp > stats.lastVisit) {
+            stats.lastVisit = log.timestamp;
+          }
+        });
+
+        // 转换为数组并排序，只取前20个
+        const userArray = Array.from(userStats.values())
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 20);
+
+        // 渲染表格
+        userRankingBody.innerHTML = '';
+        userArray.forEach((user, index) => {
+          const row = document.createElement('tr');
+          const lastVisitDate = new Date(user.lastVisit);
+          const lastVisitStr = lastVisitDate.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          row.innerHTML = `
+            <td class="rank">${index + 1}</td>
+            <td>${user.name || '—'}</td>
+            <td>${user.phone || '—'}</td>
+            <td>${user.email || '—'}</td>
+            <td class="count">${user.count.toLocaleString()}</td>
+            <td>${lastVisitStr}</td>
+          `;
+          userRankingBody.appendChild(row);
+        });
+      }
+
+      // 更新页面排名
+      function updatePageRanking() {
+        // 按页面统计访问次数和独立访客
+        const pageStats = new Map();
+        
+        accessLogs.forEach(log => {
+          if (!pageStats.has(log.page)) {
+            pageStats.set(log.page, {
+              page: log.page,
+              count: 0,
+              uniqueUsers: new Set()
+            });
+          }
+          const stats = pageStats.get(log.page);
+          stats.count++;
+          stats.uniqueUsers.add(`${log.name}|${log.phone}|${log.email}`);
+        });
+
+        // 转换为数组并排序，只取前20个
+        const pageArray = Array.from(pageStats.values())
+          .map(stats => ({
+            page: stats.page,
+            count: stats.count,
+            uniqueUsers: stats.uniqueUsers.size
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 20);
+
+        const totalVisits = accessLogs.length;
+
+        // 渲染表格
+        pageRankingBody.innerHTML = '';
+        pageArray.forEach((page, index) => {
+          const row = document.createElement('tr');
+          const percentage = ((page.count / totalVisits) * 100).toFixed(1);
+
+          row.innerHTML = `
+            <td class="rank">${index + 1}</td>
+            <td>${page.page}</td>
+            <td class="count">${page.count.toLocaleString()}</td>
+            <td>${page.uniqueUsers.toLocaleString()}</td>
+            <td>${percentage}%</td>
+          `;
+          pageRankingBody.appendChild(row);
+        });
+      }
+
+      // 更新时间分析图表
+      function updateTimeChart() {
+        if (typeof Chart === 'undefined') {
+          console.warn('Chart.js 未加载，无法显示时间分析图表');
+          return;
+        }
+
+        const ctx = document.getElementById('timeChart');
+        if (!ctx) return;
+
+        // 销毁旧图表
+        if (timeChart) {
+          timeChart.destroy();
+        }
+
+        // 根据时间周期分组数据
+        const timeData = groupByTimePeriod(currentTimePeriod);
+        const labels = Object.keys(timeData).sort();
+        const data = labels.map(label => timeData[label]);
+
+        // 创建新图表
+        timeChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: '访问次数',
+              data: data,
+              borderColor: '#667eea',
+              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top'
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // 按时间周期分组数据
+      function groupByTimePeriod(period) {
+        const groups = {};
+
+        accessLogs.forEach(log => {
+          const date = new Date(log.timestamp);
+          let key = '';
+
+          switch (period) {
+            case 'hour':
+              key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:00`;
+              break;
+            case 'day':
+              key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+              break;
+            case 'week':
+              const weekStart = new Date(date);
+              weekStart.setDate(date.getDate() - date.getDay());
+              key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+              break;
+            case 'month':
+              key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+              break;
+          }
+
+          if (!groups[key]) {
+            groups[key] = 0;
+          }
+          groups[key]++;
+        });
+
+        return groups;
+      }
+
+      // 时间周期筛选按钮事件
+      timeFilterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          timeFilterBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentTimePeriod = btn.dataset.period;
+          updateTimeChart();
+        });
+      });
+
+      // 页面加载时初始化（不自动加载访问日志，因为它是隐私文件）
+      window.addEventListener('DOMContentLoaded', async () => {
+        // 确保 Chart.js 已加载
+        if (typeof ensureChartJs === 'function') {
+          await ensureChartJs();
+        }
+        
+        // 不自动加载访问日志，用户需要手动选择文件
+        statusInfo.textContent = '请手动选择访问日志文件';
+      });
+    </script>
+  </body>
+</html>

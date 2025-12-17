@@ -16,350 +16,13 @@
     <script src="vendor/ai-config.js"></script>
     <script src="vendor/ai-prompts.js"></script>
     <script src="vendor/ai-utils.js"></script>
+    <script src="vendor/template-utils.js"></script>
     <style>
-      /* 页面特定样式 */
-      
-      /* header-controls 样式已移至 vendor/monitor-styles.css */
-
-      /* mode-toggle, mode-btn 样式已移至 vendor/monitor-styles.css */
-
-      /* filters-container, filter-group, filter-search, filter-btn 样式已移至 vendor/monitor-styles.css */
-
-      .calendar-container {
-        background: white;
-        border-radius: 10px;
-        padding: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        overflow-x: auto;
-        min-width: 100%;
-      }
-
-      .calendar-header {
-        display: grid;
-        grid-template-columns: 120px repeat(7, minmax(180px, 1fr));
-        gap: 8px;
-        margin-bottom: 12px;
-        font-weight: 600;
-        color: #495057;
-        font-size: 14px;
-      }
-
-      .calendar-header-cell {
-        padding: 12px;
-        text-align: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .calendar-week {
-        display: grid;
-        grid-template-columns: 120px repeat(7, minmax(180px, 1fr));
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .calendar-day-label {
-        padding: 12px;
-        text-align: center;
-        font-weight: 500;
-        color: #495057;
-        background: #f8f9fa;
-        border-radius: 8px;
-        font-size: 13px;
-      }
-
-      .calendar-day {
-        height: 750px;
-        min-height: 750px;
-        max-height: 750px;
-        min-width: 180px;
-        padding: 12px;
-        border: 2px solid #e9ecef;
-        border-radius: 10px;
-        background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
-        position: relative;
-        overflow-y: hidden;
-        overflow-x: hidden;
-        transition: all 0.2s ease;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .calendar-day:hover {
-        border-color: #667eea;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-      }
-
-      .calendar-day.today {
-        border-color: #667eea;
-        background: linear-gradient(to bottom, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-      }
-
-      .schedule-item {
-        padding: 10px 12px;
-        margin-bottom: 8px;
-        background: white;
-        border-left: 4px solid #667eea;
-        border-radius: 6px;
-        font-size: 12px;
-        line-height: 1.5;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        flex-shrink: 0;
-      }
-
-      .schedule-item:hover {
-        background: rgba(102, 126, 234, 0.08);
-        transform: translateX(3px);
-        box-shadow: 0 3px 8px rgba(102, 126, 234, 0.2);
-        border-left-color: #764ba2;
-      }
-
-      .schedule-item.highlighted {
-        background: rgba(102, 126, 234, 0.15);
-        border-left-color: #764ba2;
-        border-left-width: 5px;
-      }
-
-      .schedule-item.highlighted:hover {
-        background: rgba(102, 126, 234, 0.2);
-      }
-
-      .schedule-item .port {
-        font-weight: 600;
-        color: #667eea;
-        margin-bottom: 2px;
-      }
-
-      .schedule-item .carrier {
-        color: #6c757d;
-        font-size: 11px;
-      }
-
-      .schedule-item .vessel {
-        color: #495057;
-        font-size: 11px;
-        margin-top: 2px;
-      }
-
-      .schedule-item .carrier {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-      }
-
-      /* tooltip 相关样式已移至 vendor/common-styles.css */
-      /* empty-message 样式已移至 vendor/monitor-styles.css */
-      
-      .more-items-indicator {
-        flex-shrink: 0;
-        margin-top: auto;
-        padding-top: 8px;
-        min-height: 24px;
-      }
-
-      .calendar-container.hidden {
-        display: none;
-      }
-
-      /* 月度汇总表格样式 */
-      .monthly-summary-container {
-        background: white;
-        border-radius: 10px;
-        padding: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        overflow-x: auto;
-      }
-
-      .monthly-summary-container.hidden {
-        display: none;
-      }
-
-      .monthly-summary-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-        min-width: 800px;
-        table-layout: fixed;
-      }
-
-      .monthly-summary-table th,
-      .monthly-summary-table td {
-        padding: 10px 12px;
-        border: 1px solid #e9ecef;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-      }
-
-      .monthly-summary-table th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        font-weight: 600;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        text-align: center;
-      }
-
-      .monthly-summary-table th:first-child {
-        position: sticky;
-        left: 0;
-        z-index: 11;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        text-align: center;
-      }
-
-      .monthly-summary-table td:first-child {
-        position: sticky;
-        left: 0;
-        background: #f8f9fa;
-        font-weight: 500;
-        z-index: 1;
-        text-align: center;
-      }
-
-      .monthly-summary-table td:not(:first-child) {
-        text-align: center;
-      }
-
-      .monthly-summary-table .vessel-info {
-        text-align: center;
-      }
-
-      .monthly-summary-table tfoot {
-        background: #f0f0f0;
-        font-weight: 600;
-      }
-
-      .monthly-summary-table tfoot td {
-        background: #f0f0f0;
-        border-top: 2px solid #667eea;
-        text-align: center;
-      }
-
-      .monthly-summary-table tfoot td:first-child {
-        background: #e9ecef;
-        border-top: 2px solid #667eea;
-        text-align: center;
-      }
-
-      .monthly-summary-table tbody tr:nth-child(even) {
-        background: #f8f9fa;
-      }
-
-      .monthly-summary-table tbody tr:hover {
-        background: rgba(102, 126, 234, 0.08);
-      }
-
-      .monthly-summary-table tbody tr:hover td:first-child {
-        background: rgba(102, 126, 234, 0.12);
-      }
-
-      .monthly-summary-table .vessel-info {
-        font-size: 12px;
-        line-height: 1.6;
-        color: #495057;
-      }
-
-      .monthly-summary-table .vessel-info-item {
-        margin-bottom: 4px;
-        padding: 2px 0;
-      }
-
-      .monthly-summary-table .vessel-info-item:last-child {
-        margin-bottom: 0;
-      }
-
-      /* 响应式设计：平板和窄屏 */
-      @media (max-width: 1400px) {
-        .calendar-header {
-          grid-template-columns: 100px repeat(7, minmax(150px, 1fr));
-        }
-        .calendar-week {
-          grid-template-columns: 100px repeat(7, minmax(150px, 1fr));
-        }
-        .calendar-day {
-          min-width: 150px;
-        }
-      }
-
-      @media (max-width: 1200px) {
-        .calendar-header {
-          grid-template-columns: 80px repeat(7, minmax(120px, 1fr));
-        }
-        .calendar-week {
-          grid-template-columns: 80px repeat(7, minmax(120px, 1fr));
-        }
-        .calendar-day {
-          min-width: 120px;
-          height: 600px;
-          min-height: 600px;
-          max-height: 600px;
-        }
-      }
-
-      /* 手机端：按日显示（垂直布局） */
-      @media (max-width: 768px) {
-        .calendar-container {
-          padding: 16px;
-        }
-        
-        .calendar-header {
-          display: none; /* 手机端隐藏表头 */
-        }
-        
-        .calendar-week {
-          display: block; /* 改为块级布局 */
-          margin-bottom: 16px;
-        }
-        
-        .calendar-day-label {
-          display: none; /* 手机端隐藏周标签 */
-        }
-        
-        .calendar-day {
-          width: 100%;
-          min-width: 100%;
-          max-width: 100%;
-          height: auto;
-          min-height: auto;
-          max-height: none;
-          margin-bottom: 16px;
-          padding: 16px;
-          overflow-y: visible;
-        }
-        
-        .schedule-item {
-          font-size: 13px;
-          padding: 12px;
-        }
-        
-        .schedule-item .port {
-          font-size: 14px;
-        }
-        
-        .schedule-item .carrier {
-          font-size: 12px;
-        }
-        
-        .schedule-item .vessel {
-          font-size: 11px;
-        }
-      }
-
-      /* upload-area, upload-card, status-card 样式已移至 vendor/monitor-styles.css */
-
-      /* AI 分析模块样式已移至 vendor/ai-styles.css */
+      /* 页面特定样式（保留与公共样式不同的部分） */
+      /* 注意：日历视图样式已移至 vendor/monitor-styles.css */
     </style>
   </head>
-  <body data-page="monitor-sailing-schedule.html">
+  <body data-page="Monitor-Sailing-Schedule.html">
     <!-- 用户验证模态框 -->
     <div id="authOverlay" class="auth-overlay">
       <div class="auth-modal">
@@ -435,8 +98,8 @@
                 </defs>
               </svg>
               <span>
-                <strong>001-03 文件</strong><br />
-                <small id="status001">001-03文件未加载</small>
+                <strong>001文件</strong><br />
+                <small id="status001">001文件未加载</small>
               </span>
               <input type="file" id="file001" accept=".xlsx,.xls">
             </label>
@@ -477,8 +140,8 @@
                 </defs>
               </svg>
               <span>
-                <strong>365-03 文件</strong><br />
-                <small id="status365">365-03文件未加载</small>
+                <strong>365文件</strong><br />
+                <small id="status365">365文件未加载</small>
               </span>
               <input type="file" id="file365" accept=".xlsx,.xls">
             </label>
@@ -584,107 +247,8 @@
               请先选择筛选条件（区域航线、船公司或港口）以启用 AI 分析
             </div>
             <div id="aiConfigSection" style="display: none;">
-              <div class="ai-tabs">
-                <div class="ai-tab-buttons">
-                  <button class="ai-tab-btn active" data-provider="deepseek">DeepSeek</button>
-                  <button class="ai-tab-btn" data-provider="kimi">KIMI (Moonshot)</button>
-                  <button class="ai-tab-btn" data-provider="qwen">通义千问 (Qwen)</button>
-                </div>
-                <span class="ai-tab-hint">可切换不同模型对比观点一致性</span>
-              </div>
-              <div class="ai-panels">
-                <div class="ai-panel active" data-provider="deepseek">
-                  <div class="api-config">
-                    <h4>DeepSeek API 配置</h4>
-                    <div class="api-input-group">
-                      <label>API Key:</label>
-                      <input type="password" id="apiKeyInput" placeholder="请输入 DeepSeek API Key">
-                    </div>
-                    <div class="api-input-group">
-                      <label>API URL:</label>
-                      <input type="text" id="apiUrlInput" placeholder="https://api.deepseek.com/v1/chat/completions" value="https://api.deepseek.com/v1/chat/completions">
-                    </div>
-                    <div class="api-input-group">
-                      <label>模型 ID:</label>
-                      <input type="text" id="apiModelInput" placeholder="deepseek-chat" value="deepseek-chat" list="deepseekModelOptions">
-                    </div>
-                    <button class="api-save-btn" onclick="saveAiConfig('deepseek')">保存配置</button>
-                  </div>
-                  <button class="ai-analysis-btn" id="aiAnalysisBtn" onclick="runAiAnalysis('deepseek')">使用 DeepSeek 分析</button>
-                  <div id="aiLoading" class="ai-loading hidden">正在分析中</div>
-                  <div id="aiResult" class="ai-result hidden">
-                    <h4>DeepSeek 分析结果</h4>
-                    <div class="ai-result-content" id="aiResultContent"></div>
-                  </div>
-                </div>
-                <div class="ai-panel" data-provider="kimi">
-                  <div class="api-config">
-                    <h4>KIMI (Moonshot) API 配置</h4>
-                    <div class="api-input-group">
-                      <label>API Key:</label>
-                      <input type="password" id="kimiApiKeyInput" placeholder="请输入 KIMI / Moonshot API Key">
-                    </div>
-                    <div class="api-input-group">
-                      <label>API URL:</label>
-                      <input type="text" id="kimiApiUrlInput" placeholder="https://api.moonshot.cn/v1/chat/completions" value="https://api.moonshot.cn/v1/chat/completions">
-                    </div>
-                    <div class="api-input-group">
-                      <label>模型 ID:</label>
-                      <input type="text" id="kimiModelInput" placeholder="moonshot-v1-32k" value="moonshot-v1-32k" list="kimiModelOptions">
-                    </div>
-                    <button class="api-save-btn" onclick="saveAiConfig('kimi')">保存配置</button>
-                  </div>
-                  <button class="ai-analysis-btn secondary" id="kimiAnalysisBtn" onclick="runAiAnalysis('kimi')">使用 KIMI 分析</button>
-                  <div id="kimiAiLoading" class="ai-loading hidden">正在分析中</div>
-                  <div id="kimiAiResult" class="ai-result hidden">
-                    <h4>KIMI 分析结果</h4>
-                    <div class="ai-result-content" id="kimiAiResultContent"></div>
-                  </div>
-                </div>
-                <div class="ai-panel" data-provider="qwen">
-                  <div class="api-config">
-                    <h4>通义千问 (Qwen) API 配置</h4>
-                    <div class="api-input-group">
-                      <label>API Key:</label>
-                      <input type="password" id="qwenApiKeyInput" placeholder="请输入通义千问 API Key">
-                    </div>
-                    <div class="api-input-group">
-                      <label>API URL:</label>
-                      <input type="text" id="qwenApiUrlInput" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" value="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions">
-                    </div>
-                    <div class="api-input-group">
-                      <label>模型 ID:</label>
-                      <input type="text" id="qwenModelInput" placeholder="qwen-max" value="qwen-max" list="qwenModelOptions">
-                    </div>
-                    <button class="api-save-btn" onclick="saveAiConfig('qwen')">保存配置</button>
-                  </div>
-                  <button class="ai-analysis-btn" id="qwenAnalysisBtn" onclick="runAiAnalysis('qwen')" style="background: #ff6b35;">使用通义千问分析</button>
-                  <div id="qwenAiLoading" class="ai-loading hidden">正在分析中</div>
-                  <div id="qwenAiResult" class="ai-result hidden">
-                    <h4>通义千问 分析结果</h4>
-                    <div class="ai-result-content" id="qwenAiResultContent"></div>
-                  </div>
-                </div>
-              </div>
-              <datalist id="deepseekModelOptions">
-                <option value="deepseek-chat">基础对话模型（推荐）</option>
-                <option value="deepseek-v3">V3 高性能模型（2024年12月发布）</option>
-                <option value="deepseek-reasoner">推理模型（逻辑推理）</option>
-                <option value="deepseek-r1">R1 推理模型（2025年1月发布）</option>
-                <option value="deepseek-coder">代码模型</option>
-              </datalist>
-              <datalist id="kimiModelOptions">
-                <option value="moonshot-v1-8k">8K 上下文（经济型）</option>
-                <option value="moonshot-v1-32k">32K 上下文（推荐）</option>
-                <option value="moonshot-v1-128k">128K 上下文（长文档）</option>
-                <option value="moonshot-v1-k2">K2 模型（320亿参数，需确认API可用性）</option>
-              </datalist>
-              <datalist id="qwenModelOptions">
-                <option value="qwen-turbo">Turbo 快速模型（经济型）</option>
-                <option value="qwen-plus">Plus 平衡模型</option>
-                <option value="qwen-max">Max 高性能模型（推荐，最佳性能）</option>
-                <option value="qwen-max-longcontext">Max 长上下文模型</option>
-              </datalist>
+              <!-- AI 配置面板 - 使用公共模板（vendor/template-utils.js） -->
+              <div id="aiConfigPanelsContainer"></div>
             </div>
           </div>
         </section>
@@ -1204,50 +768,20 @@
         eventListeners.add(dom.file365, 'change', handleFile365Change);
 
         // 自动加载 Data 目录下的 Excel 文件
+        // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
         async function loadDefaultExcelFiles() {
-          // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
-          if (window.location.protocol === 'file:') {
-            console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
-            return;
-          }
-
-          // 加载 001-03 文件
-          try {
-            const response001 = await fetch('Data/001-03-market-analysis.xlsx');
-            if (response001.ok) {
-              const blob001 = await response001.blob();
-              const file001 = new File([blob001], '001-03-market-analysis.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          await window.loadDefaultExcelFiles('Monitor-Sailing-Schedule', {
+            '001': async (file) => {
               // 创建模拟事件对象
-              const event001 = { target: { files: [file001] } };
+              const event001 = { target: { files: [file] } };
               await handleFileUpload(event001, '001');
-            }
-          } catch (error) {
-            // 如果是CORS错误，静默处理（本地文件系统环境）
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-              console.log('本地文件系统环境，无法自动加载，请手动选择文件');
-            } else {
-              console.log('自动加载 001-03 Excel 文件失败:', error);
-            }
-          }
-
-          // 加载 365-03 文件
-          try {
-            const response365 = await fetch('Data/365-03-market-watch.xlsx');
-            if (response365.ok) {
-              const blob365 = await response365.blob();
-              const file365 = new File([blob365], '365-03-market-watch.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            },
+            '365': async (file) => {
               // 创建模拟事件对象
-              const event365 = { target: { files: [file365] } };
+              const event365 = { target: { files: [file] } };
               await handleFileUpload(event365, '365');
             }
-          } catch (error) {
-            // 如果是CORS错误，静默处理（本地文件系统环境）
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-              console.log('本地文件系统环境，无法自动加载，请手动选择文件');
-            } else {
-              console.log('自动加载 365-03 Excel 文件失败:', error);
-            }
-          }
+          });
         }
 
         // 等待 XLSX 库加载完成后自动加载文件
@@ -1365,7 +899,7 @@
         }
 
         const statusEl = mode === '001' ? dom.status001 : dom.status365;
-        const filePrefix = mode === '001' ? '001-03文件' : '365-03文件';
+        const filePrefix = mode === '001' ? '001文件' : '365文件';
         statusEl.textContent = `${filePrefix}解析中...`;
 
         try {
@@ -1383,7 +917,7 @@
           // 根据模式选择正确的sheet
           let sheetName;
           if (mode === MODE_001) {
-            // 001-03文件：第一个sheet是schedule（索引0）
+            // 001文件：第一个sheet是schedule（索引0）
             // 优先使用第一个sheet，如果第一个sheet名称包含schedule则使用，否则也使用第一个
             if (workbook.SheetNames.length > 0) {
               const firstSheet = workbook.SheetNames[0];
@@ -1406,7 +940,7 @@
             }
             debugLog('001模式选择的sheet:', sheetName, '所有sheet:', workbook.SheetNames);
           } else {
-            // 365-03文件：第二个sheet是schedule
+            // 365文件：第二个sheet是schedule
             const scheduleSheet = workbook.SheetNames.find(name => 
               name.toLowerCase().includes(SCHEDULE_SHEET_KEYWORD)
             );
@@ -1435,7 +969,7 @@
             state.data365 = parsedData;
           }
 
-          const filePrefix = mode === '001' ? '001-03文件' : '365-03文件';
+          const filePrefix = mode === '001' ? '001文件' : '365文件';
           statusEl.textContent = `${filePrefix}已加载 ${parsedData.length} 条记录`;
           
           // 更新筛选器（联动更新）
@@ -1447,7 +981,7 @@
           updateAiModuleVisibility(); // 更新 AI 模块可见性
         } catch (error) {
           debugError('解析文件失败:', error);
-          const filePrefix = mode === '001' ? '001-03文件' : '365-03文件';
+          const filePrefix = mode === '001' ? '001文件' : '365文件';
           statusEl.textContent = `${filePrefix}加载失败`;
           showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', {}, error);
         }
@@ -2233,7 +1767,7 @@
         const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
         if (!currentData || currentData.length === 0) {
           dom.calendarContainer.classList.add('hidden');
-          dom.emptyMessage.textContent = `请先加载 ${state.currentMode} 数据文件`;
+          dom.emptyMessage.textContent = `请先加载 ${state.currentMode} 文件`;
           dom.emptyMessage.classList.remove('hidden');
           return;
         }
@@ -2789,7 +2323,7 @@
         if (!currentData || currentData.length === 0) {
           dom.monthlySummaryContainer.classList.add('hidden');
           dom.monthlySummaryEmptyMessage.style.display = 'block';
-          dom.monthlySummaryEmptyMessage.textContent = `请先加载 ${state.currentMode} 数据文件`;
+          dom.monthlySummaryEmptyMessage.textContent = `请先加载 ${state.currentMode} 文件`;
           return;
         }
 
@@ -3523,8 +3057,22 @@
        * 初始化AI模块（使用统一的工具模块）
        */
       function initSailingAiModule() {
-        // 使用统一的 AI 工具模块初始化（直接调用全局函数，避免递归）
-        setActiveAiPanelBound = initAiModule(aiProviders, eventListeners);
+        // 先使用公共模板生成 AI 配置面板（必须在 initAiModule 之前）
+        if (typeof window.generateAiConfigPanels === 'function') {
+          const aiContainer = document.getElementById('aiConfigPanelsContainer');
+          if (aiContainer) {
+            aiContainer.innerHTML = window.generateAiConfigPanels();
+          }
+        }
+        
+        // 模板生成后，初始化 AI 模块（绑定标签页切换事件）
+        if (typeof window.initAiModule === 'function') {
+          setActiveAiPanelBound = window.initAiModule(aiProviders, eventListeners);
+          // 设置默认激活的提供商
+          if (setActiveAiPanelBound) {
+            setActiveAiPanelBound(activeAiProvider);
+          }
+        }
         
         loadAiConfigsFromStorage(aiProviders);
         updateAiModuleVisibility();
@@ -3535,9 +3083,31 @@
        * @param {string} providerId - 提供商 ID
        */
       function setActiveAiPanel(providerId = 'deepseek') {
-        const result = setActiveAiPanelBound(providerId);
-        if (result) {
-          activeAiProvider = result;
+        if (setActiveAiPanelBound) {
+          const result = setActiveAiPanelBound(providerId);
+          if (result) {
+            activeAiProvider = result;
+          }
+        } else {
+          // 降级方案：如果 initAiModule 未调用，使用本地实现
+          if (!aiProviders[providerId]) return;
+          activeAiProvider = providerId;
+          const aiTabButtons = document.querySelectorAll('.ai-tab-btn');
+          const aiPanels = document.querySelectorAll('.ai-panel');
+          aiTabButtons.forEach(btn => {
+            if (btn.dataset.provider === providerId) {
+              btn.classList.add('active');
+            } else {
+              btn.classList.remove('active');
+            }
+          });
+          aiPanels.forEach(panel => {
+            if (panel.dataset.provider === providerId) {
+              panel.classList.add('active');
+            } else {
+              panel.classList.remove('active');
+            }
+          });
         }
       }
 
@@ -3570,6 +3140,9 @@
           showSuccess(configSavedMsg);
         });
       }
+      
+      // 导出到全局，供模板中的 onclick 使用
+      window.saveAiConfig = saveAiConfig;
 
       /**
        * 更新AI模块可见性
@@ -3834,6 +3407,9 @@
           }
         );
       }
+      
+      // 导出到全局，供模板中的 onclick 使用
+      window.runAiAnalysis = runAiAnalysis;
 
       // 页面卸载时清理所有事件监听器
       window.addEventListener('beforeunload', () => {

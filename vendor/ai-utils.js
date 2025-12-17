@@ -406,3 +406,13 @@ async function executeAiAnalysis(providerId, aiProviders, buildPrompt, systemPro
   }
 }
 
+// 导出函数到全局
+if (typeof window !== 'undefined') {
+  window.createAiProviders = window.createAiProviders || createAiProviders;
+  window.initAiModule = window.initAiModule || initAiModule;
+  window.executeAiAnalysis = window.executeAiAnalysis || executeAiAnalysis;
+  window.loadAiConfigsFromStorage = window.loadAiConfigsFromStorage || loadAiConfigsFromStorage;
+  window.getAiConfigFromInputs = window.getAiConfigFromInputs || getAiConfigFromInputs;
+  window.saveAiConfigToStorage = window.saveAiConfigToStorage || saveAiConfigToStorage;
+}
+

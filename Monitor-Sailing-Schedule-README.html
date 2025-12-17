@@ -84,7 +84,12 @@
             <ol>
                 <li>打开 <code>Monitor-Sailing-Schedule.html</code></li>
                 <li>选择数据模式（001 或 365）</li>
-                <li>点击"选择Excel文件"，载入包含船期数据的 Excel 文件</li>
+                <li>工具会自动从 <code>Data/index.json</code> 读取配置并加载对应的 Excel 测试数据文件（如果配置存在）</li>
+                <li>如果自动加载失败或需要手动选择：
+                    <ul>
+                        <li>点击"001文件"或"365文件"按钮，载入包含船期数据的 Excel 文件</li>
+                    </ul>
+                </li>
                 <li>数据加载成功后，使用筛选器选择区域、船公司、港口等条件</li>
                 <li>在日历视图中查看筛选后的船期信息</li>
                 <li>（可选）使用 AI 分析功能获取智能建议</li>

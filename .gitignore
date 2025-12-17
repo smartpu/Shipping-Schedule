@@ -26,13 +26,20 @@ python/
 # 数据目录（保密数据，不纳入版本控制）
 data/
 
-# Data 目录：忽略所有，但允许特定的 Excel 文件
+# Data 目录：忽略所有，但允许特定的 Excel 文件和配置文件
 # 先取消忽略 Data 目录本身（这样才能访问其中的文件）
 !Data/
 # 忽略 Data 目录下的所有内容
 Data/**
-# 然后取消忽略特定的 Excel 文件
+# 然后取消忽略特定的 Excel 文件和配置文件（必须在 Data/** 之后）
+!Data/index.json
 !Data/001-03-market-analysis.xlsx
 !Data/365-03-market-watch.xlsx
 !Data/Monitor-Geo-Trades-Service.xlsx
 !Data/Monitor-SCFI-Trends.xlsx
+
+# linerlytica 目录：允许所有文件上传到 GitHub
+# 先取消忽略 linerlytica 目录
+!linerlytica/
+# 然后允许目录下的所有内容
+!linerlytica/**

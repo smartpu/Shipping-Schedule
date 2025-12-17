@@ -269,3 +269,36 @@
     }
 }
 
+/* ==========================================================================
+   6. 手动下载工具按钮样式（001-01, 365-01 系列）
+   ========================================================================== */
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-open {
+    background: #667eea;
+    color: white;
+}
+
+.btn-open:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-saved {
+    background: #28a745;
+    color: white;
+    cursor: default;
+}
+

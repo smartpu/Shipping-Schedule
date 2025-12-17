@@ -10,150 +10,7 @@
     <link rel="stylesheet" href="vendor/parser-styles.css">
     <style>
         /* 页面特定样式（保留与公共样式不同的部分） */
-        
-        /* 船名航次标准化模态框样式 */
-        .vessel-voyage-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-        
-        .vessel-voyage-modal.hidden {
-            display: none;
-        }
-        
-        .vessel-voyage-modal-content {
-            background: white;
-            border-radius: 8px;
-            max-width: 800px;
-            max-height: 90vh;
-            width: 90%;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .vessel-voyage-modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .vessel-voyage-modal-header h2 {
-            margin: 0 0 10px 0;
-            color: #333;
-        }
-        
-        .vessel-voyage-modal-header p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .vessel-voyage-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        
-        .vessel-voyage-group {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 6px;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .vessel-voyage-group-title {
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        
-        .vessel-voyage-option {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            margin: 5px 0;
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .vessel-voyage-option:hover {
-            border-color: #0a7d33;
-            background: #f0f8f4;
-        }
-        
-        .vessel-voyage-option.selected {
-            border-color: #0a7d33;
-            background: #e8f5e9;
-        }
-        
-        .vessel-voyage-option input[type="radio"] {
-            margin-right: 10px;
-            cursor: pointer;
-        }
-        
-        .vessel-voyage-option-label {
-            flex: 1;
-            font-size: 14px;
-        }
-        
-        .vessel-voyage-option-count {
-            color: #666;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-        
-        .vessel-voyage-modal-footer {
-            padding: 20px;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-        
-        .vessel-voyage-modal-footer .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        
-        .vessel-voyage-modal-footer .btn-primary {
-            background: #0a7d33;
-            color: white;
-        }
-        
-        .vessel-voyage-modal-footer .btn-primary:hover {
-            background: #086b2a;
-        }
-        
-        .vessel-voyage-modal-footer .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-        
-        .vessel-voyage-modal-footer .btn-secondary:hover {
-            background: #d0d0d0;
-        }
-        
-        .vessel-voyage-modal-footer .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        /* 注意：标准化模态框样式已移至 vendor/parser-styles.css */
     </style>
     <meta name="color-scheme" content="light dark">
 </head>
@@ -227,61 +84,30 @@
         </div>
     </div>
 
-    <!-- 船名航次标准化选择模态框 -->
-    <div id="vesselVoyageModal" class="vessel-voyage-modal hidden">
-        <div class="vessel-voyage-modal-content">
-            <div class="vessel-voyage-modal-header">
-                <h2>🔍 船名航次标准化</h2>
-                <p>发现以下船名航次去空格后相同但格式不同，请为每组选择一个标准格式：</p>
-            </div>
-            <div id="vesselVoyageList" class="vessel-voyage-list"></div>
-            <div class="vessel-voyage-modal-footer">
-                <button id="applyVesselVoyageReplace" class="btn btn-primary">应用替换并继续</button>
-                <button id="skipVesselVoyageReplace" class="btn btn-secondary">跳过（保留原值）</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 目的港码头标准化选择模态框 -->
-    <div id="podWharfModal" class="vessel-voyage-modal hidden">
-        <div class="vessel-voyage-modal-content">
-            <div class="vessel-voyage-modal-header">
-                <h2>🔍 目的港码头标准化</h2>
-                <p>发现以下目的港码头去空格后相同但格式不同，请为每组选择一个标准格式：</p>
-            </div>
-            <div id="podWharfList" class="vessel-voyage-list"></div>
-            <div class="vessel-voyage-modal-footer">
-                <button id="applyPodWharfReplace" class="btn btn-primary">应用替换并继续</button>
-                <button id="skipPodWharfReplace" class="btn btn-secondary">跳过（保留原值）</button>
-            </div>
-        </div>
-    </div>
+    <!-- 标准化模态框 - 使用公共模板（vendor/template-utils.js） -->
+    <div id="standardizationModalsContainer"></div>
 
     <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
     <script src="vendor/auth-gist.js"></script>
     <script src="vendor/parser-utils.js"></script>
+    <script src="vendor/template-utils.js"></script>
     <script>
     (function() {
         /** Utility: log area - 使用 parser-utils.js */
         const $ = (sel) => document.querySelector(sel);
         const log = createLogger('#log');
+        
+        // 使用公共模板生成标准化模态框
+        if (typeof window.generateStandardizationModals === 'function') {
+            const container = document.getElementById('standardizationModalsContainer');
+            if (container) {
+                container.innerHTML = window.generateStandardizationModals();
+            }
+        }
 
         /** CSV utils - 使用 parser-utils.js 中的函数 */
         /** DOM helpers - 使用 parser-utils.js 中的函数 (text, find, findAll) */
-
-        /**
-         * 统一清洗：去除前后空白，压缩内部空白到单空格，移除换行与制表
-         * @param {any} value - 要清洗的值
-         * @returns {string} 清洗后的字符串
-         */
-        function clean(value) {
-            if (value == null) return '';
-            const cleanedString = String(value)
-                .replace(/[\r\n\t]+/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-            return cleanedString;
-        }
+        /** clean 函数 - 使用 parser-utils.js 中的函数 */
 
         /**
          * 清洗船名航次：保留原值，但提供去空格版本用于比较

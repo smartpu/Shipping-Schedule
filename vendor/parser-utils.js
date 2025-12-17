@@ -195,3 +195,31 @@ function renderPreview(rows, containerOrSelector, tableOrSelector, headers, maxR
     }
 }
 
+/**
+ * 统一清洗：去除前后空白，压缩内部空白到单空格，移除换行与制表
+ * @param {any} value - 要清洗的值
+ * @returns {string} 清洗后的字符串
+ */
+function clean(value) {
+    if (value == null) return '';
+    const cleanedString = String(value)
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return cleanedString;
+}
+
+// 导出函数到全局
+if (typeof window !== 'undefined') {
+    window.clean = window.clean || clean;
+    window.createLogger = window.createLogger || createLogger;
+    window.toCsvCell = window.toCsvCell || toCsvCell;
+    window.rowsToCsv = window.rowsToCsv || rowsToCsv;
+    window.downloadBlob = window.downloadBlob || downloadBlob;
+    window.generateTimestampFilename = window.generateTimestampFilename || generateTimestampFilename;
+    window.text = window.text || text;
+    window.find = window.find || find;
+    window.findAll = window.findAll || findAll;
+    window.renderPreview = window.renderPreview || renderPreview;
+}
+

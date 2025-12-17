@@ -303,3 +303,253 @@ function loadScript(src) {
     });
 }
 
+// 导出 loadScript 到全局（供 pdf-utils.js 等使用）
+if (typeof window !== 'undefined') {
+    window.loadScript = window.loadScript || loadScript;
+}
+
+/**
+ * 从 Data/index.json 自动加载 Excel 测试数据文件
+ * @param {string} configKey - 配置文件中的键名（如 '001-04-market-analysis'）
+ * @param {Function} onFileLoaded - 文件加载成功后的回调函数，接收 File 对象作为参数
+ * @returns {Promise<void>}
+ */
+async function loadDefaultExcelFile(configKey, onFileLoaded) {
+    // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+    if (window.location.protocol === 'file:') {
+        console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+        return;
+    }
+
+    try {
+        // 从 index.json 读取文件路径配置（完全依赖配置文件，不暴露路径信息）
+        let excelFileName = null;
+        try {
+            const configResponse = await fetch('Data/index.json');
+            if (configResponse.ok) {
+                const config = await configResponse.json();
+                if (config.files && config.files[configKey]) {
+                    // 支持嵌套配置（如 Monitor-Sailing-Schedule）
+                    const fileConfig = config.files[configKey];
+                    if (typeof fileConfig === 'string') {
+                        excelFileName = fileConfig;
+                    } else if (typeof fileConfig === 'object') {
+                        // 如果是对象，不支持单个文件加载，返回
+                        console.log('配置为多文件格式，请使用 loadDefaultExcelFiles 函数');
+                        return;
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('无法读取配置文件，请手动选择文件');
+            return;
+        }
+
+        if (!excelFileName) {
+            console.log('配置文件中未找到文件路径，请手动选择文件');
+            return;
+        }
+
+        const response = await fetch(`Data/${excelFileName}`);
+        if (!response.ok) {
+            console.log('默认 Excel 文件不存在，等待用户手动选择');
+            return;
+        }
+        const blob = await response.blob();
+        const file = new File([blob], excelFileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        // 调用回调函数处理文件
+        if (typeof onFileLoaded === 'function') {
+            await onFileLoaded(file);
+        }
+    } catch (error) {
+        // 如果是CORS错误，静默处理（本地文件系统环境）
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+        } else {
+            console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
+        }
+    }
+}
+
+/**
+ * 从 Data/index.json 自动加载多个 Excel 测试数据文件（用于 Monitor-Sailing-Schedule）
+ * @param {string} configKey - 配置文件中的键名（如 'Monitor-Sailing-Schedule'）
+ * @param {Object} onFileLoaded - 文件加载成功后的回调函数对象，包含 '001' 和 '365' 两个回调
+ * @returns {Promise<void>}
+ */
+async function loadDefaultExcelFiles(configKey, onFileLoaded) {
+    // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+    if (window.location.protocol === 'file:') {
+        console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+        return;
+    }
+
+    // 从 index.json 读取文件路径配置（完全依赖配置文件，不暴露路径信息）
+    let file001Name = null;
+    let file365Name = null;
+    try {
+        const configResponse = await fetch('Data/index.json');
+        if (configResponse.ok) {
+            const config = await configResponse.json();
+            if (config.files && config.files[configKey]) {
+                const sailingScheduleConfig = config.files[configKey];
+                if (typeof sailingScheduleConfig === 'object') {
+                    if (sailingScheduleConfig['001']) file001Name = sailingScheduleConfig['001'];
+                    if (sailingScheduleConfig['365']) file365Name = sailingScheduleConfig['365'];
+                }
+            }
+        }
+    } catch (e) {
+        console.log('无法读取配置文件，请手动选择文件');
+        return;
+    }
+
+    if (!file001Name || !file365Name) {
+        console.log('配置文件中未找到文件路径，请手动选择文件');
+        return;
+    }
+
+    // 加载 001 文件
+    try {
+        const response001 = await fetch(`Data/${file001Name}`);
+        if (response001.ok) {
+            const blob001 = await response001.blob();
+            const file001 = new File([blob001], file001Name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            if (onFileLoaded && typeof onFileLoaded['001'] === 'function') {
+                await onFileLoaded['001'](file001);
+            }
+        }
+    } catch (error) {
+        // 如果是CORS错误，静默处理（本地文件系统环境）
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+        } else {
+            console.log('自动加载 001 文件失败:', error);
+        }
+    }
+
+    // 加载 365 文件
+    try {
+        const response365 = await fetch(`Data/${file365Name}`);
+        if (response365.ok) {
+            const blob365 = await response365.blob();
+            const file365 = new File([blob365], file365Name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            if (onFileLoaded && typeof onFileLoaded['365'] === 'function') {
+                await onFileLoaded['365'](file365);
+            }
+        }
+    } catch (error) {
+        // 如果是CORS错误，静默处理（本地文件系统环境）
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+        } else {
+            console.log('自动加载 365 文件失败:', error);
+        }
+    }
+}
+
+/**
+ * 从 linerlytica/index.json 自动加载市场周报 PDF 文件
+ * @param {Function} onFileLoaded - 文件加载成功后的回调函数，接收 File 对象作为参数
+ * @returns {Promise<void>}
+ */
+async function loadDefaultMarketReports(onFileLoaded) {
+    // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+    if (window.location.protocol === 'file:') {
+        console.log('本地文件系统环境，跳过自动加载市场周报，请手动选择文件');
+        return;
+    }
+
+    try {
+        // 首先尝试加载索引文件（如果存在）
+        let pdfFileList = [];
+        try {
+            const indexResponse = await fetch('linerlytica/index.json');
+            if (indexResponse.ok) {
+                const indexData = await indexResponse.json();
+                if (Array.isArray(indexData.files)) {
+                    pdfFileList = indexData.files;
+                }
+            }
+        } catch (e) {
+            // 索引文件不存在，使用默认方法
+        }
+
+        // 如果没有索引文件，尝试加载常见的文件名模式
+        if (pdfFileList.length === 0) {
+            // 尝试常见的文件名模式（按优先级顺序）
+            const commonPatterns = [
+                // 当前周报的常见命名格式
+                'Linerlytica-25MP50.pdf',
+                'Linerlytica-Weekly.pdf',
+                'Linerlytica.pdf',
+                // 按日期格式（最近4周）
+                ...(() => {
+                    const patterns = [];
+                    const currentDate = new Date();
+                    for (let weekOffset = 0; weekOffset < 4; weekOffset++) {
+                        const date = new Date(currentDate);
+                        date.setDate(date.getDate() - (weekOffset * 7));
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        patterns.push(
+                            `${year}-${month}-${day}.pdf`,
+                            `${year}${month}${day}.pdf`,
+                            `Linerlytica_${year}-${month}-${day}.pdf`,
+                            `Weekly_${year}-${month}-${day}.pdf`,
+                            `Linerlytica Weekly ${year}-${month}-${day}.pdf`
+                        );
+                    }
+                    return patterns;
+                })()
+            ];
+            
+            // 尝试加载这些文件
+            for (const fileName of commonPatterns) {
+                try {
+                    const response = await fetch(`linerlytica/${fileName}`);
+                    if (response.ok) {
+                        pdfFileList.push(fileName);
+                        // 找到第一个就停止（因为通常只有最新的一个文件）
+                        break;
+                    }
+                } catch (e) {
+                    // 继续尝试下一个文件名
+                }
+            }
+        }
+
+        // 如果找到了PDF文件列表，加载它们
+        if (pdfFileList.length > 0 && typeof onFileLoaded === 'function') {
+            for (const fileName of pdfFileList) {
+                try {
+                    const response = await fetch(`linerlytica/${fileName}`);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const file = new File([blob], fileName, { type: 'application/pdf' });
+                        await onFileLoaded(file);
+                    }
+                } catch (e) {
+                    // 忽略单个文件加载错误，继续加载其他文件
+                }
+            }
+        }
+    } catch (error) {
+        // 如果是CORS错误，静默处理（本地文件系统环境）
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+        } else {
+            console.log('自动加载市场周报失败:', error);
+        }
+    }
+}
+
+// 导出到全局
+if (typeof window !== 'undefined') {
+    window.loadDefaultExcelFile = window.loadDefaultExcelFile || loadDefaultExcelFile;
+    window.loadDefaultExcelFiles = window.loadDefaultExcelFiles || loadDefaultExcelFiles;
+    window.loadDefaultMarketReports = window.loadDefaultMarketReports || loadDefaultMarketReports;
+}
+

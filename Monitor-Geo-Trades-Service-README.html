@@ -60,14 +60,19 @@
             <h2>快速开始</h2>
             <h3>前置准备</h3>
             <ol>
-                <li><strong>Excel 数据文件</strong>：准备包含服务数据的 Excel 文件（Monitor-Geo-Trades-Service.xlsx）</li>
+                <li><strong>Excel 数据文件</strong>：准备包含服务数据的 Excel 文件（文件名在 Data/index.json 中配置）</li>
                 <li><strong>浏览器</strong>：推荐使用 Chrome、Edge 或 Safari 浏览器</li>
             </ol>
 
             <h3>基本流程</h3>
             <ol>
                 <li>打开 <code>Monitor-Geo-Trades-Service.html</code></li>
+                <li>工具会自动从 <code>Data/index.json</code> 读取配置并加载对应的 Excel 测试数据文件（如果配置存在）</li>
+                <li>如果自动加载失败或需要手动选择：
+                    <ul>
                 <li>点击"选择 Excel 文件"，载入包含服务数据的 Excel 文件</li>
+                    </ul>
+                </li>
                 <li>数据加载成功后，使用筛选器选择 Trade、Service、Service Branding、Port Rotation 等条件</li>
                 <li>在表格中查看筛选后的服务信息</li>
                 <li>悬停在 Service 列查看 Port Rotation 详情</li>

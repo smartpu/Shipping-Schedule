@@ -291,7 +291,7 @@
 
       // 更新用户排名
       function updateUserRanking() {
-        // 按用户统计访问次数
+        // 按用户统计访问次数，同时保存访问历史
         const userStats = new Map();
         
         accessLogs.forEach(log => {
@@ -302,11 +302,17 @@
               phone: log.phone,
               email: log.email,
               count: 0,
-              lastVisit: log.timestamp
+              lastVisit: log.timestamp,
+              visitHistory: [] // 保存访问历史
             });
           }
           const stats = userStats.get(userKey);
           stats.count++;
+          // 添加访问历史记录
+          stats.visitHistory.push({
+            page: log.page,
+            timestamp: log.timestamp
+          });
           if (log.timestamp > stats.lastVisit) {
             stats.lastVisit = log.timestamp;
           }
@@ -338,13 +344,100 @@
             <td class="count">${user.count.toLocaleString()}</td>
             <td>${lastVisitStr}</td>
           `;
+          
+          // 添加悬停效果：显示该用户的最近10次访问页面及时间
+          attachUserTooltip(row, user);
+          
           userRankingBody.appendChild(row);
+        });
+      }
+      
+      // 为用户排名行添加悬停提示
+      function attachUserTooltip(row, user) {
+        // 获取最近10次访问，按时间倒序
+        const recentVisits = user.visitHistory
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 10);
+        
+        if (recentVisits.length === 0) return;
+        
+        // 创建 tooltip 元素
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.style.display = 'none';
+        
+        // 构建 tooltip 内容
+        let tooltipHTML = '<div style="font-weight: 600; margin-bottom: 12px; color: #667eea; font-size: 14px; border-bottom: 2px solid #667eea; padding-bottom: 8px;">最近访问记录</div>';
+        recentVisits.forEach((visit, idx) => {
+          const visitDate = new Date(visit.timestamp);
+          const visitStr = visitDate.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          tooltipHTML += `
+            <div class="tooltip-line" style="margin-bottom: 4px; grid-template-columns: 30px 1fr 50px auto;">
+              <span class="tooltip-label" style="min-width: 30px; grid-column: 1;">${idx + 1}.</span>
+              <span class="tooltip-value" style="grid-column: 2; word-break: break-all; padding-right: 12px;">${visit.page}</span>
+              <span class="tooltip-label" style="grid-column: 3; min-width: 50px;">时间：</span>
+              <span class="tooltip-value" style="grid-column: 4;">${visitStr}</span>
+            </div>
+          `;
+        });
+        tooltip.innerHTML = tooltipHTML;
+        document.body.appendChild(tooltip);
+        
+        // 定位 tooltip 的函数
+        const positionTooltip = (e) => {
+          const rect = tooltip.getBoundingClientRect();
+          const padding = 15;
+          let left = e.clientX + padding;
+          let top = e.clientY + padding;
+          
+          // 如果右侧空间不够，显示在左侧
+          if (left + rect.width > window.innerWidth) {
+            left = e.clientX - rect.width - padding;
+          }
+          
+          // 如果下方空间不够，显示在上方
+          if (top + rect.height > window.innerHeight) {
+            top = e.clientY - rect.height - padding;
+          }
+          
+          // 确保不超出视窗
+          if (left < 0) left = padding;
+          if (top < 0) top = padding;
+          
+          tooltip.style.left = left + 'px';
+          tooltip.style.top = top + 'px';
+        };
+        
+        let tooltipTimeout;
+        row.addEventListener('mouseenter', (e) => {
+          clearTimeout(tooltipTimeout);
+          tooltip.style.display = 'block';
+          positionTooltip(e);
+        });
+        
+        row.addEventListener('mouseleave', () => {
+          tooltipTimeout = setTimeout(() => {
+            tooltip.style.display = 'none';
+          }, 100);
+        });
+        
+        row.addEventListener('mousemove', (e) => {
+          clearTimeout(tooltipTimeout);
+          if (tooltip.style.display === 'block') {
+            positionTooltip(e);
+          }
         });
       }
 
       // 更新页面排名
       function updatePageRanking() {
-        // 按页面统计访问次数和独立访客
+        // 按页面统计访问次数和独立访客，同时保存访问历史
         const pageStats = new Map();
         
         accessLogs.forEach(log => {
@@ -352,12 +445,20 @@
             pageStats.set(log.page, {
               page: log.page,
               count: 0,
-              uniqueUsers: new Set()
+              uniqueUsers: new Set(),
+              visitHistory: [] // 保存访问历史
             });
           }
           const stats = pageStats.get(log.page);
           stats.count++;
           stats.uniqueUsers.add(`${log.name}|${log.phone}|${log.email}`);
+          // 添加访问历史记录
+          stats.visitHistory.push({
+            userName: log.name,
+            userPhone: log.phone,
+            userEmail: log.email,
+            timestamp: log.timestamp
+          });
         });
 
         // 转换为数组并排序，只取前20个
@@ -365,7 +466,8 @@
           .map(stats => ({
             page: stats.page,
             count: stats.count,
-            uniqueUsers: stats.uniqueUsers.size
+            uniqueUsers: stats.uniqueUsers.size,
+            visitHistory: stats.visitHistory
           }))
           .sort((a, b) => b.count - a.count)
           .slice(0, 20);
@@ -385,7 +487,95 @@
             <td>${page.uniqueUsers.toLocaleString()}</td>
             <td>${percentage}%</td>
           `;
+          
+          // 添加悬停效果：显示该页面的最近10个访问用户及时间
+          attachPageTooltip(row, page);
+          
           pageRankingBody.appendChild(row);
+        });
+      }
+      
+      // 为页面排名行添加悬停提示
+      function attachPageTooltip(row, page) {
+        // 获取最近10次访问，按时间倒序
+        const recentVisits = page.visitHistory
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 10);
+        
+        if (recentVisits.length === 0) return;
+        
+        // 创建 tooltip 元素
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.style.display = 'none';
+        
+        // 构建 tooltip 内容
+        let tooltipHTML = '<div style="font-weight: 600; margin-bottom: 12px; color: #667eea; font-size: 14px; border-bottom: 2px solid #667eea; padding-bottom: 8px;">最近访问用户</div>';
+        recentVisits.forEach((visit, idx) => {
+          const visitDate = new Date(visit.timestamp);
+          const visitStr = visitDate.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const userName = visit.userName || '—';
+          tooltipHTML += `
+            <div class="tooltip-line" style="margin-bottom: 4px; grid-template-columns: 30px 1fr 50px auto;">
+              <span class="tooltip-label" style="min-width: 30px; grid-column: 1;">${idx + 1}.</span>
+              <span class="tooltip-value" style="grid-column: 2; padding-right: 12px;">${userName}</span>
+              <span class="tooltip-label" style="grid-column: 3; min-width: 50px;">时间：</span>
+              <span class="tooltip-value" style="grid-column: 4;">${visitStr}</span>
+            </div>
+          `;
+        });
+        tooltip.innerHTML = tooltipHTML;
+        document.body.appendChild(tooltip);
+        
+        // 定位 tooltip 的函数
+        const positionTooltip = (e) => {
+          const rect = tooltip.getBoundingClientRect();
+          const padding = 15;
+          let left = e.clientX + padding;
+          let top = e.clientY + padding;
+          
+          // 如果右侧空间不够，显示在左侧
+          if (left + rect.width > window.innerWidth) {
+            left = e.clientX - rect.width - padding;
+          }
+          
+          // 如果下方空间不够，显示在上方
+          if (top + rect.height > window.innerHeight) {
+            top = e.clientY - rect.height - padding;
+          }
+          
+          // 确保不超出视窗
+          if (left < 0) left = padding;
+          if (top < 0) top = padding;
+          
+          tooltip.style.left = left + 'px';
+          tooltip.style.top = top + 'px';
+        };
+        
+        let tooltipTimeout;
+        row.addEventListener('mouseenter', (e) => {
+          clearTimeout(tooltipTimeout);
+          tooltip.style.display = 'block';
+          positionTooltip(e);
+        });
+        
+        row.addEventListener('mouseleave', () => {
+          tooltipTimeout = setTimeout(() => {
+            tooltip.style.display = 'none';
+          }, 100);
+        });
+        
+        row.addEventListener('mousemove', (e) => {
+          clearTimeout(tooltipTimeout);
+          if (tooltip.style.display === 'block') {
+            positionTooltip(e);
+          }
         });
       }
 

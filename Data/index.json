@@ -4,6 +4,8 @@
     "365-04-market-watch": "365-03-market-watch.xlsx",
     "Monitor-Geo-Trades-Service": "Monitor-Geo-Trades-Service.xlsx",
     "Monitor-SCFI-Trends": "Monitor-SCFI-Trends.xlsx",
+    "Monitor-Rate-Trends": "Monitor-Rate-Trends.xlsx",
+    "Monitor-Workouts": "Monitor-Workouts.csv",
     "Monitor-Sailing-Schedule": {
       "001": "001-03-market-analysis.xlsx",
       "365": "365-03-market-watch.xlsx"

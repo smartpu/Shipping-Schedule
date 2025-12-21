@@ -246,27 +246,7 @@
             </div>
 
             <div class="tools-grid">
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon purple">📊</div>
-                        <div class="tool-title">
-                            <h3>运价趋势面板</h3>
-                            <div class="tool-id">Monitor-Rate-Trends</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        载入 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。支持筛选区间趋势曲线、全历史周度走势、年度对比同期观察和周度涨跌统计。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="Monitor-Rate-Trends.html?from=monitor" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="Monitor-Rate-Trends-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
+                <!-- 所有用户可见的工具 -->
                 <div class="tool-card">
                     <div class="tool-header">
                         <div class="tool-icon purple">📈</div>
@@ -330,7 +310,29 @@
                     </div>
                 </div>
 
-                <div class="tool-card">
+                <!-- smartpu 用户专属工具 -->
+                <div class="tool-card" data-restricted-tool="Monitor-Rate-Trends">
+                    <div class="tool-header">
+                        <div class="tool-icon purple">📊</div>
+                        <div class="tool-title">
+                            <h3>运价趋势面板</h3>
+                            <div class="tool-id">Monitor-Rate-Trends</div>
+                        </div>
+                    </div>
+                    <div class="tool-description">
+                        载入 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。支持筛选区间趋势曲线、全历史周度走势、年度对比同期观察和周度涨跌统计。
+                    </div>
+                    <div class="tool-actions">
+                        <a href="Monitor-Rate-Trends.html?from=monitor" class="tool-link">
+                            打开工具 →
+                        </a>
+                        <a href="Monitor-Rate-Trends-README.html" class="tool-link secondary">
+                            使用说明
+                        </a>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-restricted-tool="Monitor-Access-Log">
                     <div class="tool-header">
                         <div class="tool-icon orange">📊</div>
                         <div class="tool-title">
@@ -351,7 +353,7 @@
                     </div>
                 </div>
 
-                <div class="tool-card">
+                <div class="tool-card" data-restricted-tool="Monitor-Workouts">
                     <div class="tool-header">
                         <div class="tool-icon green">💪</div>
                         <div class="tool-title">
@@ -418,6 +420,51 @@
             }
         }
 
+        /**
+         * 检查用户是否是 smartpu（具有特殊权限的用户）
+         * @returns {boolean} 如果是 smartpu 返回 true，否则返回 false
+         */
+        function isSmartPuUser() {
+            try {
+                const AUTH_STORAGE_KEY = 'shipping_tools_auth';
+                const authDataStr = localStorage.getItem(AUTH_STORAGE_KEY);
+                if (!authDataStr) {
+                    return false;
+                }
+                
+                const authData = JSON.parse(authDataStr);
+                const name = (authData.name || '').trim().toLowerCase();
+                const email = (authData.email || '').trim().toLowerCase();
+                const phone = (authData.phone || '').trim();
+                
+                // 检查是否匹配 smartpu 的条件
+                return name === 'smartpu' && 
+                       email === 'smartpu@evergreen-shipping.cn' && 
+                       phone === '18653202580';
+            } catch (error) {
+                console.error('检查用户权限时出错:', error);
+                return false;
+            }
+        }
+
+        /**
+         * 根据用户权限控制受限工具的显示
+         */
+        function controlRestrictedTools() {
+            const isSmartPu = isSmartPuUser();
+            const restrictedTools = document.querySelectorAll('[data-restricted-tool]');
+            
+            restrictedTools.forEach(tool => {
+                if (isSmartPu) {
+                    // smartpu 用户：显示工具
+                    tool.style.display = '';
+                } else {
+                    // 其他用户：隐藏工具
+                    tool.style.display = 'none';
+                }
+            });
+        }
+
         // 页面加载时检查 URL 参数
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -427,6 +474,38 @@
             if (['tools001', 'tools365', 'rateTrends'].includes(targetTab)) {
                 switchTab(targetTab);
             }
+            
+            // 控制受限工具的显示
+            controlRestrictedTools();
+            
+            // 监听 localStorage 变化，当用户登录后重新检查权限（跨标签页）
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'shipping_tools_auth') {
+                    controlRestrictedTools();
+                }
+            });
+            
+            // 监听 authOverlay 的显示状态，当用户登录后立即更新
+            const authOverlay = document.getElementById('authOverlay');
+            if (authOverlay) {
+                // 使用 MutationObserver 监听 authOverlay 的显示/隐藏
+                const observer = new MutationObserver(() => {
+                    // 如果 authOverlay 隐藏了，说明用户可能已登录，重新检查权限
+                    if (authOverlay.style.display === 'none' || !authOverlay.classList.contains('show')) {
+                        controlRestrictedTools();
+                    }
+                });
+                
+                observer.observe(authOverlay, {
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+            }
+            
+            // 定期检查用户权限（处理同标签页内的登录，每秒检查一次）
+            setInterval(() => {
+                controlRestrictedTools();
+            }, 1000);
         });
     </script>
     <!-- 调试工具（必须在 auth-gist.js 之前加载） -->

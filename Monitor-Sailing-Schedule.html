@@ -17,6 +17,7 @@
     <script src="vendor/ai-prompts.js"></script>
     <script src="vendor/ai-utils.js"></script>
     <script src="vendor/template-utils.js"></script>
+    <script src="vendor/market-analysis-utils.js"></script>
     <style>
       /* 页面特定样式（保留与公共样式不同的部分） */
       /* 注意：日历视图样式已移至 vendor/monitor-styles.css */
@@ -2807,13 +2808,8 @@
                date.getDate() === today.getDate();
       }
 
-      function getWeekNumber(date) {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-      }
+      // getWeekNumber 函数已从 vendor/market-analysis-utils.js 加载
+      // 使用"周日到周六为一周"的周数计算方式，与 001-04/365-04 保持一致
 
       // 创建悬停提示框
       function createTooltip(item) {

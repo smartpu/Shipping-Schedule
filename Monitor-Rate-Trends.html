@@ -1718,6 +1718,42 @@
         };
       }
 
+      // 自动加载 Monitor-Rate-Trends.xlsx 文件
+      async function loadDefaultExcelFile() {
+        // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
+        if (typeof window.loadDefaultExcelFile === 'function') {
+          await window.loadDefaultExcelFile('Monitor-Rate-Trends', async (file) => {
+            // 模拟文件选择事件，触发文件处理
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            dom.fileInput.files = dataTransfer.files;
+            
+            // 触发 change 事件
+            const changeEvent = new Event('change', { bubbles: true });
+            dom.fileInput.dispatchEvent(changeEvent);
+          });
+        } else {
+          // 如果公共函数未加载，等待一段时间后重试
+          setTimeout(() => {
+            if (typeof window.loadDefaultExcelFile === 'function') {
+              loadDefaultExcelFile();
+            }
+          }, 1000);
+        }
+      }
+
+      // 页面加载完成后尝试自动加载文件
+      window.addEventListener('DOMContentLoaded', async () => {
+        // 等待 XLSX 库加载完成后再尝试自动加载
+        if (typeof window.ensureXlsx === 'function') {
+          await window.ensureXlsx();
+        }
+        // 等待一小段时间，确保页面完全加载
+        setTimeout(() => {
+          loadDefaultExcelFile();
+        }, 500);
+      });
+
     </script>
   </body>
 </html>

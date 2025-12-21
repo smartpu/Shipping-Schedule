@@ -729,6 +729,69 @@
         }
 
         document.getElementById('exportPdfBtn')?.addEventListener('click', exportPageToPdf);
+
+        // 自动加载 Monitor-Workouts.csv 文件
+        async function loadDefaultCsvFile() {
+          // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+          if (window.location.protocol === 'file:') {
+            console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+            return;
+          }
+
+          try {
+            // 从 index.json 读取文件路径配置
+            let csvFileName = null;
+            try {
+              const configResponse = await fetch('Data/index.json');
+              if (configResponse.ok) {
+                const config = await configResponse.json();
+                if (config.files && config.files['Monitor-Workouts']) {
+                  csvFileName = config.files['Monitor-Workouts'];
+                }
+              }
+            } catch (e) {
+              console.log('无法读取配置文件，请手动选择文件');
+              return;
+            }
+
+            if (!csvFileName) {
+              console.log('配置文件中未找到文件路径，请手动选择文件');
+              return;
+            }
+
+            const response = await fetch(`Data/${csvFileName}`);
+            if (!response.ok) {
+              console.log('默认 CSV 文件不存在，等待用户手动选择');
+              return;
+            }
+            const blob = await response.blob();
+            const file = new File([blob], csvFileName, { type: 'text/csv' });
+            
+            // 模拟文件选择事件，触发文件处理
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            
+            // 触发 change 事件
+            const changeEvent = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(changeEvent);
+          } catch (error) {
+            // 如果是CORS错误，静默处理（本地文件系统环境）
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+              console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+            } else {
+              console.log('自动加载 CSV 文件失败，等待用户手动选择:', error);
+            }
+          }
+        }
+
+        // 页面加载完成后尝试自动加载文件
+        window.addEventListener('DOMContentLoaded', async () => {
+          // 等待一小段时间，确保页面完全加载
+          setTimeout(() => {
+            loadDefaultCsvFile();
+          }, 500);
+        });
       })();
     </script>
     <div class="page-footer">

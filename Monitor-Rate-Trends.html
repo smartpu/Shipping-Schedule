@@ -1719,7 +1719,7 @@
       }
 
       // 自动加载 Monitor-Rate-Trends.xlsx 文件
-      async function loadDefaultExcelFile() {
+      async function autoLoadExcelFile() {
         // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
         if (typeof window.loadDefaultExcelFile === 'function') {
           await window.loadDefaultExcelFile('Monitor-Rate-Trends', async (file) => {
@@ -1736,7 +1736,7 @@
           // 如果公共函数未加载，等待一段时间后重试
           setTimeout(() => {
             if (typeof window.loadDefaultExcelFile === 'function') {
-              loadDefaultExcelFile();
+              autoLoadExcelFile();
             }
           }, 1000);
         }
@@ -1750,7 +1750,7 @@
         }
         // 等待一小段时间，确保页面完全加载
         setTimeout(() => {
-          loadDefaultExcelFile();
+          autoLoadExcelFile();
         }, 500);
       });
 

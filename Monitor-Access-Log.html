@@ -219,8 +219,60 @@
       const pageRankingBody = document.getElementById('pageRankingBody');
       const timeFilterBtns = document.querySelectorAll('.time-filter-btn');
 
-      // 注意：access-logs.json 是隐私文件，不上传 GitHub，不自动加载
-      // 用户需要手动选择文件来加载访问日志
+      // 自动加载 access-logs.json 文件
+      async function autoLoadJsonFile() {
+        // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+        if (window.location.protocol === 'file:') {
+          console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+          return;
+        }
+
+        try {
+          // 从 index.json 读取文件路径配置
+          let jsonFileName = null;
+          try {
+            const configResponse = await fetch('Data/index.json');
+            if (configResponse.ok) {
+              const config = await configResponse.json();
+              if (config.files && config.files['Monitor-Access-Log']) {
+                jsonFileName = config.files['Monitor-Access-Log'];
+              }
+            }
+          } catch (e) {
+            console.log('无法读取配置文件，请手动选择文件');
+            return;
+          }
+
+          if (!jsonFileName) {
+            console.log('配置文件中未找到文件路径，请手动选择文件');
+            return;
+          }
+
+          const response = await fetch(`Data/${jsonFileName}`);
+          if (!response.ok) {
+            console.log('默认 JSON 文件不存在，等待用户手动选择');
+            return;
+          }
+          const blob = await response.blob();
+          const file = new File([blob], jsonFileName, { type: 'application/json' });
+          
+          // 模拟文件选择事件，触发文件处理
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          fileInput.files = dataTransfer.files;
+          
+          // 触发 change 事件
+          const changeEvent = new Event('change', { bubbles: true });
+          fileInput.dispatchEvent(changeEvent);
+        } catch (error) {
+          // 如果是CORS错误，静默处理（本地文件系统环境）
+          if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+          } else {
+            console.log('自动加载 JSON 文件失败，等待用户手动选择:', error);
+          }
+        }
+      }
 
       // 文件选择处理
       fileInput.addEventListener('change', async (event) => {
@@ -682,15 +734,17 @@
         });
       });
 
-      // 页面加载时初始化（不自动加载访问日志，因为它是隐私文件）
+      // 页面加载时初始化
       window.addEventListener('DOMContentLoaded', async () => {
         // 确保 Chart.js 已加载
         if (typeof ensureChartJs === 'function') {
           await ensureChartJs();
         }
         
-        // 不自动加载访问日志，用户需要手动选择文件
-        statusInfo.textContent = '请手动选择访问日志文件';
+        // 尝试自动加载访问日志文件
+        setTimeout(() => {
+          autoLoadJsonFile();
+        }, 500);
       });
     </script>
   </body>

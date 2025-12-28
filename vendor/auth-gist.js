@@ -355,11 +355,13 @@
 
         return userWhitelist.find(user => {
             // 精确匹配：name/phone/email 必须完全匹配
+            // 注意：user.name 在 loadWhitelist 中已经被转换为小写
             const phoneMatch = user.phone === normalizedPhone;
             const emailMatch = user.email === normalizedEmail;
+            // user.name 已经是小写，直接比较
             const nameMatch = !user.name || 
                             !normalizedName || 
-                            user.name.toLowerCase() === normalizedName;
+                            user.name === normalizedName;
 
             return phoneMatch && emailMatch && nameMatch;
         }) || null;
@@ -379,8 +381,26 @@
         const authData = getAuthData();
         if (!authData) return false;
         
+        // 检查是否为本地测试用户（即使不在白名单中，也允许访问）
+        if (isLocalTestUser(authData)) {
+            return true;
+        }
+        
+        // 如果白名单未加载，尝试加载（同步调用，但可能返回 false）
+        if (userWhitelist.length === 0) {
+            debugWarn('[Auth] 白名单未加载，无法检查权限');
+            return false;
+        }
+        
         const user = getUserFromWhitelist(authData);
-        if (!user) return false;
+        if (!user) {
+            debugWarn('[Auth] 用户不在白名单中，无法检查权限', {
+                name: authData.name,
+                email: authData.email,
+                phone: authData.phone ? '***' : 'missing'
+            });
+            return false;
+        }
         
         // 如果用户组为空或包含 '*'，表示全部权限
         if (!user.groups || user.groups.length === 0 || user.groups.includes('*')) {

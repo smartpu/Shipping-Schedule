@@ -520,74 +520,16 @@
                 updateFilterOptions();
             }
 
-            // 更新筛选器选项（级联筛选：根据当前筛选条件动态更新选项）
+            // 更新筛选器选项（从所有原始数据中提取，允许用户多选多个条件来覆盖所有数据）
             function updateFilterOptions() {
-                // 根据当前已选择的筛选条件，先过滤数据
-                let filteredRecords = state.rawData;
-                
-                // 如果已选择 Trade，先按 Trade 过滤
-                if (state.filters.trade.length > 0) {
-                    filteredRecords = filteredRecords.filter(row => {
-                        const tradeValue = row[state.columnMap.trade] || '';
-                        return state.filters.trade.includes(tradeValue);
-                    });
-                }
-                
-                // 如果已选择 Service，再按 Service 过滤
-                if (state.filters.service.length > 0) {
-                    filteredRecords = filteredRecords.filter(row => {
-                        const serviceValue = row[state.columnMap.service] || '';
-                        return state.filters.service.includes(serviceValue);
-                    });
-                }
-                
-                // 如果已选择 Service Branding，再按 Service Branding 过滤
-                if (state.filters.serviceBranding.length > 0) {
-                    filteredRecords = filteredRecords.filter(row => {
-                        const brandingValue = simplifyServiceBranding(row[state.columnMap.serviceBranding] || '');
-                        return state.filters.serviceBranding.includes(brandingValue);
-                    });
-                }
-                
-                // 如果已选择 Port Rotation，再按 Port Rotation 过滤
-                if (state.filters.portRotation.length > 0) {
-                    filteredRecords = filteredRecords.filter(row => {
-                        const portRotationValue = String(row[state.columnMap.portRotation] || '').trim();
-                        if (!portRotationValue || portRotationValue.length === 0) {
-                            return false;
-                        }
-                        const portRotationLower = portRotationValue.toLowerCase();
-                        return state.filters.portRotation.some(selectedRotation => {
-                            if (!selectedRotation || String(selectedRotation).trim().length === 0) {
-                                return false;
-                            }
-                            const selectedLower = String(selectedRotation).toLowerCase().trim();
-                            if (portRotationLower === selectedLower) {
-                                return true;
-                            }
-                            if (String(selectedRotation).includes(',')) {
-                                const searchPorts = String(selectedRotation).split(',')
-                                    .map(port => port.trim().toLowerCase())
-                                    .filter(port => port.length > 0);
-                                if (searchPorts.length > 0) {
-                                    return searchPorts.every(port => portRotationLower.includes(port));
-                                }
-                            }
-                            if (!String(selectedRotation).includes(',')) {
-                                return portRotationLower.includes(selectedLower) || selectedLower.includes(portRotationLower);
-                            }
-                            return false;
-                        });
-                    });
-                }
-                
-                // 从过滤后的记录中提取可用的选项
-                const trades = [...new Set(filteredRecords.map(row => row[state.columnMap.trade]).filter(Boolean))].sort();
-                const services = [...new Set(filteredRecords.map(row => row[state.columnMap.service]).filter(Boolean))].sort();
+                // 从所有原始记录中提取完整的选项列表（不进行过滤）
+                // 这样用户可以选择多个筛选条件，覆盖所有可能的数据组合
+                const trades = [...new Set(state.rawData.map(row => row[state.columnMap.trade]).filter(Boolean))].sort();
+                const services = [...new Set(state.rawData.map(row => row[state.columnMap.service]).filter(Boolean))].sort();
                 const serviceBrandings = [...new Set(
-                    filteredRecords.map(row => simplifyServiceBranding(row[state.columnMap.serviceBranding])).filter(Boolean)
+                    state.rawData.map(row => simplifyServiceBranding(row[state.columnMap.serviceBranding])).filter(Boolean)
                 )].sort();
-                const portRotations = [...new Set(filteredRecords.map(row => row[state.columnMap.portRotation]).filter(Boolean))].sort();
+                const portRotations = [...new Set(state.rawData.map(row => row[state.columnMap.portRotation]).filter(Boolean))].sort();
 
                 // 更新 Trade 筛选器（保留已选择的选项）
                 const selectedTrades = state.filters.trade.filter(trade => trades.includes(trade));

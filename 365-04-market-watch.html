@@ -2189,7 +2189,8 @@
                 if (destinationFilters.originPorts.length && !destinationFilters.originPorts.includes(record.originPort)) return false;
                 if (destinationFilters.destPorts.length && !destinationFilters.destPorts.includes(record.destPort)) return false;
                 if (destinationFilters.routes.length && !destinationFilters.routes.includes(record.route) && !destinationFilters.routes.includes(record.routeLabel)) return false;
-                if (weekCodes.length > 0 && !weekCodes.includes(record.weekCode)) return false;
+                // 如果 weekCodes 为空，允许所有数据通过；否则只允许在指定周范围内的数据
+                if (weekCodes.length > 0 && record.weekCode && !weekCodes.includes(record.weekCode)) return false;
                 return true;
             });
             if (typeof deduplicateSailingItems === 'function') {
@@ -2680,8 +2681,20 @@
             data.forEach(row => {
                 const weekText = String(row[weekCol] ?? '').trim();
                 const weekCode = parseWeekText(weekText);
-                if (!weekCode) {
-                    return;
+                
+                // 如果 weekCodes 为空（weekDefinitionMap 为空或无法确定当前周），允许所有数据通过
+                // 否则只允许在指定周范围内的数据
+                if (weekCodes.length > 0) {
+                    if (!weekCode || !weekCodes.includes(weekCode)) {
+                        return;
+                    }
+                } else {
+                    // weekCodes 为空时，如果没有 weekCode，仍然允许通过（可能是旧数据格式）
+                    // 如果有 weekCode，也允许通过
+                    if (!weekCode) {
+                        // 如果没有周别信息，仍然允许通过，但记录警告
+                        debugWarn(`[365-04] 记录缺少周别信息: ${weekText}`);
+                    }
                 }
 
                 // 读取原始港口名称

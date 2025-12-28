@@ -283,7 +283,7 @@
             </div>
             
             <!-- Admin 系列工具 -->
-            <div id="admin" class="tab-content">
+            <div id="admin" class="tab-content" style="display: none;">
                 <div class="section-intro">
                     <h2>Admin 系列工具</h2>
                     <p>管理工具集，提供访客统计分析、健身记录可视化和代码质量保障功能。支持访问日志分析、用户行为统计、运动数据追踪、单元测试等功能，帮助了解工具使用情况、运动习惯和代码质量。</p>
@@ -478,6 +478,23 @@
             
             // 等待导航栏加载完成后，绑定dashboard特定的点击事件
             waitForSidebar(() => {
+                // 检查admin权限，如果没有权限则隐藏admin tab
+                if (typeof window.hasPermission === 'function') {
+                    const hasAdminPermission = window.hasPermission('admin');
+                    if (!hasAdminPermission) {
+                        const adminTab = document.getElementById('admin');
+                        if (adminTab) {
+                            adminTab.style.display = 'none';
+                        }
+                        // 如果当前tab是admin但没有权限，切换到tools001
+                        if (targetTab === 'admin') {
+                            switchTab('tools001');
+                            expandAndActivateNav('tools001');
+                            return;
+                        }
+                    }
+                }
+                
                 // 绑定导航菜单点击事件
                 bindNavClickEvents();
                 

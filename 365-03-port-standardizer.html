@@ -63,7 +63,7 @@
                         </div>
                     </div>
                     
-                    <!-- 右侧：载入港口列表文件（仅在本地文件系统环境下需要） -->
+                    <!-- 右侧：载入港口列表文件（可选，用于覆盖默认列表） -->
                     <div class="card-white hidden" id="portListFileCard">
                         <div class="file-upload-section">
                             <label for="portListFileInput" class="file-upload-label" aria-label="选择港口列表文件上传">
@@ -82,7 +82,7 @@
                                 </svg>
                                 <div class="file-upload-content">
                                     <div class="file-upload-title">载入港口列表（可选）</div>
-                                    <div class="file-upload-desc">本地环境下可选择港口列表文件</div>
+                                    <div class="file-upload-desc">可选择自定义港口列表文件覆盖默认列表</div>
                                 </div>
                                 <input type="file" id="portListFileInput" class="file-upload-input" accept=".txt" aria-label="选择港口列表文件">
                             </label>
@@ -184,10 +184,18 @@
             let originalFileName = ''; // 原始文件名
             let portListText = null; // 港口列表文件内容（如果手动加载）
 
-            // 检查是否在本地文件系统环境
-            if (window.location.protocol === 'file:') {
-                portListFileCard.classList.remove('hidden');
-            }
+            // 始终显示港口列表上传卡片（服务器端和本地都可以使用）
+            portListFileCard.classList.remove('hidden');
+            
+            // 页面加载时自动尝试从服务器加载港口列表
+            (async () => {
+                try {
+                    await loadPortMapping();
+                    console.log('港口列表已自动加载');
+                } catch (error) {
+                    console.warn('自动加载港口列表失败，用户可手动上传:', error);
+                }
+            })();
 
             /**
              * 从文本内容构建港口映射
@@ -316,7 +324,7 @@
                         return true;
                     }
 
-                    throw new Error('无法加载港口映射，请在本地环境下手动选择港口列表文件');
+                    throw new Error('无法加载港口映射，请手动上传港口列表文件或检查网络连接');
                 } catch (error) {
                     console.error('加载港口映射失败:', error);
                     throw error;

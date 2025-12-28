@@ -80,11 +80,26 @@
                         <div class="nav-section-title">工具导航</div>
         `;
 
+        // 检查用户是否有admin权限
+        let hasAdminPermission = false;
+        if (typeof window.hasPermission === 'function') {
+            hasAdminPermission = window.hasPermission('admin');
+        }
+        
         // 生成每个主菜单项
         Object.keys(NAV_CONFIG).forEach((sectionKey) => {
+            // 如果是admin菜单，检查权限
+            if (sectionKey === 'admin' && !hasAdminPermission) {
+                return; // 跳过admin菜单
+            }
+            
             const config = NAV_CONFIG[sectionKey];
             const isActive = currentSection === sectionKey;
-            const isExpanded = isActive || (isDashboard && ['tools365', 'monitor', 'admin'].includes(sectionKey));
+            // admin菜单需要权限检查，其他菜单在dashboard中默认展开
+            const shouldExpand = sectionKey === 'admin' 
+                ? (isActive || (isDashboard && hasAdminPermission))
+                : (isActive || (isDashboard && ['tools365', 'monitor'].includes(sectionKey)));
+            const isExpanded = shouldExpand;
             // 修正主菜单链接路径
             let mainHref = isDashboard ? '#' : `dashboard.html?tab=${sectionKey}`;
             const isInSubDir = currentPage.includes('/') && !currentPage.startsWith('/');
@@ -238,7 +253,7 @@
     /**
      * 加载用户信息
      */
-    function loadUserInfo() {
+    async function loadUserInfo() {
         const sidebarUserName = document.getElementById('sidebarUserName');
         const sidebarUserLevel = document.getElementById('sidebarUserLevel');
         const AUTH_STORAGE_KEY = 'shipping_tools_auth';
@@ -259,7 +274,22 @@
             
             const authData = JSON.parse(authDataStr);
             const name = authData.name || '未登录';
-            const level = authData.level || 'user';
+            
+            // 从白名单中获取用户信息（包括level）
+            // 注意：白名单应该已经由 auth-gist.js 的 autoInitWithAuth 加载
+            let level = 'user';
+            if (typeof window.getUserFromWhitelist === 'function') {
+                const user = window.getUserFromWhitelist(authData);
+                if (user && user.level) {
+                    level = user.level;
+                } else if (authData.level) {
+                    // 降级：如果白名单中没有，使用authData中的level
+                    level = authData.level;
+                }
+            } else if (authData.level) {
+                // 降级：如果函数不存在，使用authData中的level
+                level = authData.level;
+            }
             
             if (sidebarUserName) {
                 sidebarUserName.querySelector('.user-brief-text').textContent = `用户：${name}`;

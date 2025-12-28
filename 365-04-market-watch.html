@@ -427,7 +427,7 @@
             if (marketPortsListMap) return marketPortsListMap; // 已加载则直接返回
             
             try {
-                const response = await fetch('data/Material-parsed_ports_list.txt');
+                const response = await fetch('Data/Material-parsed_ports_list.txt');
                 const text = await response.text();
                 const portMap = new Map();
                 

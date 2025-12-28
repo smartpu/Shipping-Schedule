@@ -223,7 +223,7 @@ class PortSortUtils {
         }
         
         try {
-            const response = await fetch('data/Material-parsed_ports_list.txt');
+            const response = await fetch('Data/Material-parsed_ports_list.txt');
             if (!response.ok) {
                 if (typeof window.debugWarn === 'function') {
                     window.debugWarn('无法加载港口列表文件，使用嵌入数据');
@@ -355,7 +355,7 @@ class PortSortUtils {
         }
         
         try {
-            const response = await fetch('data/Material-parsed_ports_list.txt');
+            const response = await fetch('Data/Material-parsed_ports_list.txt');
             if (!response.ok) {
                 if (typeof window.debugWarn === 'function') {
                     window.debugWarn('无法加载港口映射文件');

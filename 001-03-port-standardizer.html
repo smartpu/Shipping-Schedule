@@ -180,16 +180,6 @@
 
             // 始终显示港口列表上传卡片（服务器端和本地都可以使用）
             portListFileCard.classList.remove('hidden');
-            
-            // 页面加载时自动尝试从服务器加载港口列表
-            (async () => {
-                try {
-                    await loadPortMapping();
-                    console.log('港口列表已自动加载');
-                } catch (error) {
-                    console.warn('自动加载港口列表失败，用户可手动上传:', error);
-                }
-            })();
 
             /**
              * 从文本内容构建港口映射
@@ -261,6 +251,7 @@
 
             /**
              * 加载港口列表并构建映射关系
+             * 仅支持手动上传，不自动加载
              */
             async function loadPortMapping() {
                 try {
@@ -269,7 +260,7 @@
                         throw new Error('portSortUtils 未加载，请刷新页面重试');
                     }
 
-                    // 加载港口列表和映射
+                    // 加载港口列表和映射（用于降级方案）
                     await window.portSortUtils.loadPortsList();
                     await window.portSortUtils.loadPortsMapping();
 
@@ -280,22 +271,7 @@
                         return true;
                     }
 
-                    // 尝试从网络加载
-                    try {
-                        const response = await fetch('data/Material-parsed_ports_list.txt');
-                        if (response.ok) {
-                            const text = await response.text();
-                            buildPortMappingFromText(text);
-                            console.log(`港口映射已加载（网络文件），共 ${portMapping.size} 个映射`);
-                            return true;
-                        }
-                    } catch (fetchError) {
-                        // 网络加载失败，尝试使用 portSortUtils 已有的数据
-                        console.warn('无法从网络加载港口列表文件，尝试使用已加载的数据:', fetchError);
-                    }
-
-                    // 降级方案：使用 portSortUtils 已有的映射数据
-                    // 注意：这可能不完整，因为 portInfoMap 在本地环境下可能为空
+                    // 降级方案：使用 portSortUtils 已有的映射数据（如果可用）
                     if (window.portSortUtils.portCodeToDisplayMap && Object.keys(window.portSortUtils.portCodeToDisplayMap).length > 0) {
                         portMapping.clear();
                         for (const [code, info] of Object.entries(window.portSortUtils.portCodeToDisplayMap)) {
@@ -306,11 +282,11 @@
                             }
                         }
                         console.log(`港口映射已加载（降级方案），共 ${portMapping.size} 个映射`);
-                        console.warn('注意：降级方案的映射可能不完整，建议手动加载港口列表文件');
+                        console.warn('注意：降级方案的映射可能不完整，建议手动上传港口列表文件');
                         return true;
                     }
 
-                    throw new Error('无法加载港口映射，请手动上传港口列表文件或检查网络连接');
+                    throw new Error('请先上传港口列表文件');
                 } catch (error) {
                     console.error('加载港口映射失败:', error);
                     throw error;

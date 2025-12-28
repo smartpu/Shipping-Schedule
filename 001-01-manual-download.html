@@ -3,211 +3,677 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>维运网 船期网页手动下载工具</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/tool-styles.css">
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-        /* 注意：.btn、.btn-open、.btn-saved 样式已移至 vendor/tool-styles.css */
-        /* 注意：.header 样式已在 parser-styles.css 中定义（通过 data-page 选择器） */
-    </style>
+    <title>维运网 船期网页下载工具</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css"> <!-- 统一主题，仅此一份样式 -->
+    <script src="vendor/auth-gist.js"></script>
 </head>
 <body data-page="001-01-manual-download.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-modal">
-            <h2>🔐 访问验证</h2>
-            <p>为了了解工具使用情况，请填写以下信息</p>
-            <form id="authForm">
-                <div class="auth-form-group">
-                    <label for="userName">姓名 *</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>维运网 船期网页下载工具</h2>
+                            <p id="totalCountText">提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools001" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="001-01-manual-download-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userPhone">手机号 *</label>
-                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+
+                <!-- 文件上传和数据状态区域 - 一行两个白底圆角框 -->
+                <div class="grid-2-col">
+                    <!-- 载入 Excel 框 -->
+                    <div class="card-white">
+                        <label for="excelFileInput" class="file-upload-label" aria-label="选择Excel文件上传">
+                            <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradExcel)" />
+                                <!-- Excel表格图标 -->
+                                <rect x="8" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="8" y1="14" x2="28" y2="14" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="8" y1="20" x2="28" y2="20" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="14" y1="8" x2="14" y2="28" stroke="#fff" stroke-width="1.5"/>
+                                <!-- 向下箭头 -->
+                                <path d="M18 22L22 26L14 26Z" fill="#fff"/>
+                                <defs>
+                                    <linearGradient id="gradExcel" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#0071e3" />
+                                        <stop offset="1" stop-color="#54a4ff" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="file-upload-content">
+                                <div class="file-upload-title">载入 Excel</div>
+                                <div class="file-upload-desc">支持 .xlsx / .xls，数据仅在本地浏览器解析</div>
+                            </div>
+                            <input type="file" id="excelFileInput" class="file-upload-input" accept=".xlsx,.xls" aria-label="选择Excel文件" aria-describedby="excelFileInputDesc">
+                            <span id="excelFileInputDesc" class="sr-only">支持 .xlsx 和 .xls 格式的Excel文件</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 数据状态框 -->
+                    <div class="card-white">
+                        <div class="data-status-container">
+                            <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradStatus)" />
+                                <!-- 数据状态图标：剪贴板 + 勾 -->
+                                <rect x="11" y="10" width="14" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <rect x="15" y="8" width="6" height="4" rx="1" fill="#fff"/>
+                                <path d="M14 18L17 21L23 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="gradStatus" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#FF8A00" />
+                                        <stop offset="1" stop-color="#FFB347" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="data-status-content">
+                                <div class="data-status-title">数据状态</div>
+                                <div id="fileStatus" class="data-status-text" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">尚未载入数据</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userEmail">邮箱 *</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+
+                <!-- 统计信息 - 三个长条白底圆角框 -->
+                <div class="grid-3-col" role="region" aria-label="数据统计">
+                    <div class="stats-card" role="status" aria-live="polite" aria-atomic="true">
+                        <div id="totalCount" class="stats-number" aria-label="总计数量">0</div>
+                        <div class="stats-label">总计</div>
+                    </div>
+                    <div class="stats-card stats-card-clickable" id="clearSavedBtn" title="点击清除所有已保存状态" role="button" tabindex="0" aria-label="清除所有已保存状态" aria-describedby="savedCount" aria-keyshortcuts="Delete">
+                        <div id="savedCount" class="stats-number" aria-live="polite" aria-atomic="true" aria-label="已保存数量">0</div>
+                        <div class="stats-label">已保存</div>
+                    </div>
+                    <div class="stats-card" role="status" aria-live="polite" aria-atomic="true">
+                        <div id="pendingCount" class="stats-number" aria-label="待处理数量">0</div>
+                        <div class="stats-label">待处理</div>
+                    </div>
                 </div>
-                <button type="submit" class="auth-submit-btn">确认并继续</button>
-            </form>
-        </div>
+
+                <!-- POL选项卡容器（用于换行显示） -->
+                <div class="pol-tabs" id="polTabs">
+                    <!-- POL选项卡将通过JavaScript动态生成 -->
+                </div>
+
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <!-- URL列表 - 大框白色圆角 -->
+                <div class="card-white mt-20" role="region" aria-label="网页列表">
+                    <div class="url-list" id="urlList" role="list" aria-label="待处理的网页列表" aria-live="polite">
+                        <!-- URL列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">维运网 船期网页下载工具使用声明</h2>
+                    <p class="usage-statement-text">本工具用于辅助从维运网（weiyun001.com）手动下载船期网页，所有数据来源于维运网公开信息，仅供内部使用。</p>
+                    <p class="usage-statement-text">下载的网页文件仅供数据解析使用，请遵守维运网的使用条款和版权规定。</p>
+                </div>
+
+            </div>
+        </main>
     </div>
-    <div class="container">
-        <div class="header">
-            <a href="index.html?tab=tools001" class="back-home-btn">← 返回首页</a>
-            <a href="001-01-manual-download-README.html" class="readme-btn">使用说明 →</a>
-            <h1>维运网 船期网页手动下载工具</h1>
-            <p id="totalCountText">共46个网页需要保存</p>
-        </div>
 
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-number" id="totalCount">46</div>
-                <div class="stat-label">总计</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number clear-link" id="savedCount" onclick="clearAllSaved()" title="点击清除所有已保存状态">0</div>
-                <div class="stat-label">已保存</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="pendingCount">46</div>
-                <div class="stat-label">待处理</div>
-            </div>
-        </div>
-
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-        </div>
-
-        <div class="instructions">
-            <h3>📋 使用说明</h3>
-            <ol>
-                <li>点击"打开网页"按钮，会在新标签页中打开对应的网页</li>
-                <li>等待页面完全加载（约10秒）</li>
-                <li>在浏览器中按 <strong>Ctrl+S</strong>（Windows）或 <strong>Cmd+S</strong>（Mac）保存网页</li>
-                <li>保存位置选择：<strong>data/001-view-full</strong> 文件夹</li>
-                <li>文件名使用页面标题（浏览器会自动填充）</li>
-                <li>如果文件已存在，选择覆盖即可</li>
-                <li>保存完成后，点击"标记为已保存"按钮更新进度</li>
-                <li>如需重新开始下载，点击顶部统计区域中"已保存"数字（带下划线），确认后即可清除所有已保存状态，将所有网页恢复为未保存状态</li>
-            </ol>
-        </div>
-
-        <div class="url-list" id="urlList">
-            <!-- URL列表将通过JavaScript动态生成 -->
-        </div>
-
-        <div class="footer">
-            <p>提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快</p>
-        </div>
-    </div>
-
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/port-sort-utils.js"></script>
     <script>
+        /**
+         * 001-01 网页下载工具
+         * 配置对象
+         */
+        const CONFIG = {
+            STORAGE_KEY: '001_savedStatus',
+            SHEET_NAME: 'Port Optimization 001',
+            DEFAULT_POL: 'CNTAO',
+            DEBUG: false // 生产环境设为false
+        };
 
-        // URL列表（包含URL和对应的航线名称）
-        const urlData = [
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=avCPiTfdl2v%252BuDHEPYQkLw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=nIJ3Uyv%252Bm7qB2PS5QvkN1A%253D%253D', route: '青岛到达曼' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=SbjTwb99PCeDQHDeZwEvvA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=nIJ3Uyv%252Bm7qB2PS5QvkN1A%253D%253D', route: '青岛到杰贝阿里' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=PFEPD9phugL4OCypgVW00A%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=o04TRiXb4TdXUQEl8c%252F4bQ%253D%253D', route: '青岛到布里斯班' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=2Hr1qa96pxp8yXraB9fpQw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=gR2po4rysa6ynGuDnPrqMA%253D%253D', route: '青岛到墨西哥曼萨尼约' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=tcS9Riy%252FOQ0F96F7MGSWlQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=eAhwAhPCSEryNn434iy2MA%253D%253D', route: '青岛到巴尔博亚' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=EQLmb4dIJ8CxMITji8BFcQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=eAhwAhPCSEryNn434iy2MA%253D%253D', route: '青岛到考赛多' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=Ox%252BalV3lY9wwJSuwc0t6mA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=Y6Ds6Vz9%252B77grs71XHIolA%253D%253D', route: '青岛到蒙巴萨' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=BdZ%252FtNPnUUWx6c7yvRrzUw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=x61UdCRqU8mCaDHdssLZSg%253D%253D', route: '青岛到桑托斯' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=lyIBtN5jVeYlTjYD7kLYaQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=IV85J0mX0Segto%252FH4Zk5Tg%253D%253D', route: '青岛到费利克斯托' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=h375AOSlvQCFgmjT%252F5HSqA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=IV85J0mX0Segto%252FH4Zk5Tg%253D%253D', route: '青岛到鹿特丹' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=vO8vVJPTiBKbz9UAlx1vNQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=ZY9R0ulrUtfklWEEetRGPg%253D%253D', route: '青岛到清奈' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=DI5vO7b5NtdrSNEEfjw64w%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=ZY9R0ulrUtfklWEEetRGPg%253D%253D', route: '青岛到吉大港' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=q8WDyyHdjjx8XNBkkJqSWA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=ZY9R0ulrUtfklWEEetRGPg%253D%253D', route: '青岛到科伦坡' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=jD0OvY0B6WYFRxQO7kBFtg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=ZY9R0ulrUtfklWEEetRGPg%253D%253D', route: '青岛到那瓦西瓦' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=CWZLcxB%252BS05YPBCXZF1ZGg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=OWZDyLmv3WGtVP7oMbti8g%253D%253D', route: '青岛到伊斯坦布尔' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=GrrDA5FZzdrE7CRr9jVlzA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=3U623zVBsOeXBLWrfPFQPg%253D%253D', route: '青岛到巴塞罗纳' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=PUkWEcWweA49bc%252BQ%252FHA6bw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=3U623zVBsOeXBLWrfPFQPg%253D%253D', route: '青岛到瓦伦西亚' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=S9X4TMR2ncdJuyYiyqnbig%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=uCIAr5lckiHGmGe0VyVVkw%253D%253D&ap=KgkQIHXZ%252FEWa2Qb%252Fa4MQtA%253D%253D', route: '青岛到长滩,加利福尼亚州' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=iwosRMDzfh0L9To05g8QbQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=uCIAr5lckiHGmGe0VyVVkw%253D%253D&ap=KgkQIHXZ%252FEWa2Qb%252Fa4MQtA%253D%253D', route: '青岛到洛杉矶,加利福尼亚州' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=SMCumFXp2sN6a1GTH%252F2okQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=2iP9zD499VuttWpU6DlwqA%253D%253D', route: '青岛到纽约,纽约州' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=1kkaoo2GPISaBR1Jx7dWKw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=ngG2%252FjG4NlHb5ZGdAHVP4g%253D%253D', route: '青岛到温哥华' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=vMzSod%252BtWz6%252F7wRCS6eQNA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=Sf%252FJBtcqkoI65Fe6qmiQsA%253D%253D', route: '青岛到香港' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=Vjyg7XTarHY%252B0lksvtw%252F7A%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=Ha4nmfNgPHgKMiB9XpJc%252Bg%253D%253D', route: '青岛到高雄' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=A8b%252BKvd%252FrH3knmwPYJlW9A%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=B8CCxPgTyTKHS6UWEi7E0Q%253D%253D', route: '青岛到吉达' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=u95MZzsr9eG2WvFJUQj%252Ffw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=lvNGjfh1u3F8DS5kPLxDEQ%253D%253D', route: '青岛到德班' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=EqaJ6TDe%252FxEv5kTMGPyXEw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D&ap=KgkQIHXZ%252FEWa2Qb%252Fa4MQtA%253D%253D', route: '青岛到盖梅港,头顿' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=rTBDz0ZlCGUJL5mkze3Rqw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到同奈' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=fJ71EUPe75vnyZvJ9cGHxg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到海防' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=CVigZ03WwsIi3M4cUzX1IA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D&ap=8qgsJj9tmT8zECAL0Nsagw%253D%253D', route: '青岛到胡志明' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=ffFYXkaqrPSmqfQq9H1AYQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=1Cobu6af7PO5k9VHay4j%252Bg%253D%253D', route: '青岛到雅加达' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=OxmUlXWM%252FAUYd%252FPp1zlwDA%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到林查班' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=uYYEeJiaA%252BEFqhyuOo%252FKJg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=1Cobu6af7PO5k9VHay4j%252Bg%253D%253D&ap=KgkQIHXZ%252FEWa2Qb%252Fa4MQtA%253D%253D', route: '青岛到马尼拉北' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=%252Bnj61657Gm95NjZ5JyQVuQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=1Cobu6af7PO5k9VHay4j%252Bg%253D%253D&ap=KgkQIHXZ%252FEWa2Qb%252Fa4MQtA%253D%253D', route: '青岛到马尼拉南' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=ANDy0tuuXA3bR0I4F4vWhg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到巴西古单' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=tVaiOFP7i%252Bq6FkaCrH4cPg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到槟城' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=zbLe6PFOMSPvN53Ju2WJ0g%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D&ap=KgkQIHXZ%252FEWa2Qb%252Fa4MQtA%253D%253D', route: '青岛到巴生北' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=2WJxBRbU754HNWDDwVsKgQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D&ap=KgkQIHXZ%252FEWa2Qb%252Fa4MQtA%253D%253D', route: '青岛到巴生西' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=EVsBMZX0DHq4aZyn1LHQog%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到西哈努克' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=YqmvNL3mswajMEBG16hT2A%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到新加坡' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=HlaejIbbmrtywbtr93rj1w%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=1Cobu6af7PO5k9VHay4j%252Bg%253D%253D', route: '青岛到泗水' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=Zfdwz371n2fV4bpx64twzQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=NFL9cTznAaa4CBynkPs%252B6Q%253D%253D', route: '青岛到丹戎帕拉帕斯' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=gMaWZtMygUlEwJuqZRv9Rw%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=d4cKFtsNQdHrm3NULzwm1w%253D%253D', route: '青岛到黑角' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=kB%252BdZmqU8TS1XETJO7LmbQ%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=d4cKFtsNQdHrm3NULzwm1w%253D%253D', route: '青岛到特马' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=Q6G%252BKvP9drcko0ye2rnGNg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=eAhwAhPCSEryNn434iy2MA%253D%253D', route: '青岛到库特扎尔' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=w5DjD0wJyInHt9f5k%252BKAIg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=rSDolrCl4cQcOeyAyTf1zg%253D%253D', route: '青岛到布埃纳文图拉' },
-            { url: 'https://www.weiyun001.com/routePort?st=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&de=X8GcDe9OXacnotj9q6RhWg%253D%253D&rg=MWZ6BhXSNqkOI0ZGa%252FiNmw%253D%253D&rt=rSDolrCl4cQcOeyAyTf1zg%253D%253D', route: '青岛到圣安东尼奥' }
-        ];
+        const debugLog = typeof window !== 'undefined' && typeof window.debugLog === 'function'
+            ? (...args) => window.debugLog('[001-01]', ...args)
+            : () => {};
 
-        // 从localStorage加载保存状态
-        let savedStatus = JSON.parse(localStorage.getItem('001_savedStatus') || '{}');
+        init001ToolPage('001-01-manual-download.html', 'tools001', () => {
+            const progressBarEl = DOM_CACHE.progressBar;
+            if (progressBarEl) {
+                progressBarEl.style.display = 'none';
+            }
+        });
 
-        // 初始化页面
-        function init() {
-            // 更新标题中的总数
-            document.getElementById('totalCountText').textContent = `共${urlData.length}个网页需要保存`;
+        let excelData = {};
+        let currentPol = null;
+        let urlData = [];
+        let savedStatus = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
+
+        const DOM_CACHE = {
+            get fileStatus() { return document.getElementById('fileStatus'); },
+            get statusDetail() { return document.getElementById('statusDetail'); },
+            get totalCountText() { return document.getElementById('totalCountText'); },
+            get totalCount() { return document.getElementById('totalCount'); },
+            get savedCount() { return document.getElementById('savedCount'); },
+            get pendingCount() { return document.getElementById('pendingCount'); },
+            get progressFill() { return document.getElementById('progressFill'); },
+            get progressBar() { return document.getElementById('progressBar'); },
+            get polTabs() { return document.getElementById('polTabs'); },
+            get urlList() { return document.getElementById('urlList'); },
+            get clearSavedBtn() { return document.getElementById('clearSavedBtn'); },
+            get excelFileInput() { return document.getElementById('excelFileInput'); }
+        };
+
+
+        async function parseExcelFile(file) {
+            try {
+                await ensureXlsx();
+                
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('XLSX库未加载，请刷新页面重试');
+                }
+
+                // 确保港口列表已加载
+                await portSortUtils.loadPortsList();
+
+                // 获取DOM元素引用（使用缓存）
+                const fileStatusEl = DOM_CACHE.fileStatus;
+                const totalCountTextEl = DOM_CACHE.totalCountText;
+                
+                if (!fileStatusEl) {
+                    throw new Error('必需的DOM元素未找到');
+                }
+                
+                fileStatusEl.textContent = '解析中...';
+
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                debugLog('Excel工作表列表:', workbook.SheetNames);
+                
+                // 查找目标工作表（优先精确匹配，避免匹配到365）
+                let sheetName = workbook.SheetNames.find(name => 
+                    name === CONFIG.SHEET_NAME || 
+                    name.includes(CONFIG.SHEET_NAME)
+                );
+                
+                // 如果精确匹配失败，尝试模糊匹配（但不包含365）
+                if (!sheetName) {
+                    sheetName = workbook.SheetNames.find(name => {
+                        const lowerName = name.toLowerCase();
+                        return (lowerName.includes('port optimization') || lowerName.includes('001')) && 
+                               !lowerName.includes('365');
+                    });
+                }
+                
+                if (!sheetName) {
+                    // 如果找不到，使用第一个表
+                    sheetName = workbook.SheetNames[0];
+                    debugLog('未找到目标表，使用第一个表:', sheetName);
+                } else {
+                    debugLog('找到工作表:', sheetName);
+                }
+
+                const sheet = workbook.Sheets[sheetName];
+                if (!sheet) {
+                    throw new Error('工作表不存在');
+                }
+                
+                // 使用header: 1获取二维数组，便于按列索引访问
+                const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                
+                debugLog('数据行数:', matrix.length);
+                debugLog('前5行数据:', matrix.slice(0, 5));
+
+                // 解析数据：A列(0), B列(1), C列(2), E列(4)
+                // 根据用户描述：A列是POL，B列是POD，C列是CNTAO的URL，E列是URL
+                const polDataMap = {};
+                
+                // 尝试识别标题行（查找包含POL、POD等关键词的行）
+                let headerRowIndex = 0;
+                for (let i = 0; i < Math.min(5, matrix.length); i++) {
+                    const row = matrix[i];
+                    const rowText = row.join('').toLowerCase();
+                    if (rowText.includes('pol') || rowText.includes('pod') || rowText.includes('url')) {
+                        headerRowIndex = i;
+                        debugLog('找到标题行，索引:', i, '内容:', row);
+                        break;
+                    }
+                }
+                
+                // 从标题行识别列索引
+                const headerRow = matrix[headerRowIndex] || [];
+                debugLog('标题行:', headerRow);
+                
+                // 固定列索引：A列(0)=POL, B列(1)=POD, C列(2)=POL代码, E列(4)=URL
+                // 列索引配置
+                const COL_INDEX = {
+                    POL: 0,        // A列（POL名称，如[QINGDAO SHANDONG|CNTAO|中国]）
+                    POD: 1,        // B列（POD）
+                    POL_CODE: 2,   // C列（POL代码，如CNTAO或CNRZH）
+                    URL: 4         // E列（URL）
+                };
+                
+                debugLog('列配置:', COL_INDEX);
+                
+                // 从A列提取POL名称的函数（用于统一归类）
+                function extractPolName(colA) {
+                    // 如果A列是[QINGDAO SHANDONG|CNTAO|中国]格式，提取POL代码部分
+                    // 或者直接使用A列的完整值
+                    if (!colA) return '';
+                    
+                    // 尝试从[xx|xx|xx]格式中提取
+                    const match = colA.match(/\[([^\]]+)\]/);
+                    if (match) {
+                        const parts = match[1].split('|');
+                        // 如果有多个部分，通常第二个是POL代码
+                        if (parts.length >= 2) {
+                            return parts[1].trim().toUpperCase();
+                        }
+                    }
+                    
+                    // 如果无法提取，返回A列的完整值（转换为大写）
+                    return colA.toUpperCase();
+                }
+                
+                // 遍历数据行（从标题行之后开始）
+                let processedCount = 0;
+                for (let i = headerRowIndex + 1; i < matrix.length; i++) {
+                    const row = matrix[i];
+                    const colA = String(row[COL_INDEX.POL] || '').trim(); // A列（POL）
+                    const colB = String(row[COL_INDEX.POD] || '').trim(); // B列（POD）
+                    
+                    // 跳过空行（A列和B列都为空）
+                    if (!colA && !colB) continue;
+                    
+                    // 提取代码和区域（用于排序）
+                    const code = portSortUtils.extractCode(colB);
+                    const region = portSortUtils.extractRegion(colB);
+                    
+                    // 获取C列的POL代码值
+                    const polCode = String(row[COL_INDEX.POL_CODE] || '').trim().toUpperCase();
+                    
+                    // 如果C列是CNTAO或CNRZH，使用E列的URL，统一归类到A列的POL名称
+                    if (polCode === 'CNTAO' || polCode === 'CNRZH') {
+                        if (COL_INDEX.URL < row.length) {
+                            const url = String(row[COL_INDEX.URL] || '').trim();
+                            if (url && url !== '' && colA) {
+                                // 从A列提取POL名称（统一归类，不区分青岛日照）
+                                const polName = extractPolName(colA);
+                                if (polName) {
+                                    if (!polDataMap[polName]) {
+                                        polDataMap[polName] = [];
+                                    }
+                                    polDataMap[polName].push({
+                                        colA: colA,
+                                        colB: colB,
+                                        url: url,
+                                        code: code,
+                                        region: region
+                                    });
+                                    processedCount++;
+                                }
+                            }
+                        }
+                    } else if (colA && colA !== '') {
+                        // 其他POL，使用E列的URL
+                        if (COL_INDEX.URL < row.length) {
+                            const url = String(row[COL_INDEX.URL] || '').trim();
+                            if (url && url !== '') {
+                                // 从A列提取POL名称
+                                const polName = extractPolName(colA);
+                                if (polName) {
+                                    if (!polDataMap[polName]) {
+                                        polDataMap[polName] = [];
+                                    }
+                                    polDataMap[polName].push({
+                                        colA: colA,
+                                        colB: colB,
+                                        url: url,
+                                        code: code,
+                                        region: region
+                                    });
+                                    processedCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                debugLog('处理的数据行数:', processedCount);
+                debugLog('POL数据映射:', Object.keys(polDataMap));
+                
+                // 对每个POL的数据进行排序（按照Material-parsed_ports_list.txt的顺序）
+                Object.keys(polDataMap).forEach(pol => {
+                    polDataMap[pol] = portSortUtils.sortPorts(polDataMap[pol]);
+                });
+                
+                excelData = polDataMap;
+                
+                // 渲染POL选项卡
+                renderPolTabs();
+                
+                // 默认选择第一个POL（优先选择配置的默认POL）
+                if (Object.keys(excelData).length > 0) {
+                    const defaultPol = excelData[CONFIG.DEFAULT_POL] ? CONFIG.DEFAULT_POL : Object.keys(excelData)[0];
+                    switchPol(defaultPol);
+                }
+                
+                const totalCount = Object.values(excelData).reduce((sum, arr) => sum + arr.length, 0);
+                
+                if (totalCount > 0) {
+                    if (fileStatusEl) {
+                        // 一行显示：份数和记录数（不显示文件名）
+                        fileStatusEl.innerHTML = `<span>已载入 1 份表格</span><span style="color: #6c757d;">共 ${totalCount.toLocaleString()} 条记录</span>`;
+                    }
+                    // 更新顶部总数显示（载入后显示）
+                    if (totalCountTextEl) {
+                        totalCountTextEl.textContent = `共${totalCount}个网页需要保存。提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快。`;
+                        totalCountTextEl.style.display = 'block';
+                    }
+                } else {
+                    if (fileStatusEl) {
+                        fileStatusEl.textContent = '文件为空或格式不正确';
+                    }
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('[001-01] 未解析到任何数据，请检查Excel文件格式');
+                    }
+                    // 如果没有数据，隐藏总数显示
+                    if (totalCountTextEl) {
+                        totalCountTextEl.style.display = 'none';
+                    }
+                }
+                
+            } catch (error) {
+                if (typeof window.debugError === 'function') {
+                    window.debugError('[001-01] 解析Excel文件失败:', error);
+                    window.debugError('[001-01] 错误堆栈:', error.stack);
+                }
+                
+                // 使用缓存的DOM元素引用
+                const fileStatusEl = DOM_CACHE.fileStatus;
+                const totalCountTextEl = DOM_CACHE.totalCountText;
+                
+                if (fileStatusEl) {
+                    fileStatusEl.textContent = '加载失败，请检查文件格式';
+                }
+                // 隐藏总数显示
+                if (totalCountTextEl) {
+                    totalCountTextEl.style.display = 'none';
+                }
+            }
+        }
+
+        /**
+         * 创建POL按钮
+         * @param {string} pol - POL代码
+         * @returns {HTMLButtonElement} 创建的按钮元素
+         */
+        function createPolButton(pol) {
+            const tabBtn = document.createElement('button');
+            tabBtn.setAttribute('data-pol', pol);
+            tabBtn.className = 'pol-button btn-sweep-orange';
+            
+            // 显示该POL的第一个item的完整A列值
+            const polItems = excelData[pol];
+            if (polItems && polItems.length > 0 && polItems[0].colA) {
+                tabBtn.textContent = polItems[0].colA;
+            } else {
+                tabBtn.textContent = pol;
+            }
+            
+            tabBtn.onclick = () => switchPol(pol);
+            
+            // 初始化激活状态
+            if (pol === currentPol) {
+                tabBtn.classList.add('pol-button-active');
+                tabBtn.setAttribute('aria-pressed', 'true');
+                tabBtn.setAttribute('aria-current', 'true');
+            } else {
+                tabBtn.setAttribute('aria-pressed', 'false');
+            }
+            
+            return tabBtn;
+        }
+
+        // 渲染POL选项卡
+        function renderPolTabs() {
+            const polTabsContainer = DOM_CACHE.polTabs;
+            if (!polTabsContainer) return;
+            polTabsContainer.innerHTML = '';
+            
+            const pols = Object.keys(excelData).sort();
+            
+            pols.forEach((pol) => {
+                const tabBtn = createPolButton(pol);
+                polTabsContainer.appendChild(tabBtn);
+            });
+            
+            // 显示主容器（每行6个）
+            if (pols.length > 0) {
+                polTabsContainer.classList.add('active');
+            } else {
+                polTabsContainer.classList.remove('active');
+            }
+        }
+
+        // 切换POL
+        function switchPol(pol) {
+            currentPol = pol;
+            
+            // 更新所有POL按钮的激活状态
+            document.querySelectorAll('button[data-pol]').forEach(btn => {
+                const btnPol = btn.getAttribute('data-pol');
+                if (btnPol === pol) {
+                    btn.classList.add('pol-button-active');
+                    btn.setAttribute('aria-pressed', 'true');
+                    btn.setAttribute('aria-current', 'true');
+                } else {
+                    btn.classList.remove('pol-button-active');
+                    btn.setAttribute('aria-pressed', 'false');
+                    btn.removeAttribute('aria-current');
+                }
+            });
+            
+            // 更新URL列表
+            if (excelData[pol]) {
+                urlData = excelData[pol].map((item, index) => ({
+                    index: `${pol}_${index}`, // 使用pol_index作为唯一标识
+                    display: `${item.colA} - ${item.colB}`, // A列 - B列
+                    url: item.url // E列或对应POL的URL列
+                }));
+            } else {
+                urlData = [];
+            }
+            
             renderUrlList();
             updateStats();
+        }
+
+        /**
+         * 初始化页面
+         */
+        async function init() {
+            // 先加载港口列表
+            await portSortUtils.loadPortsList();
+            
+            // 绑定清除已保存按钮事件（使用缓存的DOM元素）
+            const clearSavedBtn = DOM_CACHE.clearSavedBtn;
+            if (clearSavedBtn) {
+                clearSavedBtn.addEventListener('click', clearAllSaved);
+                // 键盘导航支持
+                clearSavedBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        clearAllSaved();
+                    }
+                });
+            }
+            
+            // 设置文件输入监听（使用缓存的DOM元素）
+            const excelFileInput = DOM_CACHE.excelFileInput;
+            if (excelFileInput) {
+                excelFileInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        await parseExcelFile(file);
+                    }
+                });
+            }
+            
+            // 尝试自动加载Excel文件
+            loadDefaultExcelFile('001-01-manual-download', async (file) => {
+                if (file) {
+                    await parseExcelFile(file);
+                }
+            });
         }
 
         // 渲染URL列表
         function renderUrlList() {
-            const urlList = document.getElementById('urlList');
+            const urlList = DOM_CACHE.urlList;
+            if (!urlList) return;
             urlList.innerHTML = '';
 
+            if (urlData.length === 0) {
+                urlList.innerHTML = '<div class="empty-state" role="status" aria-live="polite">请先加载Excel文件</div>';
+                return;
+            }
+
             urlData.forEach((item, index) => {
-                const isSaved = savedStatus[index] || false;
+                const isSaved = savedStatus[item.index] || false;
                 const urlItem = document.createElement('div');
                 urlItem.className = 'url-item';
+                urlItem.setAttribute('role', 'listitem');
+                urlItem.setAttribute('aria-label', `第${index + 1}项：${item.display}`);
+                
                 urlItem.innerHTML = `
-                    <div class="url-number">${index + 1}</div>
-                    <div class="url-content">
-                        <div style="font-weight: 600; color: #495057; margin-bottom: 8px; font-size: 15px;">${item.route}</div>
-                        <div class="url-link" style="color: #6c757d; word-break: break-all;">${item.url}</div>
-                        <span class="status-badge ${isSaved ? 'status-saved' : 'status-pending'}" style="margin-top: 8px; display: inline-block;">
-                            ${isSaved ? '✓ 已保存' : '待处理'}
-                        </span>
+                    <div class="url-item-number" aria-label="项目编号">${index + 1}</div>
+                    <div class="url-item-content">
+                        <div class="url-item-title">${item.display}</div>
+                        <div class="url-item-url" aria-label="网页地址">${portSortUtils.escapeHtml(item.url)}</div>
                     </div>
-                    <div class="url-actions">
-                        <a href="${item.url}" target="_blank" class="btn btn-open">打开网页</a>
-                        <button class="btn ${isSaved ? 'btn-saved' : 'btn-open'}" onclick="markAsSaved(${index})" ${isSaved ? 'disabled' : ''}>
-                            ${isSaved ? '✓ 已保存' : '标记为已保存'}
-                        </button>
+                    <div class="url-item-actions">
+                        <a href="${item.url}" target="_blank" class="btn-primary-blue btn-sweep-blue" aria-label="在新窗口打开网页 ${item.display}" rel="noopener noreferrer">打开网页</a>
+                        <button data-item-index="${item.index}" ${isSaved ? 'disabled' : ''} class="btn-primary-orange ${isSaved ? '' : 'btn-sweep-orange'}" aria-label="${isSaved ? '已保存' : '标记为已保存'}" ${isSaved ? 'aria-pressed="true"' : 'aria-pressed="false"'}>${isSaved ? '✓ 已保存' : '标记为已保存'}</button>
                     </div>
                 `;
+                
+                // 绑定标记已保存按钮事件（使用事件监听器，避免onclick）
+                const markBtn = urlItem.querySelector('button[data-item-index]');
+                if (markBtn && !isSaved) {
+                    markBtn.addEventListener('click', () => {
+                        markAsSaved(item.index);
+                    });
+                }
+                
                 urlList.appendChild(urlItem);
             });
         }
 
-        // 标记为已保存
+        /**
+         * 标记为已保存
+         * @param {string} index - 项目索引
+         */
         function markAsSaved(index) {
             savedStatus[index] = true;
-            localStorage.setItem('001_savedStatus', JSON.stringify(savedStatus));
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(savedStatus));
             renderUrlList();
             updateStats();
         }
 
-        // 更新统计信息
+        /**
+         * 更新统计信息（只统计当前POL的已保存数量）
+         */
         function updateStats() {
-            const savedCount = Object.values(savedStatus).filter(v => v).length;
-            const pendingCount = urlData.length - savedCount;
-            const progress = (savedCount / urlData.length) * 100;
+            // 使用缓存的DOM元素引用
+            const totalCountEl = DOM_CACHE.totalCount;
+            const savedCountEl = DOM_CACHE.savedCount;
+            const pendingCountEl = DOM_CACHE.pendingCount;
+            const progressFillEl = DOM_CACHE.progressFill;
+            const progressBarEl = DOM_CACHE.progressBar;
+            const totalCountTextEl = DOM_CACHE.totalCountText;
+            
+            if (!currentPol || urlData.length === 0) {
+                totalCountEl.textContent = 0;
+                savedCountEl.textContent = 0;
+                pendingCountEl.textContent = 0;
+                if (progressFillEl) {
+                    progressFillEl.style.width = '0%';
+                }
+                // 当进度为0时，隐藏整个进度条容器，避免显示横杠
+                if (progressBarEl) {
+                    progressBarEl.style.display = 'none';
+                }
+                totalCountTextEl.style.display = 'none';
+                return;
+            }
+            
+            // 只统计当前POL的已保存数量
+            const currentPolSavedCount = urlData.filter(item => savedStatus[item.index]).length;
+            const pendingCount = urlData.length - currentPolSavedCount;
+            const progress = urlData.length > 0 ? (currentPolSavedCount / urlData.length) * 100 : 0;
 
-            document.getElementById('totalCount').textContent = urlData.length;
-            document.getElementById('savedCount').textContent = savedCount;
-            document.getElementById('pendingCount').textContent = pendingCount;
-            document.getElementById('progressFill').style.width = progress + '%';
+            totalCountEl.textContent = urlData.length;
+            savedCountEl.textContent = currentPolSavedCount;
+            pendingCountEl.textContent = pendingCount;
+            
+            // 更新进度条
+            if (progressFillEl) {
+                progressFillEl.style.width = `${progress}%`;
+            }
+            // 当进度为0时隐藏进度条容器，否则显示
+            if (progressBarEl) {
+                if (progress === 0) {
+                    progressBarEl.style.display = 'none';
+                } else {
+                    progressBarEl.style.display = 'block';
+                }
+            }
+            
+            // 计算所有POL的总数（用于顶部显示）
+            const allPolTotalCount = Object.values(excelData).reduce((sum, arr) => sum + arr.length, 0);
+            if (allPolTotalCount > 0) {
+                totalCountTextEl.textContent = `共${allPolTotalCount}个网页需要保存。提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快。`;
+                totalCountTextEl.style.display = 'block';
+            } else {
+                totalCountTextEl.style.display = 'none';
+            }
         }
 
-        // 清除所有已保存状态
+        // 清除已保存状态（只清除当前POL的）
         function clearAllSaved() {
-            if (confirm('确定要清除所有已保存状态吗？这将重置所有进度。')) {
-                savedStatus = {};
-                localStorage.setItem('001_savedStatus', JSON.stringify(savedStatus));
+            if (!currentPol) {
+                // 使用更友好的提示方式（可考虑替换为自定义模态框）
+                const message = '请先选择一个POL';
+                if (typeof window.debugError === 'function') {
+                    window.debugError(message);
+                }
+                alert(message);
+                return;
+            }
+            
+            const confirmMessage = `确定要清除当前POL（${currentPol}）的所有已保存状态吗？这将重置该POL的进度。`;
+            if (confirm(confirmMessage)) {
+                // 只清除当前POL的已保存状态
+                urlData.forEach(item => {
+                    if (savedStatus[item.index]) {
+                        delete savedStatus[item.index];
+                    }
+                });
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(savedStatus));
                 renderUrlList();
                 updateStats();
             }
@@ -216,11 +682,6 @@
         // 页面加载时初始化
         init();
     </script>
-    </div>
-    <div class="page-footer">
-        <h2>维运网 船期网页手动下载工具使用声明</h2>
-        <p>本工具用于辅助从维运网（weiyun.com）手动下载船期网页，所有数据来源于维运网公开信息，仅供内部使用。</p>
-        <p>下载的网页文件仅供数据解析使用，请遵守维运网的使用条款和版权规定。</p>
     </div>
 </body>
 </html>

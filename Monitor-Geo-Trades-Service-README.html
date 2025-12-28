@@ -4,178 +4,220 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor · 地理贸易航线使用说明</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/readme-styles.css">
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-    </style>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
 </head>
 <body data-page="Monitor-Geo-Trades-Service-README.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-modal">
-            <h2>🔐 访问验证</h2>
-            <p>为了了解工具使用情况，请填写以下信息</p>
-            <form id="authForm">
-                <div class="auth-form-group">
-                    <label for="userName">姓名 *</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Monitor · 地理贸易航线使用说明</h2>
+                            <p>专业的贸易航线监控与分析工具，支持 Excel 数据导入、多维度筛选、智能搜索和悬停查看详情等功能。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Monitor-Geo-Trades-Service.html?from=monitor" class="tool-link secondary" aria-label="打开工具">打开工具 →</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userPhone">手机号 *</label>
-                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+
+                <!-- 内容区域 -->
+                <div class="card-white mt-20">
+                    <div class="readme-content">
+                        <h2>工具简介</h2>
+                        <p><strong>Monitor · 地理贸易航线</strong> 是一款专业的贸易航线监控与分析工具。支持载入 Excel 文件，通过多维度筛选（Trade、Service、Service Branding、Port Rotation）快速查找和分析服务信息，并提供悬停查看详细信息的功能。工具主要特点：</p>
+                        <ul>
+                            <li><strong>Excel 数据导入</strong>：支持载入并解析 Excel 文件，自动识别列结构</li>
+                            <li><strong>多维度筛选</strong>：支持 Trade、Service、Service Branding、Port Rotation 四个维度的多选筛选，筛选条件联动</li>
+                            <li><strong>智能搜索</strong>：每个筛选器都支持搜索功能，快速定位选项</li>
+                            <li><strong>悬停查看详情</strong>：悬停在 Service 列查看 Port Rotation，悬停在 Ships 列查看 Vessel Name，悬停在 Partners 列查看 Service Branding</li>
+                            <li><strong>数据统计</strong>：Ships 列自动统计 K 列 Vessel 个数，显示格式为"统计个数 / 原本数字"</li>
+                            <li><strong>列宽自适应</strong>：Trade、Status、Ships、Deployed、Weekly Capacity、Service ID 列根据内容自动调整宽度，Service 和 Partners 列平分剩余宽度</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>快速开始</h2>
+                        <h3>前置准备</h3>
+                        <ol>
+                            <li><strong>Excel 数据文件</strong>：准备包含服务数据的 Excel 文件（文件名在 Data/index.json 中配置）</li>
+                            <li><strong>浏览器</strong>：推荐使用 Chrome、Edge 或 Safari 浏览器</li>
+                        </ol>
+
+                        <h3>基本流程</h3>
+                        <ol>
+                            <li>打开工具页面</li>
+                            <li>工具会自动从 <code>Data/index.json</code> 读取配置并加载对应的 Excel 测试数据文件（如果配置存在）</li>
+                            <li>如果自动加载失败或需要手动选择：
+                                <ul>
+                                    <li>点击"载入 Excel"，载入包含服务数据的 Excel 文件</li>
+                                </ul>
+                            </li>
+                            <li>数据加载成功后，使用筛选器选择 Trade、Service、Service Branding、Port Rotation 等条件</li>
+                            <li>在表格中查看筛选后的服务信息</li>
+                            <li>悬停在 Service 列查看 Port Rotation 详情</li>
+                            <li>悬停在 Ships 列的数字上查看 Vessel Name</li>
+                            <li>悬停在 Partners 列查看 Service Branding 详情</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>核心功能</h2>
+                        <h3>1. 数据导入</h3>
+                        <ul>
+                            <li>支持载入 Excel 文件（.xlsx, .xls 格式）</li>
+                            <li>自动识别列结构，支持中英文列名</li>
+                            <li>数据仅在本地浏览器解析，不会上传至任何服务器</li>
+                        </ul>
+
+                        <h3>2. 多维度筛选（筛选条件联动）</h3>
+                        <ul>
+                            <li><strong>Trade 筛选</strong>：按贸易航线筛选</li>
+                            <li><strong>Service 筛选</strong>：按服务名称筛选</li>
+                            <li><strong>Service Branding 筛选</strong>：按服务品牌筛选（自动简化显示，去掉前缀）</li>
+                            <li><strong>Port Rotation 筛选</strong>：按港口轮换筛选（支持逗号分隔的多个港口搜索）</li>
+                            <li>每个筛选器都支持：
+                                <ul>
+                                    <li>多选功能（Ctrl/点击切换）</li>
+                                    <li>搜索功能（输入关键词快速查找）</li>
+                                    <li>全部选择按钮</li>
+                                    <li>清除选择按钮</li>
+                                </ul>
+                            </li>
+                            <li><strong>筛选联动</strong>：选择任一筛选条件后，其他筛选器的选项会自动更新，只显示与已选择条件匹配的选项</li>
+                        </ul>
+
+                        <h3>3. 悬停查看详情</h3>
+                        <ul>
+                            <li><strong>Service 列</strong>：悬停显示 J 列的 Port Rotation 信息</li>
+                            <li><strong>Ships 列</strong>：悬停在数字上显示 K 列的 Vessel Name（按逗号换行显示）</li>
+                            <li><strong>Partners 列</strong>：悬停显示 Service Branding 信息（已简化，去掉"Vessel providers:"等前缀）。如果没有 Partners 列，则在 Service 列悬停查看 Service Branding</li>
+                            <li><strong>fleet varies</strong>：如果 K 列有船，悬停也会显示 Vessel Name</li>
+                        </ul>
+
+                        <h3>4. Ships 列统计</h3>
+                        <ul>
+                            <li>自动统计 K 列（Vessel Name）中的船个数</li>
+                            <li>显示格式：<code>统计个数 / 原本数字</code>（例如：<code>3 / 8</code>）</li>
+                            <li>如果 K 列没有船，显示 <code>0 / 原本数字</code></li>
+                            <li>如果是 "fleet varies"，不显示统计，但如果 K 列有船，悬停可查看船名</li>
+                        </ul>
+
+                        <h3>5. 列显示优化</h3>
+                        <ul>
+                            <li><strong>列顺序</strong>：Status 列显示在表格第一列，Trade 列显示在第二列（如果存在）</li>
+                            <li><strong>Port Rotation 和 Vessel Name 列</strong>：不在表格中显示（通过悬停查看）</li>
+                            <li><strong>Service Branding 列</strong>：不在表格中显示（在 Partners 列悬停查看，如果没有 Partners 列则在 Service 列悬停查看）</li>
+                            <li><strong>Deployed 列</strong>：自动格式化，去掉 "from" 和 "to"，用 "~" 连接数字（例如：<code>7831 ~ 9643</code>）</li>
+                            <li><strong>列宽自适应</strong>：
+                                <ul>
+                                    <li>Status、Trade、Ships、Deployed、Weekly Capacity、Service ID 列根据内容最宽自动调整宽度</li>
+                                    <li>Service 和 Partners 列平分剩余宽度，允许文本换行</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>数据格式要求</h2>
+                        <ul>
+                            <li><strong>Status 列</strong>：状态信息（显示在表格第一列）</li>
+                            <li><strong>Trade 列</strong>：贸易航线信息</li>
+                            <li><strong>Service 列</strong>：服务名称</li>
+                            <li><strong>Service Branding 列</strong>：服务品牌（可能包含 "Vessel providers:"、"Alliance partners:"、"Slotters:" 等前缀）</li>
+                            <li><strong>Partners 列</strong>（可选）：合作伙伴信息</li>
+                            <li><strong>Ships 列（E列）</strong>：船舶数量（可能包含 "ships" 文字或 "fleet varies"）</li>
+                            <li><strong>Port Rotation 列（J列）</strong>：港口轮换信息</li>
+                            <li><strong>Vessel Name 列（K列）</strong>：船舶名称（逗号分隔）</li>
+                            <li><strong>Deployed 列</strong>：部署范围（格式：from X to Y）</li>
+                            <li><strong>Weekly Capacity 列</strong>：周运力</li>
+                            <li><strong>Service ID 列</strong>：服务 ID</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>注意事项</h2>
+                        <ul>
+                            <li>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用</li>
+                            <li>解析结果仅供内部研判，不构成对外报价或投资建议</li>
+                            <li>建议使用最新版本的 Chrome、Edge 或 Safari 浏览器以获得最佳体验</li>
+                            <li>如果 Excel 文件列名与预期不符，工具会尝试自动识别，但建议使用标准列名</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>使用技巧</h2>
+                        <ul>
+                            <li>使用筛选器的搜索功能可以快速定位选项，特别是在选项较多时</li>
+                            <li>可以同时选择多个筛选条件，实现精确查找</li>
+                            <li>筛选条件会自动联动，选择任一筛选条件后，其他筛选器的选项会自动更新</li>
+                            <li>Port Rotation 筛选支持逗号分隔的多个港口搜索（例如：<code>港口1,港口2</code>）</li>
+                            <li>悬停查看详情时，tooltip 会跟随鼠标移动，方便查看</li>
+                            <li>Ships 列的统计可以帮助快速了解实际船舶数量</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>常见问题</h2>
+                        <h3>Q1: Excel 加载失败？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>确认文件格式为 .xlsx 或 .xls</li>
+                            <li>检查文件是否包含必要的列（Trade、Service、Service Branding、Port Rotation 等）</li>
+                            <li>查看浏览器 Console 是否有错误信息</li>
+                        </ul>
+
+                        <h3>Q2: 筛选器没有显示选项？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>Excel 解析失败或列名不匹配</li>
+                            <li>数据中没有对应的值</li>
+                            <li>刷新页面重新载入</li>
+                        </ul>
+
+                        <h3>Q3: 筛选条件没有联动？</h3>
+                        <p><strong>A</strong>：筛选条件会自动联动。如果发现没有联动，请检查：</p>
+                        <ul>
+                            <li>是否已选择筛选条件</li>
+                            <li>数据中是否存在匹配的记录</li>
+                            <li>刷新页面重新载入数据</li>
+                        </ul>
+
+                        <h3>Q4: 表格列宽显示不正常？</h3>
+                        <p><strong>A</strong>：工具会自动计算列宽。如果显示不正常，请尝试：</p>
+                        <ul>
+                            <li>刷新页面重新加载</li>
+                            <li>检查浏览器窗口大小是否过小</li>
+                            <li>查看浏览器 Console 是否有错误信息</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userEmail">邮箱 *</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Monitor · 地理贸易航线使用声明</h2>
+                    <p class="usage-statement-text">资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+                    <p class="usage-statement-text">所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
                 </div>
-                <button type="submit" class="auth-submit-btn">确认并继续</button>
-            </form>
-        </div>
-    </div>
-    <div class="container">
-        <div class="header">
-            <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
-            <h1>Monitor · 地理贸易航线使用说明</h1>
-        </div>
-
-        <div class="content">
-            <h2>工具简介</h2>
-            <p><strong>Monitor · 地理贸易航线</strong> 是一款用于监控和分析地理贸易航线的工具。支持载入 Excel 文件，通过多维度筛选（Trade、Service、Service Branding、Port Rotation）快速查找和分析服务信息，并提供悬停查看详细信息的功能。</p>
-            <p>工具主要特点：</p>
-            <ul>
-                <li><strong>Excel 数据导入</strong>：支持载入并解析 Excel 文件，自动识别列结构</li>
-                <li><strong>多维度筛选</strong>：支持 Trade、Service、Service Branding、Port Rotation 四个维度的多选筛选</li>
-                <li><strong>智能搜索</strong>：每个筛选器都支持搜索功能，快速定位选项</li>
-                <li><strong>悬停查看详情</strong>：悬停在 Service 列查看 Port Rotation，悬停在 Ships 列查看 Vessel Name，悬停在 Partners 列查看 Service Branding</li>
-                <li><strong>数据统计</strong>：Ships 列自动统计 K 列 Vessel 个数，显示格式为"统计个数 / 原本数字"</li>
-            </ul>
-
-            <hr>
-
-            <h2>快速开始</h2>
-            <h3>前置准备</h3>
-            <ol>
-                <li><strong>Excel 数据文件</strong>：准备包含服务数据的 Excel 文件（文件名在 Data/index.json 中配置）</li>
-                <li><strong>浏览器</strong>：推荐使用 Chrome、Edge 或 Safari 浏览器</li>
-            </ol>
-
-            <h3>基本流程</h3>
-            <ol>
-                <li>打开 <code>Monitor-Geo-Trades-Service.html</code></li>
-                <li>工具会自动从 <code>Data/index.json</code> 读取配置并加载对应的 Excel 测试数据文件（如果配置存在）</li>
-                <li>如果自动加载失败或需要手动选择：
-                    <ul>
-                <li>点击"选择 Excel 文件"，载入包含服务数据的 Excel 文件</li>
-                    </ul>
-                </li>
-                <li>数据加载成功后，使用筛选器选择 Trade、Service、Service Branding、Port Rotation 等条件</li>
-                <li>在表格中查看筛选后的服务信息</li>
-                <li>悬停在 Service 列查看 Port Rotation 详情</li>
-                <li>悬停在 Ships 列的数字上查看 Vessel Name</li>
-                <li>悬停在 Partners 列查看 Service Branding 详情</li>
-            </ol>
-
-            <hr>
-
-            <h2>核心功能</h2>
-            <h3>1. 数据导入</h3>
-            <ul>
-                <li>支持载入 Excel 文件（.xlsx, .xls 格式）</li>
-                <li>自动识别列结构，支持中英文列名</li>
-                <li>数据仅在本地浏览器解析，不会上传至任何服务器</li>
-            </ul>
-
-            <h3>2. 多维度筛选</h3>
-            <ul>
-                <li><strong>Trade 筛选</strong>：按贸易航线筛选</li>
-                <li><strong>Service 筛选</strong>：按服务名称筛选</li>
-                <li><strong>Service Branding 筛选</strong>：按服务品牌筛选（自动简化显示，去掉前缀）</li>
-                <li><strong>Port Rotation 筛选</strong>：按港口轮换筛选</li>
-                <li>每个筛选器都支持：
-                    <ul>
-                        <li>多选功能</li>
-                        <li>搜索功能（输入关键词快速查找）</li>
-                        <li>全部选择按钮</li>
-                        <li>清除选择按钮</li>
-                    </ul>
-                </li>
-            </ul>
-
-            <h3>3. 悬停查看详情</h3>
-            <ul>
-                <li><strong>Service 列</strong>：悬停显示 J 列的 Port Rotation 信息</li>
-                <li><strong>Ships 列</strong>：悬停在数字上显示 K 列的 Vessel Name（按逗号换行显示）</li>
-                <li><strong>Partners 列</strong>：悬停显示 Service Branding 信息（已简化，去掉"Vessel providers:"等前缀）</li>
-                <li><strong>fleet varies</strong>：如果 K 列有船，悬停也会显示 Vessel Name</li>
-            </ul>
-
-            <h3>4. Ships 列统计</h3>
-            <ul>
-                <li>自动统计 K 列（Vessel Name）中的船个数</li>
-                <li>显示格式：<code>统计个数 / 原本数字</code>（例如：<code>3 / 8</code>）</li>
-                <li>如果 K 列没有船，显示 <code>0 / 原本数字</code></li>
-                <li>如果是 "fleet varies"，不显示统计，但如果 K 列有船，悬停可查看船名</li>
-            </ul>
-
-            <h3>5. 列显示优化</h3>
-            <ul>
-                <li>Port Rotation 和 Vessel Name 列不在表格中显示（通过悬停查看）</li>
-                <li>Service Branding 列不在表格中显示（在 Partners 列悬停查看）</li>
-                <li>Deployed 列自动格式化：去掉 "from" 和 "to"，用 "~" 连接数字（例如：<code>7831 ~ 9643</code>）</li>
-            </ul>
-
-            <hr>
-
-            <h2>数据格式要求</h2>
-            <ul>
-                <li><strong>Trade 列</strong>：贸易航线信息</li>
-                <li><strong>Service 列</strong>：服务名称</li>
-                <li><strong>Service Branding 列</strong>：服务品牌（可能包含 "Vessel providers:"、"Alliance partners:"、"Slotters:" 等前缀）</li>
-                <li><strong>Partners 列</strong>（可选）：合作伙伴信息</li>
-                <li><strong>Ships 列（E列）</strong>：船舶数量（可能包含 "ships" 文字或 "fleet varies"）</li>
-                <li><strong>Port Rotation 列（J列）</strong>：港口轮换信息</li>
-                <li><strong>Vessel Name 列（K列）</strong>：船舶名称（逗号分隔）</li>
-                <li><strong>Deployed 列</strong>：部署范围（格式：from X to Y）</li>
-            </ul>
-
-            <hr>
-
-            <h2>注意事项</h2>
-            <ul>
-                <li>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用</li>
-                <li>解析结果仅供内部研判，不构成对外报价或投资建议</li>
-                <li>建议使用最新版本的 Chrome、Edge 或 Safari 浏览器以获得最佳体验</li>
-                <li>如果 Excel 文件列名与预期不符，工具会尝试自动识别，但建议使用标准列名</li>
-            </ul>
-
-            <hr>
-
-            <h2>使用技巧</h2>
-            <ul>
-                <li>使用筛选器的搜索功能可以快速定位选项，特别是在选项较多时</li>
-                <li>可以同时选择多个筛选条件，实现精确查找</li>
-                <li>悬停查看详情时，tooltip 会跟随鼠标移动，方便查看</li>
-                <li>Ships 列的统计可以帮助快速了解实际船舶数量</li>
-            </ul>
-        </div>
+            </div>
+        </main>
     </div>
 
-    <div class="page-footer">
-        <h2>Monitor · 地理贸易航线使用声明</h2>
-        <p>资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
-        <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
-    </div>
-
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
     <script>
-        // 验证系统使用 vendor/auth-gist.js
+        // 使用公共初始化函数
+        init001ToolPage('Monitor-Geo-Trades-Service-README.html', 'monitor');
     </script>
 </body>
 </html>
-

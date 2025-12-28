@@ -3,158 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>单元测试 · Shipping Tools</title>
-    <link rel="stylesheet" href="../vendor/common-styles.css">
+    <title>Admin · 单元测试工具</title>
+    <link rel="stylesheet" href="../vendor/theme-styles.css">
+    <script src="../vendor/auth-gist.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            width: 100%;
-            margin: 0;
-            background: white;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px 40px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="80" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
-            opacity: 0.3;
-        }
-
-        .header h1 {
-            font-size: 36px;
-            margin-bottom: 12px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            position: relative;
-            z-index: 1;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .header p {
-            font-size: 16px;
-            opacity: 0.95;
-            position: relative;
-            z-index: 1;
-            margin: 0;
-        }
-
-        .content {
-            padding: 40px;
-        }
-
-        .test-container {
-            background: white;
-            border-radius: 16px;
+        /* 单元测试工具特定样式 */
+        body[data-page="tests/index.html"] .test-container {
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-lg);
             padding: 32px;
             margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid #f0f0f0;
-            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border-light);
+            transition: all 0.2s ease;
         }
 
-        .test-container:hover {
-            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+        body[data-page="tests/index.html"] .test-container:hover {
+            box-shadow: var(--shadow-md);
             transform: translateY(-2px);
         }
 
-        .test-container h2 {
-            color: #1f2d3d;
-            font-size: 22px;
-            font-weight: 700;
+        body[data-page="tests/index.html"] .test-container h2 {
+            color: var(--color-text-primary);
+            font-size: 20px;
+            font-weight: 600;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .test-container h2::before {
+        body[data-page="tests/index.html"] .test-container h2::before {
             content: '';
             width: 4px;
             height: 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--color-brand-blue);
             border-radius: 2px;
         }
 
-        .test-summary {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-            border-left: 4px solid #667eea;
+        body[data-page="tests/index.html"] .test-summary {
+            background: var(--color-bg-tertiary);
+            border-left: 4px solid var(--color-brand-blue);
             padding: 24px;
             margin: 24px 0;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
         }
 
-        .test-summary.passed {
-            border-left-color: #10b981;
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+        body[data-page="tests/index.html"] .test-summary.passed {
+            border-left-color: var(--color-brand-green);
+            background: rgba(52, 199, 89, 0.05);
         }
 
-        .test-summary.failed {
-            border-left-color: #ef4444;
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.05) 100%);
+        body[data-page="tests/index.html"] .test-summary.failed {
+            border-left-color: var(--color-brand-red);
+            background: rgba(255, 59, 48, 0.05);
         }
 
-        .test-summary h3 {
-            color: #1f2d3d;
-            font-size: 20px;
-            font-weight: 700;
+        body[data-page="tests/index.html"] .test-summary h3 {
+            color: var(--color-text-primary);
+            font-size: 18px;
+            font-weight: 600;
             margin-bottom: 16px;
         }
 
-        .test-summary p {
-            color: #495057;
-            font-size: 15px;
+        body[data-page="tests/index.html"] .test-summary p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
             line-height: 1.8;
             margin: 8px 0;
         }
 
-        .test-summary strong {
-            font-size: 16px;
+        body[data-page="tests/index.html"] .test-summary strong {
+            font-size: 15px;
+            color: var(--color-text-primary);
         }
 
-        .button-group {
+        body[data-page="tests/index.html"] .button-group {
             display: flex;
             gap: 16px;
             flex-wrap: wrap;
         }
 
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        body[data-page="tests/index.html"] .test-btn {
+            background: var(--color-brand-blue);
             color: white;
             border: none;
-            padding: 14px 28px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
         }
 
-        button::before {
+        body[data-page="tests/index.html"] .test-btn::before {
             content: '';
             position: absolute;
             top: 50%;
@@ -167,39 +113,41 @@
             transition: width 0.6s, height 0.6s;
         }
 
-        button:hover::before {
+        body[data-page="tests/index.html"] .test-btn:hover::before {
             width: 300px;
             height: 300px;
         }
 
-        button:hover {
+        body[data-page="tests/index.html"] .test-btn:hover {
+            background: var(--color-brand-blue-dark);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-md);
         }
 
-        button:active {
+        body[data-page="tests/index.html"] .test-btn:active {
             transform: translateY(0);
         }
 
-        button.secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        body[data-page="tests/index.html"] .test-btn.secondary {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border: 1.5px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
         }
 
-        button.secondary:hover {
-            background: #f0f0ff;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        body[data-page="tests/index.html"] .test-btn.secondary:hover {
+            background: var(--color-bg-tertiary);
+            border-color: var(--color-brand-blue);
+            box-shadow: var(--shadow-md);
         }
 
-        #console {
+        body[data-page="tests/index.html"] #console {
             background: #1e1e1e;
             color: #d4d4d4;
             padding: 20px;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.6;
             max-height: 600px;
             overflow-y: auto;
@@ -208,119 +156,113 @@
             border: 1px solid #333;
         }
 
-        #console::-webkit-scrollbar {
+        body[data-page="tests/index.html"] #console::-webkit-scrollbar {
             width: 8px;
         }
 
-        #console::-webkit-scrollbar-track {
+        body[data-page="tests/index.html"] #console::-webkit-scrollbar-track {
             background: #2a2a2a;
             border-radius: 4px;
         }
 
-        #console::-webkit-scrollbar-thumb {
+        body[data-page="tests/index.html"] #console::-webkit-scrollbar-thumb {
             background: #555;
             border-radius: 4px;
         }
 
-        #console::-webkit-scrollbar-thumb:hover {
+        body[data-page="tests/index.html"] #console::-webkit-scrollbar-thumb:hover {
             background: #666;
         }
 
-        .log-success {
-            color: #10b981;
+        body[data-page="tests/index.html"] .log-success {
+            color: var(--color-brand-green);
             padding: 4px 0;
         }
 
-        .log-error {
-            color: #ef4444;
+        body[data-page="tests/index.html"] .log-error {
+            color: var(--color-brand-red);
             padding: 4px 0;
         }
 
-        .page-footer {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-            margin-top: 40px;
-        }
-
-        .page-footer h2 {
-            font-size: 18px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .page-footer p {
-            margin: 6px 0;
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.6;
+        body[data-page="tests/index.html"] .log-warn {
+            color: var(--color-brand-orange);
+            padding: 4px 0;
         }
 
         @media (max-width: 768px) {
-            .content {
-                padding: 24px 20px;
-            }
-
-            .header {
-                padding: 40px 20px;
-            }
-
-            .header h1 {
-                font-size: 28px;
-            }
-
-            .test-container {
+            body[data-page="tests/index.html"] .test-container {
                 padding: 24px;
             }
 
-            .button-group {
+            body[data-page="tests/index.html"] .button-group {
                 flex-direction: column;
             }
 
-            button {
+            body[data-page="tests/index.html"] .test-btn {
                 width: 100%;
             }
 
-            #console {
+            body[data-page="tests/index.html"] #console {
                 max-height: 400px;
                 font-size: 12px;
             }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>单元测试</h1>
-            <p>Shipping Tools · 代码质量保障</p>
-        </div>
+<body data-page="tests/index.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
 
-        <div class="content">
-            <div class="test-container">
-                <h2>测试控制</h2>
-                <div class="button-group">
-                    <button onclick="runAllTests()">▶ 运行所有测试</button>
-                    <button class="secondary" onclick="clearConsole()">🗑️ 清空控制台</button>
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Admin · 单元测试工具</h2>
+                            <p>Shipping Tools 代码质量保障，验证核心功能模块的正确性</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="../dashboard.html?tab=admin" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="readme.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 测试控制区域 -->
+                <div class="card-white mt-20">
+                    <div class="test-container">
+                        <h2>测试控制</h2>
+                        <div class="button-group">
+                            <button class="test-btn" onclick="runAllTests()">▶ 运行所有测试</button>
+                            <button class="test-btn secondary" onclick="clearConsole()">🗑️ 清空控制台</button>
+                        </div>
+                    </div>
+
+                    <div id="testSummary" class="test-summary" style="display: none;">
+                        <h3>测试结果摘要</h3>
+                        <div id="summaryContent"></div>
+                    </div>
+                </div>
+
+                <!-- 控制台输出区域 -->
+                <div class="card-white mt-20">
+                    <div class="test-container">
+                        <h2>控制台输出</h2>
+                        <div id="console"></div>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Admin · 单元测试工具使用声明</h2>
+                    <p class="usage-statement-text">本测试套件用于验证 Shipping Tools 项目的核心功能模块，包括错误处理、公共工具函数、解析工具、日期工具、周数工具、港口排序工具、AI 工具、PDF 工具、市场分析工具、模板工具和调试工具等。</p>
+                    <p class="usage-statement-text">所有测试在本地浏览器运行，不会上传任何数据。测试结果仅供参考，不构成代码质量保证。</p>
                 </div>
             </div>
-
-            <div id="testSummary" class="test-summary" style="display: none;">
-                <h3>测试结果摘要</h3>
-                <div id="summaryContent"></div>
-            </div>
-
-            <div class="test-container">
-                <h2>控制台输出</h2>
-                <div id="console"></div>
-            </div>
-        </div>
-
-        <div class="page-footer">
-            <h2>单元测试说明</h2>
-            <p>本测试套件用于验证 Shipping Tools 项目的核心功能</p>
-            <p>测试覆盖：错误处理模块、公共工具函数、解析工具函数</p>
-        </div>
+        </main>
     </div>
 
     <!-- 加载依赖 -->
@@ -328,6 +270,9 @@
     <script src="../vendor/common-utils.js"></script>
     <script src="../vendor/parser-utils.js"></script>
     <script src="../vendor/date-utils.js"></script>
+    <script src="../vendor/week-utils.js"></script>
+    <script src="../vendor/week-definition-parser.js"></script>
+    <script src="../vendor/port-sort-utils.js"></script>
     <script src="../vendor/lib-loader.js"></script>
     <script src="../vendor/ai-utils.js"></script>
     <script src="../vendor/pdf-utils.js"></script>
@@ -348,15 +293,28 @@
     <script src="test-template-utils.js"></script>
     <script src="test-debug-utils.js"></script>
 
+    <!-- 引入导航栏公共组件 -->
+    <script src="../vendor/sidebar-loader.js"></script>
     <script>
-        // 重写 console.log 和 console.error 以显示在页面上
+        init001ToolPage('tests/index.html', 'admin', null, true); // 跳过身份验证
+    </script>
+
+    <script>
+        // 重写 console.log、console.error 和 console.warn 以显示在页面上
         const consoleDiv = document.getElementById('console');
         const originalLog = console.log;
         const originalError = console.error;
+        const originalWarn = console.warn;
 
         function addToConsole(message, type = 'log') {
             const div = document.createElement('div');
-            div.className = type === 'error' ? 'log-error' : 'log-success';
+            if (type === 'error') {
+                div.className = 'log-error';
+            } else if (type === 'warn') {
+                div.className = 'log-warn';
+            } else {
+                div.className = 'log-success';
+            }
             div.textContent = message;
             consoleDiv.appendChild(div);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
@@ -372,6 +330,11 @@
             addToConsole(args.join(' '), 'error');
         };
 
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+
         function clearConsole() {
             consoleDiv.innerHTML = '';
         }
@@ -381,10 +344,10 @@
             console.log('开始运行所有测试...\n');
 
             // 确保必要的库已加载（如果可用）
-            if (typeof ensureXlsx === 'function' && typeof XLSX === 'undefined') {
+            if (typeof window.ensureXlsx === 'function' && typeof XLSX === 'undefined') {
                 console.log('正在加载 XLSX 库（用于日期解析测试）...');
                 try {
-                    await ensureXlsx();
+                    await window.ensureXlsx();
                 } catch (error) {
                     console.warn('XLSX 库加载失败，日期解析测试可能使用备用方法:', error);
                 }
@@ -492,4 +455,3 @@
     </script>
 </body>
 </html>
-

@@ -39,7 +39,7 @@
             NO_SHEETS: 'Excel文件中没有找到任何工作表'
         },
         [ErrorType.FILE_PARSE]: {
-            PARSE_FAILED: '文件解析失败，请检查文件格式',
+            PARSE_FAILED: '{message}',
             MISSING_COLUMNS: '无法找到必要的列。请检查Excel文件格式。\n\n找到的列：{columns}',
             MISSING_REGION_PORT: '无法找到区域列或港口列。请检查Excel文件格式。\n\n找到的列：{columns}',
             NO_SCHEDULE_DATA: '当前时间范围内没有符合条件的船期数据'
@@ -99,45 +99,105 @@
     }
 
     /**
-     * 显示友好的错误提示
+     * 显示友好的错误提示（增强版，添加更多上下文信息）
      * @param {string} errorType - 错误类型（ErrorType 枚举值）
      * @param {string} errorKey - 错误键（ERROR_MESSAGES 中的键）
      * @param {Object<string, string>} [replacements={}] - 替换参数，用于替换消息中的占位符
      * @param {Error} [error=null] - 原始错误对象（可选，用于调试）
+     * @param {Object} [context={}] - 额外的上下文信息（可选，如 {fileName: 'xxx.xlsx', lineNumber: 123, functionName: 'parseFile', operation: '读取Excel', dataSize: 1000}）
      */
-    function showError(errorType, errorKey, replacements = {}, error = null) {
+    function showError(errorType, errorKey, replacements = {}, error = null, context = {}) {
         const messages = ERROR_MESSAGES[errorType];
         
         // 如果找不到对应的错误类型或错误键，使用降级处理
         if (!messages || !messages[errorKey]) {
-            const fallbackMsg = error ? error.message : '发生未知错误';
+            const fallbackMsg = error ? error.message : (replacements.message || '发生未知错误');
+            let contextMsg = '';
+            if (Object.keys(context).length > 0) {
+                const contextParts = [];
+                if (context.fileName) contextParts.push(`文件: ${context.fileName}`);
+                if (context.functionName) contextParts.push(`函数: ${context.functionName}`);
+                if (context.operation) contextParts.push(`操作: ${context.operation}`);
+                if (contextParts.length > 0) {
+                    contextMsg = `\n\n上下文: ${contextParts.join(', ')}`;
+                }
+            }
             if (typeof alert !== 'undefined') {
-                alert(fallbackMsg);
+                alert(fallbackMsg + contextMsg);
             }
             if (error) {
-                debugLog('error', '错误详情:', error);
+                debugLog('error', '错误详情:', { error, context });
             }
             return;
         }
         
         // 获取错误消息并替换占位符
         let message = messages[errorKey];
-        Object.keys(replacements).forEach(key => {
-            message = message.replace(new RegExp(`\\{${key}\\}`, 'g'), replacements[key]);
-        });
+        
+        // 如果 replacements 中有 message 且消息模板中没有 {message}，直接使用 replacements.message
+        if (replacements.message && !message.includes('{message}')) {
+            message = replacements.message;
+        } else {
+            // 替换所有占位符
+            Object.keys(replacements).forEach(key => {
+                message = message.replace(new RegExp(`\\{${key}\\}`, 'g'), replacements[key]);
+            });
+        }
+        
+        // 如果替换后消息为空或只有占位符，使用默认消息或错误消息
+        if (!message || message.trim() === '' || message === '{message}') {
+            message = replacements.message || (error ? error.message : '文件解析失败，请检查文件格式');
+        }
+        
+        // 添加上下文信息到错误消息
+        const contextParts = [];
+        if (context.fileName) {
+            contextParts.push(`文件: ${context.fileName}`);
+        }
+        if (context.lineNumber) {
+            contextParts.push(`行号: ${context.lineNumber}`);
+        }
+        if (context.functionName) {
+            contextParts.push(`函数: ${context.functionName}`);
+        }
+        if (context.operation) {
+            contextParts.push(`操作: ${context.operation}`);
+        }
+        if (context.dataSize) {
+            contextParts.push(`数据量: ${context.dataSize}`);
+        }
+        if (context.columnName) {
+            contextParts.push(`列名: ${context.columnName}`);
+        }
+        if (context.sheetName) {
+            contextParts.push(`工作表: ${context.sheetName}`);
+        }
+        
+        if (contextParts.length > 0) {
+            message += `\n\n上下文信息：\n${contextParts.join('\n')}`;
+        }
         
         // 显示错误提示
         if (typeof alert !== 'undefined') {
             alert(message);
         }
         
-        // 记录错误到控制台（用于调试）
+        // 记录错误到控制台（用于调试，包含完整上下文）
         if (error) {
             debugLog('log', '错误详情:', {
                 type: errorType,
                 key: errorKey,
                 message: message,
-                error: error
+                error: error,
+                context: context,
+                stack: error.stack
+            });
+        } else if (Object.keys(context).length > 0) {
+            debugLog('log', '错误详情（无异常对象）:', {
+                type: errorType,
+                key: errorKey,
+                message: message,
+                context: context
             });
         }
     }

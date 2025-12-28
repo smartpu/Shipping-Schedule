@@ -180,9 +180,173 @@ function formatDateToYYYYMMDD(dateValue) {
     return `${year}/${month}/${day}`;
 }
 
+/**
+ * 格式化 Date 对象为 YYYY/MM/DD 格式（简化版，直接接受 Date 对象）
+ * @param {Date} date - Date 对象
+ * @returns {string} 格式化后的日期字符串
+ */
+function formatDate(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return '';
+    }
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}/${m}/${d}`;
+}
+
+/**
+ * 解析日期字符串为 Date 对象（YYYY/MM/DD 格式）
+ * @param {string} dateStr - 日期字符串（格式：YYYY/MM/DD 或 YYYY-MM-DD）
+ * @returns {Date|null} 解析后的日期对象，失败返回 null
+ */
+function parseDateStr(dateStr) {
+    if (typeof dateStr !== 'string') {
+        return null;
+    }
+    const parts = dateStr.replace(/-/g, '/').split('/');
+    if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            return new Date(year, month, day);
+        }
+    }
+    return new Date(dateStr);
+}
+
+/**
+ * 格式化船期日期用于tooltip显示（带容错处理）
+ * 支持多种日期格式：Date对象、Excel序列号、字符串等
+ * @param {*} dateValue - 日期值（可能是Date对象、数字、字符串等）
+ * @returns {string} 格式化后的日期字符串（YYYY/MM/DD），失败返回 '—'
+ */
+function formatShipDateForTooltip(dateValue) {
+    // 空值检查
+    if (dateValue === null || dateValue === undefined || dateValue === '') {
+        return '—';
+    }
+    
+    // 如果是Date对象，直接格式化
+    if (dateValue instanceof Date) {
+        if (!isNaN(dateValue.getTime())) {
+            const year = dateValue.getFullYear();
+            const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+            const day = String(dateValue.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+        return '—';
+    }
+    
+    // 如果是数字（Excel序列号），优先使用 parseExcelDateSerial
+    if (typeof dateValue === 'number' && isFinite(dateValue)) {
+        // 优先使用 parseExcelDateSerial（支持Excel日期序列号）
+        if (typeof parseExcelDateSerial === 'function') {
+            const date = parseExcelDateSerial(dateValue);
+            if (date && !isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}/${month}/${day}`;
+            }
+        }
+        // 如果 parseExcelDateSerial 不可用，使用标准转换公式（Excel日期从1900-01-01开始）
+        // Excel序列号转换：序列号1 = 1900-01-01，基准是1899-12-30
+        const excelEpoch = new Date(1899, 11, 30); // 1899-12-30
+        const date = new Date(excelEpoch.getTime() + (dateValue + 1) * 86400000);
+        // Excel错误地认为1900是闰年，序列号>=61需要减1天
+        if (dateValue >= 61) {
+            date.setDate(date.getDate() - 1);
+        }
+        if (!isNaN(date.getTime()) && date.getFullYear() >= 1900 && date.getFullYear() <= 2100) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+        return '—';
+    }
+    
+    // 如果是字符串，使用 parseDateValue 解析
+    if (typeof dateValue === 'string') {
+        if (typeof parseDateValue === 'function') {
+            const date = parseDateValue(dateValue);
+            if (date && !isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}/${month}/${day}`;
+            }
+        }
+        // 如果字符串是数字格式，尝试转换为数字再解析
+        const numValue = parseFloat(dateValue);
+        if (!isNaN(numValue) && isFinite(numValue)) {
+            return formatShipDateForTooltip(numValue); // 递归调用处理数字
+        }
+    }
+    
+    // 最后降级：转换为字符串
+    const str = String(dateValue);
+    return str && str.trim() ? str : '—';
+}
+
+/**
+ * 格式化日期为键值字符串（用于去重、分组等）
+ * 支持多种日期格式：Date对象、字符串、数字等
+ * @param {Date|string|number} date - 日期值
+ * @param {string} format - 格式类型：'YYYYMMDD'（默认，无分隔符）或 'YYYY-MM-DD'（带分隔符）
+ * @returns {string} 格式化后的日期字符串，失败返回空字符串
+ */
+function formatDateKey(date, format = 'YYYYMMDD') {
+    if (!date) return '';
+    try {
+        let d;
+        if (date instanceof Date) {
+            d = date;
+        } else if (typeof date === 'number' && isFinite(date)) {
+            // 如果是数字，尝试解析为Excel日期序列号
+            if (typeof parseExcelDateSerial === 'function') {
+                d = parseExcelDateSerial(date);
+            } else {
+                d = new Date(date);
+            }
+        } else if (typeof date === 'string') {
+            // 如果是字符串，尝试解析
+            if (typeof parseDateValue === 'function') {
+                d = parseDateValue(date);
+            } else {
+                d = new Date(date);
+            }
+        } else {
+            d = new Date(date);
+        }
+        
+        if (!d || isNaN(d.getTime())) return '';
+        
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        
+        if (format === 'YYYY-MM-DD') {
+            return `${year}-${month}-${day}`;
+        } else {
+            // 默认格式：YYYYMMDD（无分隔符，用于键值）
+            return `${year}${month}${day}`;
+        }
+    } catch (e) {
+        return '';
+    }
+}
+
 // 导出函数到全局
 if (typeof window !== 'undefined') {
     window.parseDateValue = window.parseDateValue || parseDateValue;
     window.formatDateToYYYYMMDD = window.formatDateToYYYYMMDD || formatDateToYYYYMMDD;
+    window.formatDate = window.formatDate || formatDate;
+    window.parseDateStr = window.parseDateStr || parseDateStr;
+    window.formatShipDateForTooltip = window.formatShipDateForTooltip || formatShipDateForTooltip;
+    window.parseExcelDateSerial = window.parseExcelDateSerial || parseExcelDateSerial;
+    window.formatDateKey = window.formatDateKey || formatDateKey;
 }
 

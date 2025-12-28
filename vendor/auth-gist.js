@@ -40,6 +40,31 @@
     // 检测是否为本地测试模式（file:// 协议或 URL 参数 localtest=true）
     const isLocalTestMode = window.location.protocol === 'file:' || 
                            new URLSearchParams(window.location.search).get('localtest') === 'true';
+    
+    // 本地测试用户配置（允许跳过登录验证）
+    const LOCAL_TEST_USER = {
+        name: 'smartpu',
+        email: 'smartpu@evergreen-shipping.cn',
+        phone: '18653202580',
+        password: '18653202580'
+    };
+    
+    /**
+     * 检查是否为本地测试用户
+     * @param {Object} authData - 认证数据
+     * @returns {boolean} 是否为本地测试用户
+     */
+    function isLocalTestUser(authData) {
+        if (!authData) return false;
+        
+        const nameMatch = (authData.name || '').trim().toLowerCase() === LOCAL_TEST_USER.name.toLowerCase();
+        const emailMatch = (authData.email || '').trim().toLowerCase() === LOCAL_TEST_USER.email.toLowerCase();
+        // 支持 phone 或 password 字段（index.html 使用 password 作为 phone）
+        const phoneOrPassword = (authData.phone || authData.password || '').trim();
+        const phoneMatch = phoneOrPassword === LOCAL_TEST_USER.phone;
+        
+        return nameMatch && emailMatch && phoneMatch;
+    }
     // ==============================
 
     // 用户白名单（从 Gist 加载）
@@ -127,7 +152,9 @@
             userWhitelist = data.map(user => ({
                 name: (user.name || '').trim().toLowerCase(),
                 phone: (user.phone || '').trim(),
-                email: (user.email || '').trim().toLowerCase()
+                email: (user.email || '').trim().toLowerCase(),
+                level: user.level || 'user',
+                groups: user.groups || [] // 用户组列表，支持 ['tools001', 'tools365', 'monitor', 'admin'] 或 ['*'] 表示全部权限
             }));
             
             debugLog(`[Auth] 白名单加载成功，共 ${userWhitelist.length} 个用户`);
@@ -146,9 +173,23 @@
      * 检查用户是否在白名单中
      */
     function isUserInWhitelist(name, phone, email) {
-        // 本地测试模式：允许所有用户访问
-        if (isLocalTestMode) {
-            debugLog('[Auth] 本地测试模式：允许访问');
+        // 检查是否为本地测试用户
+        const normalizedName = (name || '').trim().toLowerCase();
+        const normalizedPhone = (phone || '').trim();
+        const normalizedEmail = (email || '').trim().toLowerCase();
+        
+        const isTestUser = normalizedName === LOCAL_TEST_USER.name.toLowerCase() &&
+                          normalizedEmail === LOCAL_TEST_USER.email.toLowerCase() &&
+                          normalizedPhone === LOCAL_TEST_USER.phone;
+        
+        if (isTestUser) {
+            debugLog('[Auth] 检测到本地测试用户，允许访问');
+            return true;
+        }
+        
+        // 本地测试模式（file:// 协议）：允许所有用户访问
+        if (isLocalTestMode && window.location.protocol === 'file:') {
+            debugLog('[Auth] 本地文件系统模式：允许访问');
             return true;
         }
         
@@ -157,18 +198,13 @@
             return false;
         }
 
-        const normalizedName = (name || '').trim().toLowerCase();
-        const normalizedPhone = (phone || '').trim();
-        const normalizedEmail = (email || '').trim().toLowerCase();
-
         return userWhitelist.some(user => {
+            // 精确匹配：name/phone/email 必须完全匹配
             const phoneMatch = user.phone === normalizedPhone;
             const emailMatch = user.email === normalizedEmail;
             const nameMatch = !user.name || 
                             !normalizedName || 
-                            user.name === normalizedName ||
-                            normalizedName.includes(user.name) ||
-                            user.name.includes(normalizedName);
+                            user.name.toLowerCase() === normalizedName;
 
             return phoneMatch && emailMatch && nameMatch;
         });
@@ -286,16 +322,302 @@
     }
 
     /**
+     * 获取当前用户认证数据
+     * @returns {Object|null} 用户认证数据，未登录返回 null
+     */
+    function getAuthData() {
+        try {
+            const authData = localStorage.getItem(AUTH_STORAGE_KEY);
+            if (!authData) return null;
+            const data = JSON.parse(authData);
+            const now = Date.now();
+            if (data.expiry && now > data.expiry) {
+                localStorage.removeItem(AUTH_STORAGE_KEY);
+                return null;
+            }
+            return data;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 从白名单中获取用户信息
+     * @param {Object} authData - 认证数据
+     * @returns {Object|null} 用户信息，未找到返回 null
+     */
+    function getUserFromWhitelist(authData) {
+        if (!authData || userWhitelist.length === 0) return null;
+        
+        const normalizedName = (authData.name || '').trim().toLowerCase();
+        const normalizedPhone = (authData.phone || '').trim();
+        const normalizedEmail = (authData.email || '').trim().toLowerCase();
+
+        return userWhitelist.find(user => {
+            // 精确匹配：name/phone/email 必须完全匹配
+            const phoneMatch = user.phone === normalizedPhone;
+            const emailMatch = user.email === normalizedEmail;
+            const nameMatch = !user.name || 
+                            !normalizedName || 
+                            user.name.toLowerCase() === normalizedName;
+
+            return phoneMatch && emailMatch && nameMatch;
+        }) || null;
+    }
+
+    /**
+     * 检查用户是否有权限访问指定工具组
+     * @param {string} toolGroup - 工具组名称 (tools001, tools365, monitor, admin)
+     * @returns {boolean} 是否有权限
+     */
+    function hasPermission(toolGroup) {
+        // 本地测试模式：允许所有访问
+        if (isLocalTestMode) {
+            return true;
+        }
+
+        const authData = getAuthData();
+        if (!authData) return false;
+        
+        const user = getUserFromWhitelist(authData);
+        if (!user) return false;
+        
+        // 如果用户组为空或包含 '*'，表示全部权限
+        if (!user.groups || user.groups.length === 0 || user.groups.includes('*')) {
+            return true;
+        }
+        
+        return user.groups.includes(toolGroup);
+    }
+
+    /**
+     * 获取工具组名称（根据页面名称）
+     * @param {string} pageName - 页面名称
+     * @returns {string|null} 工具组名称
+     */
+    function getToolGroupFromPage(pageName) {
+        if (!pageName) return null;
+        
+        const pageNameLower = pageName.toLowerCase();
+        
+        // 001 系列工具
+        if (pageNameLower.includes('001-')) {
+            return 'tools001';
+        }
+        
+        // 365 系列工具
+        if (pageNameLower.includes('365-')) {
+            return 'tools365';
+        }
+        
+        // Monitor 系列工具
+        if (pageNameLower.includes('monitor-')) {
+            return 'monitor';
+        }
+        
+        // Admin 系列工具
+        if (pageNameLower.includes('admin-')) {
+            return 'admin';
+        }
+        
+        // Dashboard
+        if (pageNameLower.includes('dashboard')) {
+            return null; // Dashboard 不需要权限检查
+        }
+        
+        return null;
+    }
+
+    /**
+     * 更新用户组信息到 Gist
+     * @param {string} userName - 用户名
+     * @param {Array<string>} groups - 新的用户组列表
+     * @returns {Promise<boolean>} 是否成功
+     */
+    async function updateUserGroups(userName, groups) {
+        if (isLocalTestMode) {
+            debugLog('[Auth] 本地测试模式：跳过用户组更新');
+            return true;
+        }
+
+        try {
+            // 加载当前白名单
+            await loadWhitelist();
+            
+            // 更新用户组
+            const userIndex = userWhitelist.findIndex(user => 
+                user.name === userName.toLowerCase() || 
+                user.name.includes(userName.toLowerCase()) ||
+                userName.toLowerCase().includes(user.name)
+            );
+            
+            if (userIndex === -1) {
+                throw new Error(`用户 "${userName}" 未找到`);
+            }
+            
+            userWhitelist[userIndex].groups = groups || [];
+            
+            // 保存到 Gist
+            const response = await fetchWithRetry(GIST_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'updateWhitelist',
+                    data: { users: userWhitelist }
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`更新失败: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            debugLog('[Auth] 用户组更新成功');
+            return true;
+        } catch (error) {
+            debugError('[Auth] 更新用户组失败:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 批量更新多个用户的用户组
+     * @param {Array<{name: string, groups: Array<string>}>} updates - 更新列表
+     * @returns {Promise<boolean>} 是否成功
+     */
+    async function batchUpdateUserGroups(updates) {
+        if (isLocalTestMode) {
+            debugLog('[Auth] 本地测试模式：跳过批量用户组更新');
+            return true;
+        }
+
+        try {
+            // 加载当前白名单
+            await loadWhitelist();
+            
+            // 批量更新
+            updates.forEach(update => {
+                const userIndex = userWhitelist.findIndex(user => 
+                    user.name === update.name.toLowerCase() || 
+                    user.name.includes(update.name.toLowerCase()) ||
+                    update.name.toLowerCase().includes(user.name)
+                );
+                
+                if (userIndex !== -1) {
+                    userWhitelist[userIndex].groups = update.groups || [];
+                }
+            });
+            
+            // 保存到 Gist
+            const response = await fetchWithRetry(GIST_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'updateWhitelist',
+                    data: { users: userWhitelist }
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`批量更新失败: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            debugLog('[Auth] 批量用户组更新成功');
+            return true;
+        } catch (error) {
+            debugError('[Auth] 批量更新用户组失败:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 检查页面访问权限并重定向
+     * @param {string} pageName - 页面名称
+     * @param {string} toolGroup - 工具组名称
+     * @returns {Promise<boolean>} 是否有权限
+     */
+    async function checkPageAccess(pageName, toolGroup) {
+        // 检查是否已登录
+        const authData = getAuthData();
+        
+        // 检查是否为本地测试用户（允许跳过验证）
+        const isTestUser = isLocalTestUser(authData);
+        
+        if (!authData) {
+            // 未登录，重定向到 index.html（除非当前就在 index.html）
+            const currentPath = window.location.pathname;
+            const isIndexPage = currentPath.endsWith('index.html') || 
+                               currentPath.endsWith('/') || 
+                               currentPath === '';
+            
+            if (!isIndexPage) {
+                debugLog('[Auth] 未登录，重定向到登录页面');
+                window.location.href = 'index.html';
+                return false;
+            }
+            return false;
+        }
+        
+        // 如果是本地测试用户，允许访问（跳过白名单验证）
+        if (isTestUser) {
+            debugLog('[Auth] 本地测试用户，允许访问');
+            return true;
+        }
+
+        // 其他用户必须通过白名单验证
+        // 确保白名单已加载
+        if (userWhitelist.length === 0) {
+            await loadWhitelist();
+        }
+        
+        // 检查用户是否在白名单中
+        const user = getUserFromWhitelist(authData);
+        if (!user) {
+            debugWarn('[Auth] 用户不在白名单中，重定向到登录页面');
+            // 清除无效的认证数据
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            const currentPath = window.location.pathname;
+            const isIndexPage = currentPath.endsWith('index.html') || 
+                               currentPath.endsWith('/') || 
+                               currentPath === '';
+            if (!isIndexPage) {
+                window.location.href = 'index.html';
+            }
+            return false;
+        }
+
+        // 如果指定了工具组，检查权限
+        if (toolGroup) {
+            if (!hasPermission(toolGroup)) {
+                debugWarn(`[Auth] 用户无权限访问工具组: ${toolGroup}`);
+                // 可以显示提示或重定向
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * 初始化 Gist 验证系统
      */
     async function initGistAuth(pageName) {
+        // 检查登录状态和权限（如果指定了工具组）
+        // 注意：这里不重定向，让 checkPageAccess 处理
         const authOverlay = document.getElementById('authOverlay');
         const authForm = document.getElementById('authForm');
         const nameInput = document.getElementById('userName');
-        const phoneInput = document.getElementById('userPhone');
+        // 查找密码输入框（phone 字段现在存储的是密码，不再是手机号）
+        // 优先查找 userPassword（index.html 使用），如果不存在则查找 userPhone
+        const phoneInput = document.getElementById('userPassword') || document.getElementById('userPhone');
         const emailInput = document.getElementById('userEmail');
         const nameError = document.getElementById('nameError');
-        const phoneError = document.getElementById('phoneError');
+        const phoneError = document.getElementById('passwordError') || document.getElementById('phoneError');
         const emailError = document.getElementById('emailError');
 
         if (!authOverlay || !authForm) {
@@ -303,16 +625,28 @@
             return;
         }
 
-        // 本地测试模式：自动通过验证
+        // 本地测试模式：检查是否为本地测试用户
         if (isLocalTestMode) {
-            debugLog('[Auth] 本地测试模式：自动通过验证');
-            // 自动保存一个测试用户信息
-            if (!checkAuth()) {
-                saveAuth('本地测试用户', '13800138000', 'test@localhost.local');
+            const authData = getAuthData();
+            const isTestUser = isLocalTestUser(authData);
+            
+            if (isTestUser) {
+                debugLog('[Auth] 本地测试模式：检测到测试用户，允许访问');
+                authOverlay.classList.add('hidden');
+                enableAllLinks();
+                return;
+            } else if (!checkAuth()) {
+                // 如果不是测试用户且未登录，重定向到 index.html
+                const currentPath = window.location.pathname;
+                const isIndexPage = currentPath.endsWith('index.html') || 
+                                   currentPath.endsWith('/') || 
+                                   currentPath === '';
+                if (!isIndexPage) {
+                    debugLog('[Auth] 本地测试模式：未登录且非测试用户，重定向到登录页面');
+                    window.location.href = 'index.html';
+                    return;
+                }
             }
-            authOverlay.classList.add('hidden');
-            enableAllLinks();
-            return;
         }
 
         // 先禁用所有链接
@@ -323,19 +657,40 @@
 
         // 如果已通过验证，直接启用链接
         if (checkAuth()) {
+            const authData = getAuthData();
+            const isTestUser = isLocalTestUser(authData);
+            
+            // 检查用户是否在白名单中（测试用户跳过）
+            if (!isTestUser) {
+                const user = getUserFromWhitelist(authData);
+                if (!user) {
+                    debugWarn('[Auth] 用户不在白名单中，重定向到登录页面');
+                    localStorage.removeItem(AUTH_STORAGE_KEY);
+                    const currentPath = window.location.pathname;
+                    const isIndexPage = currentPath.endsWith('index.html') || 
+                                       currentPath.endsWith('/') || 
+                                       currentPath === '';
+                    if (!isIndexPage) {
+                        window.location.href = 'index.html';
+                    }
+                    return;
+                }
+            }
+            
             authOverlay.classList.add('hidden');
             enableAllLinks();
             // 记录访问
-            const authData = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
-            const logEntry = {
-                page: pageName,
-                name: authData.name || '未知',
-                phone: authData.phone || '未知',
-                email: authData.email || '未知',
-                timestamp: Date.now(),
-                date: new Date().toLocaleString('zh-CN')
-            };
-            saveLogToGist(logEntry);
+            if (authData) {
+                const logEntry = {
+                    page: pageName,
+                    name: authData.name || '未知',
+                    phone: authData.phone || '未知',
+                    email: authData.email || '未知',
+                    timestamp: Date.now(),
+                    date: new Date().toLocaleString('zh-CN')
+                };
+                saveLogToGist(logEntry);
+            }
             return;
         }
 
@@ -363,11 +718,19 @@
                 if (nameError) nameError.classList.remove('show');
             }
 
-            // 验证手机号
-            const phoneRegex = /^1[3-9]\d{9}$/;
-            if (!phone || !phoneRegex.test(phone)) {
+            // 验证密码（phone 字段现在存储的是密码，不再是手机号）
+            // 密码验证：允许字母、数字和特殊符号
+            const passwordRegex = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]+$/;
+            if (!phone || phone.length === 0) {
                 if (phoneError) {
-                    phoneError.textContent = '请输入有效的手机号';
+                    phoneError.textContent = '请输入密码';
+                    phoneError.classList.add('show');
+                }
+                if (phoneInput) phoneInput.focus();
+                return;
+            } else if (!passwordRegex.test(phone)) {
+                if (phoneError) {
+                    phoneError.textContent = '密码只能包含字母、数字和特殊符号';
                     phoneError.classList.add('show');
                 }
                 if (phoneInput) phoneInput.focus();
@@ -396,7 +759,7 @@
                     emailError.classList.add('show');
                 }
                 if (phoneError) {
-                    phoneError.textContent = '手机号或邮箱不匹配';
+                    phoneError.textContent = '密码或邮箱不匹配';
                     phoneError.classList.add('show');
                 }
                 debugWarn('用户不在白名单中');
@@ -438,7 +801,9 @@
         if (phoneInput) {
             phoneInput.addEventListener('input', () => {
                 const phone = phoneInput.value.trim();
-                if (phone && /^1[3-9]\d{9}$/.test(phone) && phoneError) {
+                // 密码验证：允许字母、数字和特殊符号（phone 字段现在存储的是密码）
+                const passwordRegex = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]+$/;
+                if (phone && passwordRegex.test(phone) && phoneError) {
                     phoneError.classList.remove('show');
                 }
             });
@@ -460,20 +825,44 @@
     window.enableAllLinks = enableAllLinks;
     window.disableAllLinks = disableAllLinks;
     window.saveLogToGist = saveLogToGist;
+    window.getAuthData = getAuthData;
+    window.getUserFromWhitelist = getUserFromWhitelist;
+    window.hasPermission = hasPermission;
+    window.checkPageAccess = checkPageAccess;
+    window.updateUserGroups = updateUserGroups;
+    window.batchUpdateUserGroups = batchUpdateUserGroups;
+    window.getToolGroupFromPage = getToolGroupFromPage;
 
-    // 自动初始化
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            const pageName = document.body.getAttribute('data-page') || 
-                           window.location.pathname.split('/').pop() || 
-                           'unknown';
-            initGistAuth(pageName);
-        });
-    } else {
+    // 自动初始化（带权限检查）
+    async function autoInitWithAuth() {
         const pageName = document.body.getAttribute('data-page') || 
                        window.location.pathname.split('/').pop() || 
                        'unknown';
-        initGistAuth(pageName);
+        
+        // 获取工具组
+        const toolGroup = getToolGroupFromPage(pageName);
+        
+        // 检查页面访问权限
+        const hasAccess = await checkPageAccess(pageName, toolGroup);
+        
+        if (!hasAccess) {
+            // 如果没有权限且未重定向，说明是权限问题（不是登录问题）
+            if (getAuthData()) {
+                // 已登录但无权限，可以显示提示
+                debugWarn(`[Auth] 用户无权限访问: ${pageName} (工具组: ${toolGroup})`);
+            }
+            return;
+        }
+        
+        // 有权限，继续初始化
+        await initGistAuth(pageName);
+    }
+
+    // 自动初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoInitWithAuth);
+    } else {
+        autoInitWithAuth();
     }
 })();
 

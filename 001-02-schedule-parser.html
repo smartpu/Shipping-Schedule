@@ -4,92 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>维运网 船期解析工具</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/tool-styles.css">
-    <link rel="stylesheet" href="vendor/parser-styles.css">
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-        /* 注意：标准化模态框样式已移至 vendor/parser-styles.css */
-    </style>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
 </head>
 <body data-page="001-02-schedule-parser.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-modal">
-            <h2>🔐 访问验证</h2>
-            <p>为了了解工具使用情况，请填写以下信息</p>
-            <form id="authForm">
-                <div class="auth-form-group">
-                    <label for="userName">姓名 *</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-                    <div class="auth-error" id="nameError">请输入您的姓名</div>
-                </div>
-                <div class="auth-form-group">
-                    <label for="userPhone">手机号 *</label>
-                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
-                </div>
-                <div class="auth-form-group">
-                    <label for="userEmail">邮箱 *</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
-                </div>
-                <button type="submit" class="auth-submit-btn">确认并继续</button>
-            </form>
-        </div>
-    </div>
-    <div class="container">
-        <div class="header">
-            <a href="index.html?tab=tools001" class="back-home-btn">← 返回首页</a>
-            <a href="001-02-schedule-parser-README.html" class="readme-btn">使用说明 →</a>
-            <h1>维运网 船期解析工具</h1>
-            <p>自动解析维运网船期网页，提取船期信息并导出为 CSV 文件</p>
-        </div>
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
 
-        <div class="instructions">
-            <h3>📋 使用说明</h3>
-            <ol>
-                <li><strong>准备工作</strong>：首先需要使用"维运网 船期网页手动下载工具"下载并保存所有船期网页到 <strong>data/001-view-full</strong> 文件夹中</li>
-                <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择包含所有 HTML 文件的 <strong>data/001-view-full</strong> 文件夹</li>
-                <li><strong>开始解析</strong>：选择文件夹后，点击"开始解析"按钮，工具会自动解析所有 HTML 文件中的船期信息</li>
-                <li><strong>查看结果</strong>：解析完成后，可以在下方预览表格中查看解析结果（最多显示前50条）</li>
-                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"按钮，将数据保存为 CSV 文件</li>
-                <li><strong>结果说明</strong>：CSV 文件包含以下列：启运港、目的港、航线ID、港口ID、开航日、航程、共舱船公司、船名、航次、船型、计划开航、实际离港、预计到港、启运港码头、目的港码头</li>
-                <li><strong>注意事项</strong>：工具会自动合并重复的船期记录（相同启运港+目的港+航线ID+港口ID+船名+航次），共舱船公司信息会从网页中自动提取</li>
-            </ol>
-        </div>
-
-        <div class="content">
-            <div class="card">
-                <div class="controls">
-                    <label class="file-btn">
-                        选择 view-full 文件夹
-                        <input id="picker" type="file" webkitdirectory multiple accept=".html,.htm">
-                    </label>
-                    <button id="run" class="btn" disabled>开始解析</button>
-                    <button id="download" class="btn" disabled>下载 CSV</button>
-                    <span id="summary"></span>
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>维运网 船期解析工具</h2>
+                            <p>自动解析维运网船期网页，解析过程中请勿关闭页面，解析完成后会自动显示统计信息。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools001" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="001-02-schedule-parser-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
                 </div>
-                <div id="log" class="log" aria-live="polite"></div>
-                <div id="preview" class="hidden">
-                    <table id="table"></table>
+
+                <!-- 解析工具主区域 -->
+                <div class="card-white mt-20">
+                    <div class="controls">
+                        <label class="file-btn" aria-label="选择包含HTML文件的文件夹">
+                            选择 view-full 文件夹
+                            <input id="picker" type="file" webkitdirectory multiple accept=".html,.htm" aria-label="选择文件夹">
+                        </label>
+                        <button id="run" class="btn btn-sweep-blue" disabled aria-label="开始解析HTML文件">开始解析</button>
+                        <button id="download" class="btn btn-sweep-blue" disabled aria-label="下载CSV文件">下载 CSV</button>
+                        <span id="summary" role="status" aria-live="polite"></span>
+                    </div>
+                    <div id="log" class="log" aria-live="polite" role="log" aria-label="解析日志"></div>
+                    <div id="preview" class="hidden" role="region" aria-label="解析结果预览">
+                        <table id="table" role="table" aria-label="解析结果表格"></table>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">维运网 船期解析工具使用声明</h2>
+                    <p class="usage-statement-text">本工具用于解析从维运网（weiyun001.com）下载的船期网页，提取航线、船名、航次、开船日期等数据并导出为 CSV 文件。</p>
+                    <p class="usage-statement-text">所有数据来源于维运网公开信息，解析结果仅供内部使用，请遵守维运网的使用条款和版权规定。</p>
                 </div>
             </div>
-        </div>
-
-        <div class="footer">
-            <p>提示：解析过程中请勿关闭页面，解析完成后会自动显示统计信息</p>
-        </div>
+        </main>
     </div>
 
     <!-- 标准化模态框 - 使用公共模板（vendor/template-utils.js） -->
     <div id="standardizationModalsContainer"></div>
 
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
     <script src="vendor/parser-utils.js"></script>
     <script src="vendor/template-utils.js"></script>
+    <script>
+        init001ToolPage('001-02-schedule-parser.html', 'tools001');
+    </script>
     <script>
 
 (function(){
@@ -101,17 +79,12 @@
     const selectElement = (selector) => document.querySelector(selector);
     const log = createLogger('#log');
     
-    // 使用公共模板生成标准化模态框
     if (typeof window.generateStandardizationModals === 'function') {
         const container = document.getElementById('standardizationModalsContainer');
         if (container) {
             container.innerHTML = window.generateStandardizationModals();
         }
     }
-
-    /** CSV utils - 使用 parser-utils.js 中的函数 */
-    /** DOM helpers - 使用 parser-utils.js 中的函数 (text, find, findAll) */
-    /** clean 函数 - 使用 parser-utils.js 中的函数 */
 
     /**
      * 清洗船型：处理 xxx TEU 格式，合并为 xxxTEU
@@ -1483,10 +1456,12 @@
         return result;
     }
 
-    function parseFile(name, html, decodedHtml = null){
-        // 优化：如果已经解码过，直接使用，避免重复解码
-        const decoded = decodedHtml || extractDecodedPayload(html);
-        // 截断：出现"中转"或"接二程"后面的内容忽略
+    /**
+     * 提取主要内容（去除"中转"或"接二程"后的内容）
+     * @param {string} decoded - 解码后的HTML文本
+     * @returns {string} 主要内容文本
+     */
+    function extractMainContent(decoded) {
         const cutMarkers = [
             'text-[14px] font-bold">中转',
             'lineTypeShowName":"接二程"'
@@ -1498,237 +1473,291 @@
                 cutPos = markerPos;
             }
         }
-        const mainText = cutPos>0 ? decoded.slice(0, cutPos) : decoded;
+        return cutPos > 0 ? decoded.slice(0, cutPos) : decoded;
+    }
 
-        // 优化：延迟提取可见数据，只在需要验证时才执行（如果数据已经完整，可以跳过）
-        // 从DOM中提取可见的船期数据，用于验证
-        // 注意：这个操作很慢，只在必要时执行
+    /**
+     * 处理单个船的数据，提取并构建行数据
+     * @param {Object} vessel - 船对象
+     * @param {Object} fleet - 船队对象
+     * @param {Object} odTop - 起运港/目的港对象
+     * @param {string} lineId - 航线ID
+     * @param {string} portId - 港口ID
+     * @param {string} carriers - 共舱船公司
+     * @param {string} podCombined - 目的港码头组合
+     * @param {string} defaultWeekday - 默认开航日
+     * @param {string} defaultShipdays - 默认航程
+     * @param {string} defaultPolWharf - 默认起运港码头
+     * @param {Map} visibleData - 可见数据映射（可选）
+     * @param {string} html - 原始HTML（用于可见数据提取）
+     * @returns {Array|null} 行数据数组，如果无效则返回null
+     */
+    function processVesselData(vessel, fleet, odTop, lineId, portId, carriers, podCombined, 
+                                defaultWeekday, defaultShipdays, defaultPolWharf, visibleData, html) {
+        // 使用增强的提取函数，尝试多个字段名
+        const vesselName = extractVesselName(vessel);
+        const voyage = extractVoyage(vessel);
+        const shipType = vessel.shipCapacity || '';
+        let plan = extractPlanDate(vessel);
+        const atd = datePart(vessel.atdFormatter || '');
+        let eta = extractEtaDate(vessel);
+        
+        // 优化：延迟验证，只在数据不完整时才提取可见数据
+        const hasCompleteData = vesselName && voyage && plan && eta;
+        if (!hasCompleteData && visibleData && visibleData.size > 0) {
+            const visibleKey = `${lineId}_${portId}_${vesselName || ''}_${voyage || ''}`;
+            const visibleInfo = visibleData.get(visibleKey) || 
+                              visibleData.get(`${lineId}_${portId}_${clean(vesselName || '')}_${clean(voyage || '')}`) ||
+                              visibleData.get(`${lineId}_${portId}_${(vesselName || '').toUpperCase()}_${(voyage || '').toUpperCase()}`);
+            
+            if (visibleInfo) {
+                if (!plan && visibleInfo.planDate) plan = visibleInfo.planDate;
+                if (!eta && visibleInfo.etaDate) eta = visibleInfo.etaDate;
+                if (!podCombined && visibleInfo.podWharf) podCombined = visibleInfo.podWharf;
+            }
+        }
+        
+        // 开航日：优先从 vessel，其次从 fleet
+        let weekday = defaultWeekday;
+        if (!weekday) {
+            weekday = vessel.weekdayOfETDFormatter || vessel.weekday || vessel.etdWeekday || '';
+        }
+        
+        // 航程：优先从 vessel，其次从 fleet（增强提取逻辑）
+        let shipdays = defaultShipdays;
+        if (!shipdays) {
+            shipdays = vessel.shipdays || vessel.shipDays || vessel.duration || 
+                      vessel.transitTime || vessel.transitDays || '';
+        }
+        if (shipdays && typeof shipdays === 'string') {
+            const numMatch = shipdays.match(/(\d+)/);
+            if (numMatch) shipdays = numMatch[1];
+        }
+        
+        // 起运港码头：优先从 vessel，其次从 fleet
+        let polWharf = defaultPolWharf;
+        if (!polWharf) {
+            const polShort = vessel.startPortWharfEnShortName || '';
+            const polFull = vessel.startPortWharfEnFullName || '';
+            if (polShort && polFull) {
+                polWharf = `${normalizeWharfTokens(polShort)}/${normalizeWharfTokens(polFull)}`;
+            } else if (polShort) {
+                polWharf = normalizeWharfTokens(polShort);
+            } else if (polFull) {
+                polWharf = normalizeWharfTokens(polFull);
+            } else {
+                polWharf = normalizeWharfTokens(vessel.wharfName || vessel.polWharf || '');
+            }
+        }
+        
+        // 目的港码头：如果 vessel 中有，优先使用
+        let vesselPodCombined = podCombined;
+        if (vessel.destPortWharfEnShortName || vessel.destPortWharfEnFullName) {
+            const vPodShort = normalizeWharfTokens(vessel.destPortWharfEnShortName || '');
+            const vPodFull = normalizeWharfTokens(vessel.destPortWharfEnFullName || '');
+            if (vPodShort && vPodFull) {
+                vesselPodCombined = `${vPodShort}/${vPodFull}`;
+            } else if (vPodShort) {
+                vesselPodCombined = vPodShort;
+            } else if (vPodFull) {
+                vesselPodCombined = vPodFull;
+            }
+        }
+        
+        // 应用数据清洗
+        const cleanedShipType = cleanShipType(shipType);
+        const cleanedVesselName = clean(vesselName);
+        const cleanedVoyage = clean(voyage);
+        let finalEta = clean(eta);
+        
+        // 预计到港补充逻辑
+        if (!finalEta && cleanedVesselName && cleanedVoyage) {
+            const isBlankSailing = /BLANK\s*SAILING/i.test(cleanedVesselName) || 
+                                  /BLANK\s*SAILING/i.test(cleanedVoyage);
+            if (!isBlankSailing) {
+                // 不是空白航行，应该有预计到港（补充机制会在后续处理）
+            }
+        }
+        
+        const origin = fleet.origin || odTop.origin || '';
+        const dest = fleet.dest || odTop.dest || '';
+        
+        return [
+            clean(origin),                      // 启运港
+            clean(dest),                        // 目的港
+            clean(lineId),                      // 航线ID
+            clean(portId),                      // 港口ID
+            clean(weekday),                     // 开航日
+            clean(shipdays),                    // 航程
+            clean(carriers),                    // 共舱船公司
+            cleanedVesselName,                  // 船名（已清洗）
+            cleanedVoyage,                      // 航次（已清洗）
+            cleanedShipType,                    // 船型（已清洗）
+            clean(plan),                        // 计划开航
+            clean(atd),                         // 实际离港
+            finalEta,                           // 预计到港
+            clean(polWharf),                    // 启运港码头
+            clean(vesselPodCombined)            // 目的港码头
+        ];
+    }
+
+    /**
+     * 处理船队数据，提取所有船的行数据
+     * @param {Object} fleet - 船队对象
+     * @param {Object} odTop - 起运港/目的港对象
+     * @param {Map} carrierCache - 共舱船公司缓存
+     * @param {string} decoded - 解码后的HTML文本
+     * @param {string} html - 原始HTML
+     * @param {Map} visibleData - 可见数据映射（可选）
+     * @returns {Array<Array>} 行数据数组
+     */
+    function processFleetData(fleet, odTop, carrierCache, decoded, html, visibleData) {
+        const lineId = fleet.fleetId;
+        let portId = fleet.fleetIdPort;
+        
+        // 港口ID：优先使用 fleet 中的，如果无效则尝试从 vessel 中提取
+        if (!portId || portId === '0' || portId === '') {
+            for (const vessel of fleet.vessels) {
+                if (vessel.fleetIdPort && vessel.fleetIdPort !== '0') {
+                    portId = vessel.fleetIdPort;
+                    break;
+                }
+            }
+        }
+        
+        // 优化：使用缓存避免重复查找共舱船公司
+        const carrierKey = `${lineId}_${portId}`;
+        let carriers = carrierCache.get(carrierKey);
+        if (carriers === undefined) {
+            carriers = findCosTitle(decoded, lineId, portId, html);
+            if (!carriers) {
+                carriers = [
+                    fleet.carrierShortName && fleet.svcCode
+                        ? `${fleet.carrierShortName}(${fleet.svcCode})`
+                        : fleet.carrierShortName
+                ].filter(Boolean).join('');
+            }
+            carrierCache.set(carrierKey, carriers);
+        }
+        
+        // 目的港码头：改进组合逻辑
+        let podCombined = '';
+        if (fleet.podShort && fleet.podFull) {
+            podCombined = `${fleet.podShort}/${fleet.podFull}`;
+        } else if (fleet.podShort) {
+            podCombined = fleet.podShort;
+        } else if (fleet.podFull) {
+            podCombined = fleet.podFull;
+        }
+        
+        // 从 fleet 级别提取的默认值
+        const defaultWeekday = fleet.weekday || '';
+        const defaultShipdays = fleet.shipdays || '';
+        const defaultPolWharf = fleet.polWharf || '';
+        
+        const rows = [];
+        for (const vessel of fleet.vessels) {
+            const row = processVesselData(vessel, fleet, odTop, lineId, portId, carriers, podCombined,
+                                        defaultWeekday, defaultShipdays, defaultPolWharf, visibleData, html);
+            if (row) {
+                rows.push(row);
+            }
+        }
+        
+        return rows;
+    }
+
+    /**
+     * 兜底提取：从整页直接抓取含 vslName 的对象
+     * @param {string} mainText - 主要内容文本
+     * @param {Object} odTop - 起运港/目的港对象
+     * @returns {Array<Array>} 行数据数组
+     */
+    function extractFallbackVessels(mainText, odTop) {
+        const rows = [];
+        const vesselPattern = /\{[^{}]*?"(?:vslName|vesselName)"\s*:\s*"[^"]+"[\s\S]*?\}/g;
+        let vesselMatch;
+        
+        while ((vesselMatch = vesselPattern.exec(mainText))) {
+            const objText = vesselMatch[0].replace(/,\s*\}/g, '}');
+            try {
+                const vessel = JSON.parse(objText);
+                const vesselName = extractVesselName(vessel);
+                const voyage = extractVoyage(vessel);
+                if (!vesselName && !voyage) continue;
+                
+                const shipType = vessel.shipCapacity || '';
+                const plan = extractPlanDate(vessel);
+                const atd = datePart(vessel.atdFormatter || '');
+                const eta = extractEtaDate(vessel);
+                
+                rows.push([
+                    clean(odTop.origin || ''),
+                    clean(odTop.dest || ''),
+                    '', '', '', '', '',
+                    clean(vesselName),
+                    clean(voyage),
+                    clean(shipType),
+                    clean(plan),
+                    clean(atd),
+                    clean(eta),
+                    '', ''
+                ]);
+            } catch (error) {
+                if (typeof window !== 'undefined' && typeof window.debugWarn === 'function') {
+                    window.debugWarn('Failed to parse vessel object from fallback extraction:', error);
+                }
+            }
+        }
+        
+        return rows;
+    }
+
+    function parseFile(name, html, decodedHtml = null){
+        // 优化：如果已经解码过，直接使用，避免重复解码
+        const decoded = decodedHtml || extractDecodedPayload(html);
+        
+        // 提取主要内容
+        const mainText = extractMainContent(decoded);
+
+        // 优化：延迟提取可见数据，只在需要验证时才执行
         let visibleData = null; // 延迟初始化
 
         const labelIndex = buildLabelIndex(mainText);
-        const fleets = extractFleetAndVessels(mainText, labelIndex, null); // 先不传visibleData
+        const fleets = extractFleetAndVessels(mainText, labelIndex, null);
         const odTop = extractOriginDest(decoded);
 
         const rows = [];
         // 优化：批量查找共舱船公司，减少重复搜索
-        const carrierCache = new Map(); // key: `${lineId}_${portId}`, value: carriers
+        const carrierCache = new Map();
         
+        // 处理所有船队数据
         for (const fleet of fleets) {
-            const lineId = fleet.fleetId;
-            // 港口ID：优先使用 fleet 中的，如果无效则尝试从 vessel 中提取
-            let portId = fleet.fleetIdPort;
-            if (!portId || portId === '0' || portId === '') {
-                // 尝试从 vessel 对象中提取
-                for (const vessel of fleet.vessels) {
-                    if (vessel.fleetIdPort && vessel.fleetIdPort !== '0') {
-                        portId = vessel.fleetIdPort;
-                        break;
-                    }
-                }
-            }
-            
-            // 优化：使用缓存避免重复查找
-            const carrierKey = `${lineId}_${portId}`;
-            let carriers = carrierCache.get(carrierKey);
-            if (carriers === undefined) {
-                // 共舱船公司：在完整解码文本和原始HTML中查找 _lineId_portId 对应的 <a> 的 title
-                carriers = findCosTitle(decoded, lineId, portId, html);
-                if (!carriers) {
-                    carriers = [
-                        fleet.carrierShortName && fleet.svcCode
-                            ? `${fleet.carrierShortName}(${fleet.svcCode})`
-                            : fleet.carrierShortName
-                    ].filter(Boolean).join('');
-                }
-                carrierCache.set(carrierKey, carriers);
-            }
-            
-            // 目的港码头：改进组合逻辑，确保显示完整信息
-            let podCombined = '';
-            if (fleet.podShort && fleet.podFull) {
-                // 两者都有，用 / 分隔
-                podCombined = `${fleet.podShort}/${fleet.podFull}`;
-            } else if (fleet.podShort) {
-                // 只有缩写
-                podCombined = fleet.podShort;
-            } else if (fleet.podFull) {
-                // 只有全称
-                podCombined = fleet.podFull;
-            }
-            
-            const origin = fleet.origin || odTop.origin || '';
-            const dest = fleet.dest || odTop.dest || '';
-            
-            // 从 fleet 级别提取的默认值
-            let defaultWeekday = fleet.weekday || '';
-            let defaultShipdays = fleet.shipdays || '';
-            let defaultPolWharf = fleet.polWharf || '';
-            
+            // 延迟初始化 visibleData（只在需要时才执行）
+            let needsVisibleData = false;
             for (const vessel of fleet.vessels) {
-                // 使用增强的提取函数，尝试多个字段名
                 const vesselName = extractVesselName(vessel);
                 const voyage = extractVoyage(vessel);
-                const shipType = vessel.shipCapacity || '';
-                let plan = extractPlanDate(vessel);
-                const atd = datePart(vessel.atdFormatter || '');
-                let eta = extractEtaDate(vessel);
-                
-                // 优化：延迟验证，只在数据不完整时才提取可见数据
-                // 如果数据已经完整（有船名、航次、计划开航、预计到港），跳过验证以提高性能
-                const hasCompleteData = vesselName && voyage && plan && eta;
-                if (!hasCompleteData) {
-                    // 延迟初始化 visibleData（只在需要时才执行，这个操作很慢）
-                    if (visibleData === null) {
-                        visibleData = extractVisibleScheduleData(html);
-                    }
-                    
-                    if (visibleData && visibleData.size > 0) {
-                        // 从可见数据中补充计划开航和目的港码头
-                        const visibleKey = `${lineId}_${portId}_${vesselName || ''}_${voyage || ''}`;
-                        const visibleInfo = visibleData.get(visibleKey) || 
-                                          visibleData.get(`${lineId}_${portId}_${clean(vesselName || '')}_${clean(voyage || '')}`) ||
-                                          visibleData.get(`${lineId}_${portId}_${(vesselName || '').toUpperCase()}_${(voyage || '').toUpperCase()}`);
-                        
-                        if (visibleInfo) {
-                            // 如果JSON中没有计划开航，使用DOM中的
-                            if (!plan && visibleInfo.planDate) {
-                                plan = visibleInfo.planDate;
-                            }
-                            // 如果JSON中没有预计到港，使用DOM中的
-                            if (!eta && visibleInfo.etaDate) {
-                                eta = visibleInfo.etaDate;
-                            }
-                            // 如果JSON中没有目的港码头，使用DOM中的
-                            if (!podCombined && visibleInfo.podWharf) {
-                                podCombined = visibleInfo.podWharf;
-                            }
-                        }
-                    }
+                const plan = extractPlanDate(vessel);
+                const eta = extractEtaDate(vessel);
+                if (!vesselName || !voyage || !plan || !eta) {
+                    needsVisibleData = true;
+                    break;
                 }
-                
-                // 注意：补充机制延迟到合并后统一处理，以提高性能
-                
-                // 开航日：优先从 vessel，其次从 fleet
-                let weekday = defaultWeekday;
-                if (!weekday) {
-                    weekday = vessel.weekdayOfETDFormatter || vessel.weekday || vessel.etdWeekday || '';
-                }
-                
-                // 航程：优先从 vessel，其次从 fleet（增强提取逻辑）
-                let shipdays = defaultShipdays;
-                if (!shipdays) {
-                    shipdays = vessel.shipdays 
-                        || vessel.shipDays 
-                        || vessel.duration 
-                        || vessel.transitTime
-                        || vessel.transitDays
-                        || '';
-                }
-                // 如果是字符串，转换为数字
-                if (shipdays && typeof shipdays === 'string') {
-                    const numMatch = shipdays.match(/(\d+)/);
-                    if (numMatch) shipdays = numMatch[1];
-                }
-                
-                // 起运港码头：优先从 vessel，其次从 fleet（增强提取逻辑，同时提取简写和全称）
-                let polWharf = defaultPolWharf;
-                if (!polWharf) {
-                    const polShort = vessel.startPortWharfEnShortName || '';
-                    const polFull = vessel.startPortWharfEnFullName || '';
-                    if (polShort && polFull) {
-                        polWharf = `${normalizeWharfTokens(polShort)}/${normalizeWharfTokens(polFull)}`;
-                    } else if (polShort) {
-                        polWharf = normalizeWharfTokens(polShort);
-                    } else if (polFull) {
-                        polWharf = normalizeWharfTokens(polFull);
-                    } else {
-                        polWharf = normalizeWharfTokens(
-                            vessel.wharfName
-                            || vessel.polWharf
-                            || ''
-                        );
-                    }
-                }
-                
-                // 目的港码头：如果 vessel 中有，优先使用（增强提取逻辑，确保同时提取简写和全称）
-                let vesselPodCombined = podCombined;
-                if (vessel.destPortWharfEnShortName || vessel.destPortWharfEnFullName) {
-                    const vPodShort = normalizeWharfTokens(vessel.destPortWharfEnShortName || '');
-                    const vPodFull = normalizeWharfTokens(vessel.destPortWharfEnFullName || '');
-                    if (vPodShort && vPodFull) {
-                        vesselPodCombined = `${vPodShort}/${vPodFull}`;
-                    } else if (vPodShort) {
-                        vesselPodCombined = vPodShort;
-                    } else if (vPodFull) {
-                        vesselPodCombined = vPodFull;
-                    }
-                }
-                
-                // 应用数据清洗：船型、船名航次
-                const cleanedShipType = cleanShipType(shipType);
-                const cleanedVesselName = clean(vesselName);
-                const cleanedVoyage = clean(voyage);
-                
-                // 预计到港补充逻辑：如果有船名航次但不是BLANK SAILING，应该有预计到港
-                let finalEta = clean(eta);
-                if (!finalEta && cleanedVesselName && cleanedVoyage) {
-                    const isBlankSailing = /BLANK\s*SAILING/i.test(cleanedVesselName) || /BLANK\s*SAILING/i.test(cleanedVoyage);
-                    if (!isBlankSailing) {
-                        // 不是空白航行，应该有预计到港，尝试从可见数据或补充数据中获取
-                        // 这部分会在后续的补充机制中处理
-                    }
-                }
-                
-                rows.push([
-                    clean(origin),                      // 启运港
-                    clean(dest),                        // 目的港
-                    clean(lineId),                      // 航线ID
-                    clean(portId),                      // 港口ID
-                    clean(weekday),                     // 开航日
-                    clean(shipdays),                    // 航程
-                    clean(carriers),                    // 共舱船公司
-                    cleanedVesselName,                  // 船名（已清洗）
-                    cleanedVoyage,                      // 航次（已清洗）
-                    cleanedShipType,                    // 船型（已清洗，处理空格）
-                    clean(plan),                        // 计划开航
-                    clean(atd),                         // 实际离港
-                    finalEta,                           // 预计到港
-                    clean(polWharf),                    // 启运港码头
-                    clean(vesselPodCombined)            // 目的港码头
-                ]);
             }
+            
+            if (needsVisibleData && visibleData === null) {
+                visibleData = extractVisibleScheduleData(html);
+            }
+            
+            const fleetRows = processFleetData(fleet, odTop, carrierCache, decoded, html, visibleData);
+            rows.push(...fleetRows);
         }
+        
         // 全局兜底：若仍无船期，从整页直接抓取含 vslName 的对象
         if (rows.length === 0) {
-            const vesselPattern = /\{[^{}]*?"(?:vslName|vesselName)"\s*:\s*"[^"]+"[\s\S]*?\}/g;
-            let vesselMatch;
-            while ((vesselMatch = vesselPattern.exec(mainText))) {
-                const objText = vesselMatch[0].replace(/,\s*\}/g, '}');
-                try {
-                    const vessel = JSON.parse(objText);
-                    const vesselName = extractVesselName(vessel);
-                    const voyage = extractVoyage(vessel);
-                    if (!vesselName && !voyage) continue;
-                    const shipType = vessel.shipCapacity || '';
-                    const plan = extractPlanDate(vessel);
-                    const atd = datePart(vessel.atdFormatter || '');
-                    const eta = extractEtaDate(vessel);
-                    rows.push([
-                        clean(odTop.origin || ''),
-                        clean(odTop.dest || ''),
-                        '', '', '', '', '',
-                        clean(vesselName),
-                        clean(voyage),
-                        clean(shipType),
-                        clean(plan),
-                        clean(atd),
-                        clean(eta),
-                        '', ''
-                    ]);
-                } catch (error) {
-                    console.warn('Failed to parse vessel object from fallback extraction:', error);
-                }
-            }
+            const fallbackRows = extractFallbackVessels(mainText, odTop);
+            rows.push(...fallbackRows);
         }
         
         // 注意：补充机制延迟到合并后统一处理，以提高性能
@@ -2766,12 +2795,6 @@
         downloadBlob(csv, generateTimestampFilename('weiyun-schedule'), 'text/csv;charset=utf-8');
     });
 })();
-</script>
-    </div>
-    <div class="page-footer">
-        <h2>维运网 船期解析工具使用声明</h2>
-        <p>本工具用于解析从维运网（weiyun.com）下载的船期网页，提取航线、船名、航次、开船日期等数据并导出为 CSV 文件。</p>
-        <p>所有数据来源于维运网公开信息，解析结果仅供内部使用，请遵守维运网的使用条款和版权规定。</p>
-    </div>
+    </script>
 </body>
 </html>

@@ -15,8 +15,8 @@ function generateBookingDataTable(containerId) {
             <table class="booking-table" id="bookingDataTable">
                 <thead>
                     <tr>
-                        <th>项目</th>
-                        <th class="description-header">说明</th>
+                        <th class="table-header">项目</th>
+                        <th class="table-header description-header">说明</th>
                     </tr>
                 </thead>
                 <tbody id="bookingDataBody">
@@ -184,9 +184,11 @@ function generateAiConfigPanels(containerId) {
                             <label>模型 ID:</label>
                             <input type="text" id="apiModelInput" placeholder="deepseek-chat" value="deepseek-chat" list="deepseekModelOptions">
                         </div>
-                        <button class="api-save-btn" onclick="saveAiConfig('deepseek')">保存配置</button>
+                        <div class="api-action-buttons">
+                            <button class="api-save-btn btn-sweep-blue" onclick="saveAiConfig('deepseek')">保存配置</button>
+                            <button class="ai-analysis-btn btn-sweep-orange" id="aiAnalysisBtn" onclick="runAiAnalysis('deepseek')">使用 DeepSeek 分析</button>
+                        </div>
                     </div>
-                    <button class="ai-analysis-btn" id="aiAnalysisBtn" onclick="runAiAnalysis('deepseek')">使用 DeepSeek 分析</button>
                     <div id="aiLoading" class="ai-loading hidden">正在分析中</div>
                     <div id="aiResult" class="ai-result hidden">
                         <h4>DeepSeek 分析结果</h4>
@@ -208,9 +210,11 @@ function generateAiConfigPanels(containerId) {
                             <label>模型 ID:</label>
                             <input type="text" id="kimiModelInput" placeholder="moonshot-v1-32k" value="moonshot-v1-32k" list="kimiModelOptions">
                         </div>
-                        <button class="api-save-btn" onclick="saveAiConfig('kimi')">保存配置</button>
+                        <div class="api-action-buttons">
+                            <button class="api-save-btn btn-sweep-blue" onclick="saveAiConfig('kimi')">保存配置</button>
+                            <button class="ai-analysis-btn btn-sweep-orange" id="kimiAnalysisBtn" onclick="runAiAnalysis('kimi')">使用 KIMI 分析</button>
+                        </div>
                     </div>
-                    <button class="ai-analysis-btn secondary" id="kimiAnalysisBtn" onclick="runAiAnalysis('kimi')">使用 KIMI 分析</button>
                     <div id="kimiAiLoading" class="ai-loading hidden">正在分析中</div>
                     <div id="kimiAiResult" class="ai-result hidden">
                         <h4>KIMI 分析结果</h4>
@@ -232,9 +236,11 @@ function generateAiConfigPanels(containerId) {
                             <label>模型 ID:</label>
                             <input type="text" id="qwenModelInput" placeholder="qwen-max" value="qwen-max" list="qwenModelOptions">
                         </div>
-                        <button class="api-save-btn" onclick="saveAiConfig('qwen')">保存配置</button>
+                        <div class="api-action-buttons">
+                            <button class="api-save-btn btn-sweep-blue" onclick="saveAiConfig('qwen')">保存配置</button>
+                            <button class="ai-analysis-btn btn-sweep-orange" id="qwenAnalysisBtn" onclick="runAiAnalysis('qwen')">使用通义千问分析</button>
+                        </div>
                     </div>
-                    <button class="ai-analysis-btn" id="qwenAnalysisBtn" onclick="runAiAnalysis('qwen')" style="background: #ff6b35;">使用通义千问分析</button>
                     <div id="qwenAiLoading" class="ai-loading hidden">正在分析中</div>
                     <div id="qwenAiResult" class="ai-result hidden">
                         <h4>通义千问 分析结果</h4>
@@ -287,7 +293,7 @@ function generateMarketDataInfoBlocks(containerId) {
                     <p id="bunkerStatus">尚未抓取燃油报价</p>
                     <small id="bunkerUpdated" class="bunker-meta">最近更新时间：—</small>
                 </div>
-                <button class="action-btn" id="refreshBunkerBtn">更新燃油价格</button>
+                <button class="action-btn btn-sweep-blue" id="refreshBunkerBtn">更新燃油价格</button>
             </div>
             <div class="index-info">
                 <div>
@@ -295,7 +301,7 @@ function generateMarketDataInfoBlocks(containerId) {
                     <p id="wciStatus">尚未抓取 WCI 数据</p>
                     <small id="wciUpdated" class="index-meta">最近更新时间：—</small>
                 </div>
-                <button class="action-btn" id="refreshWciBtn">更新 WCI</button>
+                <button class="action-btn btn-sweep-blue" id="refreshWciBtn">更新 WCI</button>
             </div>
             <div class="index-info">
                 <div>
@@ -303,7 +309,7 @@ function generateMarketDataInfoBlocks(containerId) {
                     <p id="fbxStatus">尚未抓取 FBX 数据</p>
                     <small id="fbxUpdated" class="index-meta">最近更新时间：—</small>
                 </div>
-                <button class="action-btn" id="refreshFbxBtn">更新 FBX</button>
+                <button class="action-btn btn-sweep-blue" id="refreshFbxBtn">更新 FBX</button>
             </div>
             <div class="index-info" id="scfiInfoContainer" style="display: none;">
                 <div>

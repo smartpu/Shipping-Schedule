@@ -4,211 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>维运网 船期解析工具使用说明</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/readme-styles.css">
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-    </style>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
 </head>
 <body data-page="001-02-schedule-parser-README.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-modal">
-            <h2>🔐 访问验证</h2>
-            <p>为了了解工具使用情况，请填写以下信息</p>
-            <form id="authForm">
-                <div class="auth-form-group">
-                    <label for="userName">姓名 *</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>维运网 船期解析工具使用说明</h2>
+                            <p>自动解析维运网船期网页，解析过程中请勿关闭页面，解析完成后会自动显示统计信息。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools001" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="001-02-schedule-parser.html?from=tools001" class="tool-link secondary" aria-label="打开工具">打开工具 →</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userPhone">手机号 *</label>
-                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+
+                <!-- 内容区域 -->
+                <div class="card-white mt-20">
+                    <div class="readme-content">
+                        <h2>工具简介</h2>
+                        <p>本工具用于将 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具会自动提取船期信息，包括启运港、目的港、航线信息、船名航次、开航日期、码头信息等，并自动去重合并重复记录。</p>
+
+                        <hr>
+
+                        <h2>使用步骤</h2>
+                        <ol>
+                            <li><strong>准备工作</strong>：首先需要使用"维运网 船期网页下载工具"下载并保存所有船期网页到指定文件夹中</li>
+                            <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择包含所有 HTML 文件的文件夹</li>
+                            <li><strong>开始解析</strong>：选择文件夹后，点击"开始解析"按钮，工具会自动解析所有 HTML 文件中的船期信息</li>
+                            <li><strong>数据标准化</strong>：如果发现船名航次或目的港码头格式不一致（去空格后相同但格式不同），工具会弹出标准化对话框，请为每组选择一个标准格式，或选择跳过保留原值</li>
+                            <li><strong>查看结果</strong>：解析完成后，可以在下方预览表格中查看解析结果（最多显示前50条），并查看数据质量检查报告</li>
+                            <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"按钮，将数据保存为 CSV 文件</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>核心功能</h2>
+                        <ul>
+                            <li>✅ <strong>批量解析</strong>：自动解析文件夹中的所有 HTML 文件</li>
+                            <li>✅ <strong>自动去重</strong>：自动合并重复的船期记录
+                                <ul>
+                                    <li>第一步：按"启运港+目的港+航线ID+港口ID+船名+航次"进行初步去重</li>
+                                    <li>第二步：按"目的港+航线ID+船名+航次"进行最终去重（合并相同目的港的重复记录）</li>
+                                </ul>
+                            </li>
+                            <li>✅ <strong>数据标准化</strong>：自动检测并提示用户标准化船名航次和目的港码头的格式差异（空格、大小写等），用户可选择标准格式统一替换</li>
+                            <li>✅ <strong>数据质量检查</strong>：自动生成数据质量报告，检查缺失字段（开航日、航程、计划开航、预计到港、码头信息等）</li>
+                            <li>✅ <strong>数据清洗</strong>：自动清洗数据，修复断开的单词和格式问题（如 "QQ CT" → "QQCT"、"TERMINA L" → "TERMINAL"）</li>
+                            <li>✅ <strong>实时预览</strong>：解析完成后可立即预览前50条数据</li>
+                            <li>✅ <strong>Excel兼容</strong>：CSV文件使用UTF-8带BOM编码，Excel可直接打开</li>
+                            <li>✅ <strong>仅解析直航</strong>：自动过滤中转船期，只提取直航数据</li>
+                            <li>✅ <strong>共舱船公司提取</strong>：自动从网页中提取共舱船公司信息</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>输出列说明</h2>
+                        <p>CSV 文件包含以下 15 列数据：</p>
+                        <ul>
+                            <li><strong>启运港</strong>：页面顶部"由...发往..."或 JSON 中的 <code>startPortEnName/startPortCnName</code></li>
+                            <li><strong>目的港</strong>：页面顶部或 JSON 中的 <code>destPortEnName/destPortCnName</code></li>
+                            <li><strong>航线ID</strong>：来自 JSON 中的 <code>fleetId</code></li>
+                            <li><strong>港口ID</strong>：来自 JSON 中的 <code>fleetIdPort</code></li>
+                            <li><strong>开航日</strong>：来自 JSON 中的 <code>weekdayOfETDFormatter</code></li>
+                            <li><strong>航程</strong>：来自 JSON 中的 <code>shipdays</code></li>
+                            <li><strong>共舱船公司</strong>：从网页中的 <code>&lt;a&gt;</code> 标签 <code>title</code> 属性自动提取，或从 JSON 中的 <code>carrierShortName/svcCode</code></li>
+                            <li><strong>船名</strong>：来自 JSON 中的 <code>vslName</code></li>
+                            <li><strong>航次</strong>：来自 JSON 中的 <code>voyNo</code></li>
+                            <li><strong>船型</strong>：来自 JSON 中的 <code>shipCapacity</code></li>
+                            <li><strong>计划开航</strong>：来自 JSON 中的 <code>etdFormatter</code> 或 <code>portSailingDateFormatter</code>，提取日期部分</li>
+                            <li><strong>实际离港</strong>：来自 JSON 中的 <code>atdFormatter</code>，若为空则留空</li>
+                            <li><strong>预计到港</strong>：来自 JSON 中的 <code>etaFormatter</code>，提取日期部分</li>
+                            <li><strong>启运港码头</strong>：来自 JSON 中的 <code>wharfName</code> 或 <code>startPortWharfEnShortName/startPortWharfEnFullName</code></li>
+                            <li><strong>目的港码头</strong>：来自 JSON 中的 <code>destPortWharfEnShortName/destPortWharfEnFullName</code></li>
+                        </ul>
+                        <p><strong>注意事项</strong>：</p>
+                        <ul>
+                            <li>工具会进行两步去重合并：
+                                <ul>
+                                    <li>第一步：按"启运港+目的港+航线ID+港口ID+船名+航次"进行初步去重</li>
+                                    <li>第二步：按"目的港+航线ID+船名+航次"进行最终去重（合并相同目的港的重复记录）</li>
+                                </ul>
+                            </li>
+                            <li>共舱船公司信息会从网页中自动提取</li>
+                            <li>解析过程中如发现格式不一致的船名航次或目的港码头，会弹出标准化对话框供用户选择标准格式</li>
+                            <li>解析完成后会自动生成数据质量检查报告，显示缺失字段和潜在问题</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>常见问题</h2>
+                        <h3>Q1: 解析过程中显示"无船期"或"跳过"</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>网页中没有直航船期数据（只有中转船期）</li>
+                            <li>网页格式不符合预期</li>
+                            <li>网页数据不完整</li>
+                            <li>网页结构发生变化</li>
+                        </ul>
+                        <p>这是正常现象，工具会继续解析其他文件，不会中断整个解析过程。</p>
+
+                        <h3>Q2: CSV 文件在 Excel 中打开中文乱码</h3>
+                        <p><strong>A</strong>：工具生成的 CSV 文件使用 UTF-8 带 BOM 编码，应该可以在 Excel 中正常打开。如果仍然出现乱码，请尝试：</p>
+                        <ul>
+                            <li>使用 Excel 的"数据" → "从文本/CSV"功能导入</li>
+                            <li>在导入时选择 UTF-8 编码</li>
+                            <li>或者使用其他支持 UTF-8 的软件（如 WPS、LibreOffice）打开</li>
+                        </ul>
+
+                        <h3>Q3: 解析速度很慢</h3>
+                        <p><strong>A</strong>：解析速度取决于文件数量和文件大小。可以分批解析，不需要一次性解析所有文件。建议使用 Chrome 或 Edge 浏览器以获得最佳性能。</p>
+
+                        <h3>Q4: 解析过程中弹出标准化对话框</h3>
+                        <p><strong>A</strong>：这是正常功能。当工具发现船名航次或目的港码头去空格后相同但格式不同时，会弹出对话框让您选择标准格式。您可以选择：</p>
+                        <ul>
+                            <li><strong>应用替换并继续</strong>：将选中的标准格式应用到所有相关记录</li>
+                            <li><strong>跳过（保留原值）</strong>：保留原始格式，不进行替换</li>
+                        </ul>
+                        <p>建议选择最短或最常用的格式作为标准格式。</p>
+
+                        <h3>Q5: 数据质量检查报告显示缺失字段</h3>
+                        <p><strong>A</strong>：数据质量检查报告会显示缺失的字段（如开航日、航程、计划开航、预计到港、码头信息等）。这些缺失可能是由于：</p>
+                        <ul>
+                            <li>原始网页数据不完整</li>
+                            <li>网页格式发生变化</li>
+                            <li>某些特殊船期（如 BLANK SAILING）可能缺少部分信息</li>
+                        </ul>
+                        <p>这是正常现象，工具会继续处理其他数据，不会中断解析过程。</p>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userEmail">邮箱 *</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">维运网 船期解析工具使用声明</h2>
+                    <p class="usage-statement-text">本工具用于解析从维运网（weiyun001.com）下载的船期网页，提取航线、船名、航次、开船日期等数据并导出为 CSV 文件。</p>
+                    <p class="usage-statement-text">所有数据来源于维运网公开信息，解析结果仅供内部使用，请遵守维运网的使用条款和版权规定。</p>
                 </div>
-                <button type="submit" class="auth-submit-btn">确认并继续</button>
-            </form>
-        </div>
-    </div>
-    <div class="container">
-        <div class="header">
-            <a href="index.html?tab=tools001" class="back-home-btn">← 返回首页</a>
-            <h1>维运网 船期解析工具使用说明</h1>
-        </div>
-
-        <div class="content">
-            <h2>工具简介</h2>
-            <p><strong>维运网 船期解析工具</strong> 是一个零安装、基于浏览器的客户端工具，用于将 <code>data/001-view-full</code> 目录下的 HTML 船期网页批量解析成 CSV 文件（可直接用 Excel 打开）。工具会自动提取船期信息，包括启运港、目的港、航线信息、船名航次、开航日期、码头信息等，并自动去重合并重复记录。</p>
-
-            <hr>
-
-            <h2>快速开始</h2>
-            <ol>
-                <li><strong>准备工作</strong>：首先需要使用"维运网 船期网页手动下载工具"（<code>001-01-manual-download.html</code>）下载并保存所有船期网页到 <code>data/001-view-full</code> 文件夹中</li>
-                <li><strong>打开工具</strong>：双击打开 <code>001-02-schedule-parser.html</code>（或在浏览器中打开）</li>
-                <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择项目中的 <code>data/001-view-full</code> 目录</li>
-                <li><strong>开始解析</strong>：点击"开始解析"按钮，等待进度完成</li>
-                <li><strong>查看结果</strong>：预览下方会显示前 50 行样例</li>
-                <li><strong>下载 CSV</strong>：确认解析结果无误后，点击"下载 CSV"保存全部结果</li>
-            </ol>
-
-            <hr>
-
-            <h2>详细操作步骤</h2>
-            <h3>步骤 1：打开工具</h3>
-            <p>双击打开 <code>001-02-schedule-parser.html</code> 文件，会在浏览器中打开工具页面。</p>
-
-            <h3>步骤 2：选择文件夹</h3>
-            <ol>
-                <li>点击"选择 view-full 文件夹"按钮</li>
-                <li>在文件选择对话框中选择 <code>data/001-view-full</code> 文件夹</li>
-                <li>选择后，工具会自动识别文件夹中的所有 HTML 文件</li>
-                <li>"开始解析"按钮将变为可用状态</li>
-                <li>工具会显示已选择的文件数量</li>
-            </ol>
-
-            <h3>步骤 3：开始解析</h3>
-            <ol>
-                <li>点击"开始解析"按钮</li>
-                <li>工具会自动解析所有 HTML 文件中的船期信息</li>
-                <li><strong>重要</strong>：仅解析直航船期，遇到"中转"或"接二程"标记时停止解析</li>
-                <li>解析过程中会显示实时日志，包括：
-                    <ul>
-                        <li>正在解析的文件名</li>
-                        <li>解析到的数据条数</li>
-                        <li>错误或警告信息（如有）</li>
-                        <li>"无船期"提示（如果某个网页中没有船期数据）</li>
-                    </ul>
-                </li>
-            </ol>
-
-            <h3>步骤 4：查看结果</h3>
-            <ol>
-                <li>解析完成后，可以在下方预览表格中查看解析结果</li>
-                <li>预览表格最多显示前 50 条数据</li>
-                <li>可以滚动查看所有列的数据</li>
-                <li>统计信息会显示总文件数、成功解析数、总数据条数等</li>
-            </ol>
-
-            <h3>步骤 5：下载 CSV</h3>
-            <ol>
-                <li>确认解析结果无误后，点击"下载 CSV"按钮</li>
-                <li>CSV 文件会自动下载到浏览器的默认下载文件夹</li>
-                <li>文件名格式：<code>weiyun-schedule-YYYY-MM-DD-HH-MM-SS.csv</code>（包含当前日期和时间）</li>
-            </ol>
-
-            <hr>
-
-            <h2>输出列说明（按顺序）</h2>
-            <p>CSV 文件包含以下 15 列数据：</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>序号</th>
-                        <th>列名</th>
-                        <th>说明</th>
-                        <th>示例</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>1</td><td>启运港</td><td>页面顶部"由...发往..."或 JSON 中的 <code>startPortEnName/startPortCnName</code></td><td><code>QINGDAO(青岛)</code></td></tr>
-                    <tr><td>2</td><td>目的港</td><td>页面顶部或 JSON 中的 <code>destPortEnName/destPortCnName</code></td><td><code>JEBEL ALI(杰贝阿里)</code></td></tr>
-                    <tr><td>3</td><td>航线ID</td><td>来自 JSON 中的 <code>fleetId</code></td><td><code>2533</code></td></tr>
-                    <tr><td>4</td><td>港口ID</td><td>来自 JSON 中的 <code>fleetIdPort</code></td><td><code>19</code></td></tr>
-                    <tr><td>5</td><td>开航日</td><td>来自 JSON 中的 <code>weekdayOfETDFormatter</code></td><td><code>周一</code></td></tr>
-                    <tr><td>6</td><td>航程</td><td>来自 JSON 中的 <code>shipdays</code></td><td><code>22天</code></td></tr>
-                    <tr><td>7</td><td>共舱船公司</td><td>从 <code>&lt;a href="#1_航线ID_港口ID"&gt;</code> 的 <code>title</code> 属性提取，或从 JSON 中的 <code>carrierShortName/svcCode</code></td><td><code>ARVIA（JFX） | CUL 中联航运（JFX） | ECONSHIP（JFX）...</code></td></tr>
-                    <tr><td>8</td><td>船名</td><td>来自 JSON 中的 <code>vslName</code></td><td><code>MUMBAI BRIDGE</code></td></tr>
-                    <tr><td>9</td><td>航次</td><td>来自 JSON 中的 <code>voyNo</code></td><td><code>2507W</code></td></tr>
-                    <tr><td>10</td><td>船型</td><td>来自 JSON 中的 <code>shipCapacity</code></td><td><code>8030TEU</code></td></tr>
-                    <tr><td>11</td><td>计划开航</td><td>来自 JSON 中的 <code>etdFormatter</code> 或 <code>portSailingDateFormatter</code>，提取日期部分</td><td><code>2025/11/07</code></td></tr>
-                    <tr><td>12</td><td>实际离港</td><td>来自 JSON 中的 <code>atdFormatter</code>，若为空则留空</td><td><code>2025/11/08</code></td></tr>
-                    <tr><td>13</td><td>预计到港</td><td>来自 JSON 中的 <code>etaFormatter</code>，提取日期部分</td><td><code>2025/11/29</code></td></tr>
-                    <tr><td>14</td><td>启运港码头</td><td>来自 JSON 中的 <code>wharfName</code> 或 <code>startPortWharfEnShortName/startPortWharfEnFullName</code></td><td><code>QQCT</code></td></tr>
-                    <tr><td>15</td><td>目的港码头</td><td>来自 JSON 中的 <code>destPortWharfEnShortName/destPortWharfEnFullName</code></td><td><code>JEBEL ALI CONTAINER TERMINAL 3</code></td></tr>
-                </tbody>
-            </table>
-            <blockquote>
-                <p><strong>说明</strong>：</p>
-                <ul>
-                    <li>程序会自动处理数据清洗，包括去除多余空格、修复断开的单词（如 <code>QQ CT</code> → <code>QQCT</code>、<code>TERMINA L</code> → <code>TERMINAL</code>）等</li>
-                    <li>有的页面可能资料不完整（无年份/IMO/船型），程序会自动留空，不会中断解析</li>
-                    <li>共舱船公司信息会从网页中的 <code>&lt;a&gt;</code> 标签 <code>title</code> 属性自动提取，如果提取失败，会使用 JSON 中的 <code>carrierShortName</code> 和 <code>svcCode</code></li>
-                </ul>
-            </blockquote>
-
-            <hr>
-
-            <h2>工具特点</h2>
-            <ul>
-                <li>🎨 <strong>现代化界面</strong>：全屏宽度设计，美观易用</li>
-                <li>📋 <strong>详细说明</strong>：页面内置完整的使用说明，无需查看文档</li>
-                <li>🔄 <strong>自动去重</strong>：自动合并重复的船期记录（相同启运港+目的港+航线ID+港口ID+船名+航次）</li>
-                <li>📊 <strong>实时预览</strong>：解析完成后可立即预览前50条数据</li>
-                <li>💾 <strong>Excel兼容</strong>：CSV文件使用UTF-8带BOM编码，Excel可直接打开</li>
-                <li>🧹 <strong>数据清洗</strong>：自动清洗数据，修复断开的单词和格式问题</li>
-                <li>🚢 <strong>仅解析直航</strong>：自动过滤中转船期，只提取直航数据</li>
-            </ul>
-
-            <hr>
-
-            <h2>常见问题</h2>
-            <h3>Q1: 解析过程中显示"无船期"或"跳过"</h3>
-            <p><strong>A</strong>: 可能的原因：</p>
-            <ol>
-                <li>网页中没有直航船期数据（只有中转船期）</li>
-                <li>网页格式不符合预期</li>
-                <li>网页数据不完整</li>
-                <li>网页结构发生变化</li>
-            </ol>
-            <p><strong>解决</strong>：这是正常现象，工具会继续解析其他文件，不会中断整个解析过程。如果多个文件都显示"无船期"，请检查：</p>
-            <ol>
-                <li>HTML 文件是否正确下载</li>
-                <li>网页结构是否发生变化</li>
-                <li>是否包含船期数据</li>
-            </ol>
-
-            <h3>Q2: CSV 文件在 Excel 中打开中文乱码</h3>
-            <p><strong>A</strong>: 工具生成的 CSV 文件使用 UTF-8 带 BOM 编码，应该可以在 Excel 中正常打开。如果仍然出现乱码，请尝试：</p>
-            <ol>
-                <li>使用 Excel 的"数据" → "从文本/CSV"功能导入</li>
-                <li>在导入时选择 UTF-8 编码</li>
-                <li>或者使用其他支持 UTF-8 的软件（如 WPS、LibreOffice）打开</li>
-            </ol>
-
-            <h3>Q3: 解析速度很慢</h3>
-            <p><strong>A</strong>: 解析速度取决于：</p>
-            <ol>
-                <li><strong>文件数量</strong>：文件越多，解析时间越长</li>
-                <li><strong>文件大小</strong>：文件越大，解析时间越长</li>
-                <li><strong>浏览器性能</strong>：建议使用 Chrome 或 Edge 浏览器</li>
-            </ol>
-            <p><strong>优化建议</strong>：</p>
-            <ul>
-                <li>可以分批解析，不需要一次性解析所有文件</li>
-                <li>关闭其他占用资源的程序</li>
-                <li>使用性能较好的浏览器</li>
-            </ul>
-        </div>
+            </div>
+        </main>
     </div>
 
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
     <script>
+        // 使用公共初始化函数
+        init001ToolPage('001-02-schedule-parser-README.html', 'tools001');
     </script>
-
-    <div class="page-footer">
-        <h2>维运网 船期解析工具使用声明</h2>
-        <p>本工具仅用于辅助解析本地 HTML 文件，所有操作均在本地完成，不会上传任何数据到服务器。</p>
-        <p>解析的内容仅供内部使用，请遵守相关法律法规和网站使用条款。</p>
-    </div>
 </body>
 </html>
-

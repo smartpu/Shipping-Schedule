@@ -3,221 +3,623 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>明日数航 船期网页手动下载工具</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/tool-styles.css">
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-        /* 注意：.btn、.btn-open、.btn-saved 样式已移至 vendor/tool-styles.css */
-        /* 注意：.header 样式已在 parser-styles.css 中定义（通过 data-page 选择器） */
-    </style>
+    <title>明日数航 船期网页下载工具</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
 </head>
 <body data-page="365-01-manual-download.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-modal">
-            <h2>🔐 访问验证</h2>
-            <p>为了了解工具使用情况，请填写以下信息</p>
-            <form id="authForm">
-                <div class="auth-form-group">
-                    <label for="userName">姓名 *</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>明日数航 船期网页下载工具</h2>
+                            <p id="totalCountText">提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools365" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="365-01-manual-download-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userPhone">手机号 *</label>
-                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+
+                <!-- 文件上传和数据状态区域 - 一行两个白底圆角框 -->
+                <div class="grid-2-col">
+                    <!-- 载入 Excel 框 -->
+                    <div class="card-white">
+                        <label for="excelFileInput" class="file-upload-label" aria-label="选择Excel文件上传">
+                            <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradExcel)" />
+                                <!-- Excel表格图标 -->
+                                <rect x="8" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="8" y1="14" x2="28" y2="14" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="8" y1="20" x2="28" y2="20" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="14" y1="8" x2="14" y2="28" stroke="#fff" stroke-width="1.5"/>
+                                <!-- 向下箭头 -->
+                                <path d="M18 22L22 26L14 26Z" fill="#fff"/>
+                                <defs>
+                                    <linearGradient id="gradExcel" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#0071e3" />
+                                        <stop offset="1" stop-color="#54a4ff" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="file-upload-content">
+                                <div class="file-upload-title">载入 Excel</div>
+                                <div class="file-upload-desc">支持 .xlsx / .xls，数据仅在本地浏览器解析</div>
+                            </div>
+                            <input type="file" id="excelFileInput" class="file-upload-input" accept=".xlsx,.xls" aria-label="选择Excel文件" aria-describedby="excelFileInputDesc">
+                            <span id="excelFileInputDesc" class="sr-only">支持 .xlsx 和 .xls 格式的Excel文件</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 数据状态框 -->
+                    <div class="card-white">
+                        <div class="data-status-container">
+                            <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradStatus)" />
+                                <!-- 数据状态图标：剪贴板 + 勾 -->
+                                <rect x="11" y="10" width="14" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <rect x="15" y="8" width="6" height="4" rx="1" fill="#fff"/>
+                                <path d="M14 18L17 21L23 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="gradStatus" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#FF8A00" />
+                                        <stop offset="1" stop-color="#FFB347" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="data-status-content">
+                                <div class="data-status-title">数据状态</div>
+                                <div id="fileStatus" class="data-status-text" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">尚未载入数据</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userEmail">邮箱 *</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+
+                <!-- 统计信息 - 三个长条白底圆角框 -->
+                <div class="grid-3-col" role="region" aria-label="数据统计">
+                    <div class="stats-card" role="status" aria-live="polite" aria-atomic="true">
+                        <div id="totalCount" class="stats-number" aria-label="总计数量">0</div>
+                        <div class="stats-label">总计</div>
+                    </div>
+                    <div class="stats-card stats-card-clickable" id="clearSavedBtn" title="点击清除所有已保存状态" role="button" tabindex="0" aria-label="清除所有已保存状态" aria-describedby="savedCount" aria-keyshortcuts="Delete">
+                        <div id="savedCount" class="stats-number" aria-live="polite" aria-atomic="true" aria-label="已保存数量">0</div>
+                        <div class="stats-label">已保存</div>
+                    </div>
+                    <div class="stats-card" role="status" aria-live="polite" aria-atomic="true">
+                        <div id="pendingCount" class="stats-number" aria-label="待处理数量">0</div>
+                        <div class="stats-label">待处理</div>
+                    </div>
                 </div>
-                <button type="submit" class="auth-submit-btn">确认并继续</button>
-            </form>
-        </div>
+
+                <!-- POL选项卡容器（用于换行显示） -->
+                <div class="pol-tabs" id="polTabs">
+                    <!-- POL选项卡将通过JavaScript动态生成 -->
+                </div>
+
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <!-- URL列表 - 大框白色圆角 -->
+                <div class="card-white mt-20" role="region" aria-label="网页列表">
+                    <div class="url-list" id="urlList" role="list" aria-label="待处理的网页列表" aria-live="polite">
+                        <!-- URL列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">明日数航 船期网页下载工具使用声明</h2>
+                    <p class="usage-statement-text">本工具用于辅助从明日数航（hangyun365.com）手动下载船期网页，所有数据来源于明日数航公开信息，仅供内部使用。</p>
+                    <p class="usage-statement-text">下载的网页文件仅供数据解析使用，请遵守明日数航的使用条款和版权规定。</p>
+                </div>
+            </div>
+        </main>
     </div>
-    <div class="container">
-        <div class="header">
-            <a href="index.html?tab=tools365" class="back-home-btn">← 返回首页</a>
-            <a href="365-01-manual-download-README.html" class="readme-btn">使用说明 →</a>
-            <h1>明日数航 船期网页手动下载工具</h1>
-            <p>共46个网页需要保存</p>
-        </div>
 
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-number" id="totalCount">46</div>
-                <div class="stat-label">总计</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number clear-link" id="savedCount" onclick="clearAllSaved()" title="点击清除所有已保存状态">0</div>
-                <div class="stat-label">已保存</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="pendingCount">46</div>
-                <div class="stat-label">待处理</div>
-            </div>
-        </div>
-
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-        </div>
-
-        <div class="instructions">
-            <h3>📋 使用说明</h3>
-            <ol>
-                <li>点击"打开网页"按钮，会在新标签页中打开对应的网页</li>
-                <li>等待页面完全加载（约10秒）</li>
-                <li>在浏览器中按 <strong>Ctrl+S</strong>（Windows）或 <strong>Cmd+S</strong>（Mac）保存网页</li>
-                <li>保存位置选择：<strong>data/365-view-full</strong> 文件夹</li>
-                <li>文件名格式：<strong>pol_code-pod_code.html</strong>（例如：<strong>CNTAO-HKHKG.html</strong>）</li>
-                <li>如果文件已存在，选择覆盖即可</li>
-                <li>保存完成后，点击"标记为已保存"按钮更新进度</li>
-                <li>如需重新开始下载，点击顶部统计区域中"已保存"数字（带下划线），确认后即可清除所有已保存状态，将所有网页恢复为未保存状态</li>
-            </ol>
-        </div>
-
-        <div class="url-list" id="urlList">
-            <!-- URL列表将通过JavaScript动态生成 -->
-        </div>
-
-        <div class="footer">
-            <p>提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快</p>
-        </div>
-    </div>
-
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/port-sort-utils.js"></script>
     <script>
+        /**
+         * 365-01 网页下载工具
+         * 配置对象
+         */
+        const CONFIG = {
+            STORAGE_KEY: '365_savedStatus',
+            SHEET_NAME: 'Port Optimization 365',
+            DEFAULT_POL: 'CNTAO',
+            DEBUG: false
+        };
 
-        // URL列表
-        const urls = [
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=SADMM',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=AEJEA',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=AUBNE',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MXZLO',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=PABLB',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=DOCAU',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=KEMBA',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=BRSSZ',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=GBFXT',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=NLRTM',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=INMAA',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=BDCGP',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=LKCMB',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=INNSA',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=TRIST',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=ESBCN',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=ESVLC',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=USLGB',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=USLAX',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=USNYC',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=CAVAN',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=HKHKG',
-            'https://www.hangyun365.com/Shipping?pol_code=CNRZH&pod_code=TWKHH',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=SAJED',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=ZADUR',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNTOT',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNDNA',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNHPH',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=VNSGN',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=IDJKT',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=THLCH',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=PHMNN',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=PHMNS',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYPGU',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYPEN',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYLPK',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYWSP',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=KHKOS',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=SGSIN',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=IDSUB',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=MYTPP',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=CGPNR',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=GHTEM',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=GTPRQ',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=COBUN',
-            'https://www.hangyun365.com/Shipping?pol_code=CNTAO&pod_code=CLSAI'
-        ];
+        const debugLog = typeof window !== 'undefined' && typeof window.debugLog === 'function'
+            ? (...args) => window.debugLog('[365-01]', ...args)
+            : () => {};
 
-        // 从localStorage加载保存状态
-        let savedStatus = JSON.parse(localStorage.getItem('365_savedStatus') || '{}');
+        init001ToolPage('365-01-manual-download.html', 'tools365', () => {
+            const progressBarEl = DOM_CACHE.progressBar;
+            if (progressBarEl) {
+                progressBarEl.style.display = 'none';
+            }
+        });
 
-        // 初始化页面
-        function init() {
+        // 全局数据
+        let excelData = {};
+        let currentPol = null;
+        let urlData = [];
+        let savedStatus = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
+
+        // DOM 元素缓存（避免重复查询）
+        const DOM_CACHE = {
+            get fileStatus() { return document.getElementById('fileStatus'); },
+            get statusDetail() { return document.getElementById('statusDetail'); },
+            get totalCountText() { return document.getElementById('totalCountText'); },
+            get totalCount() { return document.getElementById('totalCount'); },
+            get savedCount() { return document.getElementById('savedCount'); },
+            get pendingCount() { return document.getElementById('pendingCount'); },
+            get progressFill() { return document.getElementById('progressFill'); },
+            get progressBar() { return document.getElementById('progressBar'); },
+            get polTabs() { return document.getElementById('polTabs'); },
+            get urlList() { return document.getElementById('urlList'); },
+            get clearSavedBtn() { return document.getElementById('clearSavedBtn'); },
+            get excelFileInput() { return document.getElementById('excelFileInput'); }
+        };
+
+        async function parseExcelFile(file) {
+            try {
+                await ensureXlsx();
+                
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('XLSX库未加载，请刷新页面重试');
+                }
+
+                await portSortUtils.loadPortsList();
+
+                const fileStatusEl = DOM_CACHE.fileStatus;
+                const totalCountTextEl = DOM_CACHE.totalCountText;
+                
+                if (!fileStatusEl) {
+                    throw new Error('必需的DOM元素未找到');
+                }
+                
+                fileStatusEl.textContent = '解析中...';
+
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                debugLog('Excel工作表列表:', workbook.SheetNames);
+                
+                let sheetName = workbook.SheetNames.find(name => 
+                    name === CONFIG.SHEET_NAME || 
+                    name.includes(CONFIG.SHEET_NAME)
+                );
+                
+                if (!sheetName) {
+                    sheetName = workbook.SheetNames.find(name => {
+                        const lowerName = name.toLowerCase();
+                        return (lowerName.includes('port optimization') || lowerName.includes('365')) && 
+                               !lowerName.includes('001');
+                    });
+                }
+                
+                if (!sheetName) {
+                    sheetName = workbook.SheetNames[0];
+                    debugLog('未找到目标表，使用第一个表:', sheetName);
+                } else {
+                    debugLog('找到工作表:', sheetName);
+                }
+
+                const sheet = workbook.Sheets[sheetName];
+                if (!sheet) {
+                    throw new Error('工作表不存在');
+                }
+                
+                const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                
+                debugLog('数据行数:', matrix.length);
+                debugLog('前5行数据:', matrix.slice(0, 5));
+
+                const polDataMap = {};
+                
+                let headerRowIndex = 0;
+                for (let i = 0; i < Math.min(5, matrix.length); i++) {
+                    const row = matrix[i];
+                    const rowText = row.join('').toLowerCase();
+                    if (rowText.includes('pol') || rowText.includes('pod') || rowText.includes('url')) {
+                        headerRowIndex = i;
+                        debugLog('找到标题行，索引:', i, '内容:', row);
+                        break;
+                    }
+                }
+                
+                const headerRow = matrix[headerRowIndex] || [];
+                debugLog('标题行:', headerRow);
+                
+                const COL_INDEX = {
+                    POL: 0,
+                    POD: 1,
+                    POL_CODE: 2,
+                    URL: 4
+                };
+                
+                debugLog('列配置:', COL_INDEX);
+                
+                function extractPolName(colA) {
+                    if (!colA) return '';
+                    const match = colA.match(/\[([^\]]+)\]/);
+                    if (match) {
+                        const parts = match[1].split('|');
+                        if (parts.length >= 2) {
+                            return parts[1].trim().toUpperCase();
+                        }
+                    }
+                    return colA.toUpperCase();
+                }
+                
+                let processedCount = 0;
+                for (let i = headerRowIndex + 1; i < matrix.length; i++) {
+                    const row = matrix[i];
+                    const colA = String(row[COL_INDEX.POL] || '').trim();
+                    const colB = String(row[COL_INDEX.POD] || '').trim();
+                    
+                    if (!colA && !colB) continue;
+                    
+                    const code = portSortUtils.extractCode(colB);
+                    const region = portSortUtils.extractRegion(colB);
+                    
+                    const polCode = String(row[COL_INDEX.POL_CODE] || '').trim().toUpperCase();
+                    
+                    if (polCode === 'CNTAO' || polCode === 'CNRZH') {
+                        if (COL_INDEX.URL < row.length) {
+                            const url = String(row[COL_INDEX.URL] || '').trim();
+                            if (url && url !== '' && colA) {
+                                const polName = extractPolName(colA);
+                                if (polName) {
+                                    if (!polDataMap[polName]) {
+                                        polDataMap[polName] = [];
+                                    }
+                                    polDataMap[polName].push({
+                                        colA: colA,
+                                        colB: colB,
+                                        url: url,
+                                        code: code,
+                                        region: region
+                                    });
+                                    processedCount++;
+                                }
+                            }
+                        }
+                    } else if (colA && colA !== '') {
+                        if (COL_INDEX.URL < row.length) {
+                            const url = String(row[COL_INDEX.URL] || '').trim();
+                            if (url && url !== '') {
+                                const polName = extractPolName(colA);
+                                if (polName) {
+                                    if (!polDataMap[polName]) {
+                                        polDataMap[polName] = [];
+                                    }
+                                    polDataMap[polName].push({
+                                        colA: colA,
+                                        colB: colB,
+                                        url: url,
+                                        code: code,
+                                        region: region
+                                    });
+                                    processedCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                debugLog('处理的数据行数:', processedCount);
+                debugLog('POL数据映射:', Object.keys(polDataMap));
+                
+                Object.keys(polDataMap).forEach(pol => {
+                    polDataMap[pol] = portSortUtils.sortPorts(polDataMap[pol]);
+                });
+                
+                excelData = polDataMap;
+                
+                renderPolTabs();
+                
+                if (Object.keys(excelData).length > 0) {
+                    const defaultPol = excelData[CONFIG.DEFAULT_POL] ? CONFIG.DEFAULT_POL : Object.keys(excelData)[0];
+                    switchPol(defaultPol);
+                }
+                
+                const totalCount = Object.values(excelData).reduce((sum, arr) => sum + arr.length, 0);
+                
+                if (totalCount > 0) {
+                    if (fileStatusEl) {
+                        fileStatusEl.innerHTML = `<span>已载入 1 份表格</span><span style="color: #6c757d;">共 ${totalCount.toLocaleString()} 条记录</span>`;
+                    }
+                    if (totalCountTextEl) {
+                        totalCountTextEl.textContent = `共${totalCount}个网页需要保存。提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快。`;
+                        totalCountTextEl.style.display = 'block';
+                    }
+                } else {
+                    if (fileStatusEl) {
+                        fileStatusEl.textContent = '文件为空或格式不正确';
+                    }
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('[365-01] 未解析到任何数据，请检查Excel文件格式');
+                    }
+                    if (totalCountTextEl) {
+                        totalCountTextEl.style.display = 'none';
+                    }
+                }
+                
+            } catch (error) {
+                if (typeof window.debugError === 'function') {
+                    window.debugError('[365-01] 解析Excel文件失败:', error);
+                    window.debugError('[365-01] 错误堆栈:', error.stack);
+                }
+                
+                const fileStatusEl = DOM_CACHE.fileStatus;
+                const totalCountTextEl = DOM_CACHE.totalCountText;
+                
+                if (fileStatusEl) {
+                    fileStatusEl.textContent = '加载失败，请检查文件格式';
+                }
+                if (totalCountTextEl) {
+                    totalCountTextEl.style.display = 'none';
+                }
+            }
+        }
+
+        /**
+         * 创建POL按钮
+         * @param {string} pol - POL代码
+         * @returns {HTMLButtonElement} 创建的按钮元素
+         */
+        function createPolButton(pol) {
+            const tabBtn = document.createElement('button');
+            tabBtn.setAttribute('data-pol', pol);
+            tabBtn.className = 'pol-button btn-sweep-orange';
+            
+            const polItems = excelData[pol];
+            if (polItems && polItems.length > 0 && polItems[0].colA) {
+                tabBtn.textContent = polItems[0].colA;
+            } else {
+                tabBtn.textContent = pol;
+            }
+            
+            tabBtn.onclick = () => switchPol(pol);
+            
+            if (pol === currentPol) {
+                tabBtn.classList.add('pol-button-active');
+                tabBtn.setAttribute('aria-pressed', 'true');
+                tabBtn.setAttribute('aria-current', 'true');
+            } else {
+                tabBtn.setAttribute('aria-pressed', 'false');
+            }
+            
+            return tabBtn;
+        }
+
+        function renderPolTabs() {
+            const polTabsContainer = DOM_CACHE.polTabs;
+            if (!polTabsContainer) return;
+            polTabsContainer.innerHTML = '';
+            
+            const pols = Object.keys(excelData).sort();
+            
+            pols.forEach((pol) => {
+                const tabBtn = createPolButton(pol);
+                polTabsContainer.appendChild(tabBtn);
+            });
+            
+            if (pols.length > 0) {
+                polTabsContainer.classList.add('active');
+            } else {
+                polTabsContainer.classList.remove('active');
+            }
+        }
+
+        function switchPol(pol) {
+            currentPol = pol;
+            
+            document.querySelectorAll('button[data-pol]').forEach(btn => {
+                const btnPol = btn.getAttribute('data-pol');
+                if (btnPol === pol) {
+                    btn.classList.add('pol-button-active');
+                    btn.setAttribute('aria-pressed', 'true');
+                    btn.setAttribute('aria-current', 'true');
+                } else {
+                    btn.classList.remove('pol-button-active');
+                    btn.setAttribute('aria-pressed', 'false');
+                    btn.removeAttribute('aria-current');
+                }
+            });
+            
+            if (excelData[pol]) {
+                urlData = excelData[pol].map((item, index) => ({
+                    index: `${pol}_${index}`,
+                    display: `${item.colA} - ${item.colB}`,
+                    url: item.url
+                }));
+            } else {
+                urlData = [];
+            }
+            
             renderUrlList();
             updateStats();
         }
 
-        // 渲染URL列表
+        /**
+         * 初始化页面
+         */
+        async function init() {
+            await portSortUtils.loadPortsList();
+            
+            const clearSavedBtn = DOM_CACHE.clearSavedBtn;
+            if (clearSavedBtn) {
+                clearSavedBtn.addEventListener('click', clearAllSaved);
+                clearSavedBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        clearAllSaved();
+                    }
+                });
+            }
+            
+            const excelFileInput = DOM_CACHE.excelFileInput;
+            if (excelFileInput) {
+                excelFileInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        await parseExcelFile(file);
+                    }
+                });
+            }
+            
+            loadDefaultExcelFile('365-01-manual-download', async (file) => {
+                if (file) {
+                    await parseExcelFile(file);
+                }
+            });
+        }
+
         function renderUrlList() {
-            const urlList = document.getElementById('urlList');
+            const urlList = DOM_CACHE.urlList;
+            if (!urlList) return;
             urlList.innerHTML = '';
 
-            urls.forEach((url, index) => {
-                const isSaved = savedStatus[index] || false;
+            if (urlData.length === 0) {
+                urlList.innerHTML = '<div class="empty-state" role="status" aria-live="polite">请先加载Excel文件</div>';
+                return;
+            }
+
+            urlData.forEach((item, index) => {
+                const isSaved = savedStatus[item.index] || false;
                 const urlItem = document.createElement('div');
                 urlItem.className = 'url-item';
+                urlItem.setAttribute('role', 'listitem');
+                urlItem.setAttribute('aria-label', `第${index + 1}项：${item.display}`);
+                
                 urlItem.innerHTML = `
-                    <div class="url-number">${index + 1}</div>
-                    <div class="url-content">
-                        <div class="url-link" style="color: #6c757d; word-break: break-all;">${url}</div>
-                        <span class="status-badge ${isSaved ? 'status-saved' : 'status-pending'}">
-                            ${isSaved ? '✓ 已保存' : '待处理'}
-                        </span>
+                    <div class="url-item-number" aria-label="项目编号">${index + 1}</div>
+                    <div class="url-item-content">
+                        <div class="url-item-title">${item.display}</div>
+                        <div class="url-item-url" aria-label="网页地址">${portSortUtils.escapeHtml(item.url)}</div>
                     </div>
-                    <div class="url-actions">
-                        <a href="${url}" target="_blank" class="btn btn-open">打开网页</a>
-                        <button class="btn ${isSaved ? 'btn-saved' : 'btn-open'}" onclick="markAsSaved(${index})" ${isSaved ? 'disabled' : ''}>
-                            ${isSaved ? '✓ 已保存' : '标记为已保存'}
-                        </button>
+                    <div class="url-item-actions">
+                        <a href="${item.url}" target="_blank" class="btn-primary-blue btn-sweep-blue" aria-label="在新窗口打开网页 ${item.display}" rel="noopener noreferrer">打开网页</a>
+                        <button data-item-index="${item.index}" ${isSaved ? 'disabled' : ''} class="btn-primary-orange ${isSaved ? '' : 'btn-sweep-orange'}" aria-label="${isSaved ? '已保存' : '标记为已保存'}" ${isSaved ? 'aria-pressed="true"' : 'aria-pressed="false"'}>${isSaved ? '✓ 已保存' : '标记为已保存'}</button>
                     </div>
                 `;
+                
+                const markBtn = urlItem.querySelector('button[data-item-index]');
+                if (markBtn && !isSaved) {
+                    markBtn.addEventListener('click', () => {
+                        markAsSaved(item.index);
+                    });
+                }
+                
                 urlList.appendChild(urlItem);
             });
         }
 
-        // 标记为已保存
+        /**
+         * 标记为已保存
+         * @param {string} index - 项目索引
+         */
         function markAsSaved(index) {
             savedStatus[index] = true;
-            localStorage.setItem('365_savedStatus', JSON.stringify(savedStatus));
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(savedStatus));
             renderUrlList();
             updateStats();
         }
 
-        // 更新统计信息
+        /**
+         * 更新统计信息（只统计当前POL的已保存数量）
+         */
         function updateStats() {
-            const savedCount = Object.values(savedStatus).filter(v => v).length;
-            const pendingCount = urls.length - savedCount;
-            const progress = (savedCount / urls.length) * 100;
+            const totalCountEl = DOM_CACHE.totalCount;
+            const savedCountEl = DOM_CACHE.savedCount;
+            const pendingCountEl = DOM_CACHE.pendingCount;
+            const progressFillEl = DOM_CACHE.progressFill;
+            const progressBarEl = DOM_CACHE.progressBar;
+            const totalCountTextEl = DOM_CACHE.totalCountText;
+            
+            if (!currentPol || urlData.length === 0) {
+                totalCountEl.textContent = 0;
+                savedCountEl.textContent = 0;
+                pendingCountEl.textContent = 0;
+                if (progressFillEl) {
+                    progressFillEl.style.width = '0%';
+                }
+                if (progressBarEl) {
+                    progressBarEl.style.display = 'none';
+                }
+                totalCountTextEl.style.display = 'none';
+                return;
+            }
+            
+            const currentPolSavedCount = urlData.filter(item => savedStatus[item.index]).length;
+            const pendingCount = urlData.length - currentPolSavedCount;
+            const progress = urlData.length > 0 ? (currentPolSavedCount / urlData.length) * 100 : 0;
 
-            document.getElementById('savedCount').textContent = savedCount;
-            document.getElementById('pendingCount').textContent = pendingCount;
-            document.getElementById('progressFill').style.width = progress + '%';
+            totalCountEl.textContent = urlData.length;
+            savedCountEl.textContent = currentPolSavedCount;
+            pendingCountEl.textContent = pendingCount;
+            
+            if (progressFillEl) {
+                progressFillEl.style.width = `${progress}%`;
+            }
+            if (progressBarEl) {
+                if (progress === 0) {
+                    progressBarEl.style.display = 'none';
+                } else {
+                    progressBarEl.style.display = 'block';
+                }
+            }
+            
+            const allPolTotalCount = Object.values(excelData).reduce((sum, arr) => sum + arr.length, 0);
+            if (allPolTotalCount > 0) {
+                totalCountTextEl.textContent = `共${allPolTotalCount}个网页需要保存。提示：建议每保存一个网页后，等待10秒再处理下一个，避免请求过快。`;
+                totalCountTextEl.style.display = 'block';
+            } else {
+                totalCountTextEl.style.display = 'none';
+            }
         }
 
-        // 清除所有已保存状态
         function clearAllSaved() {
-            if (confirm('确定要清除所有已保存状态吗？这将重置所有进度。')) {
-                savedStatus = {};
-                localStorage.setItem('365_savedStatus', JSON.stringify(savedStatus));
+            if (!currentPol) {
+                const message = '请先选择一个POL';
+                if (typeof window.debugError === 'function') {
+                    window.debugError(message);
+                }
+                alert(message);
+                return;
+            }
+            
+            const confirmMessage = `确定要清除当前POL（${currentPol}）的所有已保存状态吗？这将重置该POL的进度。`;
+            if (confirm(confirmMessage)) {
+                urlData.forEach(item => {
+                    if (savedStatus[item.index]) {
+                        delete savedStatus[item.index];
+                    }
+                });
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(savedStatus));
                 renderUrlList();
                 updateStats();
             }
         }
 
-        // 页面加载时初始化
         init();
     </script>
-    </div>
-    <div class="page-footer">
-        <h2>明日数航 船期网页手动下载工具使用声明</h2>
-        <p>本工具用于辅助从明日数航（hangyun365.com）手动下载船期网页，所有数据来源于明日数航公开信息，仅供内部使用。</p>
-        <p>下载的网页文件仅供数据解析使用，请遵守明日数航的使用条款和版权规定。</p>
-    </div>
 </body>
 </html>
-

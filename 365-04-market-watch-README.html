@@ -4,266 +4,259 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Market Watch · 市场观察 使用说明</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/readme-styles.css">
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-        /* 注意：大部分样式已在 readme-styles.css 中定义 */
-    </style>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
 </head>
 <body data-page="365-04-market-watch-README.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-modal">
-            <h2>🔐 访问验证</h2>
-            <p>为了了解工具使用情况，请填写以下信息</p>
-            <form id="authForm">
-                <div class="auth-form-group">
-                    <label for="userName">姓名 *</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Market Watch · 市场观察 使用说明</h2>
+                            <p>集成的海运市场分析工具，通过一份 Excel 文件即可联动运价趋势、航线供给与 AI 决策，轻松完成跨板块洞察。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools365" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="365-04-market-watch.html?from=tools365" class="tool-link secondary" aria-label="打开工具">打开工具 →</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userPhone">手机号 *</label>
-                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+
+                <!-- 内容区域 -->
+                <div class="card-white mt-20">
+                    <div class="readme-content">
+                        <h2>工具简介</h2>
+                        <p><strong>Market Watch · 市场观察</strong> 是一款集成的海运市场分析工具。一份 Excel 文件即可联动运价趋势、航线供给与 AI 决策，轻松完成跨板块洞察。通过一份包含 <code>market</code> 和 <code>schedule</code> 工作表的 Excel、可选的市场周报 PDF 以及 DeepSeek / KIMI / 通义千问 API Key，即可完成运费走势可视化、航线运力洞察、供需趋势可视化与 AI 决策建议输出。工具聚焦以下三大模块：</p>
+                        <ol>
+                            <li><strong>Module 01 · 运费走势图 (RATE TRENDS CHART)</strong></li>
+                            <li><strong>Module 02 · 航线运力分析 (SAILING SCHEDULE PULSE)</strong></li>
+                            <li><strong>Module 03 · AI 趋势分析 (AI TREND ANALYSIS)</strong></li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>快速开始</h2>
+                        <h3>前置准备</h3>
+                        <ol>
+                            <li><strong>载入 Excel 数据源</strong>：文件需同时包含 <strong>market</strong> 和 <strong>schedule</strong> 工作表，并具备区域、港口、航线、周别、运力、船名航次、20GP / 40GP 等字段。</li>
+                            <li><strong>载入市场周报</strong>：支持一次选择多份 PDF（如 Alphaliner Newsletter、Linerlytica Weekly 等），便于 AI 参考最新情报。</li>
+                            <li><strong>准备 AI 密钥</strong>：工具已集成临时 API Key（服务器配置），可直接使用。使用临时 API Key 时会弹出提示，<strong>强烈建议自行申请 API Key 自用</strong>（临时 API Key 随时可能过期），用户输入的 API Key 优先级高于配置文件中的临时 API Key。调用费用及合规责任由使用方承担。详细说明见下方"Module 03 · AI 趋势分析"部分。</li>
+                        </ol>
+
+                        <h3>基本流程</h3>
+                        <ol>
+                            <li>打开工具页面</li>
+                            <li>工具会自动读取配置文件并加载对应的 Excel 测试数据文件（如果配置存在）</li>
+                            <li>工具会自动读取配置文件并加载对应的市场周报 PDF 文件（如果配置存在）</li>
+                            <li>如果自动加载失败或需要手动选择：
+                                <ul>
+                                    <li>点击"载入 Excel"，载入包含 <code>market</code> 和 <code>schedule</code> 工作表的 Excel</li>
+                                    <li>点击"载入市场周报"（可选，可多选）</li>
+                                </ul>
+                            </li>
+                            <li>当 Excel 解析成功后，三个模块的筛选控件将自动显示</li>
+                            <li>根据需求完成筛选、AI 分析，必要时点击"导出PDF"</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>核心功能模块</h2>
+                        <h3>Module 01 · 运费走势图 (RATE TRENDS CHART)</h3>
+                        <p><strong>定位</strong>：多港口报价、区间提示与时段筛选，一屏掌握市场温度</p>
+                        <h4>主要功能</h4>
+                        <ul>
+                            <li>✅ <strong>多选筛选</strong>：支持多选区域和港口，系统自动匹配 20GP / 40GP 报价，自动显示每个选中港口的价格区间</li>
+                            <li>✅ <strong>时间范围筛选</strong>：可设定开始时间和结束时间，查看特定周期的价格走势</li>
+                            <li>✅ <strong>可视化展示</strong>：交互式折线图，同时显示 20GP（实线）和 40GP（虚线）价格走势，支持多港口对比</li>
+                        </ul>
+
+                        <h3>Module 02 · 航线运力分析 (SAILING SCHEDULE PULSE)</h3>
+                        <p><strong>定位</strong>：起运港/目的港/共舱船公司筛选 + 航线搜索 + 四周运力/派船趋势</p>
+                        <h4>主要功能</h4>
+                        <ul>
+                            <li>✅ <strong>三级筛选体系</strong>：<strong>起运港</strong> → <strong>目的港</strong> → <strong>共舱船公司</strong>
+                                <ul>
+                                    <li>支持多选，筛选条件联动</li>
+                                    <li>筛选后自动更新表格和图表</li>
+                                    <li><strong>智能合并</strong>：多选港口时，系统会自动按航线分组，同一船名航次在不同港口出现时会合并显示，避免重复统计</li>
+                                </ul>
+                            </li>
+                            <li>✅ <strong>航线搜索</strong>：在"共舱船公司"筛选区域的搜索框输入关键词即可实时过滤航线选项</li>
+                            <li>✅ <strong>视图模式</strong>：<code>全部 / 运力 / 派船</code> 三种显示模式，快速聚焦指标</li>
+                            <li>✅ <strong>周别统计</strong>：自动提取"当周 + 未来三周"（共4周），表头显示 YYYY/WW + 日期范围
+                                <ul>
+                                    <li>数据抓取原则为开船前，因此不显示上周数据</li>
+                                </ul>
+                            </li>
+                            <li>✅ <strong>趋势图</strong>：堆积柱（运力） + 折线（派船，橙色），带双 Y 轴便于对比</li>
+                            <li>✅ <strong>明细提示</strong>：悬停表格单元格查看船名航次、运力TEU、开航时间</li>
+                            <li>✅ <strong>汇总行</strong>：自动累计所选筛选条件下的每周运力与派船数，便于总结</li>
+                        </ul>
+
+                        <h3>Module 03 · AI 趋势分析 (AI TREND ANALYSIS)</h3>
+                        <p><strong>定位</strong>：DeepSeek × KIMI × 通义千问 三模型交叉验证，输出涨/维/降建议和九大项分析</p>
+                        <h4>主要能力</h4>
+                        <ul>
+                            <li>✅ <strong>其他影响因素输入</strong>：收货情况、码头情况、额外运力、市场运费、其他事件</li>
+                            <li>✅ <strong>外部数据抓取</strong>：
+                                <ul>
+                                    <li>Ship & Bunker：VLSFO / MGO / IFO380（含 WoW）</li>
+                                    <li>WCI：全球综合 + 8 条航线现货价（含 WoW）</li>
+                                    <li>FBX：FBX 综合 + 13 条航线指数（含 WoW）</li>
+                                </ul>
+                            </li>
+                            <li>✅ <strong>AI 分析输出</strong>：本周结论、需求/供给/突发/内部策略/指数解读、风险提示、下周展望等九大板块</li>
+                            <li>✅ <strong>三模型配置</strong>：
+                                <ul>
+                                    <li><strong>DeepSeek</strong>：<code>deepseek-chat</code>（默认）及 <code>deepseek-v3</code>、<code>deepseek-reasoner</code>、<code>deepseek-r1</code>、<code>deepseek-coder</code> 等模型</li>
+                                    <li><strong>KIMI (Moonshot)</strong>：<code>moonshot-v1-32k</code>（默认）及 <code>moonshot-v1-8k</code>、<code>moonshot-v1-128k</code>、<code>moonshot-v1-k2</code> 等模型</li>
+                                    <li><strong>通义千问 (Qwen)</strong>：<code>qwen-max</code>（默认，推荐）及 <code>qwen-turbo</code>、<code>qwen-plus</code>、<code>qwen-max-longcontext</code> 等模型</li>
+                                    <li>API Key、URL、模型选择都会保存在浏览器 <code>localStorage</code></li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h4>模型选择建议</h4>
+                        <ul>
+                            <li><strong>DeepSeek</strong>：推荐 <code>deepseek-chat</code>（基础）或 <code>deepseek-v3</code>（高性能）
+                                <br>申请 API Key：<a href="https://platform.deepseek.com" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.deepseek.com</a>
+                            </li>
+                            <li><strong>KIMI</strong>：推荐 <code>moonshot-v1-32k</code>（平衡），<code>moonshot-v1-k2</code>（K2新模型，需确认API可用）
+                                <br>申请 API Key：<a href="https://platform.moonshot.cn/console/api-keys" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.moonshot.cn/console/api-keys</a>
+                            </li>
+                            <li><strong>通义千问</strong>：推荐 <code>qwen-max</code>（最佳性能），<code>qwen-turbo</code>（经济型）
+                                <br>申请 API Key：<a href="https://dashscope.console.aliyun.com/apiKey" target="_blank" style="color: #667eea; text-decoration: underline;">https://dashscope.console.aliyun.com/apiKey</a>
+                            </li>
+                        </ul>
+
+                        <h4>API Key 使用说明</h4>
+                        <ul>
+                            <li>工具已集成临时 API Key（服务器配置），可直接使用，无需手动输入</li>
+                            <li><strong>使用临时 API Key 时会弹出提示</strong>：系统会提示您正在使用临时 API Key，并强烈建议自行申请自己的 API Key</li>
+                            <li><strong>强烈建议自行申请 API Key</strong>：临时 API Key 随时可能过期无法使用，且可能存在配额限制。自行申请可获得更好的使用体验和更高的调用额度</li>
+                            <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的临时 API Key</li>
+                            <li>配置会自动保存到浏览器本地存储，下次打开会自动加载</li>
+                            <li><strong>AI 输出长度</strong>：已设置为 8000 tokens，可支持更长的分析输出</li>
+                        </ul>
+
+                        <h4>触发条件</h4>
+                        <ol>
+                            <li>至少选择一个起运港或目的港并加载出运力数据</li>
+                            <li>已配置有效 API Key</li>
+                            <li>点击"使用 DeepSeek 分析"、"使用 KIMI 分析"或"使用通义千问分析"</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>数据格式说明</h2>
+                        <h3>Excel（<code>market</code> 工作表）</h3>
+                        <p>用于运费走势图模块，需包含以下列：</p>
+                        <ul>
+                            <li><strong>日期列</strong>：日期格式（A列或包含"日期"、"date"、"时间"等关键词）</li>
+                            <li><strong>目的港列</strong>：港口名称（D列或包含"港口"、"port"、"目的港"等关键词）</li>
+                            <li><strong>区域列</strong>：区域分类（I列或包含"区域"、"region"、"地区"等关键词）</li>
+                            <li><strong>20GP 列</strong>：20GP 价格（列名包含 "20GP"、"20gp"、"GP20"）</li>
+                            <li><strong>40GP 列</strong>：40GP 价格（列名包含 "40GP"、"40gp"、"GP40"）</li>
+                        </ul>
+
+                        <h3>Excel（<code>schedule</code> 工作表）</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Excel 列</th>
+                                    <th>内容</th>
+                                    <th>列定位</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>起运港</strong></td><td>起运港名称</td><td><strong>A 列</strong></td><td>纯文本，如 <code>CNTAO</code>（通过关键词匹配，fallback 为 A 列，索引0）</td></tr>
+                                <tr><td><strong>目的港</strong></td><td>目的港名称</td><td><strong>B 列</strong></td><td>纯文本，如 <code>BALBOA (巴尔博亚)</code>（通过关键词匹配，fallback 为 B 列，索引1）</td></tr>
+                                <tr><td><strong>航线ID</strong></td><td>航线标识</td><td><strong>G 列</strong></td><td>例如 <code>ROUTE001</code>（通过关键词匹配，fallback 为 G 列，索引6）</td></tr>
+                                <tr><td><strong>航线备注</strong></td><td>航线备注信息</td><td><strong>K 列</strong></td><td>纯文本，如 <code>美西快线</code>（fallback 为 K 列，索引10）</td></tr>
+                                <tr><td><strong>共舱船公司</strong></td><td>航线/船公司名称</td><td><strong>J 列</strong></td><td>如 <code>OCEAN ALLIANCE</code>（通过关键词匹配，fallback 为 J 列，索引9）</td></tr>
+                                <tr><td><strong>船名/航次</strong></td><td>船名与航次</td><td><strong>L 列</strong></td><td>例如 <code>MSC OSCAR/123W</code>（通过关键词匹配，fallback 为 L 列，索引11）</td></tr>
+                                <tr><td><strong>运力 (TEU)</strong></td><td>集装箱位</td><td><strong>S 列</strong></td><td>数值，如 <code>14000</code>（通过关键词匹配，fallback 为 S 列，索引18）</td></tr>
+                                <tr><td><strong>船期 (开船日)</strong></td><td>开船日期</td><td><strong>M 列</strong></td><td>日期字符串（通过关键词匹配，fallback 为 M 列，索引12）</td></tr>
+                                <tr><td><strong>周别</strong></td><td>YYYYWW 或"2025年第47周"</td><td><strong>R 列</strong></td><td>当周+未来三周（通过关键词匹配，fallback 为 R 列，索引17）</td></tr>
+                            </tbody>
+                        </table>
+                        <blockquote>
+                            <p>⚠️ 列定位说明：工具会优先通过列名关键词匹配（如"起运港"、"目的港"、"共舱船公司"等），如果匹配失败则使用 fallback 列号（A/B/G/K/J/L/S/M/R）。如需调整列位置，请同步修改代码映射。</p>
+                        </blockquote>
+
+                        <h3>Excel（<code>week</code> 工作表）</h3>
+                        <p>用于定义周别与日期范围的对应关系，需包含以下列：</p>
+                        <ul>
+                            <li><strong>日期范围列</strong>：日期范围字符串（A列或第0列，格式如 <code>2025/12/21~2025/12/27</code>）</li>
+                            <li><strong>周别文本列</strong>：周别代码或文本（D列或第3列，格式如 <code>202552</code> 或 <code>2025年第52周</code>）</li>
+                        </ul>
+                        <blockquote>
+                            <p>⚠️ 如果 Excel 文件中包含 <code>week</code> 工作表，工具会自动读取并使用其中的日期范围定义。如果没有，工具会使用默认的周别计算逻辑。</p>
+                        </blockquote>
+
+                        <h3>周别规则</h3>
+                        <ul>
+                            <li>支持格式：<code>202547</code>、<code>2025年第47周</code>、<code>2025-47</code>、<code>2025/47</code></li>
+                            <li>周定义：周日 → 周六，例如 <code>2025/11/16 ~ 2025/11/22</code> 为 <code>2025/47</code></li>
+                            <li><strong>week 工作表</strong>：Excel 文件需包含 <code>week</code> 工作表，用于定义周别与日期范围的对应关系。工具会自动读取该工作表，确保所有周别都是完整的 7 天周期，表头会显示准确的日期范围。</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>常见问题</h2>
+                        <h3>Q1: Excel 加载失败？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>确认文件中存在 <code>market</code> 和 <code>schedule</code> 工作表</li>
+                            <li>列顺序是否保持 A/B/C/H/J/K/L/M/R（schedule 工作表）</li>
+                            <li>浏览器 Console 是否有错误</li>
+                        </ul>
+
+                        <h3>Q2: 筛选控件没显示？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>Excel 解析失败或列名不匹配</li>
+                            <li>刷新页面重新载入</li>
+                        </ul>
+
+                        <h3>Q3: AI 分析失败？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>如果使用的是临时 API Key（服务器配置），可能已过期或配额不足，建议自行申请 API Key</li>
+                            <li>使用临时 API Key 时会弹出提示对话框，确认后即可继续使用</li>
+                            <li>如果已自行配置 API Key，请检查 API Key、URL 和模型 ID 是否正确</li>
+                            <li>确认网络可访问 DeepSeek / KIMI / 通义千问</li>
+                            <li>查看提示信息（如配额不足、接口错误）</li>
+                            <li>查看浏览器控制台是否有错误信息</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userEmail">邮箱 *</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Market Watch · 市场观察使用声明</h2>
+                    <p class="usage-statement-text">资料整合自用户 Excel、用户载入市场周报、Ship & Bunker、上海航运交易所、Drewry、Freightos 等公开渠道，仅供内部研判，不构成对外报价或投资建议。</p>
+                    <p class="usage-statement-text">AI 服务由 DeepSeek / KIMI / 通义千问 API 驱动，所有调用费用与合规责任由使用者自担，涉及客户或敏感数据时请先完成脱敏处理。</p>
                 </div>
-                <button type="submit" class="auth-submit-btn">确认并继续</button>
-            </form>
-        </div>
+            </div>
+        </main>
     </div>
-    <div class="container">
-        <div class="header">
-            <a href="index.html?tab=tools365" class="back-home-btn">← 返回首页</a>
-            <h1>Market Watch · 市场观察 使用说明</h1>
-        </div>
 
-        <div class="content">
-            <h2>工具简介</h2>
-            <p><strong>Market Watch · 市场观察</strong> 是一款集成的海运市场分析工具，通过一份 Excel 文件即可联动运价趋势、航线供给与 AI 决策，轻松完成跨板块洞察。工具整合了运费走势可视化、航线运力分析和 AI 智能分析三大核心模块，为海运定价与航线决策提供数据支持。</p>
-
-            <hr>
-
-            <h2>快速开始</h2>
-            <h3>前置准备</h3>
-            <ol>
-                <li><strong>载入 Excel 数据源</strong>：文件需同时包含 <strong>market / schedule</strong> 工作表，并具备区域、港口、航线、周别、运力、船名航次、20GP / 40GP 等字段。</li>
-                <li><strong>载入市场周报</strong>：支持一次选择多份 PDF（如 Alphaliner Newsletter、Linerlytica Weekly 等），便于 AI 参考最新情报。</li>
-                <li><strong>AI 密钥</strong>：工具已集成临时 API Key（服务器配置），可直接使用。使用临时 API Key 时会弹出提示，<strong>强烈建议自行申请 API Key 自用</strong>（临时 API Key 随时可能过期），用户输入的 API Key 优先级高于配置文件中的临时 API Key。调用费用及合规责任由使用方承担。详细说明见下方"Module 03 · AI 趋势分析"部分。</li>
-            </ol>
-
-            <h3>基本使用流程</h3>
-            <ol>
-                <li>双击打开 <code>365-04-market-watch.html</code></li>
-                <li>工具会自动从 <code>Data/index.json</code> 读取配置并加载对应的 Excel 测试数据文件（如果配置存在）</li>
-                <li>工具会自动从 <code>linerlytica/index.json</code> 读取配置并加载对应的市场周报 PDF 文件（如果配置存在）</li>
-                <li>如果自动加载失败或需要手动选择：
-                    <ul>
-                        <li>点击"选择Excel文件"，选择包含 <code>market</code> 和 <code>schedule</code> 工作表的 Excel 文件</li>
-                        <li>点击"载入市场周报 (PDF)"，可一次选择多份 PDF 报告（可选）</li>
-                    </ul>
-                </li>
-                <li>等待数据加载完成后，三个模块的筛选控件将自动显示</li>
-                <li>根据需求使用各模块功能进行分析</li>
-                <li>如需导出报告，点击"导出整页 PDF"按钮</li>
-            </ol>
-
-            <h3>Module 01 · 运费走势图</h3>
-            <ol>
-                <li>多选区域与港口，系统会自动匹配 20GP / 40GP 报价并提示价格区间。</li>
-                <li>可设定开始/结束日期，查看特定周期的价格走势，并用提示文本快速复制摘要。</li>
-            </ol>
-
-            <h3>Module 02 · 航线运力分析</h3>
-            <ol>
-                <li>使用四级筛选（区域 → 子区域 → 国家/地区 → 港口）与航线搜索锁定目标市场。</li>
-                <li>"全部 / 运力 / 派船"视图用于聚焦不同指标；表格支持即输即筛。</li>
-                <li>选择目的港后自动绘制堆积柱（运力）+ 折线（派船）趋势，便于观察当周+未来四周变化。</li>
-            </ol>
-
-            <h3>Module 03 · AI 趋势分析</h3>
-            <ol>
-                <li>填写"其他影响因素"表格、刷新燃油/指数数据，作为 AI 提示词的优先依据。</li>
-                <li>可对比三种模型的洞察结果，支持导出 PDF 汇报。工具已集成测试 API Key，可直接使用；如需自行配置，见下方"API Key 使用说明"。</li>
-                <li><strong>模型选择建议</strong>：
-                    <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
-                        <li><strong>DeepSeek</strong>：推荐 <code>deepseek-chat</code>（基础）或 <code>deepseek-v3</code>（高性能）
-                            <br>申请 API Key：<a href="https://platform.deepseek.com" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.deepseek.com</a>
-                        </li>
-                        <li><strong>KIMI</strong>：推荐 <code>moonshot-v1-32k</code>（平衡），<code>moonshot-v1-k2</code>（K2新模型，需确认API可用）
-                            <br>申请 API Key：<a href="https://platform.moonshot.cn/console/api-keys" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.moonshot.cn/console/api-keys</a>
-                        </li>
-                        <li><strong>通义千问</strong>：推荐 <code>qwen-max</code>（最佳性能），<code>qwen-turbo</code>（经济型）
-                            <br>申请 API Key：<a href="https://dashscope.console.aliyun.com/apiKey" target="_blank" style="color: #667eea; text-decoration: underline;">https://dashscope.console.aliyun.com/apiKey</a>
-                        </li>
-                    </ul>
-                </li>
-                <li><strong>API Key 使用说明</strong>：
-                    <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
-                        <li>工具已集成临时 API Key（服务器配置），可直接使用，无需手动输入</li>
-                        <li><strong>使用临时 API Key 时会弹出提示</strong>：系统会提示您正在使用临时 API Key，并强烈建议自行申请自己的 API Key</li>
-                        <li><strong>强烈建议自行申请 API Key</strong>：临时 API Key 随时可能过期无法使用，且可能存在配额限制。自行申请可获得更好的使用体验和更高的调用额度</li>
-                        <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的临时 API Key</li>
-                        <li>配置会自动保存到浏览器本地存储，下次打开会自动加载</li>
-                        <li><strong>AI 输出长度</strong>：已设置为 8000 tokens，可支持更长的分析输出</li>
-                    </ul>
-                </li>
-                <li><strong>收费说明</strong>：各模型按调用次数/Token 计费，具体价格请参考各平台官网。建议先使用经济型模型测试，再根据需求选择高性能模型。</li>
-            </ol>
-
-            <hr>
-
-            <h2>核心功能模块</h2>
-            <h3>Module 01 · 运费走势图 (RATE TRENDS CHART)</h3>
-            <p><strong>功能定位</strong>：多港口报价、区间提示与时段筛选，一屏掌握市场温度</p>
-            <h4>主要功能</h4>
-            <ul>
-                <li><strong>多选筛选</strong>：
-                    <ul>
-                        <li>支持多选区域和港口</li>
-                        <li>系统自动匹配 20GP / 40GP 报价</li>
-                        <li>自动显示每个选中港口的价格区间（格式：港口名：20GP 最小值 ~ 最大值，40GP 最小值 ~ 最大值）</li>
-                    </ul>
-                </li>
-                <li><strong>时间范围筛选</strong>：
-                    <ul>
-                        <li>可设定开始时间和结束时间</li>
-                        <li>查看特定周期的价格走势</li>
-                        <li>时间控件与图表标题同行显示</li>
-                    </ul>
-                </li>
-                <li><strong>可视化展示</strong>：
-                    <ul>
-                        <li>交互式折线图，清晰展示价格趋势</li>
-                        <li>同时显示 20GP（实线）和 40GP（虚线）价格走势</li>
-                        <li>支持多港口对比，不同港口使用不同颜色区分</li>
-                    </ul>
-                </li>
-            </ul>
-
-            <h3>Module 02 · 航线运力分析 (SAILING SCHEDULE PULSE)</h3>
-            <p><strong>功能定位</strong>：四级筛选联动运力、派船与趋势，精准锁定当周+未来四周供给</p>
-            <h4>主要功能</h4>
-            <ul>
-                <li><strong>四级筛选体系</strong>：
-                    <ul>
-                        <li><strong>区域</strong> → <strong>子区域</strong> → <strong>国家/地区</strong> → <strong>港口</strong></li>
-                        <li>支持多选，筛选条件逐级联动</li>
-                        <li>筛选后自动更新表格和图表</li>
-                        <li><strong>智能合并</strong>：多选港口时，系统会自动按航线分组，同一船名航次在不同港口出现时会合并显示，避免重复统计</li>
-                    </ul>
-                </li>
-                <li><strong>航线搜索</strong>：在表头"共舱船公司"列输入关键词，支持中文输入，实时过滤</li>
-                <li><strong>三种视图模式</strong>：<code>全部 / 运力 / 派船</code> 三种显示模式，快速聚焦指标</li>
-                <li><strong>周别统计</strong>：固定显示当周+未来四周（共5周），表头显示 YYYY/WW + 日期范围</li>
-                <li><strong>趋势图表</strong>：选择区域后自动显示运力与派船趋势图，堆积柱形图展示各航线运力分布，折线图展示派船总数变化</li>
-            </ul>
-
-            <h3>Module 03 · AI 趋势分析 (AI TREND ANALYSIS)</h3>
-            <p><strong>功能定位</strong>：DeepSeek × KIMI × 通义千问 三模型交叉验证航线策略、供需与价格建议</p>
-            <h4>主要功能</h4>
-            <ul>
-                <li><strong>三模型支持</strong>：
-                    <ul>
-                        <li><strong>DeepSeek</strong>：支持 deepseek-chat、deepseek-v3、deepseek-reasoner、deepseek-r1、deepseek-coder 等模型</li>
-                        <li><strong>KIMI (Moonshot)</strong>：支持 moonshot-v1-8k、moonshot-v1-32k、moonshot-v1-128k、moonshot-v1-k2 等模型</li>
-                        <li><strong>通义千问 (Qwen)</strong>：支持 qwen-turbo、qwen-plus、qwen-max、qwen-max-longcontext 等模型</li>
-                        <li>可切换对比不同模型的分析结论</li>
-                        <li>配置自动保存到浏览器本地存储</li>
-                    </ul>
-                </li>
-                <li><strong>其他影响因素输入</strong>：收货情况、码头情况、额外运力、市场运费、其他事件</li>
-                <li><strong>外部数据抓取</strong>：
-                    <ul>
-                        <li>Ship & Bunker：VLSFO / MGO / IFO380（含 WoW）</li>
-                        <li>WCI：全球综合 + 8 条航线现货价（含 WoW）</li>
-                        <li>FBX：FBX 综合 + 13 条航线指数（含 WoW）</li>
-                    </ul>
-                </li>
-            </ul>
-
-            <hr>
-
-            <h2>数据格式说明</h2>
-            <h3>Excel 文件结构</h3>
-            <h4><code>market</code> 工作表</h4>
-            <p>用于运费走势图模块，需包含以下列：</p>
-            <ul>
-                <li><strong>日期列</strong>：日期格式（A列或包含"日期"、"date"、"时间"等关键词）</li>
-                <li><strong>目的港列</strong>：港口名称（D列或包含"港口"、"port"、"目的港"等关键词）</li>
-                <li><strong>区域列</strong>：区域分类（I列或包含"区域"、"region"、"地区"等关键词）</li>
-                <li><strong>20GP 列</strong>：20GP 价格（列名包含 "20GP"、"20gp"、"GP20"）</li>
-                <li><strong>40GP 列</strong>：40GP 价格（列名包含 "40GP"、"40gp"、"GP40"）</li>
-            </ul>
-
-            <h4><code>schedule</code> 工作表</h4>
-            <p>用于航线运力分析模块，需包含以下列：</p>
-            <ul>
-                <li><strong>目的港列</strong>：港口名称（第2列或包含"港口"、"目的港"、"pod"等关键词）</li>
-                <li><strong>区域列</strong>：区域分类（包含"区域"、"大区"、"region"等关键词）</li>
-                <li><strong>子区域列</strong>：子区域分类（包含"子区域"、"次区域"、"sub"等关键词）</li>
-                <li><strong>国家/地区列</strong>：国家或地区名称（包含"国家地区"、"国家/地区"、"国家"、"country"等关键词）</li>
-                <li><strong>航线列</strong>：共舱船公司或航线名称（F列或包含"共舱"、"船公司"、"航线"、"route"等关键词）</li>
-                <li><strong>周别列</strong>：周别代码（N列或包含"周别"、"周次"、"周数"、"week"等关键词，格式如：202547 或 2025年第47周）</li>
-                <li><strong>运力列</strong>：运力（TEU）（O列或包含"运力"、"teu"、"舱位"等关键词）</li>
-            </ul>
-            <h4>周别规则</h4>
-            <ul>
-                <li>支持格式：<code>202547</code>、<code>2025年第47周</code>、<code>2025-47</code>、<code>2025/47</code></li>
-                <li>周定义：周日 → 周六，例如 <code>2025/11/16 ~ 2025/11/22</code> 为 <code>2025/47</code></li>
-                <li><strong>跨年周别合并规则</strong>：如果遇到跨年周别（如 2025/53 和 2026/01），且两个周别加起来正好是 7 天，AI 分析时会自动将这两个周别的数据合并计算为一周，避免误判为运力短缺。表格和图表中会分别显示这两个周别的数据，但在 AI 分析时会合并计算。</li>
-            </ul>
-
-            <hr>
-
-            <h2>常见问题</h2>
-            <h3>Excel 文件加载失败怎么办？</h3>
-            <p>请检查：</p>
-            <ul>
-                <li>Excel 文件是否包含 <code>market</code> 和 <code>schedule</code> 两个工作表</li>
-                <li>工作表名称是否正确（不区分大小写，但需包含关键词）</li>
-                <li>数据列是否包含必要的关键词</li>
-                <li>浏览器控制台是否有错误信息</li>
-            </ul>
-
-            <h3>AI 分析失败怎么办？</h3>
-            <p>请检查：</p>
-            <ul>
-                <li>如果使用的是临时 API Key（服务器配置），可能已过期或配额不足，建议自行申请 API Key</li>
-                <li>使用临时 API Key 时会弹出提示对话框，确认后即可继续使用</li>
-                <li>如果已自行配置 API Key，请检查 API Key、URL 和模型 ID 是否正确</li>
-                <li>网络连接是否正常，确保可以访问 AI API</li>
-                <li>API 配额是否充足</li>
-                <li>是否选择了至少一个区域（第一级筛选）</li>
-                <li>查看浏览器控制台是否有错误信息</li>
-            </ul>
-
-            <h3>PDF 导出失败怎么办？</h3>
-            <p>请检查：</p>
-            <ul>
-                <li>网络连接是否正常（需要加载 html2canvas 和 jsPDF 库）</li>
-                <li>浏览器是否支持相关功能</li>
-                <li>页面内容是否过长（建议先收起使用说明）</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
     <script>
+        // 使用公共初始化函数
+        init001ToolPage('365-04-market-watch-README.html', 'tools365');
     </script>
-
-    <div class="page-footer">
-        <h2>Market Watch · 市场观察使用声明</h2>
-        <p>资料整合自用户 Excel、用户载入市场周报、Ship & Bunker、上海航运交易所、Drewry、Freightos 等公开渠道，仅供内部研判，不构成对外报价或投资建议。</p>
-        <p>AI 服务由 DeepSeek / KIMI / 通义千问 API 驱动，所有调用费用与合规责任由使用者自担，涉及客户或敏感数据时请先完成脱敏处理。</p>
-    </div>
 </body>
 </html>
-

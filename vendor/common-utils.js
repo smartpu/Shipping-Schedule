@@ -317,7 +317,9 @@ if (typeof window !== 'undefined') {
 async function loadDefaultExcelFile(configKey, onFileLoaded) {
     // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
     if (window.location.protocol === 'file:') {
-        console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('本地文件系统环境，跳过自动加载，请手动选择文件');
+        }
         return;
     }
 
@@ -335,24 +337,32 @@ async function loadDefaultExcelFile(configKey, onFileLoaded) {
                         excelFileName = fileConfig;
                     } else if (typeof fileConfig === 'object') {
                         // 如果是对象，不支持单个文件加载，返回
-                        console.log('配置为多文件格式，请使用 loadDefaultExcelFiles 函数');
+                        if (typeof window.debugLog === 'function') {
+                            window.debugLog('配置为多文件格式，请使用 loadDefaultExcelFiles 函数');
+                        }
                         return;
                     }
                 }
             }
         } catch (e) {
-            console.log('无法读取配置文件，请手动选择文件');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('无法读取配置文件，请手动选择文件');
+            }
             return;
         }
 
         if (!excelFileName) {
-            console.log('配置文件中未找到文件路径，请手动选择文件');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('配置文件中未找到文件路径，请手动选择文件');
+            }
             return;
         }
 
         const response = await fetch(`Data/${excelFileName}`);
         if (!response.ok) {
-            console.log('默认 Excel 文件不存在，等待用户手动选择');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('默认 Excel 文件不存在，等待用户手动选择');
+            }
             return;
         }
         const blob = await response.blob();
@@ -365,7 +375,9 @@ async function loadDefaultExcelFile(configKey, onFileLoaded) {
     } catch (error) {
         // 如果是CORS错误，静默处理（本地文件系统环境）
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
+            }
         } else {
             console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
         }
@@ -381,7 +393,9 @@ async function loadDefaultExcelFile(configKey, onFileLoaded) {
 async function loadDefaultExcelFiles(configKey, onFileLoaded) {
     // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
     if (window.location.protocol === 'file:') {
-        console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('本地文件系统环境，跳过自动加载，请手动选择文件');
+        }
         return;
     }
 
@@ -423,7 +437,9 @@ async function loadDefaultExcelFiles(configKey, onFileLoaded) {
     } catch (error) {
         // 如果是CORS错误，静默处理（本地文件系统环境）
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
+            }
         } else {
             console.log('自动加载 001 文件失败:', error);
         }
@@ -442,7 +458,9 @@ async function loadDefaultExcelFiles(configKey, onFileLoaded) {
     } catch (error) {
         // 如果是CORS错误，静默处理（本地文件系统环境）
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
+            }
         } else {
             console.log('自动加载 365 文件失败:', error);
         }
@@ -457,7 +475,9 @@ async function loadDefaultExcelFiles(configKey, onFileLoaded) {
 async function loadDefaultMarketReports(onFileLoaded) {
     // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
     if (window.location.protocol === 'file:') {
-        console.log('本地文件系统环境，跳过自动加载市场周报，请手动选择文件');
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('本地文件系统环境，跳过自动加载市场周报，请手动选择文件');
+        }
         return;
     }
 
@@ -529,7 +549,15 @@ async function loadDefaultMarketReports(onFileLoaded) {
                     if (response.ok) {
                         const blob = await response.blob();
                         const file = new File([blob], fileName, { type: 'application/pdf' });
-                        await onFileLoaded(file);
+                        try {
+                            await onFileLoaded(file);
+                        } catch (fileError) {
+                            // 捕获文件处理错误，继续处理其他文件
+                            const warnFn = typeof window !== 'undefined' && typeof window.debugWarn === 'function' 
+                                ? window.debugWarn 
+                                : (typeof console !== 'undefined' ? console.warn : () => {});
+                            warnFn(`处理文件 ${fileName} 时出错:`, fileError);
+                        }
                     }
                 } catch (e) {
                     // 忽略单个文件加载错误，继续加载其他文件
@@ -539,9 +567,51 @@ async function loadDefaultMarketReports(onFileLoaded) {
     } catch (error) {
         // 如果是CORS错误，静默处理（本地文件系统环境）
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
+            }
         } else {
             console.log('自动加载市场周报失败:', error);
+        }
+    }
+}
+
+/**
+ * 初始化001系列工具页面（公共函数）
+ * 统一处理导航栏加载和身份验证检查
+ * @param {string} currentPage - 当前页面文件名（如 '001-01-manual-download.html'）
+ * @param {string} currentSection - 当前工具集（如 'tools001'）
+ * @param {Function} [onInit] - 初始化完成后的回调函数（可选）
+ */
+function init001ToolPage(currentPage, currentSection = 'tools001', onInit = null, skipAuth = false) {
+    // 加载导航栏
+    window.addEventListener('DOMContentLoaded', () => {
+        if (window.SidebarLoader) {
+            window.SidebarLoader.load('#sidebar-placeholder', {
+                currentPage: currentPage,
+                currentSection: currentSection
+            });
+        } else {
+            if (typeof window.debugError === 'function') {
+                window.debugError(`[${currentPage}] SidebarLoader未加载`);
+            } else if (typeof console !== 'undefined' && console.error) {
+                console.error(`[${currentPage}] SidebarLoader未加载`);
+            }
+        }
+        
+        // 执行自定义初始化回调
+        if (typeof onInit === 'function') {
+            onInit();
+        }
+    });
+    
+    // 身份验证检查（立即执行，不等待DOM）
+    // 某些工具（如单元测试工具）可能不需要身份验证
+    if (!skipAuth) {
+        const AUTH_STORAGE_KEY = 'shipping_tools_auth';
+        const auth = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (!auth) {
+            window.location.href = 'index.html';
         }
     }
 }
@@ -551,5 +621,6 @@ if (typeof window !== 'undefined') {
     window.loadDefaultExcelFile = window.loadDefaultExcelFile || loadDefaultExcelFile;
     window.loadDefaultExcelFiles = window.loadDefaultExcelFiles || loadDefaultExcelFiles;
     window.loadDefaultMarketReports = window.loadDefaultMarketReports || loadDefaultMarketReports;
+    window.init001ToolPage = window.init001ToolPage || init001ToolPage;
 }
 

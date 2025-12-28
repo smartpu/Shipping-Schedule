@@ -4,264 +4,225 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monitor · SCFI 历史趋势</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/monitor-styles.css">
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <!-- PDF导出库 -->
+    <script src="vendor/html2canvas.min.js"></script>
+    <script src="vendor/jspdf.umd.min.js"></script>
+    <script src="vendor/pdf-utils.js"></script>
     <script src="vendor/lib-loader.js"></script>
     <script src="vendor/common-utils.js"></script>
     <script src="vendor/date-utils.js"></script>
     <script src="vendor/error-handler.js"></script>
-    <style>
-      /* 页面特定样式（保留与公共样式不同的部分） */
-      /* 注意：controls、legend-container 等样式已移至 vendor/monitor-styles.css */
-    </style>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/auth-gist.js"></script>
   </head>
   <body data-page="Monitor-SCFI-Trends.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-      <div class="auth-modal">
-        <h2>🔐 访问验证</h2>
-        <p>为了了解工具使用情况，请填写以下信息</p>
-        <form id="authForm">
-          <div class="auth-form-group">
-            <label for="userName">姓名 *</label>
-            <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-            <div class="auth-error" id="nameError">请输入您的姓名</div>
-          </div>
-          <div class="auth-form-group">
-            <label for="userPhone">手机号 *</label>
-            <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-            <div class="auth-error" id="phoneError">请输入有效的手机号</div>
-          </div>
-          <div class="auth-form-group">
-            <label for="userEmail">邮箱 *</label>
-            <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-            <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
-          </div>
-          <button type="submit" class="auth-submit-btn">确认并继续</button>
-        </form>
-      </div>
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Monitor · SCFI 历史趋势</h2>
+                            <p>读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势（默认最近3年）</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <button type="button" class="tool-link" id="exportPdfBtn" aria-label="导出PDF">导出PDF</button>
+                            <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Monitor-SCFI-Trends-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件上传和数据状态区域 -->
+                <div class="grid-2-col" style="margin-bottom: 20px;">
+                    <!-- 左侧：载入 Excel -->
+                    <div class="card-white">
+                        <label for="fileInput" class="file-upload-label" aria-label="选择Excel文件上传">
+                            <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradExcel)" />
+                                <!-- Excel表格图标 -->
+                                <rect x="8" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="8" y1="14" x2="28" y2="14" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="8" y1="20" x2="28" y2="20" stroke="#fff" stroke-width="1.5"/>
+                                <line x1="14" y1="8" x2="14" y2="28" stroke="#fff" stroke-width="1.5"/>
+                                <!-- 向下箭头 -->
+                                <path d="M18 22L22 26L14 26Z" fill="#fff"/>
+                                <defs>
+                                    <linearGradient id="gradExcel" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#0071e3" />
+                                        <stop offset="1" stop-color="#54a4ff" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="file-upload-content">
+                                <div class="file-upload-title">载入 Excel</div>
+                                <div class="file-upload-desc">支持 .xlsx / .xls，数据仅在本地浏览器解析</div>
+                            </div>
+                            <input type="file" id="fileInput" class="file-upload-input" accept=".xlsx,.xls" aria-label="选择Excel文件" title="选择Excel文件：文件需包含 SCFI 数据">
+                        </label>
+                    </div>
+                    
+                    <!-- 右侧：数据状态 -->
+                    <div class="card-white">
+                        <div class="data-status-container">
+                            <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradStatus)" />
+                                <!-- 数据状态图标：剪贴板 + 勾 -->
+                                <rect x="11" y="10" width="14" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <rect x="15" y="8" width="6" height="4" rx="1" fill="#fff"/>
+                                <path d="M14 18L17 21L23 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="gradStatus" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#FF8A00" />
+                                        <stop offset="1" stop-color="#FFB347" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="data-status-content">
+                                <div class="data-status-title">数据状态</div>
+                                <div id="statusInfo" class="data-status-text" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">尚未载入数据</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据展示区域 - 占位框（始终显示，内容根据数据状态变化） -->
+                <div class="card-white mt-20" id="dataPlaceholder">
+                    <!-- 无数据时的占位内容 -->
+                    <div id="emptyPlaceholder" style="min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center; color: var(--color-text-tertiary, #6c757d);">
+                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto 16px; opacity: 0.5;">
+                                <rect x="8" y="8" width="48" height="48" rx="8" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+                                <path d="M24 32L28 36L40 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p style="font-size: 16px; margin: 0;">请载入 Excel 文件以查看数据图表</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 有数据时的图表内容 -->
+                    <div id="dataContent" style="display: none;">
+                        <!-- SCFI 历史趋势图 -->
+                        <section class="feature-section">
+                            <div class="module-card" id="chartSection">
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>开始日期</label>
+                                <input type="date" id="startDate">
+                            </div>
+                            <div class="control-group">
+                                <label>结束日期</label>
+                                <input type="date" id="endDate">
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <h3 style="margin-bottom: 20px; color: var(--color-text-primary);">SCFI 历史趋势图</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                            <div class="legend-container" id="legendContainer"></div>
+                        </div>
+                    </div>
+                </section>
+
+                        <!-- 年度对比 · 同期观察 -->
+                        <section class="feature-section">
+                            <div class="module-card" id="yearlySection">
+                        <h3 style="margin-bottom: 20px; color: var(--color-text-primary);">年度对比 · 同期观察</h3>
+                        <div class="chart-container">
+                            <div class="chart-wrapper" style="position: relative;">
+                                <canvas id="yearlyChart"></canvas>
+                                <!-- 年份颜色说明 - 右上角 -->
+                                <div id="yearLegendTopRight" style="position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); z-index: 10; display: none;"></div>
+                            </div>
+                            <div class="legend-container" id="yearlyLegendContainer"></div>
+                        </div>
+                    </div>
+                </section>
+
+                        <!-- 指数对比分析 -->
+                        <section class="feature-section">
+                            <div class="module-card" id="comparisonSection">
+                        <h3 style="margin-bottom: 20px; color: var(--color-text-primary);">指数对比分析</h3>
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>选择对比日期</label>
+                                <input type="date" id="comparisonDate">
+                            </div>
+                        </div>
+                        <div class="table-container" style="background: white; border-radius: 12px; padding: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.08); border: 1px solid rgba(0, 0, 0, 0.06); overflow: hidden; margin-top: 20px;">
+                            <table id="comparisonTable" style="width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; background: white;">
+                                <thead>
+                                    <tr style="background: var(--color-brand-blue, #3E62AD); color: white;">
+                                        <th style="padding: 14px 16px; text-align: left; font-weight: 600; width: 30%; border: none;">指数名称</th>
+                                        <th style="padding: 14px 16px; text-align: right; font-weight: 600; width: 14%; border: none;">选定日期</th>
+                                        <th style="padding: 14px 16px; text-align: right; font-weight: 600; width: 14%; border: none;">1周前</th>
+                                        <th style="padding: 14px 16px; text-align: right; font-weight: 600; width: 14%; border: none;">1个月前<br>(4周前)</th>
+                                        <th style="padding: 14px 16px; text-align: right; font-weight: 600; width: 14%; border: none;">3个月前<br>(12周前)</th>
+                                        <th style="padding: 14px 16px; text-align: right; font-weight: 600; width: 14%; border: none;">1年前<br>(52周前)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparisonTableBody">
+                                    <tr>
+                                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--color-text-tertiary, #6c757d);">
+                                            请选择对比日期以查看指数对比
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Monitor · SCFI 历史趋势使用声明</h2>
+                    <p class="usage-statement-text">资料整合自 SCFI 数据文件，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+                    <p class="usage-statement-text">所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+                </div>
+            </div>
+        </main>
     </div>
-    <div class="container">
-      <div class="header">
-        <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
-        <a href="Monitor-SCFI-Trends-README.html" class="readme-btn">使用说明 →</a>
-        <h1>Monitor · SCFI 历史趋势</h1>
-        <p>读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势（默认最近3年）</p>
-      </div>
 
-      <div class="content">
-      <section class="panel">
-        <div class="upload-area">
-          <label class="upload-card">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 36 36"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="4"
-                y="4"
-                width="28"
-                height="28"
-                rx="8"
-                fill="url(#grad)"
-              ></rect>
-              <path
-                d="M18 11v14M11 18h14"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-              ></path>
-              <defs>
-                <linearGradient
-                  id="grad"
-                  x1="4"
-                  y1="4"
-                  x2="32"
-                  y2="32"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop stop-color="#0071e3" />
-                  <stop offset="1" stop-color="#54a4ff" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span>
-              <strong>载入 Excel</strong><br />
-              <small>支持 .xlsx / .xls，数据仅在本地浏览器解析</small>
-            </span>
-            <input id="fileInput" type="file" accept=".xlsx,.xls" />
-          </label>
-          <div class="status-card">
-            <span class="status-label">数据状态</span>
-            <span class="status-value" id="statusInfo">尚未载入数据</span>
-            <small class="status-detail" id="status-detail" style="display: none">—</small>
-          </div>
-        </div>
-      </section>
-
-        <section class="panel hidden" id="chartSection">
-          <div class="controls">
-            <div class="control-group">
-              <label>开始日期：</label>
-              <input type="date" id="startDate">
-            </div>
-            <div class="control-group">
-              <label>结束日期：</label>
-              <input type="date" id="endDate">
-            </div>
-          </div>
-          <div class="chart-container">
-            <h3 style="margin-bottom: 20px; color: #495057;">SCFI 历史趋势图</h3>
-            <div class="chart-wrapper">
-              <canvas id="trendChart"></canvas>
-            </div>
-            <div class="legend-container" id="legendContainer"></div>
-          </div>
-        </section>
-
-        <section class="panel hidden" id="comparisonSection">
-          <h3 style="margin-bottom: 20px; color: #495057;">指数对比分析</h3>
-          <div class="controls" style="margin-bottom: 20px;">
-            <div class="control-group">
-              <label>选择对比日期：</label>
-              <input type="date" id="comparisonDate">
-            </div>
-          </div>
-          <div class="table-container" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); overflow-x: auto;">
-            <table id="comparisonTable" style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <thead>
-                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                  <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">指数名称</th>
-                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">选定日期</th>
-                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">1周前</th>
-                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">1个月前<br>(4周前)</th>
-                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">3个月前<br>(12周前)</th>
-                  <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">1年前<br>(52周前)</th>
-                </tr>
-              </thead>
-              <tbody id="comparisonTableBody">
-                <tr>
-                  <td colspan="6" style="padding: 40px; text-align: center; color: #6c757d;">
-                    请选择对比日期以查看指数对比
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </div>
-
-    <div class="page-footer">
-      <h2>Monitor · SCFI 历史趋势使用声明</h2>
-      <p>资料整合自 SCFI 数据文件，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
-      <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
-    </div>
-
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        init001ToolPage('Monitor-SCFI-Trends.html', 'monitor');
+    </script>
     <script>
 
-      // ==================== 调试模式 ====================
-      // 调试函数已统一到 vendor/debug-utils.js
-      // 使用：debugLog(), debugWarn(), debugError()
-
-      // ==================== 错误处理 ====================
-      
-      // ==================== 错误处理 ====================
-      // 错误处理已统一到 vendor/error-handler.js
-      // 使用：showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED')
-      // ErrorType 和 showError 函数已从 error-handler.js 加载
-      
-      // 添加自定义错误消息（如果需要）
       if (typeof addErrorMessage !== 'undefined') {
           addErrorMessage(ErrorType.DATA_VALIDATION, 'NO_DATA_IN_RANGE', '所选日期范围内没有数据');
       }
 
       let scfiChart = null;
+      let yearlyChart = null;
       let scfiData = [];
       let columnNames = [];
+      
+      const selectedIndices = new Set();
+      const YEAR_COLORS = ["#0071e3", "#ff3b30", "#34c759", "#ff9500", "#af52de", "#ff2d55", "#64d2ff"];
 
       const fileInput = document.getElementById('fileInput');
       const statusInfo = document.getElementById('statusInfo');
-      const statusDetail = document.getElementById('status-detail');
       const chartSection = document.getElementById('chartSection');
+      const yearlySection = document.getElementById('yearlySection');
       const comparisonSection = document.getElementById('comparisonSection');
       const startDate = document.getElementById('startDate');
       const endDate = document.getElementById('endDate');
       const comparisonDate = document.getElementById('comparisonDate');
       const legendContainer = document.getElementById('legendContainer');
+      const yearlyLegendContainer = document.getElementById('yearlyLegendContainer');
+      const yearLegendTopRight = document.getElementById('yearLegendTopRight');
       const comparisonTableBody = document.getElementById('comparisonTableBody');
 
-      // 自动加载 Data 目录下的 Excel 文件
-      // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
-      // 重命名本地函数，避免与全局函数冲突
-      async function loadExcelFile() {
-        await window.loadDefaultExcelFile('Monitor-SCFI-Trends', async (file) => {
-          // 直接调用处理函数
-          if (typeof XLSX === 'undefined') {
-            showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
-            statusInfo.textContent = 'XLSX 库未加载';
-            if (statusDetail) {
-              statusDetail.textContent = '请刷新页面重试';
-              statusDetail.style.display = 'block';
-            }
-            return;
-          }
-
-          try {
-            statusInfo.textContent = '正在解析文件...';
-            statusDetail.style.display = 'none';
-            const data = await readExcelFile(file);
-            
-            if (!data.length) {
-              showError(ErrorType.FILE_LOAD, 'FILE_EMPTY');
-              statusInfo.textContent = '文件为空';
-              return;
-            }
-
-            scfiData = data;
-            processData();
-            statusInfo.textContent = `已加载 ${data.length} 条数据`;
-            statusDetail.style.display = 'none';
-            chartSection.classList.remove('hidden');
-            comparisonSection.classList.remove('hidden');
-            
-            // 设置对比日期默认为最新日期
-            if (scfiData.length > 0) {
-              const latestDate = scfiData[scfiData.length - 1].date;
-              comparisonDate.value = formatDateForInput(latestDate);
-              comparisonDate.max = formatDateForInput(latestDate);
-              comparisonDate.min = formatDateForInput(scfiData[0].date);
-              updateComparisonTable();
-            }
-          } catch (error) {
-            showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
-            statusInfo.textContent = '解析失败';
-            if (statusDetail) {
-              statusDetail.textContent = error.message;
-              statusDetail.style.display = 'block';
-            }
-          }
-        });
-      }
-
-      // 等待 XLSX 库加载完成后自动加载文件
-      if (typeof window.ensureXlsx === 'function') {
-        window.ensureXlsx().then(() => {
-          loadExcelFile();
-        });
-      } else {
-        setTimeout(() => {
-          if (typeof XLSX !== 'undefined') {
-            loadExcelFile();
-          }
-        }, 1000);
-      }
+      // 文件加载已改为手动选择，不再自动加载
 
       fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -270,16 +231,11 @@
         if (typeof XLSX === 'undefined') {
           showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
           statusInfo.textContent = 'XLSX 库未加载';
-          if (statusDetail) {
-            statusDetail.textContent = '请刷新页面重试';
-            statusDetail.style.display = 'block';
-          }
           return;
         }
 
         try {
           statusInfo.textContent = '正在解析文件...';
-          statusDetail.style.display = 'none';
           const data = await readExcelFile(file);
           
           if (!data.length) {
@@ -291,11 +247,10 @@
           scfiData = data;
           processData();
           statusInfo.textContent = `已加载 ${data.length} 条数据`;
-          statusDetail.style.display = 'none';
-          chartSection.classList.remove('hidden');
-          comparisonSection.classList.remove('hidden');
-          
-          // 设置对比日期默认为最新日期
+          const emptyPlaceholder = document.getElementById('emptyPlaceholder');
+          const dataContent = document.getElementById('dataContent');
+          if (emptyPlaceholder) emptyPlaceholder.style.display = 'none';
+          if (dataContent) dataContent.style.display = 'block';
           if (scfiData.length > 0) {
             const latestDate = scfiData[scfiData.length - 1].date;
             comparisonDate.value = formatDateForInput(latestDate);
@@ -307,10 +262,6 @@
           showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
           debugError('解析文件失败:', error);
           statusInfo.textContent = '解析失败';
-          if (statusDetail) {
-            statusDetail.textContent = error.message;
-            statusDetail.style.display = 'block';
-          }
         }
       });
 
@@ -325,17 +276,12 @@
           reader.onload = (e) => {
             try {
               const data = new Uint8Array(e.target.result);
-              // 使用 cellDates: true 来获取日期对象，而不是序列号
-              // 注意：XLSX库在cellDates模式下，Date对象的时间部分通常是00:00:00 UTC
               const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: false });
               
               const sheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[sheetName];
-              
-              // 读取第一行作为列名
               const firstRow = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' })[0];
               
-              // B列到Q列对应索引1到16
               columnNames = [];
               for (let i = 1; i <= 16; i++) {
                 if (firstRow[i] !== undefined && firstRow[i] !== '') {
@@ -346,23 +292,22 @@
                 }
               }
 
-              // 读取数据（从第二行开始）
-              // 使用raw: true来获取原始值，然后手动处理日期
               const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
                 header: 1, 
                 defval: null,
-                range: 1, // 跳过第一行
-                raw: true // 获取原始值，手动处理日期
+                range: 1,
+                raw: true
               });
 
-              // 处理数据：A列是日期，B-Q列是指数值
               const processedData = [];
-              jsonData.forEach((row, rowIndex) => {
-                if (!row[0]) return; // 跳过没有日期的行
+              jsonData.forEach((row) => {
+                if (!row[0]) return;
                 
                 const dateValue = row[0];
-                // 使用统一的日期解析函数
-                const date = parseDateValue(dateValue);
+                const parseDateValueFunc = (typeof window !== 'undefined' && typeof window.parseDateValue === 'function')
+                    ? window.parseDateValue
+                    : parseDateValue;
+                const date = parseDateValueFunc(dateValue);
                 if (!date || isNaN(date.getTime())) return;
 
                 const record = {
@@ -370,7 +315,6 @@
                   values: {}
                 };
 
-                // 读取B-Q列的值（索引1-16）
                 columnNames.forEach(col => {
                   const value = row[col.index];
                   if (value !== null && value !== undefined && value !== '') {
@@ -399,10 +343,19 @@
       function processData() {
         if (!scfiData.length) return;
 
-        // 按日期排序
         scfiData.sort((a, b) => a.date - b.date);
 
-        // 设置默认日期范围：最新数据往前3年
+        selectedIndices.clear();
+        const defaultIndex = columnNames.find(col => 
+          col.name.includes('Comprehensive') || 
+          col.name.includes('SCFI') && col.name.includes('Index') ||
+          col.index === 1
+        );
+        if (defaultIndex) {
+          selectedIndices.add(defaultIndex.name);
+        } else if (columnNames.length > 0) {
+          selectedIndices.add(columnNames[0].name);
+        }
         const latestDate = scfiData[scfiData.length - 1].date;
         const threeYearsAgo = new Date(latestDate);
         threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
@@ -410,7 +363,6 @@
         startDate.value = formatDateForInput(threeYearsAgo);
         endDate.value = formatDateForInput(latestDate);
 
-        // 设置日期输入框的范围
         const minDate = scfiData[0].date;
         const maxDate = scfiData[scfiData.length - 1].date;
         startDate.min = formatDateForInput(minDate);
@@ -419,6 +371,7 @@
         endDate.max = formatDateForInput(maxDate);
 
         updateChart();
+        updateYearlyChart();
       }
 
       function formatDateForInput(date) {
@@ -440,7 +393,6 @@
         const startDateObj = startValue ? new Date(startValue + 'T00:00:00') : null;
         const endDateObj = endValue ? new Date(endValue + 'T23:59:59') : null;
 
-        // 筛选数据
         const filteredData = scfiData.filter(record => {
           if (startDateObj && record.date < startDateObj) return false;
           if (endDateObj && record.date > endDateObj) return false;
@@ -452,7 +404,6 @@
           return;
         }
 
-        // 准备图表数据
         const labels = filteredData.map(record => {
           const year = record.date.getFullYear();
           const month = String(record.date.getMonth() + 1).padStart(2, '0');
@@ -468,26 +419,38 @@
         ];
 
         columnNames.forEach((col, index) => {
-          const values = filteredData.map(record => record.values[col.name] || null);
-          
-          datasets.push({
-            label: col.name,
-            data: values,
-            borderColor: colors[index % colors.length],
-            backgroundColor: colors[index % colors.length] + '20',
-            borderWidth: 2,
-            fill: false,
-            tension: 0.4,
-            spanGaps: true
-          });
+          if (!selectedIndices.has(col.name)) {
+            datasets.push({
+              label: col.name,
+              data: filteredData.map(record => record.values[col.name] || null),
+              borderColor: colors[index % colors.length],
+              backgroundColor: colors[index % colors.length] + '20',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              spanGaps: true,
+              hidden: true
+            });
+          } else {
+            const values = filteredData.map(record => record.values[col.name] || null);
+            datasets.push({
+              label: col.name,
+              data: values,
+              borderColor: colors[index % colors.length],
+              backgroundColor: colors[index % colors.length] + '20',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              spanGaps: true,
+              hidden: false
+            });
+          }
         });
 
-        // 销毁旧图表
         if (scfiChart) {
           scfiChart.destroy();
         }
 
-        // 创建新图表
         const ctx = document.getElementById('trendChart').getContext('2d');
         scfiChart = new Chart(ctx, {
           type: 'line',
@@ -500,7 +463,7 @@
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                display: false // 使用自定义图例
+                display: false
               },
               tooltip: {
                 mode: 'index',
@@ -529,31 +492,297 @@
           }
         });
 
-        // 更新自定义图例
         updateLegend(datasets);
       }
 
       function updateLegend(datasets) {
         legendContainer.innerHTML = '';
-        datasets.forEach(dataset => {
+        
+        datasets.forEach((dataset) => {
           const legendItem = document.createElement('div');
-          legendItem.className = 'legend-item';
+          const isSelected = selectedIndices.has(dataset.label);
+          legendItem.className = 'legend-item' + (isSelected ? ' selected' : '');
+          
           legendItem.innerHTML = `
+            <div class="legend-checkbox"></div>
             <div class="legend-color" style="background-color: ${dataset.borderColor};"></div>
             <span>${dataset.label}</span>
           `;
+          
+          legendItem.addEventListener('click', () => {
+            if (selectedIndices.has(dataset.label)) {
+              if (selectedIndices.size > 1) {
+                selectedIndices.delete(dataset.label);
+              }
+            } else {
+              selectedIndices.add(dataset.label);
+            }
+            updateChart();
+            updateYearlyChart();
+          });
+          
           legendContainer.appendChild(legendItem);
         });
       }
 
-      /**
-       * 更新对比表格
-       */
+      function getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      }
+
+      function updateYearlyChart() {
+        if (!scfiData.length || typeof Chart === 'undefined' || !columnNames.length) return;
+
+        const latestDate = scfiData[scfiData.length - 1].date;
+        const threeYearsAgo = new Date(latestDate);
+        threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+        
+        const recentData = scfiData.filter(record => record.date >= threeYearsAgo);
+        
+        if (!recentData.length) {
+          yearlyLegendContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #6c757d;">暂无年度对比数据</div>';
+          return;
+        }
+
+        const weekSequence = [];
+        for (let week = 1; week <= 53; week++) {
+          weekSequence.push(`第${week}周`);
+        }
+
+        const buckets = {};
+
+        recentData.forEach(record => {
+          if (!record.date) return;
+          const year = record.date.getFullYear();
+          const weekNumber = getWeekNumber(record.date);
+          const key = `第${weekNumber}周`;
+
+          if (!buckets[year]) {
+            buckets[year] = {};
+            columnNames.forEach(col => {
+              buckets[year][col.name] = new Map();
+            });
+          }
+          
+          columnNames.forEach(col => {
+            const slot = buckets[year][col.name];
+            const value = record.values[col.name];
+            if (value !== null && value !== undefined) {
+              slot.set(key, value);
+            }
+          });
+        });
+
+        const labels = weekSequence;
+        const years = Object.keys(buckets).sort((a, b) => parseInt(b) - parseInt(a));
+        const displayYears = years.slice(0, 3);
+        
+        const datasets = [];
+
+        columnNames.forEach((col) => {
+          if (!selectedIndices.has(col.name)) {
+            displayYears.forEach((year, yearIndex) => {
+              const yearColor = YEAR_COLORS[yearIndex % YEAR_COLORS.length];
+              const values = [];
+              
+              weekSequence.forEach(key => {
+                const value = buckets[year][col.name]?.get(key);
+                values.push(value !== undefined ? value : null);
+              });
+              
+              datasets.push({
+                label: `${col.name} · ${year}`,
+                data: values,
+                borderColor: yearColor,
+                backgroundColor: yearColor + '20',
+                borderWidth: 2,
+                tension: 0.35,
+                spanGaps: true,
+                pointRadius: 0,
+                hidden: true
+              });
+            });
+          } else {
+            displayYears.forEach((year, yearIndex) => {
+              const yearColor = YEAR_COLORS[yearIndex % YEAR_COLORS.length];
+              const values = [];
+              
+              weekSequence.forEach(key => {
+                const value = buckets[year][col.name]?.get(key);
+                values.push(value !== undefined ? value : null);
+              });
+              
+              datasets.push({
+                label: `${col.name} · ${year}`,
+                data: values,
+                borderColor: yearColor,
+                backgroundColor: yearColor + '20',
+                borderWidth: 2,
+                tension: 0.35,
+                spanGaps: true,
+                pointRadius: 0,
+                hidden: false
+              });
+            });
+          }
+        });
+
+        if (!labels.length || !datasets.length) {
+          yearlyLegendContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #6c757d;">暂无年度对比数据</div>';
+          return;
+        }
+
+        if (yearlyChart) {
+          yearlyChart.destroy();
+        }
+
+        const ctx = document.getElementById('yearlyChart').getContext('2d');
+        yearlyChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                title: {
+                  display: true,
+                  text: 'SCFI 指数'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: '周数'
+                },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 20,
+                  callback: function(value, index, ticks) {
+                    const weekNum = index + 1;
+                    if (weekNum === 1 || weekNum === 53) {
+                      return `第${weekNum}周`;
+                    }
+                    if (weekNum % 4 === 0) {
+                      return `第${weekNum}周`;
+                    }
+                    return '';
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        updateYearlyLegend(datasets);
+      }
+
+      function updateYearlyLegend(datasets) {
+        yearlyLegendContainer.innerHTML = '';
+        
+        const yearColors = new Map();
+        const indexGroups = new Map();
+        
+        datasets.forEach(dataset => {
+          if (dataset.hidden) return;
+          
+          const match = dataset.label.match(/^(.+?) · (\d{4})$/);
+          if (match) {
+            const indexName = match[1];
+            const year = match[2];
+            
+            if (!yearColors.has(year)) {
+              yearColors.set(year, dataset.borderColor);
+            }
+            
+            if (!indexGroups.has(indexName)) {
+              indexGroups.set(indexName, {
+                name: indexName,
+                datasets: []
+              });
+            }
+            indexGroups.get(indexName).datasets.push(dataset);
+          }
+        });
+        
+        if (yearColors.size > 0 && yearLegendTopRight) {
+          yearLegendTopRight.style.display = 'block';
+          yearLegendTopRight.innerHTML = '';
+          
+          const yearLegendTitle = document.createElement('div');
+          yearLegendTitle.style.cssText = 'font-weight: 600; color: #495057; margin-bottom: 8px; font-size: 13px;';
+          yearLegendTitle.textContent = '年份颜色说明';
+          yearLegendTopRight.appendChild(yearLegendTitle);
+          
+          const yearItemsContainer = document.createElement('div');
+          yearItemsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+          
+          const sortedYears = Array.from(yearColors.keys()).sort((a, b) => parseInt(b) - parseInt(a));
+          sortedYears.forEach(year => {
+            const yearItem = document.createElement('div');
+            yearItem.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 12px;';
+            yearItem.innerHTML = `
+              <div class="legend-color" style="background-color: ${yearColors.get(year)}; width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0;"></div>
+              <span style="font-weight: 500; color: #495057;">${year}年</span>
+            `;
+            yearItemsContainer.appendChild(yearItem);
+          });
+          
+          yearLegendTopRight.appendChild(yearItemsContainer);
+        } else if (yearLegendTopRight) {
+          yearLegendTopRight.style.display = 'none';
+        }
+        
+        indexGroups.forEach((group, indexName) => {
+          const legendItem = document.createElement('div');
+          const isSelected = selectedIndices.has(indexName);
+          legendItem.className = 'legend-item' + (isSelected ? ' selected' : '');
+          
+          legendItem.innerHTML = `
+            <div class="legend-checkbox"></div>
+            <div class="legend-color" style="background-color: #667eea;"></div>
+            <span>${indexName}</span>
+          `;
+          
+          legendItem.addEventListener('click', () => {
+            if (selectedIndices.has(indexName)) {
+              if (selectedIndices.size > 1) {
+                selectedIndices.delete(indexName);
+              }
+            } else {
+              selectedIndices.add(indexName);
+            }
+            updateChart();
+            updateYearlyChart();
+          });
+          
+          yearlyLegendContainer.appendChild(legendItem);
+        });
+      }
+
       function updateComparisonTable() {
         if (!scfiData.length || !comparisonDate.value) {
           comparisonTableBody.innerHTML = `
             <tr>
-              <td colspan="6" style="padding: 40px; text-align: center; color: #6c757d;">
+              <td colspan="6" style="padding: 40px; text-align: center; color: var(--color-text-tertiary, #6c757d); border: none;">
                 请选择对比日期以查看指数对比
               </td>
             </tr>
@@ -561,16 +790,14 @@
           return;
         }
 
-        // 解析选定日期，使用本地时区避免时区问题
         const dateParts = comparisonDate.value.split('-');
         const selectedDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
         
-        // 找到最接近选定日期的数据
         const selectedRecord = findClosestRecord(selectedDate);
         if (!selectedRecord) {
           comparisonTableBody.innerHTML = `
             <tr>
-              <td colspan="6" style="padding: 40px; text-align: center; color: #ff6b6b;">
+              <td colspan="6" style="padding: 40px; text-align: center; color: #ff6b6b; border: none;">
                 未找到选定日期的数据
               </td>
             </tr>
@@ -578,13 +805,11 @@
           return;
         }
 
-        // 计算各个时间点的数据
         const oneWeekAgo = findClosestRecordByWeeks(selectedDate, 1);
         const oneMonthAgo = findClosestRecordByWeeks(selectedDate, 4);
         const threeMonthsAgo = findClosestRecordByWeeks(selectedDate, 12);
         const oneYearAgo = findClosestRecordByWeeks(selectedDate, 52);
 
-        // 生成表格
         comparisonTableBody.innerHTML = '';
         columnNames.forEach(col => {
           const selectedValue = selectedRecord.values[col.name];
@@ -594,22 +819,22 @@
           const oneYearValue = oneYearAgo?.values[col.name];
 
           const tr = document.createElement('tr');
-          tr.style.borderBottom = '1px solid #e9ecef';
+          tr.style.borderBottom = '1px solid var(--color-border, #e9ecef)';
+          tr.style.transition = 'background-color 0.2s ease';
+          tr.onmouseenter = function() { this.style.backgroundColor = 'var(--color-bg-secondary, #f8f9fa)'; };
+          tr.onmouseleave = function() { this.style.backgroundColor = ''; };
           tr.innerHTML = `
-            <td style="padding: 12px; font-weight: 500;">${col.name}</td>
-            <td style="padding: 12px; text-align: right;">${formatSelectedDate(selectedValue, selectedRecord.date)}</td>
-            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, oneWeekValue, oneWeekAgo?.date)}</td>
-            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, oneMonthValue, oneMonthAgo?.date)}</td>
-            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, threeMonthsValue, threeMonthsAgo?.date)}</td>
-            <td style="padding: 12px; text-align: right;">${formatComparison(selectedValue, oneYearValue, oneYearAgo?.date)}</td>
+            <td style="padding: 12px 16px; font-weight: 500; border: none; color: var(--color-text-primary, #1f2d3d);">${col.name}</td>
+            <td style="padding: 12px 16px; text-align: right; border: none; color: var(--color-text-primary, #1f2d3d);">${formatSelectedDate(selectedValue, selectedRecord.date)}</td>
+            <td style="padding: 12px 16px; text-align: right; border: none; color: var(--color-text-primary, #1f2d3d);">${formatComparison(selectedValue, oneWeekValue, oneWeekAgo?.date)}</td>
+            <td style="padding: 12px 16px; text-align: right; border: none; color: var(--color-text-primary, #1f2d3d);">${formatComparison(selectedValue, oneMonthValue, oneMonthAgo?.date)}</td>
+            <td style="padding: 12px 16px; text-align: right; border: none; color: var(--color-text-primary, #1f2d3d);">${formatComparison(selectedValue, threeMonthsValue, threeMonthsAgo?.date)}</td>
+            <td style="padding: 12px 16px; text-align: right; border: none; color: var(--color-text-primary, #1f2d3d);">${formatComparison(selectedValue, oneYearValue, oneYearAgo?.date)}</td>
           `;
           comparisonTableBody.appendChild(tr);
         });
       }
 
-      /**
-       * 比较两个日期是否相同（只比较年月日）
-       */
       function isSameDate(date1, date2) {
         if (!date1 || !date2) return false;
         return date1.getFullYear() === date2.getFullYear() &&
@@ -617,26 +842,18 @@
                date1.getDate() === date2.getDate();
       }
 
-      /**
-       * 计算两个日期之间的天数差（只考虑日期部分）
-       */
       function getDateDiff(date1, date2) {
         const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
         const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
         return Math.abs(d1 - d2) / (1000 * 60 * 60 * 24);
       }
 
-      /**
-       * 找到最接近指定日期的记录
-       */
       function findClosestRecord(targetDate) {
-        // 先尝试精确匹配
         const exactMatch = scfiData.find(record => isSameDate(record.date, targetDate));
         if (exactMatch) {
           return exactMatch;
         }
 
-        // 如果没有精确匹配，找最接近的
         let closest = null;
         let minDiff = Infinity;
 
@@ -651,27 +868,20 @@
         return closest;
       }
 
-      /**
-       * 根据周数找到对应的记录（往前推N周）
-       */
       function findClosestRecordByWeeks(targetDate, weeks) {
-        // 计算目标日期（往前推N周）
         const targetWeekDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
         targetWeekDate.setDate(targetWeekDate.getDate() - (weeks * 7));
         
-        // 先尝试精确匹配
         const exactMatch = scfiData.find(record => isSameDate(record.date, targetWeekDate));
         if (exactMatch) {
           return exactMatch;
         }
 
-        // 允许前后3天的误差范围
         const minDate = new Date(targetWeekDate);
         minDate.setDate(minDate.getDate() - 3);
         const maxDate = new Date(targetWeekDate);
         maxDate.setDate(maxDate.getDate() + 3);
 
-        // 找到在这个范围内的记录（只比较日期部分）
         const candidates = scfiData.filter(record => {
           const recordDate = new Date(record.date.getFullYear(), record.date.getMonth(), record.date.getDate());
           const min = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
@@ -680,11 +890,9 @@
         });
 
         if (candidates.length === 0) {
-          // 如果没找到，找最接近的
           return findClosestRecord(targetWeekDate);
         }
 
-        // 找到最接近的
         let closest = null;
         let minDiff = Infinity;
         candidates.forEach(record => {
@@ -698,9 +906,6 @@
         return closest;
       }
 
-      /**
-       * 格式化数值
-       */
       function formatValue(value) {
         if (value === null || value === undefined || isNaN(value)) {
           return '-';
@@ -708,9 +913,6 @@
         return value.toFixed(2);
       }
 
-      /**
-       * 格式化选定日期的显示（3行格式：指数值、涨跌、日期）
-       */
       function formatSelectedDate(value, date) {
         if (value === null || value === undefined || isNaN(value)) {
           return '<span style="color: #999;">-</span>';
@@ -727,9 +929,6 @@
         `;
       }
 
-      /**
-       * 格式化对比数据（显示数值和变化幅度）
-       */
       function formatComparison(currentValue, pastValue, pastDate) {
         if (pastValue === null || pastValue === undefined || isNaN(pastValue)) {
           return '<span style="color: #999;">-</span>';
@@ -754,18 +953,222 @@
         `;
       }
 
-      /**
-       * 格式化日期显示（避免时区问题）
-       */
       function formatDateForDisplay(date) {
         if (!date) return '';
-        // 使用本地日期，避免时区转换
         const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const year = localDate.getFullYear();
         const month = String(localDate.getMonth() + 1).padStart(2, '0');
         const day = String(localDate.getDate()).padStart(2, '0');
         return `${year}/${month}/${day}`;
       }
+
+      async function exportToPdf() {
+        const exportBtn = document.getElementById('exportPdfBtn');
+        if (!exportBtn) return;
+
+        if (!scfiData || scfiData.length === 0) {
+          alert('请先载入数据文件');
+          return;
+        }
+
+        try {
+          if (!window.html2canvas || !window.jspdf) {
+            if (typeof window.loadPdfLibraries === 'function') {
+              await window.loadPdfLibraries();
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } else {
+              alert('PDF 导出功能所需的库加载函数未找到，请刷新页面重试');
+              return;
+            }
+          }
+
+          const hasHtml2Canvas = typeof window.html2canvas !== 'undefined';
+          let hasJsPdf = false;
+          let JsPDFConstructor = null;
+
+          if (typeof window.jspdf !== 'undefined') {
+            if (typeof window.jspdf.jsPDF === 'function') {
+              hasJsPdf = true;
+              JsPDFConstructor = window.jspdf.jsPDF;
+            } else if (typeof window.jspdf === 'function') {
+              hasJsPdf = true;
+              JsPDFConstructor = window.jspdf;
+            }
+          } else if (typeof window.jsPDF !== 'undefined' && typeof window.jsPDF === 'function') {
+            hasJsPdf = true;
+            JsPDFConstructor = window.jsPDF;
+          }
+
+          if (!hasHtml2Canvas || !hasJsPdf) {
+            const missingLibs = [];
+            if (!hasHtml2Canvas) missingLibs.push('html2canvas');
+            if (!hasJsPdf) missingLibs.push('jsPDF');
+            alert(`PDF 导出功能所需的库加载失败：${missingLibs.join('、')}。\n\n请检查：\n1. 网络连接是否正常\n2. vendor/html2canvas.min.js 和 vendor/jspdf.umd.min.js 文件是否存在\n3. 浏览器控制台的错误信息\n\n如果问题持续，请刷新页面后重试。`);
+            return;
+          }
+
+          exportBtn.disabled = true;
+          exportBtn.textContent = '正在导出...';
+
+          const elementsToExport = [];
+          const dataContent = document.getElementById('dataContent');
+          if (dataContent && dataContent.style.display !== 'none') {
+            if (chartSection) elementsToExport.push(chartSection);
+            if (yearlySection) elementsToExport.push(yearlySection);
+            if (comparisonSection) elementsToExport.push(comparisonSection);
+          }
+
+          if (elementsToExport.length === 0) {
+            alert('没有可导出的内容');
+            exportBtn.disabled = false;
+            exportBtn.textContent = '导出PDF';
+            return;
+          }
+
+          const hiddenStates = elementsToExport.map(el => ({
+            element: el,
+            wasHidden: el.classList.contains('hidden')
+          }));
+          hiddenStates.forEach(({ element, wasHidden }) => {
+            if (wasHidden) {
+              element.classList.remove('hidden');
+            }
+          });
+
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          const chartCanvases = ['trendChart', 'yearlyChart'];
+          const chartImageData = {};
+          
+          for (const canvasId of chartCanvases) {
+            const chartCanvas = document.getElementById(canvasId);
+            if (chartCanvas && typeof Chart !== 'undefined') {
+              try {
+                const chart = Chart.getChart(chartCanvas);
+                if (chart) {
+                  chartImageData[canvasId] = chartCanvas.toDataURL('image/png', 1.0);
+                }
+              } catch (e) {
+                debugWarn(`无法转换图表 ${canvasId}:`, e);
+              }
+            }
+          }
+
+          const tempContainer = document.createElement('div');
+          const maxWidth = Math.max(...elementsToExport.map(el => el.offsetWidth || 800));
+          tempContainer.style.cssText = `
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: ${maxWidth}px;
+            background: #f5f5f0;
+            padding: 20px;
+          `;
+
+          const clonedElements = elementsToExport.map(el => {
+            const cloned = el.cloneNode(true);
+            
+            for (const [canvasId, imageData] of Object.entries(chartImageData)) {
+              const clonedChartCanvas = cloned.querySelector(`#${canvasId}`);
+              if (clonedChartCanvas) {
+                const img = document.createElement('img');
+                img.src = imageData;
+                img.style.width = '100%';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                clonedChartCanvas.parentNode.replaceChild(img, clonedChartCanvas);
+              }
+            }
+            
+            return cloned;
+          });
+
+          clonedElements.forEach(cloned => tempContainer.appendChild(cloned));
+          document.body.appendChild(tempContainer);
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+          const previousScroll = window.scrollY;
+          window.scrollTo(0, 0);
+
+          const canvas = await window.html2canvas(tempContainer, {
+            scale: Math.min(window.devicePixelRatio || 1, 1.5),
+            useCORS: true,
+            backgroundColor: '#f5f5f0',
+            logging: false,
+            scrollY: 0,
+            windowWidth: tempContainer.offsetWidth,
+            windowHeight: tempContainer.scrollHeight
+          });
+
+          document.body.removeChild(tempContainer);
+
+          hiddenStates.forEach(({ element, wasHidden }) => {
+            if (wasHidden) {
+              element.classList.add('hidden');
+            }
+          });
+
+          window.scrollTo(0, previousScroll);
+
+          const maxBytes = 2 * 1024 * 1024;
+          let quality = 0.8;
+          let dataUrl = canvas.toDataURL('image/jpeg', quality);
+          let byteSize = dataUrl.length * 0.75;
+          while (byteSize > maxBytes && quality > 0.4) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+            byteSize = dataUrl.length * 0.75;
+          }
+
+          if (!JsPDFConstructor) {
+            throw new Error('jsPDF 库未正确加载，请刷新页面后重试');
+          }
+          const pdf = new JsPDFConstructor('p', 'pt', 'a4');
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const imgWidth = pageWidth;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+
+          pdf.addImage(dataUrl, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+          heightLeft -= pageHeight;
+
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(dataUrl, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+            heightLeft -= pageHeight;
+          }
+
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          pdf.save(`SCFI历史趋势_${year}${month}${day}.pdf`);
+
+          exportBtn.textContent = '导出PDF';
+          exportBtn.disabled = false;
+        } catch (error) {
+          debugError('导出PDF失败:', error);
+          alert(`导出 PDF 失败：${error.message || String(error)}`);
+          const exportBtn = document.getElementById('exportPdfBtn');
+          if (exportBtn) {
+            exportBtn.textContent = '导出PDF';
+            exportBtn.disabled = false;
+          }
+        }
+      }
+
+      document.getElementById('exportPdfBtn')?.addEventListener('click', exportToPdf);
+
+      window.addEventListener('load', () => {
+        if (typeof window.loadPdfLibraries === 'function') {
+          window.loadPdfLibraries().catch(error => {
+            debugWarn('PDF库预加载失败（不影响使用，导出时会重试）:', error);
+          });
+        }
+      });
     </script>
   </body>
 </html>

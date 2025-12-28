@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · 访客统计排名</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/date-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/auth-gist.js"></script>
+</head>
+<body data-page="Admin-Access-Log.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Admin · 访客统计排名</h2>
+                            <p>分析访问日志，统计用户访问排名和页面访问热度排名</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=admin" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Admin-Access-Log-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件上传和数据状态区域 -->
+                <div class="grid-2-col" style="margin-bottom: 0;">
+                    <!-- 左侧：载入访问日志 -->
+                    <div class="card-white">
+                        <label for="fileInput" class="file-upload-label" aria-label="选择JSON文件上传">
+                            <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradJson)" />
+                                <!-- JSON图标 -->
+                                <rect x="10" y="9" width="16" height="18" rx="1" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <path d="M10 9L10 15L16 15" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="13" y1="20" x2="23" y2="20" stroke="#fff" stroke-width="1.2"/>
+                                <line x1="13" y1="23" x2="23" y2="23" stroke="#fff" stroke-width="1.2"/>
+                                <defs>
+                                    <linearGradient id="gradJson" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#0071e3" />
+                                        <stop offset="1" stop-color="#54a4ff" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="file-upload-content">
+                                <div class="file-upload-title">载入访问日志</div>
+                                <div class="file-upload-desc">支持 .json，或从 Gist 直接加载</div>
+                            </div>
+                            <input type="file" id="fileInput" class="file-upload-input" accept=".json" aria-label="选择JSON文件" title="选择JSON文件：支持本地文件或从 Gist 直接加载">
+                        </label>
+                    </div>
+                    
+                    <!-- 右侧：数据状态 -->
+                    <div class="card-white">
+                        <div class="data-status-container">
+                            <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradStatus)" />
+                                <!-- 数据状态图标：剪贴板 + 勾 -->
+                                <rect x="11" y="10" width="14" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <rect x="15" y="8" width="6" height="4" rx="1" fill="#fff"/>
+                                <path d="M14 18L17 21L23 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="gradStatus" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#FF8A00" />
+                                        <stop offset="1" stop-color="#FFB347" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="data-status-content">
+                                <div class="data-status-title">数据状态</div>
+                                <div id="statusInfo" class="data-status-text" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">尚未载入数据</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计概览 -->
+                <section class="feature-section">
+                    <div class="module-header">
+                        <span class="module-badge">统计概览</span>
+                        <div>
+                            <h2 class="section-title">访问统计 <span>ACCESS STATISTICS</span></h2>
+                            <p class="module-desc">总访问次数、独立访客、访问页面数和平均访问次数</p>
+                        </div>
+                    </div>
+                    <div class="card-white module-card hidden mt-20" id="statsSection">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>总访问次数</h3>
+                                <p class="stat-value" id="totalVisits">0</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>独立访客</h3>
+                                <p class="stat-value" id="uniqueUsers">0</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>访问页面数</h3>
+                                <p class="stat-value" id="uniquePages">0</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>平均访问次数</h3>
+                                <p class="stat-value" id="avgVisits">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 用户访问排名 -->
+                <section class="feature-section">
+                    <div class="module-header">
+                        <span class="module-badge">用户排名</span>
+                        <div>
+                            <h2 class="section-title">用户访问排名 <span>USER RANKING</span></h2>
+                            <p class="module-desc">按访问次数排序，悬停查看最近访问记录</p>
+                        </div>
+                    </div>
+                    <div class="card-white module-card hidden mt-20" id="userRankingSection">
+                        <div class="table-container">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th class="rank">排名</th>
+                                        <th>姓名</th>
+                                        <th>手机号</th>
+                                        <th>邮箱</th>
+                                        <th class="count">访问次数</th>
+                                        <th>最后访问</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userRankingBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 页面访问排名 -->
+                <section class="feature-section">
+                    <div class="module-header">
+                        <span class="module-badge">页面排名</span>
+                        <div>
+                            <h2 class="section-title">页面访问排名 <span>PAGE RANKING</span></h2>
+                            <p class="module-desc">按访问次数排序，悬停查看最近访问用户</p>
+                        </div>
+                    </div>
+                    <div class="card-white module-card hidden mt-20" id="pageRankingSection">
+                        <div class="table-container">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th class="rank">排名</th>
+                                        <th>页面</th>
+                                        <th class="count">访问次数</th>
+                                        <th>独立访客</th>
+                                        <th>访问占比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pageRankingBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 访问时间分析 -->
+                <section class="feature-section">
+                    <div class="module-header">
+                        <span class="module-badge">时间分析</span>
+                        <div>
+                            <h2 class="section-title">访问时间分析 <span>TIME ANALYSIS</span></h2>
+                            <p class="module-desc">按小时、日期、周、月统计访问趋势</p>
+                        </div>
+                    </div>
+                    <div class="card-white module-card hidden mt-20" id="timeAnalysisSection">
+                        <div class="time-filter">
+                            <button class="time-filter-btn" data-period="hour">按小时</button>
+                            <button class="time-filter-btn active" data-period="day">按日期</button>
+                            <button class="time-filter-btn" data-period="week">按周</button>
+                            <button class="time-filter-btn" data-period="month">按月</button>
+                        </div>
+                        <div class="time-chart-container">
+                            <canvas id="timeChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Admin · 访客统计排名使用声明</h2>
+                    <p class="usage-statement-text">访问日志数据仅用于内部统计分析，所有数据仅在本地浏览器解析，不会上传至任何服务器。</p>
+                    <p class="usage-statement-text">统计数据仅供参考，不构成任何商业决策依据。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        init001ToolPage('Admin-Access-Log.html', 'admin');
+    </script>
+    <script>
+        // ==================== 全局数据变量 =====================
+        let accessLogs = [];
+        let filteredLogs = []; // 过滤后的访问记录（排除本人）
+        let timeChart = null;
+        let currentTimePeriod = 'day';
+        
+        // 需要排除的手机号和姓名（本人）
+        const EXCLUDED_PHONE = '18653202580';
+        const EXCLUDED_NAME = 'smartpu';
+
+        // Gist URL 配置
+        const GIST_ID = 'b5b83749aa1561bf295c5ea2861848e5';
+        const GIST_USER = 'smartpu';
+        const GIST_FILE_NAME = 'access-logs.json';
+        const GIST_COMMIT_HASH = 'd904a141849245da405dfe4bb5ffca58cb24ba0b';
+        // Gist raw URL 格式：https://gist.githubusercontent.com/{user}/{gist_id}/raw/{commit_hash}/{filename}
+        const GIST_RAW_URL = `https://gist.githubusercontent.com/${GIST_USER}/${GIST_ID}/raw/${GIST_COMMIT_HASH}/${GIST_FILE_NAME}`;
+
+        const fileInput = document.getElementById('fileInput');
+        const statusInfo = document.getElementById('statusInfo');
+        const statsSection = document.getElementById('statsSection');
+        const userRankingSection = document.getElementById('userRankingSection');
+        const pageRankingSection = document.getElementById('pageRankingSection');
+        const timeAnalysisSection = document.getElementById('timeAnalysisSection');
+        const userRankingBody = document.getElementById('userRankingBody');
+        const pageRankingBody = document.getElementById('pageRankingBody');
+        const timeFilterBtns = document.querySelectorAll('.time-filter-btn');
+
+        /**
+         * 从 Gist 直接加载 access-logs.json
+         */
+        async function loadFromGist() {
+            try {
+                statusInfo.textContent = '正在从 Gist 加载数据...';
+                debugLog(`[Access-Log] 从 Gist 加载: ${GIST_RAW_URL}`);
+                
+                const response = await fetch(GIST_RAW_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                const data = JSON.parse(text);
+                
+                if (!Array.isArray(data)) {
+                    throw new Error('访问日志格式错误：应为数组格式');
+                }
+
+                accessLogs = data;
+                
+                // 过滤掉本人的访问记录（排除指定手机号和姓名）
+                filteredLogs = accessLogs.filter(log => {
+                    return log.phone !== EXCLUDED_PHONE && log.name !== EXCLUDED_NAME;
+                });
+                
+                const excludedCount = accessLogs.length - filteredLogs.length;
+                processData();
+                statusInfo.textContent = `已从 Gist 加载 ${data.length} 条访问记录${excludedCount > 0 ? `（已排除 ${excludedCount} 条本人记录）` : ''}`;
+                debugLog(`[Access-Log] 成功从 Gist 加载 ${data.length} 条记录`);
+            } catch (error) {
+                debugError('[Access-Log] 从 Gist 加载失败:', error);
+                statusInfo.textContent = `从 Gist 加载失败: ${error.message}`;
+                // 不显示错误弹窗，只更新状态文本
+            }
+        }
+
+        /**
+         * 自动加载访问日志（优先从 Gist 加载，失败则尝试本地文件）
+         */
+        async function autoLoadJsonFile() {
+            // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
+            if (window.location.protocol === 'file:') {
+                debugLog('[Access-Log] 本地文件系统环境，跳过自动加载');
+                return;
+            }
+
+            // 优先从 Gist 加载
+            try {
+                await loadFromGist();
+                return; // 成功加载，直接返回
+            } catch (gistError) {
+                debugWarn('[Access-Log] 从 Gist 加载失败，尝试本地文件:', gistError);
+            }
+
+            // 如果 Gist 加载失败，尝试从本地 Data 目录加载
+            try {
+                // 从 index.json 读取文件路径配置
+                let jsonFileName = null;
+                try {
+                    const configResponse = await fetch('Data/index.json');
+                    if (configResponse.ok) {
+                        const config = await configResponse.json();
+                        if (config.files && config.files['Admin-Access-Log']) {
+                            jsonFileName = config.files['Admin-Access-Log'];
+                        }
+                    }
+                } catch (e) {
+                    debugWarn('[Access-Log] 无法读取配置文件');
+                    return;
+                }
+
+                if (!jsonFileName) {
+                    debugWarn('[Access-Log] 配置文件中未找到文件路径');
+                    return;
+                }
+
+                const response = await fetch(`Data/${jsonFileName}`);
+                if (!response.ok) {
+                    debugWarn('[Access-Log] 默认 JSON 文件不存在');
+                    return;
+                }
+                const blob = await response.blob();
+                const file = new File([blob], jsonFileName, { type: 'application/json' });
+                
+                // 模拟文件选择事件，触发文件处理
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                
+                // 触发 change 事件
+                const changeEvent = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(changeEvent);
+            } catch (error) {
+                debugWarn('[Access-Log] 自动加载 JSON 文件失败:', error);
+            }
+        }
+
+        /**
+         * 处理 JSON 数据
+         */
+        function processJsonData(data) {
+            if (!Array.isArray(data)) {
+                throw new Error('访问日志格式错误：应为数组格式');
+            }
+
+            accessLogs = data;
+            
+            // 过滤掉本人的访问记录（排除指定手机号和姓名）
+            filteredLogs = accessLogs.filter(log => {
+                return log.phone !== EXCLUDED_PHONE && log.name !== EXCLUDED_NAME;
+            });
+            
+            const excludedCount = accessLogs.length - filteredLogs.length;
+            processData();
+            statusInfo.textContent = `已加载 ${data.length} 条访问记录${excludedCount > 0 ? `（已排除 ${excludedCount} 条本人记录）` : ''}`;
+        }
+
+        // 文件选择处理
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            try {
+                statusInfo.textContent = '正在读取文件...';
+                const text = await file.text();
+                const data = JSON.parse(text);
+                processJsonData(data);
+            } catch (error) {
+                showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { message: error.message }, error);
+                statusInfo.textContent = '读取失败';
+            }
+        });
+
+        // 处理数据
+        function processData() {
+            // 使用过滤后的数据
+            if (!filteredLogs.length) {
+                // 如果没有过滤后的数据，隐藏所有统计区域
+                statsSection.classList.add('hidden');
+                userRankingSection.classList.add('hidden');
+                pageRankingSection.classList.add('hidden');
+                timeAnalysisSection.classList.add('hidden');
+                return;
+            }
+
+            // 显示所有统计区域
+            statsSection.classList.remove('hidden');
+            userRankingSection.classList.remove('hidden');
+            pageRankingSection.classList.remove('hidden');
+            timeAnalysisSection.classList.remove('hidden');
+
+            // 同步按钮状态和变量状态
+            timeFilterBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.period === currentTimePeriod) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // 更新统计概览
+            updateStatsOverview();
+
+            // 更新用户排名
+            updateUserRanking();
+
+            // 更新页面排名
+            updatePageRanking();
+
+            // 更新时间分析图表
+            updateTimeChart();
+        }
+
+        // 更新统计概览
+        function updateStatsOverview() {
+            const totalVisits = filteredLogs.length;
+            const uniqueUsers = new Set(filteredLogs.map(log => `${log.name}|${log.phone}|${log.email}`)).size;
+            const uniquePages = new Set(filteredLogs.map(log => log.page)).size;
+            const avgVisits = uniqueUsers > 0 ? (totalVisits / uniqueUsers).toFixed(1) : 0;
+
+            document.getElementById('totalVisits').textContent = totalVisits.toLocaleString();
+            document.getElementById('uniqueUsers').textContent = uniqueUsers.toLocaleString();
+            document.getElementById('uniquePages').textContent = uniquePages.toLocaleString();
+            document.getElementById('avgVisits').textContent = avgVisits;
+        }
+
+        // 更新用户排名
+        function updateUserRanking() {
+            // 按用户统计访问次数，同时保存访问历史
+            const userStats = new Map();
+            
+            filteredLogs.forEach(log => {
+                const userKey = `${log.name}|${log.phone}|${log.email}`;
+                if (!userStats.has(userKey)) {
+                    userStats.set(userKey, {
+                        name: log.name,
+                        phone: log.phone,
+                        email: log.email,
+                        count: 0,
+                        lastVisit: log.timestamp,
+                        visitHistory: [] // 保存访问历史
+                    });
+                }
+                const stats = userStats.get(userKey);
+                stats.count++;
+                // 添加访问历史记录
+                stats.visitHistory.push({
+                    page: log.page,
+                    timestamp: log.timestamp
+                });
+                if (log.timestamp > stats.lastVisit) {
+                    stats.lastVisit = log.timestamp;
+                }
+            });
+
+            // 转换为数组并排序，只取前20个
+            const userArray = Array.from(userStats.values())
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 20);
+
+            // 渲染表格
+            userRankingBody.innerHTML = '';
+            userArray.forEach((user, index) => {
+                const row = document.createElement('tr');
+                const lastVisitDate = new Date(user.lastVisit);
+                const lastVisitStr = lastVisitDate.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                row.innerHTML = `
+                    <td class="rank">${index + 1}</td>
+                    <td>${escapeHtml(user.name || '—')}</td>
+                    <td>${escapeHtml(user.phone || '—')}</td>
+                    <td>${escapeHtml(user.email || '—')}</td>
+                    <td class="count">${user.count.toLocaleString()}</td>
+                    <td>${lastVisitStr}</td>
+                `;
+                
+                // 添加悬停效果：显示该用户的最近10次访问页面及时间
+                attachUserTooltip(row, user);
+                
+                userRankingBody.appendChild(row);
+            });
+        }
+        
+        // HTML 转义函数
+        function escapeHtml(text) {
+            if (typeof text !== 'string') return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 为用户排名行添加悬停提示
+        function attachUserTooltip(row, user) {
+            // 获取最近10次访问，按时间倒序
+            const recentVisits = user.visitHistory
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 10);
+            
+            if (recentVisits.length === 0) return;
+            
+            // 创建 tooltip 元素
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.style.display = 'none';
+            
+            // 构建 tooltip 内容 - 使用紧凑的一行显示
+            tooltip.className = 'tooltip tooltip-access-log';
+            let tooltipHTML = '<div class="tooltip-access-log-header">最近访问记录</div>';
+            recentVisits.forEach((visit, idx) => {
+                const visitDate = new Date(visit.timestamp);
+                const visitStr = visitDate.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                tooltipHTML += `
+                    <div class="tooltip-access-log-line">
+                        <span class="tooltip-access-log-index">${idx + 1}.</span>
+                        <span class="tooltip-access-log-page" title="${escapeHtml(visit.page)}">${escapeHtml(visit.page)}</span>
+                        <span class="tooltip-access-log-label">时间：</span>
+                        <span class="tooltip-access-log-time">${visitStr}</span>
+                    </div>
+                `;
+            });
+            tooltip.innerHTML = tooltipHTML;
+            document.body.appendChild(tooltip);
+            
+            // 定位 tooltip 的函数
+            const positionTooltip = (e) => {
+                const rect = tooltip.getBoundingClientRect();
+                const padding = 15;
+                let left = e.clientX + padding;
+                let top = e.clientY + padding;
+                
+                // 如果右侧空间不够，显示在左侧
+                if (left + rect.width > window.innerWidth) {
+                    left = e.clientX - rect.width - padding;
+                }
+                
+                // 如果下方空间不够，显示在上方
+                if (top + rect.height > window.innerHeight) {
+                    top = e.clientY - rect.height - padding;
+                }
+                
+                // 确保不超出视窗
+                if (left < 0) left = padding;
+                if (top < 0) top = padding;
+                
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            };
+            
+            let tooltipTimeout;
+            row.addEventListener('mouseenter', (e) => {
+                clearTimeout(tooltipTimeout);
+                tooltip.style.display = 'block';
+                positionTooltip(e);
+            });
+            
+            row.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    tooltip.style.display = 'none';
+                }, 100);
+            });
+            
+            row.addEventListener('mousemove', (e) => {
+                clearTimeout(tooltipTimeout);
+                if (tooltip.style.display === 'block') {
+                    positionTooltip(e);
+                }
+            });
+        }
+
+        // 更新页面排名
+        function updatePageRanking() {
+            // 按页面统计访问次数和独立访客，同时保存访问历史
+            const pageStats = new Map();
+            
+            filteredLogs.forEach(log => {
+                if (!pageStats.has(log.page)) {
+                    pageStats.set(log.page, {
+                        page: log.page,
+                        count: 0,
+                        uniqueUsers: new Set(),
+                        visitHistory: [] // 保存访问历史
+                    });
+                }
+                const stats = pageStats.get(log.page);
+                stats.count++;
+                stats.uniqueUsers.add(`${log.name}|${log.phone}|${log.email}`);
+                // 添加访问历史记录
+                stats.visitHistory.push({
+                    userName: log.name,
+                    userPhone: log.phone,
+                    userEmail: log.email,
+                    timestamp: log.timestamp
+                });
+            });
+
+            // 转换为数组并排序，只取前20个
+            const pageArray = Array.from(pageStats.values())
+                .map(stats => ({
+                    page: stats.page,
+                    count: stats.count,
+                    uniqueUsers: stats.uniqueUsers.size,
+                    visitHistory: stats.visitHistory
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 20);
+
+            const totalVisits = filteredLogs.length;
+
+            // 渲染表格
+            pageRankingBody.innerHTML = '';
+            pageArray.forEach((page, index) => {
+                const row = document.createElement('tr');
+                const percentage = ((page.count / totalVisits) * 100).toFixed(1);
+
+                row.innerHTML = `
+                    <td class="rank">${index + 1}</td>
+                    <td>${escapeHtml(page.page)}</td>
+                    <td class="count">${page.count.toLocaleString()}</td>
+                    <td>${page.uniqueUsers.toLocaleString()}</td>
+                    <td>${percentage}%</td>
+                `;
+                
+                // 添加悬停效果：显示该页面的最近10个访问用户及时间
+                attachPageTooltip(row, page);
+                
+                pageRankingBody.appendChild(row);
+            });
+        }
+        
+        // 为页面排名行添加悬停提示
+        function attachPageTooltip(row, page) {
+            // 获取最近10次访问，按时间倒序
+            const recentVisits = page.visitHistory
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 10);
+            
+            if (recentVisits.length === 0) return;
+            
+            // 创建 tooltip 元素
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.style.display = 'none';
+            
+            // 构建 tooltip 内容 - 使用紧凑的一行显示
+            tooltip.className = 'tooltip tooltip-access-log';
+            let tooltipHTML = '<div class="tooltip-access-log-header">最近访问用户</div>';
+            recentVisits.forEach((visit, idx) => {
+                const visitDate = new Date(visit.timestamp);
+                const visitStr = visitDate.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const userName = visit.userName || '—';
+                tooltipHTML += `
+                    <div class="tooltip-access-log-line">
+                        <span class="tooltip-access-log-index">${idx + 1}.</span>
+                        <span class="tooltip-access-log-page" title="${escapeHtml(userName)}">${escapeHtml(userName)}</span>
+                        <span class="tooltip-access-log-label">时间：</span>
+                        <span class="tooltip-access-log-time">${visitStr}</span>
+                    </div>
+                `;
+            });
+            tooltip.innerHTML = tooltipHTML;
+            document.body.appendChild(tooltip);
+            
+            // 定位 tooltip 的函数
+            const positionTooltip = (e) => {
+                const rect = tooltip.getBoundingClientRect();
+                const padding = 15;
+                let left = e.clientX + padding;
+                let top = e.clientY + padding;
+                
+                // 如果右侧空间不够，显示在左侧
+                if (left + rect.width > window.innerWidth) {
+                    left = e.clientX - rect.width - padding;
+                }
+                
+                // 如果下方空间不够，显示在上方
+                if (top + rect.height > window.innerHeight) {
+                    top = e.clientY - rect.height - padding;
+                }
+                
+                // 确保不超出视窗
+                if (left < 0) left = padding;
+                if (top < 0) top = padding;
+                
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            };
+            
+            let tooltipTimeout;
+            row.addEventListener('mouseenter', (e) => {
+                clearTimeout(tooltipTimeout);
+                tooltip.style.display = 'block';
+                positionTooltip(e);
+            });
+            
+            row.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    tooltip.style.display = 'none';
+                }, 100);
+            });
+            
+            row.addEventListener('mousemove', (e) => {
+                clearTimeout(tooltipTimeout);
+                if (tooltip.style.display === 'block') {
+                    positionTooltip(e);
+                }
+            });
+        }
+
+        // 更新时间分析图表
+        function updateTimeChart() {
+            if (typeof Chart === 'undefined') {
+                debugWarn('Chart.js 未加载，无法显示时间分析图表');
+                return;
+            }
+
+            const ctx = document.getElementById('timeChart');
+            if (!ctx) return;
+
+            // 销毁旧图表
+            if (timeChart) {
+                timeChart.destroy();
+            }
+
+            // 根据时间周期分组数据
+            const timeData = groupByTimePeriod(currentTimePeriod);
+            const labels = Object.keys(timeData).sort();
+            const data = labels.map(label => timeData[label]);
+
+            // 创建新图表
+            timeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '访问次数',
+                        data: data,
+                        borderColor: 'var(--color-brand-blue)',
+                        backgroundColor: 'rgba(62, 98, 173, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 按时间周期分组数据
+        function groupByTimePeriod(period) {
+            const groups = {};
+
+            filteredLogs.forEach(log => {
+                const date = new Date(log.timestamp);
+                let key = '';
+
+                switch (period) {
+                    case 'hour':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:00`;
+                        break;
+                    case 'day':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        break;
+                    case 'week':
+                        const weekStart = new Date(date);
+                        weekStart.setDate(date.getDate() - date.getDay());
+                        key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+                        break;
+                    case 'month':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        break;
+                }
+
+                if (!groups[key]) {
+                    groups[key] = 0;
+                }
+                groups[key]++;
+            });
+
+            return groups;
+        }
+
+        // 时间周期筛选按钮事件
+        timeFilterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                timeFilterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTimePeriod = btn.dataset.period;
+                updateTimeChart();
+            });
+        });
+
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', async () => {
+            // 确保 Chart.js 已加载
+            if (typeof ensureChartJs === 'function') {
+                await ensureChartJs();
+            }
+            
+            // 尝试自动加载访问日志文件（优先从 Gist 加载）
+            setTimeout(() => {
+                autoLoadJsonFile();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

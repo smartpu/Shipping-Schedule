@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipping Tools · 工具集</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+</head>
+<body data-page="dashboard.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+        
+        <!-- 右侧内容区 -->
+        <main class="dashboard-content">
+            <!-- 001 系列工具 -->
+            <div id="tools001" class="tab-content active">
+                <div class="section-intro">
+                    <h2>001 系列工具</h2>
+                    <p>基于维运网（weiyun001.com）数据的船期解析与分析工具集。包含船期网页下载、船期解析和市场分析功能，适用于从维运网获取船期信息并进行深度分析。</p>
+                </div>
+                
+                <div class="tools-grid" role="list" aria-label="001系列工具列表">
+                    <div class="tool-card" role="listitem" aria-label="船期网页下载工具">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">📥</div>
+                            <div class="tool-title">
+                                <h3>船期网页下载工具</h3>
+                                <div class="tool-id">001-01</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            从 Excel 文件加载船期数据，按起运港（POL）分组显示，支持智能排序和进度跟踪。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="001-01-manual-download.html?from=tools001" class="tool-link" aria-label="打开船期网页下载工具">打开工具 →</a>
+                            <a href="001-01-manual-download-README.html" class="tool-link secondary" aria-label="查看船期网页下载工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="船期解析工具">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">🔍</div>
+                            <div class="tool-title">
+                                <h3>船期解析工具</h3>
+                                <div class="tool-id">001-02</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            将维运网 HTML 船期网页批量解析成 CSV 文件。自动提取启运港、目的港、航线、船名航次、开航日期等信息，并自动去重合并。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="001-02-schedule-parser.html?from=tools001" class="tool-link" aria-label="打开船期解析工具">打开工具 →</a>
+                            <a href="001-02-schedule-parser-README.html" class="tool-link secondary" aria-label="查看船期解析工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="港口标准化工具">
+                        <div class="tool-header">
+                            <div class="tool-icon green" aria-hidden="true">🔧</div>
+                            <div class="tool-title">
+                                <h3>港口标准化工具</h3>
+                                <div class="tool-id">001-03</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            将 001-02 解析的 CSV 文件中的港口名称标准化为统一格式 [英文名|代码|区域]，支持模糊匹配和转换报告。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="001-03-port-standardizer.html?from=tools001" class="tool-link" aria-label="打开港口标准化工具">打开工具 →</a>
+                            <a href="001-03-port-standardizer-README.html" class="tool-link secondary" aria-label="查看港口标准化工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="article" aria-label="市场分析工具">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">📊</div>
+                            <div class="tool-title">
+                                <h3>市场分析工具</h3>
+                                <div class="tool-id">001-04</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            航线运力分析工具，支持多港口筛选、运力趋势图和派船统计。自动提取当周+未来三周数据，提供可视化分析。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="001-04-market-analysis.html?from=tools001" class="tool-link" aria-label="打开市场分析工具">打开工具 →</a>
+                            <a href="001-04-market-analysis-README.html" class="tool-link secondary" aria-label="查看市场分析工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 365 系列工具 -->
+            <div id="tools365" class="tab-content">
+                <div class="section-intro">
+                    <h2>365 系列工具</h2>
+                    <p>基于明日数航（hangyun365.com）数据的船期解析与分析工具集。包含船期网页下载、船期解析、航线路径解析、港口行情解析和市场观察功能，提供更全面的船期数据分析。</p>
+                </div>
+                
+                <div class="tools-grid grid-3">
+                    <div class="tool-card" role="listitem" aria-label="船期网页下载工具">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">📥</div>
+                            <div class="tool-title">
+                                <h3>船期网页下载工具</h3>
+                                <div class="tool-id">365-01</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            从 Excel 文件加载船期数据，按起运港（POL）分组显示，支持智能排序和进度跟踪。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="365-01-manual-download.html?from=tools365" class="tool-link" aria-label="打开船期网页下载工具">打开工具 →</a>
+                            <a href="365-01-manual-download-README.html" class="tool-link secondary" aria-label="查看船期网页下载工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="明日数航 船期完整解析工具">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">🔍</div>
+                            <div class="tool-title">
+                                <h3>明日数航 船期完整解析工具</h3>
+                                <div class="tool-id">365-02</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            解析明日数航船期网页，支持 AI 船期和历史船期解析。自动去重、数据补全和日期格式转换。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="365-02-schedule-full-parser.html?from=tools365" class="tool-link" aria-label="打开明日数航 船期完整解析工具">打开工具 →</a>
+                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看明日数航 船期完整解析工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="明日数航 航线路径解析工具">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">🗺️</div>
+                            <div class="tool-title">
+                                <h3>明日数航 航线路径解析工具</h3>
+                                <div class="tool-id">365-02</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            从船期网页中提取航线路径信息。自动解析正向路径、反向路径、中间时间，并提取航线ID和共舱船公司信息。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="365-02-rotation-parser.html?from=tools365" class="tool-link" aria-label="打开明日数航 航线路径解析工具">打开工具 →</a>
+                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看明日数航 航线路径解析工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="article" aria-label="明日数航 港口行情解析工具">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">💰</div>
+                            <div class="tool-title">
+                                <h3>明日数航 港口行情解析工具</h3>
+                                <div class="tool-id">365-02</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            解析明日数航网页中的价格信息。提取各港口的 20GP/40GP 报价，支持批量解析和 CSV 导出。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="365-02-market-rate-parser.html?from=tools365" class="tool-link" aria-label="打开明日数航 港口行情解析工具">打开工具 →</a>
+                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看明日数航 港口行情解析工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="港口标准化工具">
+                        <div class="tool-header">
+                            <div class="tool-icon green" aria-hidden="true">🔧</div>
+                            <div class="tool-title">
+                                <h3>港口标准化工具</h3>
+                                <div class="tool-id">365-03</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            将 365 格式的 Excel/CSV 文件中的港口名称（如"北美洲美西美国洛杉矶"）标准化为统一格式 [英文名|代码|区域]，支持模糊匹配和转换报告。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="365-03-port-standardizer.html?from=tools365" class="tool-link" aria-label="打开港口标准化工具">打开工具 →</a>
+                            <a href="365-03-port-standardizer-README.html" class="tool-link secondary" aria-label="查看港口标准化工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="市场观察工具">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">📊</div>
+                            <div class="tool-title">
+                                <h3>市场观察工具</h3>
+                                <div class="tool-id">365-04</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            综合市场分析平台，整合运费走势图、航线运力分析和 AI 趋势分析。支持多模型 AI 分析，自动抓取燃油价格和运价指数。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="365-04-market-watch.html?from=tools365" class="tool-link" aria-label="打开市场观察工具">打开工具 →</a>
+                            <a href="365-04-market-watch-README.html" class="tool-link secondary" aria-label="查看市场观察工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Monitor 系列工具 -->
+            <div id="monitor" class="tab-content">
+                <div class="section-intro">
+                    <h2>Monitor 系列工具</h2>
+                    <p>专业的市场趋势分析与船期管理工具集，支持运价趋势、SCFI 历史趋势查看和专业船期表可视化。提供 Excel 数据载入、多维度筛选、大尺寸趋势图表展示、AI 智能分析等功能，便于进行市场分析和决策支持。</p>
+                </div>
+                
+                <div class="tools-grid" role="list" aria-label="Monitor系列工具列表">
+                    <div class="tool-card" role="listitem" aria-label="SCFI 历史趋势">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">📈</div>
+                            <div class="tool-title">
+                                <h3>SCFI 历史趋势</h3>
+                                <div class="tool-id">Monitor-SCFI</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势。默认显示最近3年数据，支持自定义日期范围筛选。图表高度为两倍，便于查看详细趋势。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Monitor-SCFI-Trends.html?from=monitor" class="tool-link" aria-label="打开 SCFI 历史趋势工具">打开工具 →</a>
+                            <a href="Monitor-SCFI-Trends-README.html" class="tool-link secondary" aria-label="查看 SCFI 历史趋势工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="运价趋势面板">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">📊</div>
+                            <div class="tool-title">
+                                <h3>运价趋势面板</h3>
+                                <div class="tool-id">Monitor-Rate-Trends</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            载入 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。支持筛选区间趋势曲线、全历史周度走势、年度对比同期观察和周度涨跌统计。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Monitor-Rate-Trends.html?from=monitor" class="tool-link" aria-label="打开运价趋势面板工具">打开工具 →</a>
+                            <a href="Monitor-Rate-Trends-README.html" class="tool-link secondary" aria-label="查看运价趋势面板工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="article" aria-label="专业船期表">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">📅</div>
+                            <div class="tool-title">
+                                <h3>专业船期表</h3>
+                                <div class="tool-id">Monitor-Sailing-Schedule</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            专业的船期可视化与分析工具，支持 001 和 365 两种数据模式。提供日历视图展示、多维度筛选（区域/船公司/港口）、AI 智能分析和 PDF 导出功能，帮助快速掌握船期信息。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Monitor-Sailing-Schedule.html?from=monitor" class="tool-link" aria-label="打开专业船期表工具">打开工具 →</a>
+                            <a href="Monitor-Sailing-Schedule-README.html" class="tool-link secondary" aria-label="查看专业船期表工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="地理贸易航线">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">🌐</div>
+                            <div class="tool-title">
+                                <h3>地理贸易航线</h3>
+                                <div class="tool-id">Monitor-Geo-Trades-Service</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            地理贸易航线监控工具，支持载入 Excel 文件，通过多维度筛选（Trade、Service、Service Branding、Port Rotation）快速查找和分析服务信息。提供悬停查看详细信息功能，自动统计船舶数量。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Monitor-Geo-Trades-Service.html?from=monitor" class="tool-link" aria-label="打开地理贸易航线工具">打开工具 →</a>
+                            <a href="Monitor-Geo-Trades-Service-README.html" class="tool-link secondary" aria-label="查看地理贸易航线工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <!-- Admin 系列工具 -->
+            <div id="admin" class="tab-content">
+                <div class="section-intro">
+                    <h2>Admin 系列工具</h2>
+                    <p>管理工具集，提供访客统计分析、健身记录可视化和代码质量保障功能。支持访问日志分析、用户行为统计、运动数据追踪、单元测试等功能，帮助了解工具使用情况、运动习惯和代码质量。</p>
+                </div>
+                
+                <div class="tools-grid" role="list" aria-label="Admin系列工具列表">
+                    <div class="tool-card" role="listitem" aria-label="访客统计排名">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">👥</div>
+                            <div class="tool-title">
+                                <h3>访客统计排名</h3>
+                                <div class="tool-id">Admin-Access-Log</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            访客统计排名工具，自动分析访问日志数据。提供用户访问排名、页面访问排名、访问时间分析等功能，支持按小时/日期/周/月维度查看访问趋势，帮助了解工具使用情况。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Admin-Access-Log.html?from=admin" class="tool-link" aria-label="打开访客统计排名工具">打开工具 →</a>
+                            <a href="Admin-Access-Log-README.html" class="tool-link secondary" aria-label="查看访客统计排名工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="健身记录面板">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">💪</div>
+                            <div class="tool-title">
+                                <h3>健身记录面板</h3>
+                                <div class="tool-id">Admin-Workouts</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            健身记录可视化工具，用于分析苹果健身记录数据，追踪运动距离和时间趋势。支持载入 CSV 格式的健身数据，通过图表展示运动趋势，支持按日/周/月/年视图切换，帮助了解运动习惯和进步情况。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Admin-Workouts.html?from=admin" class="tool-link" aria-label="打开健身记录面板工具">打开工具 →</a>
+                            <a href="Admin-Workouts-README.html" class="tool-link secondary" aria-label="查看健身记录面板工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="单元测试工具">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">🧪</div>
+                            <div class="tool-title">
+                                <h3>单元测试工具</h3>
+                                <div class="tool-id">tests/index</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            Shipping Tools 代码质量保障工具，用于验证核心功能模块的正确性和稳定性。支持一键运行所有测试套件，实时查看测试结果，自动生成测试摘要。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="tests/index.html?from=admin" class="tool-link" aria-label="打开单元测试工具">打开工具 →</a>
+                            <a href="tests/readme.html?from=admin" class="tool-link secondary" aria-label="查看单元测试工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/auth-gist.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
+    <!-- Dashboard 页面逻辑（可考虑提取到 vendor/dashboard-handler.js） -->
+    <script>
+        /**
+         * Dashboard 页面配置
+         */
+        const DASHBOARD_CONFIG = {
+            SECTION_MAP: {
+                'tools001': '001',
+                'tools365': '365',
+                'monitor': 'Monitor',
+                'admin': 'Admin'
+            },
+            VALID_TABS: ['tools001', 'tools365', 'monitor', 'admin']
+        };
+
+        /**
+         * 切换内容区域（dashboard特定功能）
+         * @param {string} tabId - 要切换的tab ID
+         */
+        function switchTab(tabId) {
+            // 隐藏所有tab内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 显示目标tab内容
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+            
+            // 更新导航激活状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-submenu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const activeNavItem = document.querySelector(`.nav-item[data-section="${tabId}"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('active');
+            }
+        }
+
+        /**
+         * 展开并激活对应的导航菜单
+         * @param {string} targetTab - 目标tab ID
+         */
+        function expandAndActivateNav(targetTab) {
+            if (!DASHBOARD_CONFIG.VALID_TABS.includes(targetTab)) {
+                return;
+            }
+
+            const sectionMap = DASHBOARD_CONFIG.SECTION_MAP;
+            const submenuId = `submenu${sectionMap[targetTab]}`;
+            const submenu = document.getElementById(submenuId);
+            const navItem = document.querySelector(`.nav-item[data-section="${targetTab}"]`);
+            
+            if (submenu && navItem) {
+                if (!submenu.classList.contains('expanded')) {
+                    submenu.classList.add('expanded');
+                }
+                if (!navItem.classList.contains('expanded')) {
+                    navItem.classList.add('expanded');
+                }
+                navItem.classList.add('active');
+                navItem.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        /**
+         * 绑定导航菜单点击事件
+         */
+        function bindNavClickEvents() {
+            document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (item.href === '#' || item.href.endsWith('#')) {
+                        e.preventDefault();
+                        const section = item.dataset.section;
+                        switchTab(section);
+                    }
+                });
+            });
+        }
+
+        /**
+         * 等待导航栏加载完成
+         * @param {Function} callback - 回调函数
+         */
+        function waitForSidebar(callback, maxAttempts = 10) {
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar || attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    callback();
+                }
+            }, 50);
+        }
+        
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            // 解析URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            const targetTab = tab || 'tools001';
+            
+            // 检查SidebarLoader是否可用
+            if (!window.SidebarLoader) {
+                // 错误日志：SidebarLoader未加载，这是关键依赖
+                if (typeof window.debugError === 'function') {
+                    window.debugError('[Dashboard] SidebarLoader未加载');
+                } else {
+                    console.error('[Dashboard] SidebarLoader未加载');
+                }
+                return;
+            }
+            
+            // 加载导航栏（dashboard页面）
+            window.SidebarLoader.load('#sidebar-placeholder', {
+                currentSection: targetTab,
+                isDashboard: true
+            });
+            
+            // 等待导航栏加载完成后，绑定dashboard特定的点击事件
+            waitForSidebar(() => {
+                // 绑定导航菜单点击事件
+                bindNavClickEvents();
+                
+                // 切换初始tab
+                if (DASHBOARD_CONFIG.VALID_TABS.includes(targetTab)) {
+                    switchTab(targetTab);
+                    expandAndActivateNav(targetTab);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

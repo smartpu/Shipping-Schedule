@@ -3,521 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shipping Tools · 航运工具集</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/index-styles.css">
-    <style>
-        /* 页面特定样式（保留与公共样式不同的部分） */
-        /* 注意：首页样式已移至 vendor/index-styles.css */
-    </style>
+    <title>Shipping Tools · 登录</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
 </head>
-<body data-page="index.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-modal">
-            <h2>🔐 访问验证</h2>
-            <p>为了了解工具使用情况，请填写以下信息</p>
-            <form id="authForm">
-                <div class="auth-form-group">
-                    <label for="userName">姓名 *</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-                    <div class="auth-error" id="nameError">请输入您的姓名</div>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Shipping Tools</h1>
+            <p class="subtitle">航运工具集 · 一站式船期运费数据解析与分析平台</p>
+            
+            <form id="loginForm" role="form" aria-label="登录表单">
+                <div class="login-form-group">
+                    <label for="userName">用户</label>
+                    <input type="text" id="userName" name="userName" placeholder="请输入您的用户名" required autocomplete="username" aria-required="true" aria-describedby="nameError">
+                    <div class="login-error" id="nameError" role="alert" aria-live="polite">请输入您的用户名</div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userPhone">手机号 *</label>
-                    <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-                    <div class="auth-error" id="phoneError">请输入有效的手机号</div>
+
+                <div class="login-form-group">
+                    <label for="userPassword">密码</label>
+                    <input type="password" id="userPassword" name="userPassword" placeholder="请输入您的密码" required autocomplete="current-password" aria-required="true" aria-describedby="passwordError">
+                    <div class="login-error" id="passwordError" role="alert" aria-live="polite">请输入您的密码</div>
                 </div>
-                <div class="auth-form-group">
-                    <label for="userEmail">邮箱 *</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-                    <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
+
+                <div class="login-form-group">
+                    <label for="userEmail">邮箱</label>
+                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email" aria-required="true" aria-describedby="emailError">
+                    <div class="login-error" id="emailError" role="alert" aria-live="polite">请输入有效的邮箱地址</div>
                 </div>
-                <button type="submit" class="auth-submit-btn">确认并继续</button>
+
+                <button type="submit" class="login-submit-btn" aria-label="提交登录表单">登录</button>
             </form>
         </div>
     </div>
-    <div class="container">
-        <div class="header">
-            <h1>Shipping Tools</h1>
-            <p>航运工具集 · 一站式船期运费数据解析与分析平台</p>
-        </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('tools001', event)">001 系列工具</button>
-            <button class="tab-btn" onclick="switchTab('tools365', event)">365 系列工具</button>
-            <button class="tab-btn" onclick="switchTab('rateTrends', event)">Monitor 系列工具</button>
-        </div>
-
-        <!-- 001 系列工具 -->
-        <div id="tools001" class="tab-content active">
-            <div class="section-intro">
-                <h2>001 系列工具</h2>
-                <p>基于维运网（weiyun001.com）数据的船期解析与分析工具集。包含网页下载、数据解析和市场分析功能，适用于从维运网获取船期信息并进行深度分析。</p>
-            </div>
-
-            <div class="tools-grid">
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon blue">📥</div>
-                        <div class="tool-title">
-                            <h3>网页手动下载工具</h3>
-                            <div class="tool-id">001-01</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        辅助从维运网手动下载船期网页的工具。提供进度跟踪、状态管理等功能，让手动下载过程更加高效。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="001-01-manual-download.html?from=tools001" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="001-01-manual-download-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon green">🔍</div>
-                        <div class="tool-title">
-                            <h3>船期解析工具</h3>
-                            <div class="tool-id">001-02</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        将维运网 HTML 船期网页批量解析成 CSV 文件。自动提取船期信息，包括启运港、目的港、航线、船名航次、开航日期等，并自动去重合并。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="001-02-schedule-parser.html?from=tools001" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="001-02-schedule-parser-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon purple">📊</div>
-                        <div class="tool-title">
-                            <h3>市场分析工具</h3>
-                            <div class="tool-id">001-04</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        航线运力分析工具，支持多港口筛选、运力趋势图、派船统计等功能。自动提取当周+未来四周数据，提供智能合并和可视化分析。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="001-04-market-analysis.html?from=tools001" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="001-04-market-analysis-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 365 系列工具 -->
-        <div id="tools365" class="tab-content">
-            <div class="section-intro">
-                <h2>365 系列工具</h2>
-                <p>基于明日数航（hangyun365.com）数据的船期解析与分析工具集。包含网页下载、数据解析、航线路径提取和市场观察功能，提供更全面的船期数据分析。</p>
-            </div>
-
-            <div class="tools-grid">
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon blue">📥</div>
-                        <div class="tool-title">
-                            <h3>网页手动下载工具</h3>
-                            <div class="tool-id">365-01</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        辅助从明日数航手动下载船期网页的工具。提供进度跟踪、状态管理等功能，预计下载时间约 12-15 分钟。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="365-01-manual-download.html?from=tools365" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="365-01-manual-download-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon green">🔬</div>
-                        <div class="tool-title">
-                            <h3>完整船期解析工具</h3>
-                            <div class="tool-id">365-02</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        解析明日数航船期网页，支持 AI 船期和历史船期解析。自动去重、数据补全和日期格式转换，提供更完整的数据集。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="365-02-schedule-full-parser.html?from=tools365" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon orange">🗺️</div>
-                        <div class="tool-title">
-                            <h3>航线路径解析工具</h3>
-                            <div class="tool-id">365-02</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        从船期网页中提取航线路径信息。自动解析正向路径、反向路径、中间时间等，并提取航线ID和共舱船公司信息。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="365-02-rotation-parser.html?from=tools365" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon orange">💰</div>
-                        <div class="tool-title">
-                            <h3>市场运价解析工具</h3>
-                            <div class="tool-id">365-02</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        解析明日数航网页中的价格信息。提取各港口的 20GP/40GP 报价，支持批量解析和 CSV 导出，用于价格趋势分析。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="365-02-market-rate-parser.html?from=tools365" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon purple">📈</div>
-                        <div class="tool-title">
-                            <h3>市场观察工具</h3>
-                            <div class="tool-id">365-04</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        综合市场分析平台，整合运费走势图、航线运力分析和 AI 趋势分析三大模块。支持多模型 AI 分析（DeepSeek/KIMI/通义千问），自动抓取燃油价格和运价指数，提供 PDF 导出功能。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="365-04-market-watch.html?from=tools365" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="365-04-market-watch-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Monitor 系列工具 -->
-        <div id="rateTrends" class="tab-content">
-            <div class="section-intro">
-                <h2>Monitor 系列工具</h2>
-                <p>专业的市场趋势分析与船期管理工具集，支持运价趋势、SCFI 历史趋势查看和船期表可视化。提供 Excel 数据载入、多维度筛选、大尺寸趋势图表展示、AI 智能分析等功能，便于进行市场分析和决策支持。</p>
-            </div>
-
-            <div class="tools-grid">
-                <!-- 所有用户可见的工具 -->
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon purple">📈</div>
-                        <div class="tool-title">
-                            <h3>SCFI 历史趋势</h3>
-                            <div class="tool-id">Monitor-SCFI</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势。默认显示最近3年数据，支持自定义日期范围筛选。图表高度为两倍，便于查看详细趋势。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="Monitor-SCFI-Trends.html?from=monitor" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="Monitor-SCFI-Trends-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon green">📅</div>
-                        <div class="tool-title">
-                            <h3>船期表</h3>
-                            <div class="tool-id">Monitor-Sailing-Schedule</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        专业的船期可视化与分析工具，支持 001 和 365 两种数据模式。提供日历视图展示、多维度筛选（区域/船公司/港口）、AI 智能分析和 PDF 导出功能，帮助快速掌握船期信息。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="Monitor-Sailing-Schedule.html?from=monitor" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="Monitor-Sailing-Schedule-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon blue">🌐</div>
-                        <div class="tool-title">
-                            <h3>地理贸易航线</h3>
-                            <div class="tool-id">Monitor-Geo-Trades-Service</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        地理贸易航线监控工具，支持载入 Excel 文件，通过多维度筛选（Trade、Service、Service Branding、Port Rotation）快速查找和分析服务信息。提供悬停查看详细信息功能，自动统计船舶数量。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="Monitor-Geo-Trades-Service.html?from=monitor" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="Monitor-Geo-Trades-Service-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <!-- smartpu 用户专属工具 -->
-                <div class="tool-card" data-restricted-tool="Monitor-Rate-Trends">
-                    <div class="tool-header">
-                        <div class="tool-icon purple">📊</div>
-                        <div class="tool-title">
-                            <h3>运价趋势面板</h3>
-                            <div class="tool-id">Monitor-Rate-Trends</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        载入 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。支持筛选区间趋势曲线、全历史周度走势、年度对比同期观察和周度涨跌统计。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="Monitor-Rate-Trends.html?from=monitor" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="Monitor-Rate-Trends-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card" data-restricted-tool="Monitor-Access-Log">
-                    <div class="tool-header">
-                        <div class="tool-icon orange">📊</div>
-                        <div class="tool-title">
-                            <h3>访客统计</h3>
-                            <div class="tool-id">Monitor-Access-Log</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        访客统计分析工具，自动分析访问日志数据。提供用户访问排名、页面访问排名、访问时间分析等功能，支持按小时/日期/周/月维度查看访问趋势，帮助了解工具使用情况。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="Monitor-Access-Log.html?from=monitor" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="Monitor-Access-Log-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-                <div class="tool-card" data-restricted-tool="Monitor-Workouts">
-                    <div class="tool-header">
-                        <div class="tool-icon green">💪</div>
-                        <div class="tool-title">
-                            <h3>健身记录面板</h3>
-                            <div class="tool-id">Monitor-Workouts</div>
-                        </div>
-                    </div>
-                    <div class="tool-description">
-                        健身记录可视化工具，用于分析苹果健身记录数据，追踪运动距离和时间趋势。支持载入 CSV 格式的健身数据，通过图表展示运动趋势，支持按日/周/月/年视图切换，帮助了解运动习惯和进步情况。
-                    </div>
-                    <div class="tool-actions">
-                        <a href="Monitor-Workouts.html?from=monitor" class="tool-link">
-                            打开工具 →
-                        </a>
-                        <a href="Monitor-Workouts-README.html" class="tool-link secondary">
-                            使用说明
-                        </a>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
+    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/auth-gist.js"></script>
+    <!-- 登录页面逻辑（可考虑提取到 vendor/login-handler.js） -->
     <script>
-        // 验证系统使用 vendor/auth-gist.js
+        /**
+         * 登录页面配置
+         */
+        const LOGIN_CONFIG = {
+            AUTH_STORAGE_KEY: 'shipping_tools_auth',
+            AUTH_WAIT_TIMEOUT: 1000, // 等待auth-gist.js加载的超时时间（毫秒）
+            REDIRECT_DELAY: 300,      // 跳转延迟（毫秒）
+            MAX_AUTH_WAIT_ATTEMPTS: 10 // 最大等待尝试次数
+        };
 
-        function switchTab(tabId, event) {
-            // 隐藏所有选项卡内容
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
+        /**
+         * 表单验证器
+         */
+        const FormValidator = {
+            /**
+             * 验证密码 - 允许字母、数字和特殊符号
+             * @param {string} password - 密码
+             * @returns {boolean} 是否有效
+             */
+            validatePassword(password) {
+                const passwordRegex = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]+$/;
+                return password.length > 0 && passwordRegex.test(password);
+            },
 
-            // 移除所有按钮的激活状态
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            /**
+             * 验证邮箱
+             * @param {string} email - 邮箱地址
+             * @returns {boolean} 是否有效
+             */
+            validateEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            },
 
-            // 显示选中的选项卡内容
-            const targetContent = document.getElementById(tabId);
-            if (targetContent) {
-                targetContent.classList.add('active');
+            /**
+             * 验证所有字段
+             * @param {Object} fields - 字段对象 {name, password, email}
+             * @returns {Object} {isValid: boolean, errors: Object}
+             */
+            validateAll(fields) {
+                const errors = {};
+                let isValid = true;
+
+                if (!fields.name || !fields.name.trim()) {
+                    errors.name = '请输入您的用户名';
+                    isValid = false;
+                }
+
+                if (!fields.password || !fields.password.trim()) {
+                    errors.password = '请输入您的密码';
+                    isValid = false;
+                } else if (!this.validatePassword(fields.password)) {
+                    errors.password = '密码只能包含字母、数字和特殊符号';
+                    isValid = false;
+                }
+
+                if (!fields.email || !fields.email.trim()) {
+                    errors.email = '请输入您的邮箱地址';
+                    isValid = false;
+                } else if (!this.validateEmail(fields.email.trim())) {
+                    errors.email = '请输入有效的邮箱地址';
+                    isValid = false;
+                }
+
+                return { isValid, errors };
             }
+        };
 
-            // 激活对应的按钮
-            if (event && event.target) {
-                event.target.classList.add('active');
+        /**
+         * 错误处理工具
+         */
+        const ErrorHandler = {
+            /**
+             * 清除错误状态
+             * @param {HTMLElement} formGroup - 表单组元素
+             */
+            clearError(formGroup) {
+                if (formGroup) {
+                    formGroup.classList.remove('error');
+                }
+            },
+
+            /**
+             * 显示错误
+             * @param {string} inputId - 输入框ID
+             * @param {string} errorId - 错误信息ID
+             * @param {string} message - 错误消息
+             */
+            showError(inputId, errorId, message) {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+
+                const formGroup = input.closest('.login-form-group');
+                if (formGroup) {
+                    formGroup.classList.add('error');
+                }
+
+                const errorEl = document.getElementById(errorId);
+                if (errorEl) {
+                    errorEl.textContent = message;
+                }
+            },
+
+            /**
+             * 显示所有错误
+             * @param {Object} errors - 错误对象 {name: string, password: string, email: string}
+             */
+            showAllErrors(errors) {
+                if (errors.name) {
+                    this.showError('userName', 'nameError', errors.name);
+                }
+                if (errors.password) {
+                    this.showError('userPassword', 'passwordError', errors.password);
+                }
+                if (errors.email) {
+                    this.showError('userEmail', 'emailError', errors.email);
+                }
+            }
+        };
+
+        /**
+         * 等待 auth-gist.js 加载完成
+         * @returns {Promise<void>}
+         */
+        async function waitForAuthGist() {
+            let attempts = 0;
+            return new Promise((resolve, reject) => {
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    if (typeof window.authGistInitialized !== 'undefined') {
+                        clearInterval(checkInterval);
+                        resolve();
+                    } else if (attempts >= LOGIN_CONFIG.MAX_AUTH_WAIT_ATTEMPTS) {
+                        clearInterval(checkInterval);
+                        // 即使未加载完成也继续（降级处理）
+                        resolve();
+                    }
+                }, LOGIN_CONFIG.AUTH_WAIT_TIMEOUT / LOGIN_CONFIG.MAX_AUTH_WAIT_ATTEMPTS);
+            });
+        }
+
+        /**
+         * 设置按钮加载状态
+         * @param {HTMLButtonElement} button - 按钮元素
+         * @param {boolean} isLoading - 是否加载中
+         * @param {string} originalText - 原始文本
+         */
+        function setButtonLoading(button, isLoading, originalText) {
+            if (isLoading) {
+                button.disabled = true;
+                button.classList.add('loading');
+                button.innerHTML = '<span class="loading-spinner"></span>登录中...';
             } else {
-                // 如果没有 event，通过 tabId 找到对应的按钮
-                const tabMap = {
-                    'tools001': '001',
-                    'tools365': '365',
-                    'rateTrends': 'Monitor',
-                    'monitor': 'Monitor'
-                };
-                const keyword = tabMap[tabId];
-                if (keyword) {
-                    document.querySelectorAll('.tab-btn').forEach(btn => {
-                        if (btn.textContent.includes(keyword)) {
-                            btn.classList.add('active');
-                        }
-                    });
-                }
+                button.disabled = false;
+                button.classList.remove('loading');
+                button.textContent = originalText;
             }
         }
 
-        /**
-         * 检查用户是否是 smartpu（具有特殊权限的用户）
-         * @returns {boolean} 如果是 smartpu 返回 true，否则返回 false
-         */
-        function isSmartPuUser() {
-            try {
-                const AUTH_STORAGE_KEY = 'shipping_tools_auth';
-                const authDataStr = localStorage.getItem(AUTH_STORAGE_KEY);
-                if (!authDataStr) {
-                    return false;
-                }
-                
-                const authData = JSON.parse(authDataStr);
-                const name = (authData.name || '').trim().toLowerCase();
-                const email = (authData.email || '').trim().toLowerCase();
-                const phone = (authData.phone || '').trim();
-                
-                // 检查是否匹配 smartpu 的条件
-                return name === 'smartpu' && 
-                       email === 'smartpu@evergreen-shipping.cn' && 
-                       phone === '18653202580';
-            } catch (error) {
-                console.error('检查用户权限时出错:', error);
-                return false;
-            }
-        }
+        // DOM元素
+        const loginForm = document.getElementById('loginForm');
+        const nameInput = document.getElementById('userName');
+        const passwordInput = document.getElementById('userPassword');
+        const emailInput = document.getElementById('userEmail');
+        const submitBtn = document.querySelector('.login-submit-btn');
 
-        /**
-         * 根据用户权限控制受限工具的显示
-         */
-        function controlRestrictedTools() {
-            const isSmartPu = isSmartPuUser();
-            const restrictedTools = document.querySelectorAll('[data-restricted-tool]');
-            
-            restrictedTools.forEach(tool => {
-                if (isSmartPu) {
-                    // smartpu 用户：显示工具
-                    tool.style.display = '';
+        if (!loginForm || !nameInput || !passwordInput || !emailInput || !submitBtn) {
+            console.error('登录表单元素未找到');
+        } else {
+            // 实时验证
+            nameInput.addEventListener('blur', () => {
+                const value = nameInput.value.trim();
+                if (!value) {
+                    ErrorHandler.showError('userName', 'nameError', '请输入您的用户名');
                 } else {
-                    // 其他用户：隐藏工具
-                    tool.style.display = 'none';
+                    ErrorHandler.clearError(nameInput.closest('.login-form-group'));
                 }
             });
-        }
 
-        // 页面加载时检查 URL 参数
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const tab = urlParams.get('tab');
-            // 如果 tab 是 monitor，映射到 rateTrends
-            const targetTab = tab === 'monitor' ? 'rateTrends' : tab;
-            if (['tools001', 'tools365', 'rateTrends'].includes(targetTab)) {
-                switchTab(targetTab);
-            }
-            
-            // 控制受限工具的显示
-            controlRestrictedTools();
-            
-            // 监听 localStorage 变化，当用户登录后重新检查权限（跨标签页）
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'shipping_tools_auth') {
-                    controlRestrictedTools();
+            passwordInput.addEventListener('blur', () => {
+                const value = passwordInput.value.trim();
+                if (!value) {
+                    ErrorHandler.showError('userPassword', 'passwordError', '请输入您的密码');
+                } else if (!FormValidator.validatePassword(value)) {
+                    ErrorHandler.showError('userPassword', 'passwordError', '密码只能包含字母、数字和特殊符号');
+                } else {
+                    ErrorHandler.clearError(passwordInput.closest('.login-form-group'));
                 }
             });
-            
-            // 监听 authOverlay 的显示状态，当用户登录后立即更新
-            const authOverlay = document.getElementById('authOverlay');
-            if (authOverlay) {
-                // 使用 MutationObserver 监听 authOverlay 的显示/隐藏
-                const observer = new MutationObserver(() => {
-                    // 如果 authOverlay 隐藏了，说明用户可能已登录，重新检查权限
-                    if (authOverlay.style.display === 'none' || !authOverlay.classList.contains('show')) {
-                        controlRestrictedTools();
+
+            emailInput.addEventListener('blur', () => {
+                const value = emailInput.value.trim();
+                if (!value) {
+                    ErrorHandler.showError('userEmail', 'emailError', '请输入您的邮箱地址');
+                } else if (!FormValidator.validateEmail(value)) {
+                    ErrorHandler.showError('userEmail', 'emailError', '请输入有效的邮箱地址');
+                } else {
+                    ErrorHandler.clearError(emailInput.closest('.login-form-group'));
+                }
+            });
+                
+            // Enter 键提交表单
+            [nameInput, passwordInput, emailInput].forEach(input => {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        loginForm.dispatchEvent(new Event('submit'));
                     }
                 });
+            });
                 
-                observer.observe(authOverlay, {
-                    attributes: true,
-                    attributeFilter: ['style', 'class']
-                });
-            }
-            
-            // 定期检查用户权限（处理同标签页内的登录，每秒检查一次）
-            setInterval(() => {
-                controlRestrictedTools();
-            }, 1000);
-        });
+            // 表单提交
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const originalText = submitBtn.textContent;
+                setButtonLoading(submitBtn, true, originalText);
+                
+                const formData = {
+                    name: nameInput.value.trim(),
+                    password: passwordInput.value.trim(),
+                    email: emailInput.value.trim()
+                };
+                
+                // 验证所有字段
+                const validation = FormValidator.validateAll(formData);
+                
+                if (!validation.isValid) {
+                    ErrorHandler.showAllErrors(validation.errors);
+                    setButtonLoading(submitBtn, false, originalText);
+                    return;
+                }
+                
+                // 等待 auth-gist.js 加载完成
+                await waitForAuthGist();
+                
+                // 保存到 localStorage（auth-gist.js 会读取）
+                // 注意：password 也作为 phone 保存（用于本地测试用户验证）
+                const authData = {
+                    name: formData.name,
+                    password: formData.password,
+                    email: formData.email,
+                    phone: formData.password, // 密码作为手机号（用于本地测试用户）
+                    level: 'user',
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(LOGIN_CONFIG.AUTH_STORAGE_KEY, JSON.stringify(authData));
+                
+                // 触发 storage 事件（让其他标签页也能知道登录状态）
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: LOGIN_CONFIG.AUTH_STORAGE_KEY,
+                    newValue: JSON.stringify(authData)
+                }));
+                
+                // 短暂延迟后跳转，让用户看到成功状态
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, LOGIN_CONFIG.REDIRECT_DELAY);
+            });
+        }
     </script>
-    <!-- 调试工具（必须在 auth-gist.js 之前加载） -->
-    <script src="vendor/debug-utils.js"></script>
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
-    <div class="page-footer">
-        <h2>Shipping Tools · 航运工具集使用声明</h2>
-        <p>本工具集整合了基于维运网（weiyun.com）和明日数航（hangyun365.com）数据的船期解析与分析工具。</p>
-        <p>所有数据来源于公开信息，解析结果仅供内部使用，请遵守各数据源的使用条款和版权规定。</p>
-        <p>所有工具均为零安装、基于浏览器的客户端工具，数据主要存储在本地浏览器，访问记录会同步到服务器。</p>
-    </div>
 </body>
 </html>
-

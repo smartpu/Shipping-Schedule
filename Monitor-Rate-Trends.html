@@ -4,178 +4,157 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monitor · 运价趋势面板</title>
-    <link rel="stylesheet" href="vendor/auth.css">
-    <link rel="stylesheet" href="vendor/common-styles.css">
-    <link rel="stylesheet" href="vendor/monitor-styles.css">
+    <link rel="stylesheet" href="vendor/theme-styles.css">
     <script src="vendor/lib-loader.js"></script>
     <script src="vendor/common-utils.js"></script>
     <script src="vendor/pdf-utils.js"></script>
     <script src="vendor/error-handler.js"></script>
-    <style>
-      /* 页面特定样式（保留与公共样式不同的部分） */
-      /* 注意：record-pill、ghost-btn、metrics、chart-panel、trend-table 等样式已移至 vendor/monitor-styles.css */
-    </style>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/auth-gist.js"></script>
   </head>
   <body data-page="Monitor-Rate-Trends.html">
-    <!-- 用户验证模态框 -->
-    <div id="authOverlay" class="auth-overlay">
-      <div class="auth-modal">
-        <h2>🔐 访问验证</h2>
-        <p>为了了解工具使用情况，请填写以下信息</p>
-        <form id="authForm">
-          <div class="auth-form-group">
-            <label for="userName">姓名 *</label>
-            <input type="text" id="userName" name="userName" placeholder="请输入您的姓名" required autocomplete="name">
-            <div class="auth-error" id="nameError">请输入您的姓名</div>
-          </div>
-          <div class="auth-form-group">
-            <label for="userPhone">手机号 *</label>
-            <input type="tel" id="userPhone" name="userPhone" placeholder="请输入您的手机号" required autocomplete="tel">
-            <div class="auth-error" id="phoneError">请输入有效的手机号</div>
-          </div>
-          <div class="auth-form-group">
-            <label for="userEmail">邮箱 *</label>
-            <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email">
-            <div class="auth-error" id="emailError">请输入有效的邮箱地址</div>
-          </div>
-          <button type="submit" class="auth-submit-btn">确认并继续</button>
-        </form>
-      </div>
-    </div>
-    <div class="container">
-      <div class="header">
-        <a href="index.html?tab=monitor" class="back-home-btn">← 返回首页</a>
-        <a href="Monitor-Rate-Trends-README.html" class="readme-btn">使用说明 →</a>
-        <h1>Monitor · 运价趋势面板</h1>
-        <p>载入 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。</p>
-      </div>
+    <div class="dashboard-container">
+      <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+      <div id="sidebar-placeholder"></div>
 
-      <div class="content">
-      <section class="panel">
-        <div class="upload-area">
-          <label class="upload-card">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 36 36"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="4"
-                y="4"
-                width="28"
-                height="28"
-                rx="8"
-                fill="url(#grad)"
-              ></rect>
-              <path
-                d="M18 11v14M11 18h14"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-              ></path>
-              <defs>
-                <linearGradient
-                  id="grad"
-                  x1="4"
-                  y1="4"
-                  x2="32"
-                  y2="32"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop stop-color="#0071e3" />
-                  <stop offset="1" stop-color="#54a4ff" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span>
-              <strong>载入 Excel</strong><br />
-              <small>支持 .xlsx / .xls，数据仅在本地浏览器解析</small>
-            </span>
-            <input id="file-input" type="file" accept=".xlsx,.xls" />
-          </label>
-          <div class="status-card">
-            <span class="status-label">数据状态</span>
-            <span class="status-value" id="status-value">尚未载入数据</span>
-            <small class="status-detail" id="status-detail" style="display: none">—</small>
-          </div>
-        </div>
-
-        <div class="filters">
-          <div class="filter-block date-stack">
-            <div class="date-field">
-              <label for="start-date">开始时间</label>
-              <input type="date" id="start-date" />
-            </div>
-            <div class="date-field">
-              <label for="end-date">结束时间</label>
-              <input type="date" id="end-date" />
+      <!-- 右侧内容 -->
+      <main class="dashboard-content">
+        <div class="container">
+          <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+          <div class="section-intro">
+            <div class="section-intro-header">
+              <div class="section-intro-content">
+                <h2>Monitor · 运价趋势面板</h2>
+                <p>载入 Excel 后，用 D 列日期和 F 列港口筛选，自动抽取 G=2SD/4SH 对应的 H 列运费。</p>
+              </div>
+              <div class="section-intro-actions">
+                <button type="button" class="tool-link" id="export-btn" aria-label="导出PDF" disabled>导出PDF</button>
+                <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                <a href="Monitor-Rate-Trends-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+              </div>
             </div>
           </div>
-          <div class="filter-block port-block">
-            <label for="port-select">港口（可多选）</label>
-            <select id="port-select" multiple></select>
-            <span class="hint">按住 Ctrl / ⌘ 键可多选，清空选择即为全部港口</span>
-          </div>
-          <div class="filter-block action-block">
-            <label>&nbsp;</label>
-            <button class="reset" id="reset-btn" disabled>重置筛选</button>
-            <div class="record-pill" id="record-pill">
-              <span>记录条数</span>
-              <strong id="record-count">0</strong>
+
+          <!-- 文件上传和数据状态区域 -->
+          <div class="grid-2-col" style="margin-bottom: 20px;">
+            <!-- 左侧：载入 Excel -->
+            <div class="card-white">
+              <label for="file-input" class="file-upload-label" aria-label="选择Excel文件上传">
+                <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradExcel)" />
+                  <!-- Excel表格图标 -->
+                  <rect x="8" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                  <line x1="8" y1="14" x2="28" y2="14" stroke="#fff" stroke-width="1.5"/>
+                  <line x1="8" y1="20" x2="28" y2="20" stroke="#fff" stroke-width="1.5"/>
+                  <line x1="14" y1="8" x2="14" y2="28" stroke="#fff" stroke-width="1.5"/>
+                  <!-- 向下箭头 -->
+                  <path d="M18 22L22 26L14 26Z" fill="#fff"/>
+                  <defs>
+                    <linearGradient id="gradExcel" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#0071e3" />
+                      <stop offset="1" stop-color="#54a4ff" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="file-upload-content">
+                  <div class="file-upload-title">载入 Excel</div>
+                  <div class="file-upload-desc">支持 .xlsx / .xls，数据仅在本地浏览器解析</div>
+                </div>
+                <input type="file" id="file-input" class="file-upload-input" accept=".xlsx,.xls" aria-label="选择Excel文件" title="选择Excel文件：文件需包含运价数据">
+              </label>
             </div>
-            <button class="ghost-btn" id="export-btn" disabled>导出 PDF</button>
+            
+            <!-- 右侧：数据状态 -->
+            <div class="card-white">
+              <div class="data-status-container">
+                <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradStatus)" />
+                  <!-- 数据状态图标：剪贴板 + 勾 -->
+                  <rect x="11" y="10" width="14" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                  <rect x="15" y="8" width="6" height="4" rx="1" fill="#fff"/>
+                  <path d="M14 18L17 21L23 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  <defs>
+                    <linearGradient id="gradStatus" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#FF8A00" />
+                      <stop offset="1" stop-color="#FFB347" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="data-status-content">
+                  <div class="data-status-title">数据状态</div>
+                  <div id="status-value" class="data-status-text" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">尚未载入数据</div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="metrics" id="metric-base">
-          <div class="metric-card">
-            <h3>最新 2SD</h3>
-            <p id="latest-2sd">—</p>
-            <small id="latest-2sd-meta">—</small>
-            <small class="metric-extra" id="latest-2sd-ports" style="display: none">—</small>
-          </div>
-          <div class="metric-card">
-            <h3>最新 4SH</h3>
-            <p id="latest-4sh">—</p>
-            <small id="latest-4sh-meta">—</small>
-            <small class="metric-extra" id="latest-4sh-ports" style="display: none">—</small>
-          </div>
-          <div class="metric-card">
-            <h3>最高 2SD</h3>
-            <p id="high-2sd">—</p>
-            <small id="high-2sd-meta">—</small>
-            <small class="metric-extra" id="high-2sd-ports" style="display: none">—</small>
-          </div>
-          <div class="metric-card">
-            <h3>最高 4SH</h3>
-            <p id="high-4sh">—</p>
-            <small id="high-4sh-meta">—</small>
-            <small class="metric-extra" id="high-4sh-ports" style="display: none">—</small>
-          </div>
-          <div class="metric-card">
-            <h3>最低 2SD</h3>
-            <p id="low-2sd">—</p>
-            <small id="low-2sd-meta">—</small>
-            <small class="metric-extra" id="low-2sd-ports" style="display: none">—</small>
-          </div>
-          <div class="metric-card">
-            <h3>最低 4SH</h3>
-            <p id="low-4sh">—</p>
-            <small id="low-4sh-meta">—</small>
-            <small class="metric-extra" id="low-4sh-ports" style="display: none">—</small>
-          </div>
-        </div>
-        <div id="port-metric-groups" class="metric-group-stack"></div>
-      </section>
+          <!-- 筛选条件 -->
+          <div class="card-white mt-20">
+            <div class="filters">
+              <div class="filter-block date-row">
+                <div class="date-field-inline">
+                  <label for="start-date">开始时间</label>
+                  <input type="date" id="start-date" lang="en" />
+                </div>
+                <div class="date-field-inline">
+                  <label for="end-date">结束时间</label>
+                  <input type="date" id="end-date" lang="en" />
+                </div>
+              </div>
+              <div class="filter-block port-chips">
+                <label>港口（可多选）</label>
+                <div id="port-chips-container" class="port-chips-container"></div>
+              </div>
+            </div>
 
-      <section class="panel">
-        <h2>筛选区间 · 趋势曲线</h2>
-        <div class="chart-stack" id="range-chart-stack">
-          <div class="chart-empty">尚无数据</div>
-        </div>
-        <div class="table-wrap">
+            <div class="metrics" id="metric-base">
+              <div class="metric-card">
+                <h3>最新 2SD</h3>
+                <p id="latest-2sd">—</p>
+                <small id="latest-2sd-meta">—</small>
+                <small class="metric-extra" id="latest-2sd-ports" style="display: none">—</small>
+              </div>
+              <div class="metric-card">
+                <h3>最新 4SH</h3>
+                <p id="latest-4sh">—</p>
+                <small id="latest-4sh-meta">—</small>
+                <small class="metric-extra" id="latest-4sh-ports" style="display: none">—</small>
+              </div>
+              <div class="metric-card">
+                <h3>最高 2SD</h3>
+                <p id="high-2sd">—</p>
+                <small id="high-2sd-meta">—</small>
+                <small class="metric-extra" id="high-2sd-ports" style="display: none">—</small>
+              </div>
+              <div class="metric-card">
+                <h3>最高 4SH</h3>
+                <p id="high-4sh">—</p>
+                <small id="high-4sh-meta">—</small>
+                <small class="metric-extra" id="high-4sh-ports" style="display: none">—</small>
+              </div>
+              <div class="metric-card">
+                <h3>最低 2SD</h3>
+                <p id="low-2sd">—</p>
+                <small id="low-2sd-meta">—</small>
+                <small class="metric-extra" id="low-2sd-ports" style="display: none">—</small>
+              </div>
+              <div class="metric-card">
+                <h3>最低 4SH</h3>
+                <p id="low-4sh">—</p>
+                <small id="low-4sh-meta">—</small>
+                <small class="metric-extra" id="low-4sh-ports" style="display: none">—</small>
+              </div>
+            </div>
+            <div id="port-metric-groups" class="metric-group-stack"></div>
+          </div>
+
+          <!-- 筛选区间 · 趋势曲线 -->
+          <div class="card-white mt-20">
+            <h2 class="section-title">筛选区间 · 趋势曲线</h2>
+            <div class="chart-stack" id="range-chart-stack">
+              <div class="chart-empty">尚无数据</div>
+            </div>
+            <div class="table-wrap">
           <table>
             <thead>
               <tr>
@@ -193,67 +172,77 @@
                 </td>
               </tr>
             </tbody>
-          </table>
-        </div>
-      </section>
+            </table>
+          </div>
+          </div>
 
-      <section class="panel">
-        <h2>全历史 · 周度走势</h2>
-        <div class="chart-stack" id="history-chart-stack">
-          <div class="chart-empty">尚无数据</div>
-        </div>
-      </section>
+          <!-- 全历史 · 周度走势 -->
+          <div class="card-white mt-20">
+            <h2 class="section-title">全历史 · 周度走势</h2>
+            <div class="chart-stack" id="history-chart-stack">
+              <div class="chart-empty">尚无数据</div>
+            </div>
+          </div>
 
-      <section class="panel">
-        <h2>年度对比 · 同期观察</h2>
-        <div class="toggle-group" id="yearly-toggle">
-          <label class="toggle-chip">
-            <input type="checkbox" value="2SD" />
-            只看 2SD
-          </label>
-          <label class="toggle-chip">
-            <input type="checkbox" value="4SH" checked />
-            只看 4SH
-          </label>
-        </div>
-        <div class="chart-stack" id="yearly-chart-stack">
-          <div class="chart-empty">尚无数据</div>
-        </div>
-      </section>
+          <!-- 年度对比 · 同期观察 -->
+          <div class="card-white mt-20">
+            <h2 class="section-title">年度对比 · 同期观察</h2>
+            <div class="toggle-group" id="yearly-toggle">
+              <label class="toggle-chip">
+                <input type="checkbox" value="2SD" />
+                只看 2SD
+              </label>
+              <label class="toggle-chip">
+                <input type="checkbox" value="4SH" checked />
+                只看 4SH
+              </label>
+            </div>
+            <div class="chart-stack" id="yearly-chart-stack">
+              <div class="chart-empty">尚无数据</div>
+            </div>
+          </div>
 
-      <section class="panel">
-        <h2>周度涨跌统计</h2>
-        <div class="trend-table-wrap">
-          <table class="trend-table">
-            <thead>
-              <tr>
-                <th>港口</th>
-                <th id="trend-h-prev2">上上周 2SD/4SH</th>
-                <th>对比上上上周</th>
-                <th id="trend-h-prev1">上周 2SD/4SH</th>
-                <th>对比上上周</th>
-                <th id="trend-h-current">本周 2SD/4SH</th>
-                <th>对比上周</th>
-              </tr>
-            </thead>
-            <tbody id="trend-table-body">
-              <tr>
-                <td colspan="7" class="empty-row">数据载入后自动生成</td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- 周度涨跌统计 -->
+          <div class="card-white mt-20">
+            <h2 class="section-title">周度涨跌统计</h2>
+            <div class="trend-table-wrap">
+              <table class="trend-table">
+                <thead>
+                  <tr>
+                    <th>港口</th>
+                    <th id="trend-h-prev2">上上周 2SD/4SH</th>
+                    <th>对比上上上周</th>
+                    <th id="trend-h-prev1">上周 2SD/4SH</th>
+                    <th>对比上上周</th>
+                    <th id="trend-h-current">本周 2SD/4SH</th>
+                    <th>对比上周</th>
+                  </tr>
+                </thead>
+                <tbody id="trend-table-body">
+                  <tr>
+                    <td colspan="7" class="empty-row">数据载入后自动生成</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          </div>
+
+          <!-- 使用声明 -->
+          <div class="card-white mt-20">
+            <h2 class="usage-statement-title">Monitor · 运价趋势面板使用声明</h2>
+            <p class="usage-statement-text">资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+            <p class="usage-statement-text">所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+          </div>
         </div>
-      </section>
-      </div>
+      </main>
     </div>
-    <div class="page-footer">
-      <h2>Monitor · 运价趋势面板使用声明</h2>
-      <p>资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
-      <p>所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
-    </div>
 
-    <!-- 使用 Gist 存储系统（用户白名单 + 访问记录） -->
-    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+      init001ToolPage('Monitor-Rate-Trends.html', 'monitor');
+    </script>
     <script>
 
       // XLSX 和 Chart.js 已在 head 中通过 lib-loader.js 加载
@@ -303,14 +292,12 @@
         },
       };
 
-      const dom = {
+        const dom = {
         fileInput: document.getElementById("file-input"),
         statusValue: document.getElementById("status-value"),
-        statusDetail: document.getElementById("status-detail"),
         startDate: document.getElementById("start-date"),
         endDate: document.getElementById("end-date"),
-        portSelect: document.getElementById("port-select"),
-        resetBtn: document.getElementById("reset-btn"),
+        portChipsContainer: document.getElementById("port-chips-container"),
         exportBtn: document.getElementById("export-btn"),
         latest2sd: document.getElementById("latest-2sd"),
         latest4sh: document.getElementById("latest-4sh"),
@@ -341,7 +328,6 @@
           prev1: document.getElementById("trend-h-prev1"),
           current: document.getElementById("trend-h-current"),
         },
-        recordCount: document.getElementById("record-count"),
         tableBody: document.getElementById("data-body"),
       };
 
@@ -354,8 +340,6 @@
       dom.fileInput.addEventListener("change", handleFileUpload);
       dom.startDate.addEventListener("change", () => updateFilters("start", dom.startDate.value));
       dom.endDate.addEventListener("change", () => updateFilters("end", dom.endDate.value));
-      dom.portSelect.addEventListener("change", handlePortChange);
-      dom.resetBtn.addEventListener("click", resetFilters);
       dom.exportBtn.addEventListener("click", exportFilteredData);
       dom.yearlyToggle?.addEventListener("change", handleYearlyToggle);
 
@@ -396,20 +380,30 @@
           .filter(Boolean);
 
         state.rows = parsedRows;
-        state.ports = Array.from(new Set(parsedRows.map((row) => row.port))).sort((a, b) =>
-          a.localeCompare(b, "zh-CN")
-        );
+        const allPorts = Array.from(new Set(parsedRows.map((row) => row.port)));
+        state.ports = sortPortsByCustomOrder(allPorts);
 
-        populatePortSelect();
+        populatePortChips();
         setDefaultPortSelection();
         setDefaultDateWindow();
         const eligible = state.stats.eligible;
         const used = state.rows.length;
-        dom.statusValue.textContent =
-          eligible && eligible !== used
-            ? `已载入 ${file.name} · ${used}/${eligible} 条有效记录`
-            : `已载入 ${file.name} · ${used} 条有效记录`;
-        updateStatusDetail();
+        const droppedTotals = state.stats.dropped || { missingDate: 0, missingPort: 0, missingRate: 0 };
+        const dropped = (droppedTotals.missingDate || 0) + (droppedTotals.missingPort || 0) + (droppedTotals.missingRate || 0);
+        
+        if (eligible) {
+          if (dropped) {
+            const parts = [];
+            if (droppedTotals.missingDate) parts.push(`缺时间 ${droppedTotals.missingDate} 条`);
+            if (droppedTotals.missingPort) parts.push(`缺港口 ${droppedTotals.missingPort} 条`);
+            if (droppedTotals.missingRate) parts.push(`缺运费 ${droppedTotals.missingRate} 条`);
+            dom.statusValue.innerHTML = `<span>已载入 1 个文件</span><span style="color: #6c757d;">共 ${eligible} 条记录，其中 ${dropped} 条数据不完整（${parts.join("、")}）已自动跳过</span>`;
+          } else {
+            dom.statusValue.innerHTML = `<span>已载入 1 个文件</span><span style="color: #6c757d;">共 ${eligible} 条记录</span>`;
+          }
+        } else {
+          dom.statusValue.textContent = "尚未载入数据";
+        }
         syncYearlyToggleUI();
         refreshOutputs();
       }
@@ -462,13 +456,60 @@
         };
       }
 
-      function populatePortSelect() {
-        dom.portSelect.innerHTML = "";
+      // 港口显示顺序（用户指定）
+      const PORT_DISPLAY_ORDER = [
+        'AEJBA', 'IQUQS', 'SAJED', 'INNXV', 'PKKHI', 'INCEN', 'AUMEL', 'AUSYD', 
+        'KEMWA', 'TZDFQ', 'ZADRB', 'SGSGP', 'MYPKL', 'BNMRI', 'THLCH', 'VNHCM', 
+        'VNHPG', 'KHSIH', 'PHMNL', 'PHCEB', 'IDDKT', 'MMYQT', 'HKHKG', 'TWKSG', 
+        'USNYC', 'USLAX', 'COCTG', 'MXMZO', 'BRSTO', 'NLRDM', 'ESVLC'
+      ];
+
+      // 按照指定顺序排序港口
+      function sortPortsByCustomOrder(ports) {
+        const orderMap = new Map();
+        PORT_DISPLAY_ORDER.forEach((port, index) => {
+          orderMap.set(port, index);
+        });
+        
+        const sorted = ports.sort((a, b) => {
+          const indexA = orderMap.has(a) ? orderMap.get(a) : Infinity;
+          const indexB = orderMap.has(b) ? orderMap.get(b) : Infinity;
+          
+          if (indexA !== Infinity && indexB !== Infinity) {
+            return indexA - indexB;
+          } else if (indexA !== Infinity) {
+            return -1;
+          } else if (indexB !== Infinity) {
+            return 1;
+          } else {
+            return a.localeCompare(b, "zh-CN");
+          }
+        });
+        
+        return sorted;
+      }
+
+      function populatePortChips() {
+        if (!dom.portChipsContainer) return;
+        dom.portChipsContainer.innerHTML = "";
+        
+        if (!state.ports.length) {
+          dom.portChipsContainer.innerHTML = '<div style="color: var(--color-text-tertiary); padding: 12px;">暂无港口数据</div>';
+          return;
+        }
+        
         state.ports.forEach((port) => {
-          const option = document.createElement("option");
-          option.value = port;
-          option.textContent = port;
-          dom.portSelect.appendChild(option);
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "port-chip";
+          chip.textContent = port;
+          chip.dataset.port = port;
+          chip.addEventListener("click", () => {
+            chip.classList.toggle("active");
+            updatePortSelection();
+            refreshOutputs();
+          });
+          dom.portChipsContainer.appendChild(chip);
         });
       }
 
@@ -484,16 +525,22 @@
       function setPortSelection(ports) {
         state.filters.ports = ports;
         const selectedSet = new Set(ports);
-        Array.from(dom.portSelect.options).forEach((option) => {
-          option.selected = selectedSet.has(option.value);
-        });
+        if (dom.portChipsContainer) {
+          dom.portChipsContainer.querySelectorAll(".port-chip").forEach((chip) => {
+            if (selectedSet.has(chip.dataset.port)) {
+              chip.classList.add("active");
+            } else {
+              chip.classList.remove("active");
+            }
+          });
+        }
       }
 
-      function handlePortChange() {
-        const selected = Array.from(dom.portSelect.selectedOptions).map((option) => option.value);
+      function updatePortSelection() {
+        if (!dom.portChipsContainer) return;
+        const selected = Array.from(dom.portChipsContainer.querySelectorAll(".port-chip.active"))
+          .map((chip) => chip.dataset.port);
         state.filters.ports = selected;
-        dom.resetBtn.disabled = !hasActiveFilters();
-        refreshOutputs();
       }
 
       function handleYearlyToggle(event) {
@@ -520,24 +567,6 @@
 
       function updateFilters(key, value) {
         state.filters[key] = value;
-        dom.resetBtn.disabled = !hasActiveFilters();
-        refreshOutputs();
-      }
-
-      function hasActiveFilters() {
-        return Boolean(
-          state.filters.start ||
-            state.filters.end ||
-            (state.filters.ports && state.filters.ports.length)
-        );
-      }
-
-      function resetFilters() {
-        state.filters = { start: "", end: "", ports: [] };
-        dom.startDate.value = "";
-        dom.endDate.value = "";
-        Array.from(dom.portSelect.options).forEach((option) => (option.selected = false));
-        dom.resetBtn.disabled = true;
         refreshOutputs();
       }
 
@@ -547,7 +576,10 @@
           .filter((date) => date instanceof Date && !isNaN(date));
 
         if (!dateValues.length) {
-          resetFilters();
+          state.filters.start = "";
+          state.filters.end = "";
+          dom.startDate.value = "";
+          dom.endDate.value = "";
           return;
         }
 
@@ -562,13 +594,11 @@
 
         dom.startDate.value = state.filters.start;
         dom.endDate.value = state.filters.end;
-        dom.resetBtn.disabled = false;
       }
 
       function refreshOutputs() {
         if (!state.rows.length) {
           state.lastFiltered = [];
-          dom.recordCount.textContent = "0";
           dom.tableBody.innerHTML =
             '<tr><td colspan="5" style="text-align:center;color:#6c757d">尚无数据，请载入 Excel。</td></tr>';
           updateRangeChart([]);
@@ -582,8 +612,6 @@
         const filtered = getFilteredRows();
         state.lastFiltered = filtered;
         const portScopedRows = filterRowsByPorts(state.rows);
-        dom.recordCount.textContent = filtered.length;
-        dom.resetBtn.disabled = !hasActiveFilters();
         dom.exportBtn.disabled = !filtered.length;
         updateMetrics(filtered);
         updateTable(filtered);
@@ -593,180 +621,337 @@
         updateTrendTable(state.rows);
       }
 
+      /**
+       * 显示模块选择对话框
+       */
+      function showModuleSelectionDialog() {
+        return new Promise((resolve) => {
+          const overlay = document.createElement('div');
+          overlay.className = 'module-selection-overlay';
+
+          const dialog = document.createElement('div');
+          dialog.className = 'module-selection-dialog';
+
+          dialog.innerHTML = `
+            <h2>选择要导出的模块</h2>
+            <div class="module-selection-options">
+              <label class="module-selection-label">
+                <input type="radio" name="moduleSelect" value="rangeModule">
+                <div class="module-selection-content">
+                  <div class="module-selection-title">筛选区间 · 趋势曲线</div>
+                  <div class="module-selection-desc">包含筛选区间的趋势图表和数据表格</div>
+                </div>
+              </label>
+              <label class="module-selection-label">
+                <input type="radio" name="moduleSelect" value="historyModule">
+                <div class="module-selection-content">
+                  <div class="module-selection-title">全历史 · 周度走势</div>
+                  <div class="module-selection-desc">包含全历史周度走势图表</div>
+                </div>
+              </label>
+              <label class="module-selection-label">
+                <input type="radio" name="moduleSelect" value="yearlyModule">
+                <div class="module-selection-content">
+                  <div class="module-selection-title">年度对比 · 同期观察</div>
+                  <div class="module-selection-desc">包含年度对比图表</div>
+                </div>
+              </label>
+              <label class="module-selection-label">
+                <input type="radio" name="moduleSelect" value="trendModule">
+                <div class="module-selection-content">
+                  <div class="module-selection-title">周度涨跌统计</div>
+                  <div class="module-selection-desc">包含周度涨跌统计表格</div>
+                </div>
+              </label>
+              <label class="module-selection-label">
+                <input type="radio" name="moduleSelect" value="all">
+                <div class="module-selection-content">
+                  <div class="module-selection-title">运价趋势面板 · 全部导出</div>
+                  <div class="module-selection-desc">导出所有模块</div>
+                </div>
+              </label>
+            </div>
+            <div class="module-selection-actions">
+              <button id="cancelExportBtn" class="btn-sweep-orange">取消</button>
+              <button id="confirmExportBtn" class="btn-sweep-blue">导出</button>
+            </div>
+          `;
+
+          overlay.appendChild(dialog);
+          document.body.appendChild(overlay);
+
+          // 更新标签选中状态
+          const labels = dialog.querySelectorAll('.module-selection-label');
+          const radios = dialog.querySelectorAll('input[type="radio"][name="moduleSelect"]');
+          
+          const updateLabelStyles = () => {
+            labels.forEach((label) => {
+              const radio = label.querySelector('input[type="radio"]');
+              if (radio && radio.checked) {
+                label.classList.add('selected');
+              } else {
+                label.classList.remove('selected');
+              }
+            });
+          };
+
+          radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+              updateLabelStyles();
+            });
+          });
+          
+          labels.forEach(label => {
+            label.addEventListener('click', (e) => {
+              const radio = label.querySelector('input[type="radio"]');
+              if (radio && e.target !== radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            });
+          });
+
+          // 确认按钮
+          const confirmBtn = dialog.querySelector('#confirmExportBtn');
+          confirmBtn.addEventListener('click', () => {
+            const selected = dialog.querySelector('input[name="moduleSelect"]:checked');
+            if (selected) {
+              document.body.removeChild(overlay);
+              resolve(selected.value);
+            } else {
+              if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
+                showError(ErrorType.USER_ACTION, 'MODULE_NOT_SELECTED', { 
+                  message: '请选择一个要导出的模块' 
+                });
+              } else {
+                alert('请选择一个要导出的模块');
+              }
+            }
+          });
+
+          // 取消按钮
+          const cancelBtn = dialog.querySelector('#cancelExportBtn');
+          cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(null);
+          });
+
+          // 点击遮罩关闭
+          overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+              document.body.removeChild(overlay);
+              resolve(null);
+            }
+          });
+
+          // 默认选中第一个模块
+          const firstRadio = dialog.querySelector('input[type="radio"][value="rangeModule"]');
+          if (firstRadio) {
+            firstRadio.checked = true;
+            firstRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            updateLabelStyles();
+          }
+        });
+      }
+
+      /**
+       * 导出指定模块为 PDF
+       */
+      async function exportModuleToPdf(moduleId) {
+        const moduleMap = {
+          'rangeModule': { 
+            containerSelector: '#range-chart-stack',
+            name: '筛选区间-趋势曲线',
+            chartType: 'range'
+          },
+          'historyModule': { 
+            containerSelector: '#history-chart-stack',
+            name: '全历史-周度走势',
+            chartType: 'history'
+          },
+          'yearlyModule': { 
+            containerSelector: '#yearly-chart-stack',
+            name: '年度对比-同期观察',
+            chartType: 'yearly'
+          },
+          'trendModule': { 
+            containerSelector: '#trend-table-body',
+            name: '周度涨跌统计',
+            chartType: null
+          }
+        };
+
+        const moduleInfo = moduleMap[moduleId];
+        if (!moduleInfo) {
+          showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+            message: `未知的模块ID: ${moduleId}` 
+          });
+          return;
+        }
+
+        // 先找到内容元素（chart-stack或table）
+        const contentElement = document.querySelector(moduleInfo.containerSelector);
+        if (!contentElement) {
+          debugError(`找不到内容元素: ${moduleInfo.containerSelector}`);
+          showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+            message: `找不到模块: ${moduleInfo.name}` 
+          });
+          return;
+        }
+
+        // 找到包含该内容的整个card容器
+        const containerElement = contentElement.closest('.card-white.mt-20');
+        if (!containerElement) {
+          debugError(`找不到容器元素，内容元素: ${moduleInfo.containerSelector}`);
+          showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+            message: `找不到模块容器: ${moduleInfo.name}` 
+          });
+          return;
+        }
+
+        debugLog(`导出模块 ${moduleInfo.name}, 容器元素:`, containerElement);
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const fileName = `运价趋势面板_${moduleInfo.name}_${year}${month}${day}`;
+
+        // 查找模块内的所有图表canvas（通过Chart.js注册表）
+        const chartCanvasIds = [];
+        if (moduleInfo.chartType && chartRegistry[moduleInfo.chartType]) {
+          chartRegistry[moduleInfo.chartType].forEach((chart, index) => {
+            if (chart && chart.canvas) {
+              if (!chart.canvas.id) {
+                chart.canvas.id = `${moduleInfo.chartType}-chart-${index}`;
+              }
+              chartCanvasIds.push(chart.canvas.id);
+            }
+          });
+        }
+        
+        debugLog(`导出模块 ${moduleInfo.name}, 找到 ${chartCanvasIds.length} 个图表`);
+
+        if (typeof window.exportToPdfCommon === 'function') {
+          try {
+            await window.exportToPdfCommon({
+              fileName,
+              elements: containerElement,
+              chartCanvasIds: chartCanvasIds.length > 0 ? chartCanvasIds : undefined,
+              exportBtnId: 'export-btn'
+            });
+          } catch (error) {
+            debugError('exportToPdfCommon 调用失败:', error);
+            throw error;
+          }
+        } else {
+          debugError('exportToPdfCommon 函数未找到');
+          showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+            message: 'PDF 导出功能所需的工具函数未找到，请刷新页面重试' 
+          });
+        }
+      }
+
+      /**
+       * 导出全部模块为 PDF
+       */
+      async function exportAllModulesToPdf() {
+        // 使用ID选择器找到各个模块的容器
+        const moduleSelectors = [
+          { contentSelector: '#range-chart-stack', name: '筛选区间-趋势曲线', type: 'range' },
+          { contentSelector: '#history-chart-stack', name: '全历史-周度走势', type: 'history' },
+          { contentSelector: '#yearly-chart-stack', name: '年度对比-同期观察', type: 'yearly' },
+          { contentSelector: '#trend-table-body', name: '周度涨跌统计', type: 'trend' }
+        ];
+
+        const moduleElements = [];
+        moduleSelectors.forEach(({ contentSelector, name, type }) => {
+          const contentElement = document.querySelector(contentSelector);
+          if (contentElement) {
+            const containerElement = contentElement.closest('.card-white.mt-20');
+            if (containerElement) {
+              moduleElements.push({ element: containerElement, name, type });
+            } else {
+              debugWarn(`找不到容器元素: ${contentSelector}`);
+            }
+          } else {
+            debugWarn(`找不到内容元素: ${contentSelector}`);
+          }
+        });
+
+        if (moduleElements.length === 0) {
+          debugError('找不到要导出的模块元素');
+          showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+            message: '找不到要导出的模块' 
+          });
+          return;
+        }
+
+        debugLog(`导出全部模块，找到 ${moduleElements.length} 个模块:`, moduleElements.map(m => m.name));
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const fileName = `运价趋势面板_全部模块_${year}${month}${day}`;
+
+        // 收集所有图表canvas（通过Chart.js注册表）
+        const allChartCanvases = [];
+        ['range', 'history', 'yearly'].forEach(type => {
+          if (chartRegistry[type]) {
+            chartRegistry[type].forEach((chart, index) => {
+              if (chart && chart.canvas) {
+                if (!chart.canvas.id) {
+                  chart.canvas.id = `${type}-chart-${index}`;
+                }
+                allChartCanvases.push(chart.canvas.id);
+              }
+            });
+          }
+        });
+
+        debugLog(`找到 ${allChartCanvases.length} 个图表canvas`);
+
+        if (typeof window.exportToPdfCommon === 'function') {
+          try {
+            await window.exportToPdfCommon({
+              fileName,
+              elements: moduleElements.map(m => m.element),
+              chartCanvasIds: allChartCanvases.length > 0 ? allChartCanvases : undefined,
+              exportBtnId: 'export-btn'
+            });
+          } catch (error) {
+            debugError('exportToPdfCommon 调用失败:', error);
+            throw error;
+          }
+        } else {
+          debugError('exportToPdfCommon 函数未找到');
+          showError(ErrorType.SYSTEM_ERROR, 'PDF_EXPORT_FAILED', { 
+            message: 'PDF 导出功能所需的工具函数未找到，请刷新页面重试' 
+          });
+        }
+      }
+
       async function exportFilteredData() {
         if (!state.rows.length) {
           showError(ErrorType.DATA_VALIDATION, 'NO_DATA_LOADED');
           return;
         }
+        
         try {
+          const selectedModule = await showModuleSelectionDialog();
+          if (!selectedModule) {
+            return; // 用户取消了选择
+          }
+
           dom.exportBtn.disabled = true;
           dom.exportBtn.textContent = "导出中...";
           
-          // 使用 vendor/pdf-utils.js 中的 loadPdfLibraries 函数加载 PDF 库
-          if (typeof window.loadPdfLibraries === 'function') {
-            await window.loadPdfLibraries();
-          } else if (typeof loadPdfLibraries === 'function') {
-            await loadPdfLibraries();
+          if (selectedModule === 'all') {
+            await exportAllModulesToPdf();
+          } else {
+            await exportModuleToPdf(selectedModule);
           }
-          
-          if (!window.html2canvas || !window.jspdf) {
-            showError(ErrorType.FILE_LOAD, 'PDF_LIBS_NOT_LOADED');
-            return;
-          }
-          
-          // 将 Chart.js 图表转换为图片（在克隆前）
-          const chartCanvases = document.querySelectorAll('.content canvas');
-          const canvasToImageMap = new Map();
-          
-          for (const canvas of chartCanvases) {
-            try {
-              const chart = Chart.getChart(canvas);
-              if (chart) {
-                // 将图表 canvas 转换为 base64 图片
-                const imageData = canvas.toDataURL('image/png', 1.0);
-                canvasToImageMap.set(canvas, imageData);
-              }
-            } catch (e) {
-              console.warn('无法转换图表:', e);
-            }
-          }
-          
-          // 创建临时容器，包含 header、content 和 footer
-          const header = document.querySelector(".header");
-          const content = document.querySelector(".content");
-          const footer = document.querySelector(".page-footer");
-          
-          if (!header || !content) {
-            throw new Error("找不到要导出的内容区域");
-          }
-          
-          // 创建临时包装容器
-          const tempContainer = document.createElement("div");
-          tempContainer.style.position = "absolute";
-          tempContainer.style.left = "-9999px";
-          tempContainer.style.top = "0";
-          tempContainer.style.width = content.offsetWidth + "px";
-          tempContainer.style.backgroundColor = "#ffffff";
-          tempContainer.style.padding = "0";
-          tempContainer.style.margin = "0";
-          
-          // 克隆 header
-          const headerClone = header.cloneNode(true);
-          headerClone.style.margin = "0";
-          headerClone.style.padding = window.getComputedStyle(header).padding;
-          tempContainer.appendChild(headerClone);
-          
-          // 深度克隆 content，并替换 canvas 为图片
-          const contentClone = content.cloneNode(true);
-          contentClone.style.margin = "0";
-          contentClone.style.padding = window.getComputedStyle(content).padding;
-          
-          // 在克隆的 content 中查找所有 canvas，并用对应的图片替换
-          const clonedCanvases = contentClone.querySelectorAll('canvas');
-          const originalCanvasArray = Array.from(chartCanvases);
-          
-          clonedCanvases.forEach((clonedCanvas, index) => {
-            // 通过索引匹配（因为克隆保持了相同的结构）
-            if (index < originalCanvasArray.length) {
-              const originalCanvas = originalCanvasArray[index];
-              if (canvasToImageMap.has(originalCanvas)) {
-                const img = document.createElement('img');
-                img.src = canvasToImageMap.get(originalCanvas);
-                const computedStyle = window.getComputedStyle(originalCanvas);
-                img.style.width = computedStyle.width || originalCanvas.width + 'px';
-                img.style.height = computedStyle.height || originalCanvas.height + 'px';
-                img.style.display = 'block';
-                img.style.maxWidth = '100%';
-                // Keep aspect ratio
-                if (computedStyle.height && computedStyle.width) {
-                  img.style.height = 'auto';
-                }
-                clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
-              }
-            }
-          });
-          
-          tempContainer.appendChild(contentClone);
-          
-          if (footer) {
-            const footerClone = footer.cloneNode(true);
-            footerClone.style.margin = "0";
-            footerClone.style.padding = window.getComputedStyle(footer).padding;
-            tempContainer.appendChild(footerClone);
-          }
-          
-          document.body.appendChild(tempContainer);
-          
-          // 等待图片加载完成
-          await new Promise(resolve => {
-            const images = tempContainer.querySelectorAll('img');
-            if (images.length === 0) {
-              resolve();
-              return;
-            }
-            let loaded = 0;
-            const checkComplete = () => {
-              loaded++;
-              if (loaded === images.length) {
-                setTimeout(resolve, 100); // 额外等待100ms确保渲染完成
-              }
-            };
-            images.forEach(img => {
-              if (img.complete) {
-                checkComplete();
-              } else {
-                img.onload = checkComplete;
-                img.onerror = checkComplete;
-              }
-            });
-          });
-          
-          const previousScroll = window.scrollY;
-          window.scrollTo(0, 0);
-          
-          const canvas = await html2canvas(tempContainer, {
-            scale: Math.min(window.devicePixelRatio || 1, 1.5),
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            logging: false,
-            windowWidth: tempContainer.scrollWidth,
-            windowHeight: tempContainer.scrollHeight,
-            allowTaint: true,
-          });
-          
-          // 清理临时容器
-          document.body.removeChild(tempContainer);
-          window.scrollTo(0, previousScroll);
-
-          const maxBytes = 2 * 1024 * 1024;
-          let quality = 0.8;
-          let dataUrl = canvas.toDataURL("image/jpeg", quality);
-          let byteSize = dataUrl.length * 0.75;
-          while (byteSize > maxBytes && quality > 0.4) {
-            quality -= 0.1;
-            dataUrl = canvas.toDataURL("image/jpeg", quality);
-            byteSize = dataUrl.length * 0.75;
-          }
-
-          const pdf = new window.jspdf.jsPDF("p", "pt", "a4");
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = pdf.internal.pageSize.getHeight();
-          const imgWidth = pageWidth;
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          let heightLeft = imgHeight;
-          let position = 0;
-
-          pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight, undefined, "FAST");
-          heightLeft -= pageHeight;
-
-          while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight, undefined, "FAST");
-            heightLeft -= pageHeight;
-          }
-
-          pdf.save(`rate-trend-${Date.now()}.pdf`);
         } catch (error) {
           debugError("导出 PDF 失败:", error);
           showError(ErrorType.FILE_LOAD, 'PDF_EXPORT_FAILED', { message: error.message || "未知错误" }, error);
@@ -1412,31 +1597,6 @@
         return `${formatDate(row.filterDate)} · ${row.port || "—"}`;
       }
 
-      function updateStatusDetail() {
-        if (!dom.statusDetail) return;
-        const eligible = state.stats.eligible || 0;
-        const droppedTotals = state.stats.dropped || { missingDate: 0, missingPort: 0, missingRate: 0 };
-        const dropped =
-          (droppedTotals.missingDate || 0) +
-          (droppedTotals.missingPort || 0) +
-          (droppedTotals.missingRate || 0);
-        if (!eligible) {
-          dom.statusDetail.style.display = "none";
-          dom.statusDetail.textContent = "—";
-          return;
-        }
-        if (!dropped) {
-          dom.statusDetail.style.display = "block";
-          dom.statusDetail.textContent = `共 ${eligible} 条 2SD/4SH 记录全部可用`;
-          return;
-        }
-        const parts = [];
-        if (droppedTotals.missingDate) parts.push(`缺时间 ${droppedTotals.missingDate} 条`);
-        if (droppedTotals.missingPort) parts.push(`缺港口 ${droppedTotals.missingPort} 条`);
-        if (droppedTotals.missingRate) parts.push(`缺运费 ${droppedTotals.missingRate} 条`);
-        dom.statusDetail.style.display = "block";
-        dom.statusDetail.textContent = `共 ${eligible} 条 2SD/4SH 记录，其中 ${dropped} 条数据不完整（${parts.join("、")}）已自动跳过`;
-      }
 
       function updatePortLine(element, row, overridePort) {
         if (!element) return;
@@ -1718,41 +1878,7 @@
         };
       }
 
-      // 自动加载 Monitor-Rate-Trends.xlsx 文件
-      async function autoLoadExcelFile() {
-        // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
-        if (typeof window.loadDefaultExcelFile === 'function') {
-          await window.loadDefaultExcelFile('Monitor-Rate-Trends', async (file) => {
-            // 模拟文件选择事件，触发文件处理
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            dom.fileInput.files = dataTransfer.files;
-            
-            // 触发 change 事件
-            const changeEvent = new Event('change', { bubbles: true });
-            dom.fileInput.dispatchEvent(changeEvent);
-          });
-        } else {
-          // 如果公共函数未加载，等待一段时间后重试
-          setTimeout(() => {
-            if (typeof window.loadDefaultExcelFile === 'function') {
-              autoLoadExcelFile();
-            }
-          }, 1000);
-        }
-      }
-
-      // 页面加载完成后尝试自动加载文件
-      window.addEventListener('DOMContentLoaded', async () => {
-        // 等待 XLSX 库加载完成后再尝试自动加载
-        if (typeof window.ensureXlsx === 'function') {
-          await window.ensureXlsx();
-        }
-        // 等待一小段时间，确保页面完全加载
-        setTimeout(() => {
-          autoLoadExcelFile();
-        }, 500);
-      });
+      // 文件加载已改为手动选择，不再自动加载
 
     </script>
   </body>

@@ -1167,6 +1167,9 @@ input:disabled {
     animation: cardFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
     /* 性能优化 */
     will-change: transform, box-shadow;
+    /* 使用 flexbox 布局，让按钮在窄屏模式下底部对齐 */
+    display: flex;
+    flex-direction: column;
 }
 
 /* 卡片入场动画 - 错开时间 */
@@ -1325,6 +1328,8 @@ input:disabled {
     /* 增强文字对比度和可读性 */
     opacity: 0.9; /* 提高不透明度，从0.85改为0.9 */
     transition: opacity 0.2s ease;
+    /* 在窄屏模式下，让描述占据剩余空间，使按钮底部对齐 */
+    flex: 1;
 }
 
 .tool-card:hover .tool-description {
@@ -1708,6 +1713,8 @@ input:disabled {
     .tool-actions {
         grid-template-columns: 1fr;
         gap: 8px;
+        /* 确保按钮在窄屏模式下底部对齐 */
+        margin-top: auto;
     }
     
     .tool-link {

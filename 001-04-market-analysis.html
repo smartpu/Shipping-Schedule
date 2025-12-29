@@ -1525,44 +1525,116 @@
             });
         }
 
-        function getWeekCodesFromDefinition(weekDefinitionMap) {
-            if (Object.keys(weekDefinitionMap).length > 0) {
-                const allWeekCodes = Object.keys(weekDefinitionMap).sort();
+        /**
+         * 根据日期从 weekDefinitionMap 中查找对应的周别代码
+         * @param {Date|string|number} date - 日期对象、日期字符串或日期序列号
+         * @param {Object} weekDefinitionMap - 周别定义映射表
+         * @returns {string|null} - 周别代码（格式：YYYYWW），如果找不到则返回 null
+         */
+        function getWeekCodeFromDate(date, weekDefinitionMap) {
+            if (!date || !weekDefinitionMap || Object.keys(weekDefinitionMap).length === 0) {
+                return null;
+            }
+            
+            // 解析日期
+            let dateObj = null;
+            if (date instanceof Date) {
+                dateObj = date;
+            } else if (typeof date === 'string') {
+                dateObj = new Date(date);
+            } else if (typeof date === 'number') {
+                // Excel 日期序列号
+                dateObj = new Date((date - 25569) * 86400 * 1000);
+            }
+            
+            if (!dateObj || isNaN(dateObj.getTime())) {
+                return null;
+            }
+            
+            // 遍历 weekDefinitionMap，查找包含该日期的周别
+            for (const [weekCode, weekDef] of Object.entries(weekDefinitionMap)) {
+                if (!weekDef || !weekDef.sunday || !weekDef.saturday) {
+                    continue;
+                }
                 
-                if (typeof window === 'undefined' || !window.getCurrentWeekCode) {
+                // 解析周别的开始和结束日期
+                const parseDateString = (dateStr) => {
+                    if (!dateStr) return null;
+                    const d = new Date(dateStr);
+                    return isNaN(d.getTime()) ? null : d;
+                };
+                
+                const startDate = parseDateString(weekDef.sunday);
+                const endDate = parseDateString(weekDef.saturday);
+                
+                if (!startDate || !endDate) {
+                    continue;
+                }
+                
+                // 比较日期（只比较年月日，忽略时分秒）
+                const dateYear = dateObj.getFullYear();
+                const dateMonth = dateObj.getMonth();
+                const dateDay = dateObj.getDate();
+                const dateOnly = new Date(dateYear, dateMonth, dateDay);
+                
+                const startYear = startDate.getFullYear();
+                const startMonth = startDate.getMonth();
+                const startDay = startDate.getDate();
+                const startOnly = new Date(startYear, startMonth, startDay);
+                
+                const endYear = endDate.getFullYear();
+                const endMonth = endDate.getMonth();
+                const endDay = endDate.getDate();
+                const endOnly = new Date(endYear, endMonth, endDay);
+                
+                // 检查日期是否在范围内
+                if (dateOnly >= startOnly && dateOnly <= endOnly) {
+                    return weekCode;
+                }
+            }
+            
+            return null;
+        }
+
+        function getWeekCodesFromDefinition(weekDefinitionMap) {
+            // 如果 weekDefinitionMap 为空，返回空数组，允许所有数据通过
+            if (Object.keys(weekDefinitionMap).length === 0) {
+                debugWarn('[001-04] weekDefinitionMap 为空，允许所有周别的数据通过');
+                return [];
+            }
+            
+            const allWeekCodes = Object.keys(weekDefinitionMap).sort();
+            
+            // 优先使用当前日期从 weekDefinitionMap 中查找当前周别（而不是使用 getCurrentWeekCode）
+            // 这样可以确保与 week 表中的周别定义一致
+            const today = new Date();
+            let currentWeekCode = getWeekCodeFromDate(today, weekDefinitionMap);
+            
+            // 如果找不到，回退到使用 getCurrentWeekCode
+            if (!currentWeekCode) {
+                if (typeof window !== 'undefined' && window.getCurrentWeekCode) {
+                    currentWeekCode = window.getCurrentWeekCode();
+                    debugWarn(`[001-04] 无法从 weekDefinitionMap 中找到当前日期对应的周别，使用 getCurrentWeekCode: ${currentWeekCode}`);
+                } else {
                     debugError('getCurrentWeekCode 函数未找到，请检查 week-utils.js 是否已加载');
                     return [];
                 }
-                const currentWeekCode = window.getCurrentWeekCode();
-                const currentIndex = allWeekCodes.indexOf(currentWeekCode);
-                
-                let selectedWeekCodes = [];
-                if (currentIndex >= 0) {
-                    selectedWeekCodes = allWeekCodes.slice(currentIndex, currentIndex + APP_CONFIG.WEEK_COUNT).filter(Boolean);
-                } else {
-                    debugWarn(`当前周别 ${currentWeekCode} 不在weekDefinitionMap中，使用前${APP_CONFIG.WEEK_COUNT}周`);
-                    selectedWeekCodes = allWeekCodes.slice(0, APP_CONFIG.WEEK_COUNT).filter(Boolean);
-                }
-                
-                return selectedWeekCodes;
+            } else {
+                debugLog(`[001-04] 从 weekDefinitionMap 中找到当前周别: ${currentWeekCode}`);
             }
             
-            const currentWeekCode = (typeof window !== 'undefined' && window.getCurrentWeekCode) 
-                ? window.getCurrentWeekCode() 
-                : getCurrentWeekCode();
-            const defaultWeeks = [];
-            for (let i = 0; i < APP_CONFIG.WEEK_COUNT; i++) {
-                const year = parseInt(currentWeekCode.substring(0, 4), 10);
-                const week = parseInt(currentWeekCode.substring(4), 10) + i;
-                let finalYear = year;
-                let finalWeek = week;
-                if (week > 52) {
-                    finalYear = year + 1;
-                    finalWeek = week - 52;
-                }
-                defaultWeeks.push(`${finalYear}${String(finalWeek).padStart(2, '0')}`);
+            const currentIndex = allWeekCodes.indexOf(currentWeekCode);
+            
+            let selectedWeekCodes = [];
+            if (currentIndex >= 0) {
+                selectedWeekCodes = allWeekCodes.slice(currentIndex, currentIndex + APP_CONFIG.WEEK_COUNT).filter(Boolean);
+                debugLog(`[001-04] 选择的周别范围: ${selectedWeekCodes.join(', ')}`);
+            } else {
+                debugWarn(`当前周别 ${currentWeekCode} 不在weekDefinitionMap中，使用前${APP_CONFIG.WEEK_COUNT}周`);
+                selectedWeekCodes = allWeekCodes.slice(0, APP_CONFIG.WEEK_COUNT).filter(Boolean);
             }
-            return defaultWeeks;
+            
+            return selectedWeekCodes;
         }
 
         async function generatePivotTable(data) {
@@ -1616,26 +1688,36 @@
                 const shipDate = row[shipDateCol];
                 const weekText = String(row[weekCol] ?? '').trim();
                 
-                if (typeof window === 'undefined' || !window.parseWeekText) {
-                    debugError('parseWeekText 函数未找到，请检查 week-utils.js 是否已加载');
-                    return;
-                }
-                const weekCode = window.parseWeekText(weekText);
-                
-                // 如果 weekCodes 为空（weekDefinitionMap 为空或无法确定当前周），允许所有数据通过
-                // 否则只允许在指定周范围内的数据
-                if (weekCodes.length > 0) {
-                    if (!weekCode || !weekCodes.includes(weekCode)) {
-                        return;
-                    }
+                // 解析周别（不进行过滤，允许所有数据通过，类似 Monitor-Sailing-Schedule）
+                // 周别过滤在显示时进行，而不是在数据处理时进行
+                let weekCode = null;
+                if (typeof window !== 'undefined' && window.parseWeekText) {
+                    weekCode = window.parseWeekText(weekText);
                 } else {
-                    // weekCodes 为空时，如果没有 weekCode，仍然允许通过（可能是旧数据格式）
-                    // 如果有 weekCode，也允许通过
-                    if (!weekCode) {
-                        // 如果没有周别信息，仍然允许通过，但记录警告
-                        debugWarn(`[001-04] 记录缺少周别信息: ${weekText}`);
+                    debugWarn('[001-04] parseWeekText 函数未找到，将不进行周别解析');
+                }
+                
+                // 如果 weekCode 为 null，尝试根据 shipDate 从 weekDefinitionMap 中查找
+                if (!weekCode && shipDate && weekDefinitionMap && Object.keys(weekDefinitionMap).length > 0) {
+                    weekCode = getWeekCodeFromDate(shipDate, weekDefinitionMap);
+                    if (weekCode) {
+                        debugLog(`[001-04] 根据 shipDate 找到周别: ${weekCode}`);
                     }
                 }
+                
+                // 如果仍然为 null，尝试使用 week-utils.js 中的函数根据日期计算
+                if (!weekCode && shipDate) {
+                    if (typeof window !== 'undefined' && window.getWeekCodeFromDate) {
+                        weekCode = window.getWeekCodeFromDate(shipDate);
+                    } else if (typeof window !== 'undefined' && window.getWeekNumber && window.getCurrentWeekCode) {
+                        // 回退方案：根据日期计算周数，然后构建 weekCode
+                        const weekNo = window.getWeekNumber(shipDate);
+                        const year = shipDate instanceof Date ? shipDate.getFullYear() : new Date(shipDate).getFullYear();
+                        weekCode = `${year}${String(weekNo).padStart(2, '0')}`;
+                    }
+                }
+                
+                // 不进行周别过滤，允许所有数据通过（类似 Monitor-Sailing-Schedule）
 
                 const record = {
                     originPort,
@@ -1657,6 +1739,48 @@
             if (rawRecords.length === 0) {
                 showError(ErrorType.FILE_PARSE, 'NO_SCHEDULE_DATA');
                 return;
+            }
+
+            // 如果 weekColumns 为空（weekDefinitionMap 为空），从数据中动态提取周别
+            if (!weekColumns || weekColumns.length === 0) {
+                const uniqueWeekCodes = [...new Set(rawRecords.map(r => r.weekCode).filter(Boolean))].sort();
+                if (uniqueWeekCodes.length > 0) {
+                    debugWarn('[001-04] weekDefinitionMap 为空，从数据中动态提取周别:', uniqueWeekCodes);
+                    // 构建简单的 weekColumns（没有日期范围信息）
+                    weekColumns = uniqueWeekCodes.map(code => {
+                        const year = code.substring(0, 4);
+                        const weekNo = parseInt(code.substring(4), 10);
+                        return {
+                            code,
+                            label: `${year}/${String(weekNo).padStart(2, '0')}`,
+                            range: ''
+                        };
+                    });
+                } else {
+                    debugWarn('[001-04] 数据中没有有效的周别信息，使用默认周别');
+                    // 如果数据中也没有周别，使用当前周+未来3周
+                    const currentWeekCode = window.getCurrentWeekCode ? window.getCurrentWeekCode() : '';
+                    if (currentWeekCode) {
+                        const defaultWeeks = [];
+                        for (let i = 0; i < APP_CONFIG.WEEK_COUNT; i++) {
+                            const year = parseInt(currentWeekCode.substring(0, 4), 10);
+                            const week = parseInt(currentWeekCode.substring(4), 10) + i;
+                            let finalYear = year;
+                            let finalWeek = week;
+                            if (week > 52) {
+                                finalYear = year + 1;
+                                finalWeek = week - 52;
+                            }
+                            const code = `${finalYear}${String(finalWeek).padStart(2, '0')}`;
+                            defaultWeeks.push({
+                                code,
+                                label: `${finalYear}/${String(finalWeek).padStart(2, '0')}`,
+                                range: ''
+                            });
+                        }
+                        weekColumns = defaultWeeks;
+                    }
+                }
             }
 
             await updateFilterOptions(rawRecords);
@@ -1987,11 +2111,27 @@
             const groupedData = groupedResult.data;
             groupedTableData = groupedData;
 
+            // 如果 weekColumns 为空，从数据中动态提取周别
             if (!weekColumns || !Array.isArray(weekColumns) || weekColumns.length === 0) {
-                debugError('[001-04] weekColumns 未初始化或为空');
-                const container = DOMCache.get('tableContainer') || tableContainer;
-                if (container) container.classList.add('hidden');
-                return;
+                debugWarn('[001-04] renderTable: weekColumns 为空，从数据中动态提取周别');
+                const uniqueWeekCodes = [...new Set(processedRecords.map(r => r.weekCode).filter(Boolean))].sort();
+                if (uniqueWeekCodes.length > 0) {
+                    weekColumns = uniqueWeekCodes.map(code => {
+                        const year = code.substring(0, 4);
+                        const weekNo = parseInt(code.substring(4), 10);
+                        return {
+                            code,
+                            label: `${year}/${String(weekNo).padStart(2, '0')}`,
+                            range: ''
+                        };
+                    });
+                    debugLog('[001-04] renderTable: 从数据中提取的周别:', weekColumns.map(w => w.code));
+                } else {
+                    debugError('[001-04] renderTable: 数据中没有有效的周别信息，无法渲染表格');
+                    const container = DOMCache.get('tableContainer') || tableContainer;
+                    if (container) container.classList.add('hidden');
+                    return;
+                }
             }
             
             renderTableHeader(weekColumns);

@@ -35,7 +35,7 @@
                     <div class="section-intro-header">
                         <div class="section-intro-content">
                             <h2>Monitor · 专业船期表</h2>
-                            <p>以日历视图展示船期信息，支持起运港、船公司、目的港多维度筛选</p>
+                            <p>以日历视图展示船期信息，支持起运港、目的港、共舱船公司多维度筛选</p>
                         </div>
                         <div class="section-intro-actions">
                             <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
@@ -153,7 +153,7 @@
                         <span class="module-badge">筛选条件</span>
                         <div>
                             <h2 class="section-title">船期筛选 <span>SAILING SCHEDULE FILTER</span></h2>
-                            <p class="module-desc">001目的港、船公司、365目的港多维度筛选，支持显示模式切换</p>
+                            <p class="module-desc">起运港、目的港、共舱船公司多维度筛选，支持显示模式切换</p>
                         </div>
                     </div>
                     <div class="card-white module-card" style="margin-top: 20px;">
@@ -166,20 +166,33 @@
                         </div>
                         <div id="destinationFilters" class="destination-filters">
                             <div class="filter-row">
-                                <!-- 001目的港选择区域 -->
+                                <!-- 起运港选择区域 -->
                                 <div class="filter-group">
-                                    <label for="destPort001Select">001 目的港</label>
+                                    <label for="originPortSelect">起运港</label>
                                     <small class="multi-hint">可多选（Ctrl/点击切换）</small>
-                                    <input type="text" id="destPort001Search" class="filter-search" placeholder="搜索001目的港..." autocomplete="off">
-                                    <select id="destPort001Select" multiple size="6" class="multi-select">
-                                        <option value="">全部001目的港</option>
+                                    <input type="text" id="originPortSearch" class="filter-search" placeholder="搜索起运港..." autocomplete="off">
+                                    <select id="originPortSelect" multiple size="6" class="multi-select">
+                                        <option value="">全部起运港</option>
                                     </select>
                                     <div class="filter-actions">
-                                        <button type="button" class="filter-btn btn-sweep-blue" id="destPort001SelectAll">全部选择</button>
-                                        <button type="button" class="filter-btn btn-sweep-blue" id="destPort001ClearAll">清除选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" id="originPortSelectAll">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" id="originPortClearAll">清除选择</button>
                                     </div>
                                 </div>
-                                <!-- 船公司选择区域（根据显示模式切换001/365） -->
+                                <!-- 目的港选择区域（合并001和365） -->
+                                <div class="filter-group">
+                                    <label for="destPortSelect">目的港</label>
+                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
+                                    <input type="text" id="destPortSearch" class="filter-search" placeholder="搜索目的港..." autocomplete="off">
+                                    <select id="destPortSelect" multiple size="6" class="multi-select">
+                                        <option value="">全部目的港</option>
+                                    </select>
+                                    <div class="filter-actions">
+                                        <button type="button" class="filter-btn btn-sweep-blue" id="destPortSelectAll">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" id="destPortClearAll">清除选择</button>
+                                    </div>
+                                </div>
+                                <!-- 共舱船公司选择区域 -->
                                 <div class="filter-group">
                                     <label for="carrierSelect">共舱船公司</label>
                                     <small class="multi-hint">可多选（Ctrl/点击切换）</small>
@@ -190,19 +203,6 @@
                                     <div class="filter-actions">
                                         <button type="button" class="filter-btn btn-sweep-blue" id="carrierSelectAll">全部选择</button>
                                         <button type="button" class="filter-btn btn-sweep-blue" id="carrierClearAll">清除选择</button>
-                                    </div>
-                                </div>
-                                <!-- 365目的港选择区域 -->
-                                <div class="filter-group">
-                                    <label for="destPort365Select">365 目的港</label>
-                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
-                                    <input type="text" id="destPort365Search" class="filter-search" placeholder="搜索365目的港..." autocomplete="off">
-                                    <select id="destPort365Select" multiple size="6" class="multi-select">
-                                        <option value="">全部365目的港</option>
-                                    </select>
-                                    <div class="filter-actions">
-                                        <button type="button" class="filter-btn btn-sweep-blue" id="destPort365SelectAll">全部选择</button>
-                                        <button type="button" class="filter-btn btn-sweep-blue" id="destPort365ClearAll">清除选择</button>
                                     </div>
                                 </div>
                             </div>
@@ -706,25 +706,25 @@
        * @property {Array<Object>|null} data001 - 001模式数据
        * @property {Array<Object>|null} data365 - 365模式数据
        * @property {string} currentMode - 当前显示模式（'001' 或 '365'）
-       * @property {Array<string>} selectedDestPorts001 - 选中的001目的港
+       * @property {Array<string>} selectedOriginPorts - 选中的起运港
+       * @property {Array<string>} selectedDestPorts - 选中的目的港（合并001和365）
        * @property {Array<string>} selectedCarriers - 选中的船公司（根据显示模式切换001/365）
-       * @property {Array<string>} selectedDestPorts365 - 选中的365目的港
        * @property {Set<string>} allCarriers001 - 001模式所有船公司
        * @property {Set<string>} allCarriers365 - 365模式所有船公司
-       * @property {Set<string>} allDestPorts001 - 001模式所有目的港（不标准化，使用原始值）
-       * @property {Set<string>} allDestPorts365 - 365模式所有目的港（不标准化，使用原始值）
+       * @property {Set<string>} allOriginPorts - 所有起运港（合并001和365，不标准化，使用原始值）
+       * @property {Set<string>} allDestPorts - 所有目的港（合并001和365，不标准化，使用原始值）
        */
       const state = {
         data001: null,
         data365: null,
         currentMode: DEFAULT_MODE,
-        selectedDestPorts001: [],
+        selectedOriginPorts: [],
+        selectedDestPorts: [],
         selectedCarriers: [],
-        selectedDestPorts365: [],
         allCarriers001: new Set(),
         allCarriers365: new Set(),
-        allDestPorts001: new Set(),
-        allDestPorts365: new Set(),
+        allOriginPorts: new Set(),
+        allDestPorts: new Set(),
         weekDefinitionMap: {} // 周别定义映射表（从week表解析）
       };
 
@@ -800,12 +800,12 @@
         status001: null,
         status365: null,
         modeBtns: null,
-        destPort001Select: null,
-        destPort001Search: null,
+        originPortSelect: null,
+        originPortSearch: null,
+        destPortSelect: null,
+        destPortSearch: null,
         carrierSelect: null,
         carrierSearch: null,
-        destPort365Select: null,
-        destPort365Search: null,
         calendarContainer: null,
         calendarBody: null,
         emptyMessage: null,
@@ -824,12 +824,12 @@
         dom.status001 = document.getElementById('status001');
         dom.status365 = document.getElementById('status365');
         dom.modeBtns = document.querySelectorAll('[data-mode]');
-        dom.destPort001Select = document.getElementById('destPort001Select');
-        dom.destPort001Search = document.getElementById('destPort001Search');
+        dom.originPortSelect = document.getElementById('originPortSelect');
+        dom.originPortSearch = document.getElementById('originPortSearch');
+        dom.destPortSelect = document.getElementById('destPortSelect');
+        dom.destPortSearch = document.getElementById('destPortSearch');
         dom.carrierSelect = document.getElementById('carrierSelect');
         dom.carrierSearch = document.getElementById('carrierSearch');
-        dom.destPort365Select = document.getElementById('destPort365Select');
-        dom.destPort365Search = document.getElementById('destPort365Search');
         dom.calendarContainer = document.getElementById('calendarContainer');
         dom.calendarBody = document.getElementById('calendarBody');
         dom.emptyMessage = document.getElementById('emptyMessage');
@@ -844,9 +844,9 @@
         const requiredElements = [
           { key: 'file001', name: '001文件载入' },
           { key: 'file365', name: '365文件载入' },
-          { key: 'destPort001Select', name: '001目的港筛选器' },
+          { key: 'originPortSelect', name: '起运港筛选器' },
+          { key: 'destPortSelect', name: '目的港筛选器' },
           { key: 'carrierSelect', name: '船公司筛选器' },
-          { key: 'destPort365Select', name: '365目的港筛选器' },
           { key: 'calendarContainer', name: '日历容器' },
           { key: 'calendarBody', name: '日历主体' }
         ];
@@ -868,14 +868,14 @@
         initDOMCache();
         
         // 设置多选下拉框（参考001-04的实现）
-        if (dom.destPort001Select) {
-          setupMultiSelect(dom.destPort001Select);
+        if (dom.originPortSelect) {
+          setupMultiSelect(dom.originPortSelect);
+        }
+        if (dom.destPortSelect) {
+          setupMultiSelect(dom.destPortSelect);
         }
         if (dom.carrierSelect) {
           setupMultiSelect(dom.carrierSelect);
-        }
-        if (dom.destPort365Select) {
-          setupMultiSelect(dom.destPort365Select);
         }
 
         // 事件监听（使用事件监听器管理）
@@ -941,55 +941,55 @@
         }
 
         // 筛选器变化事件
-        if (dom.destPort001Select) {
-          eventListeners.add(dom.destPort001Select, 'change', handleFilterChange);
+        if (dom.originPortSelect) {
+          eventListeners.add(dom.originPortSelect, 'change', handleFilterChange);
+        }
+        if (dom.destPortSelect) {
+          eventListeners.add(dom.destPortSelect, 'change', handleFilterChange);
         }
         if (dom.carrierSelect) {
           eventListeners.add(dom.carrierSelect, 'change', handleFilterChange);
         }
-        if (dom.destPort365Select) {
-          eventListeners.add(dom.destPort365Select, 'change', handleFilterChange);
-        }
 
         // 搜索功能（添加防抖）
-        if (dom.destPort001Search) {
-          const handleDestPort001Search = debounce((e) => filterOptions('destPort001', e.target.value));
-          eventListeners.add(dom.destPort001Search, 'input', handleDestPort001Search);
+        if (dom.originPortSearch) {
+          const handleOriginPortSearch = debounce((e) => filterOptions('originPort', e.target.value));
+          eventListeners.add(dom.originPortSearch, 'input', handleOriginPortSearch);
+        }
+        if (dom.destPortSearch) {
+          const handleDestPortSearch = debounce((e) => filterOptions('destPort', e.target.value));
+          eventListeners.add(dom.destPortSearch, 'input', handleDestPortSearch);
         }
         if (dom.carrierSearch) {
           const handleCarrierSearch = debounce((e) => filterOptions('carrier', e.target.value));
           eventListeners.add(dom.carrierSearch, 'input', handleCarrierSearch);
         }
-        if (dom.destPort365Search) {
-          const handleDestPort365Search = debounce((e) => filterOptions('destPort365', e.target.value));
-          eventListeners.add(dom.destPort365Search, 'input', handleDestPort365Search);
-        }
 
         // 筛选器按钮事件
-        const destPort001SelectAll = document.getElementById('destPort001SelectAll');
-        const destPort001ClearAll = document.getElementById('destPort001ClearAll');
+        const originPortSelectAll = document.getElementById('originPortSelectAll');
+        const originPortClearAll = document.getElementById('originPortClearAll');
+        const destPortSelectAll = document.getElementById('destPortSelectAll');
+        const destPortClearAll = document.getElementById('destPortClearAll');
         const carrierSelectAll = document.getElementById('carrierSelectAll');
         const carrierClearAll = document.getElementById('carrierClearAll');
-        const destPort365SelectAll = document.getElementById('destPort365SelectAll');
-        const destPort365ClearAll = document.getElementById('destPort365ClearAll');
         
-        if (destPort001SelectAll && dom.destPort001Select) {
-          eventListeners.add(destPort001SelectAll, 'click', () => selectAllOptions(dom.destPort001Select));
+        if (originPortSelectAll && dom.originPortSelect) {
+          eventListeners.add(originPortSelectAll, 'click', () => selectAllOptions(dom.originPortSelect));
         }
-        if (destPort001ClearAll && dom.destPort001Select) {
-          eventListeners.add(destPort001ClearAll, 'click', () => clearSelectOptions(dom.destPort001Select));
+        if (originPortClearAll && dom.originPortSelect) {
+          eventListeners.add(originPortClearAll, 'click', () => clearSelectOptions(dom.originPortSelect));
+        }
+        if (destPortSelectAll && dom.destPortSelect) {
+          eventListeners.add(destPortSelectAll, 'click', () => selectAllOptions(dom.destPortSelect));
+        }
+        if (destPortClearAll && dom.destPortSelect) {
+          eventListeners.add(destPortClearAll, 'click', () => clearSelectOptions(dom.destPortSelect));
         }
         if (carrierSelectAll && dom.carrierSelect) {
           eventListeners.add(carrierSelectAll, 'click', () => selectAllOptions(dom.carrierSelect));
         }
         if (carrierClearAll && dom.carrierSelect) {
           eventListeners.add(carrierClearAll, 'click', () => clearSelectOptions(dom.carrierSelect));
-        }
-        if (destPort365SelectAll && dom.destPort365Select) {
-          eventListeners.add(destPort365SelectAll, 'click', () => selectAllOptions(dom.destPort365Select));
-        }
-        if (destPort365ClearAll && dom.destPort365Select) {
-          eventListeners.add(destPort365ClearAll, 'click', () => clearSelectOptions(dom.destPort365Select));
         }
 
       }
@@ -1027,9 +1027,9 @@
       function filterOptions(type, searchText) {
         const searchLower = searchText.toLowerCase();
         let select;
-        if (type === 'destPort001') select = dom.destPort001Select;
+        if (type === 'originPort') select = dom.originPortSelect;
+        else if (type === 'destPort') select = dom.destPortSelect;
         else if (type === 'carrier') select = dom.carrierSelect;
-        else if (type === 'destPort365') select = dom.destPort365Select;
         else return;
 
         if (!select) return;
@@ -1214,6 +1214,7 @@
        */
       function parseDataRow(row, config, mode) {
         const {
+          originPortCol,
           portCol,
           carrierCol,
           dateCol,
@@ -1229,6 +1230,9 @@
           routePathCol
         } = config;
 
+        // 提取起运港（A列，不标准化）
+        const originPort = originPortCol && row[originPortCol] ? String(row[originPortCol]).trim() : '';
+        
         // 提取基础字段
         // 001模式：提取目的港（B列，不标准化）
         // 365模式：提取目的港（B列，不标准化）
@@ -1288,6 +1292,7 @@
 
         // 构建基础数据对象
         const baseData = {
+          originPort,
           port,
           carrier,
           date,
@@ -1333,6 +1338,7 @@
         };
 
         // 001文件列定义（参照365模式，使用索引作为fallback）
+        const originPortCol = getColumnKey(['起运港', 'pol', 'origin'], 'A'); // A列 - 起运港（不标准化）
         const portCol = getColumnKey(['港口', '目的港', 'pod'], 'B'); // B列 - 目的港（不标准化）
         const carrierCol = getColumnKey(['共舱船公司', '共舱', '船公司'], 'G'); // G列
         
@@ -1409,6 +1415,7 @@
 
         // 构建列配置对象
         const columnConfig = {
+          originPortCol,
           portCol,
           carrierCol,
           dateCol,
@@ -1462,9 +1469,12 @@
           parsed.push(parsedRow);
           carriers.add(parsedRow.carrier);
           ports.add(parsedRow.port);
-          // 001模式：收集目的港（不标准化）
+          // 收集起运港和目的港（合并001和365）
+          if (parsedRow.originPort) {
+            state.allOriginPorts.add(parsedRow.originPort);
+          }
           if (parsedRow.port) {
-            state.allDestPorts001.add(parsedRow.port);
+            state.allDestPorts.add(parsedRow.port);
           }
         });
 
@@ -1515,6 +1525,7 @@
         };
 
         // 365文件列定义
+        const originPortCol = findColumnKey(['起运港', 'pol', 'origin'], 0); // A列（索引0）- 起运港（不标准化）
         const portCol = findColumnKey(['港口', '目的港', 'pod'], 1); // B列（索引1）- 目的港（不标准化）
         const carrierCol = findColumnKey(['共舱', '船公司'], 9); // J列（索引9）- 强制使用索引9
         const dateCol = findColumnKey(['船期', '开船', '离港', 'etd'], 12); // M列（索引12）
@@ -1557,18 +1568,18 @@
           const finalRouteIdCol = routeIdCol || routeIdColFallback;
           const finalVesselNameCol = vesselNameCol || vesselNameColFallback;
           
-          return parse365WithColumns(jsonData, finalPortCol, finalCarrierCol, finalDateCol, vesselCol,
+          return parse365WithColumns(jsonData, originPortCol || columnKeys[0] || null, finalPortCol, finalCarrierCol, finalDateCol, vesselCol,
             weekdayCol, voyageDaysCol, originTerminalCol, destTerminalCol, shipTypeCol, yearCol, routePathCol,
             finalRouteIdCol, finalVesselNameCol);
         }
 
-        return parse365WithColumns(jsonData, portCol, carrierCol, dateCol, vesselCol,
+        return parse365WithColumns(jsonData, originPortCol || columnKeys[0] || null, portCol, carrierCol, dateCol, vesselCol,
           weekdayCol, voyageDaysCol, originTerminalCol, destTerminalCol, shipTypeCol, yearCol, routePathCol,
           routeIdCol, vesselNameCol);
       }
 
       // 365文件数据解析（使用指定列）
-      function parse365WithColumns(jsonData, portCol, carrierCol, dateCol, vesselCol,
+      function parse365WithColumns(jsonData, originPortCol, portCol, carrierCol, dateCol, vesselCol,
         weekdayCol, voyageDaysCol, originTerminalCol, destTerminalCol, shipTypeCol, yearCol, routePathCol,
         routeIdCol, vesselNameCol) {
         const parsed = [];
@@ -1577,6 +1588,7 @@
 
         // 构建列配置对象
         const columnConfig = {
+          originPortCol,
           portCol,
           carrierCol,
           dateCol,
@@ -1603,9 +1615,12 @@
           parsed.push(parsedRow);
           carriers.add(parsedRow.carrier);
           ports.add(parsedRow.port);
-          // 365模式：收集目的港（不标准化）
+          // 收集起运港和目的港（合并001和365）
+          if (parsedRow.originPort) {
+            state.allOriginPorts.add(parsedRow.originPort);
+          }
           if (parsedRow.port) {
-            state.allDestPorts365.add(parsedRow.port);
+            state.allDestPorts.add(parsedRow.port);
           }
         });
 
@@ -1861,33 +1876,71 @@
        * 更新筛选器选项
        */
       async function updateFilterOptions() {
-        // 提取 B 列目的港顺序（用于排序）- 从 001 数据中提取
-        const destPortOrder001 = [];
-        const seenDestPorts001 = new Set();
-        if (state.data001 && state.data001.length > 0) {
-          state.data001.forEach(record => {
-            if (record.port && record.port.trim() && !seenDestPorts001.has(record.port.trim())) {
-              destPortOrder001.push(record.port.trim());
-              seenDestPorts001.add(record.port.trim());
+        // 提取 A 列起运港顺序（用于排序）- 合并 001 和 365 数据
+        const originPortOrder = [];
+        const seenOriginPorts = new Set();
+        const allData = [];
+        if (state.data001) allData.push(...state.data001);
+        if (state.data365) allData.push(...state.data365);
+        allData.forEach(record => {
+          if (record.originPort && record.originPort.trim() && !seenOriginPorts.has(record.originPort.trim())) {
+            originPortOrder.push(record.originPort.trim());
+            seenOriginPorts.add(record.originPort.trim());
+          }
+        });
+        
+        // 提取 B 列目的港顺序（用于排序）- 合并 001 和 365 数据
+        const destPortOrder = [];
+        const seenDestPorts = new Set();
+        allData.forEach(record => {
+          if (record.port && record.port.trim() && !seenDestPorts.has(record.port.trim())) {
+            destPortOrder.push(record.port.trim());
+            seenDestPorts.add(record.port.trim());
+          }
+        });
+        
+        // 更新起运港筛选器
+        if (dom.originPortSelect) {
+          let originPorts = Array.from(state.allOriginPorts);
+          
+          // 使用统一的排序函数（按 A 列起运港顺序 + 区域顺序 + 代码顺序）
+          if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
+            try {
+              // 确保港口映射已加载
+              if (!window.portSortUtils.portsMappingLoaded) {
+                await window.portSortUtils.loadPortsMapping();
+              }
+              // 使用新的统一排序函数
+              originPorts = window.portSortUtils.sortPortsByDataAndRegion(originPorts, originPortOrder);
+            } catch (error) {
+              console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
+              // 降级方案：简单排序
+              originPorts = originPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
             }
-          });
+          } else {
+            // 降级方案：简单排序
+            originPorts = originPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+          }
+          
+          const filteredOriginPorts = dom.originPortSearch && dom.originPortSearch.value.trim()
+            ? originPorts.filter(port => 
+                port.toLowerCase().includes(dom.originPortSearch.value.toLowerCase())
+              )
+            : originPorts;
+          
+          populateSelect(
+            dom.originPortSelect,
+            filteredOriginPorts,
+            '全部起运港',
+            state.selectedOriginPorts,
+            filteredOriginPorts.length === 0,
+            false
+          );
         }
         
-        // 提取 B 列目的港顺序（用于排序）- 从 365 数据中提取
-        const destPortOrder365 = [];
-        const seenDestPorts365 = new Set();
-        if (state.data365 && state.data365.length > 0) {
-          state.data365.forEach(record => {
-            if (record.port && record.port.trim() && !seenDestPorts365.has(record.port.trim())) {
-              destPortOrder365.push(record.port.trim());
-              seenDestPorts365.add(record.port.trim());
-            }
-          });
-        }
-        
-        // 更新001目的港筛选器
-        if (dom.destPort001Select) {
-          let destPorts001 = Array.from(state.allDestPorts001);
+        // 更新目的港筛选器（合并001和365）
+        if (dom.destPortSelect) {
+          let destPorts = Array.from(state.allDestPorts);
           
           // 使用统一的排序函数（按 B 列目的港顺序 + 区域顺序 + 代码顺序）
           if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
@@ -1897,74 +1950,35 @@
                 await window.portSortUtils.loadPortsMapping();
               }
               // 使用新的统一排序函数
-              destPorts001 = window.portSortUtils.sortPortsByDataAndRegion(destPorts001, destPortOrder001);
+              destPorts = window.portSortUtils.sortPortsByDataAndRegion(destPorts, destPortOrder);
             } catch (error) {
               console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
               // 降级方案：简单排序
-              destPorts001 = destPorts001.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+              destPorts = destPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
             }
           } else {
             // 降级方案：简单排序
-            destPorts001 = destPorts001.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+            destPorts = destPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
           }
           
-          const filteredDestPorts001 = dom.destPort001Search && dom.destPort001Search.value.trim()
-            ? destPorts001.filter(port => 
-                port.toLowerCase().includes(dom.destPort001Search.value.toLowerCase())
+          const filteredDestPorts = dom.destPortSearch && dom.destPortSearch.value.trim()
+            ? destPorts.filter(port => 
+                port.toLowerCase().includes(dom.destPortSearch.value.toLowerCase())
               )
-            : destPorts001;
+            : destPorts;
           
           populateSelect(
-            dom.destPort001Select,
-            filteredDestPorts001,
-            '全部001目的港',
-            state.selectedDestPorts001,
-            filteredDestPorts001.length === 0,
+            dom.destPortSelect,
+            filteredDestPorts,
+            '全部目的港',
+            state.selectedDestPorts,
+            filteredDestPorts.length === 0,
             false
           );
         }
         
         // 更新船公司筛选器（根据显示模式）
         updateCarrierFilter();
-        
-        // 更新365目的港筛选器
-        if (dom.destPort365Select) {
-          let destPorts365 = Array.from(state.allDestPorts365);
-          
-          // 使用统一的排序函数（按 B 列目的港顺序 + 区域顺序 + 代码顺序）
-          if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-            try {
-              // 确保港口映射已加载
-              if (!window.portSortUtils.portsMappingLoaded) {
-                await window.portSortUtils.loadPortsMapping();
-              }
-              // 使用新的统一排序函数
-              destPorts365 = window.portSortUtils.sortPortsByDataAndRegion(destPorts365, destPortOrder365);
-            } catch (error) {
-              console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
-              // 降级方案：简单排序
-              destPorts365 = destPorts365.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
-            }
-          } else {
-            // 降级方案：简单排序
-            destPorts365 = destPorts365.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
-          }
-          
-          const filteredDestPorts365 = dom.destPort365Search && dom.destPort365Search.value.trim()
-            ? destPorts365.filter(port => 
-                port.toLowerCase().includes(dom.destPort365Search.value.toLowerCase())
-              )
-            : destPorts365;
-          
-          populateSelect(
-            dom.destPort365Select,
-            filteredDestPorts365,
-            '全部365目的港',
-            state.selectedDestPorts365,
-            filteredDestPorts365.length === 0,
-            false
-          );
-        }
       }
 
       /**
@@ -2000,15 +2014,21 @@
       // 获取可用的航线区域（基于当前船公司和港口筛选）
       function getAvailableRegions(data) {
         const filtered = data.filter(item => {
-          // 船公司筛选
-          if (state.selectedCarriers.length > 0) {
-            if (!state.selectedCarriers.includes(item.carrier)) {
+          // 起运港筛选
+          if (state.selectedOriginPorts.length > 0) {
+            if (!item.originPort || !state.selectedOriginPorts.includes(item.originPort)) {
               return false;
             }
           }
-          // 港口筛选
-          if (state.selectedDestPorts365.length > 0) {
-            if (!state.selectedDestPorts365.includes(item.port)) {
+          // 目的港筛选
+          if (state.selectedDestPorts.length > 0) {
+            if (!item.port || !state.selectedDestPorts.includes(item.port)) {
+              return false;
+            }
+          }
+          // 船公司筛选
+          if (state.selectedCarriers.length > 0) {
+            if (!state.selectedCarriers.includes(item.carrier)) {
               return false;
             }
           }
@@ -2025,18 +2045,18 @@
         return Array.from(regions).sort();
       }
 
-      // 获取可用的船公司（基于当前001目的港和365目的港筛选）
+      // 获取可用的船公司（基于当前起运港和目的港筛选）
       function getAvailableCarriers(data) {
         const filtered = data.filter(item => {
-          // 001模式：筛选001目的港
-          if (state.currentMode === MODE_001 && state.selectedDestPorts001.length > 0) {
-            if (!item.port || !state.selectedDestPorts001.includes(item.port)) {
+          // 起运港筛选
+          if (state.selectedOriginPorts.length > 0) {
+            if (!item.originPort || !state.selectedOriginPorts.includes(item.originPort)) {
               return false;
             }
           }
-          // 365模式：筛选365目的港
-          if (state.currentMode === MODE_365 && state.selectedDestPorts365.length > 0) {
-            if (!item.port || !state.selectedDestPorts365.includes(item.port)) {
+          // 目的港筛选（合并001和365）
+          if (state.selectedDestPorts.length > 0) {
+            if (!item.port || !state.selectedDestPorts.includes(item.port)) {
               return false;
             }
           }
@@ -2054,9 +2074,9 @@
        */
       function getAvailablePorts(data) {
         const filtered = data.filter(item => {
-          // 001模式：筛选001目的港
-          if (state.currentMode === MODE_001 && state.selectedDestPorts001.length > 0) {
-            if (!item.port || !state.selectedDestPorts001.includes(item.port)) {
+          // 起运港筛选
+          if (state.selectedOriginPorts.length > 0) {
+            if (!item.originPort || !state.selectedOriginPorts.includes(item.originPort)) {
               return false;
             }
           }
@@ -2106,9 +2126,9 @@
       // 处理筛选变化（联动更新）- 使用防抖优化性能
       const handleFilterChange = debounce(async () => {
         // 更新筛选状态
-        state.selectedDestPorts001 = getSelectedValues(dom.destPort001Select);
+        state.selectedOriginPorts = getSelectedValues(dom.originPortSelect);
+        state.selectedDestPorts = getSelectedValues(dom.destPortSelect);
         state.selectedCarriers = getSelectedValues(dom.carrierSelect);
-        state.selectedDestPorts365 = getSelectedValues(dom.destPort365Select);
         
         // 联动更新筛选器（异步）
         await updateFilterOptions();
@@ -2128,9 +2148,16 @@
        */
       function filterDataBySelection(currentData) {
         return currentData.filter(item => {
-          // 001模式：筛选001目的港
-          if (state.currentMode === MODE_001 && state.selectedDestPorts001.length > 0) {
-            if (!item.port || !state.selectedDestPorts001.includes(item.port)) {
+          // 起运港筛选
+          if (state.selectedOriginPorts.length > 0) {
+            if (!item.originPort || !state.selectedOriginPorts.includes(item.originPort)) {
+              return false;
+            }
+          }
+
+          // 目的港筛选（合并001和365）
+          if (state.selectedDestPorts.length > 0) {
+            if (!item.port || !state.selectedDestPorts.includes(item.port)) {
               return false;
             }
           }
@@ -2138,13 +2165,6 @@
           // 船公司筛选
           if (state.selectedCarriers.length > 0) {
             if (!state.selectedCarriers.includes(item.carrier)) {
-              return false;
-            }
-          }
-
-          // 365模式：筛选365目的港
-          if (state.currentMode === MODE_365 && state.selectedDestPorts365.length > 0) {
-            if (!item.port || !state.selectedDestPorts365.includes(item.port)) {
               return false;
             }
           }
@@ -2287,9 +2307,9 @@
        * 根据筛选条件显示船期日历，支持4周显示
        */
       function renderCalendar() {
-        const hasFilters = state.selectedDestPorts001.length > 0 || 
-                          state.selectedCarriers.length > 0 || 
-                          state.selectedDestPorts365.length > 0;
+        const hasFilters = state.selectedOriginPorts.length > 0 || 
+                          state.selectedDestPorts.length > 0 || 
+                          state.selectedCarriers.length > 0;
 
         if (!hasFilters) {
           dom.calendarContainer.classList.add('hidden');
@@ -2637,9 +2657,9 @@
        * 显示各航线按月汇总的靠泊情况
        */
       function renderMonthlySummary() {
-        const hasFilters = state.selectedDestPorts001.length > 0 || 
-                          state.selectedCarriers.length > 0 || 
-                          state.selectedDestPorts365.length > 0;
+        const hasFilters = state.selectedOriginPorts.length > 0 || 
+                          state.selectedDestPorts.length > 0 || 
+                          state.selectedCarriers.length > 0;
 
         if (!hasFilters) {
           dom.monthlySummaryContainer.classList.add('hidden');
@@ -2657,30 +2677,7 @@
         }
 
         // 筛选数据（使用与日历相同的筛选逻辑）
-        const filteredData = currentData.filter(item => {
-          // 001模式：筛选001目的港
-          if (state.currentMode === MODE_001 && state.selectedDestPorts001.length > 0) {
-            if (!item.port || !state.selectedDestPorts001.includes(item.port)) {
-              return false;
-            }
-          }
-
-          // 船公司筛选
-          if (state.selectedCarriers.length > 0) {
-            if (!state.selectedCarriers.includes(item.carrier)) {
-              return false;
-            }
-          }
-
-          // 365模式：筛选365目的港
-          if (state.currentMode === MODE_365 && state.selectedDestPorts365.length > 0) {
-            if (!item.port || !state.selectedDestPorts365.includes(item.port)) {
-              return false;
-            }
-          }
-
-          return true;
-        });
+        const filteredData = filterDataBySelection(currentData);
 
         if (filteredData.length === 0) {
           dom.monthlySummaryContainer.classList.add('hidden');
@@ -3504,9 +3501,9 @@
         const aiModuleCard = aiSection.querySelector('.module-card[data-module="ai"]');
         
         // 检查是否有筛选条件
-        const hasFilters = (state.selectedDestPorts001.length > 0 || 
-                           state.selectedCarriers.length > 0 || 
-                           state.selectedDestPorts365.length > 0);
+        const hasFilters = (state.selectedOriginPorts.length > 0 || 
+                           state.selectedDestPorts.length > 0 || 
+                           state.selectedCarriers.length > 0);
         // 检查是否有数据（需要先检查是否为 null）
         const hasData = (state.currentMode === MODE_001 && state.data001 && state.data001.length > 0) ||
                         (state.currentMode === MODE_365 && state.data365 && state.data365.length > 0);
@@ -3515,30 +3512,7 @@
         let hasFilteredData = false;
         if (hasFilters && hasData) {
           const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
-          const filteredData = currentData.filter(item => {
-            // 001模式：筛选001目的港
-            if (state.currentMode === MODE_001 && state.selectedDestPorts001.length > 0) {
-              if (!item.port || !state.selectedDestPorts001.includes(item.port)) {
-                return false;
-              }
-            }
-            
-            // 船公司筛选
-            if (state.selectedCarriers.length > 0) {
-              if (!state.selectedCarriers.includes(item.carrier)) {
-                return false;
-              }
-            }
-            
-            // 365模式：筛选365目的港
-            if (state.currentMode === MODE_365 && state.selectedDestPorts365.length > 0) {
-              if (!item.port || !state.selectedDestPorts365.includes(item.port)) {
-                return false;
-              }
-            }
-            
-            return true;
-          });
+          const filteredData = filterDataBySelection(currentData);
           hasFilteredData = filteredData.length > 0;
         }
         
@@ -3624,14 +3598,14 @@
 
         // 构建数据描述
         let dataDescription = `【筛选条件】\n`;
-        if (state.currentMode === MODE_001 && state.selectedDestPorts001.length > 0) {
-          dataDescription += `001目的港：${state.selectedDestPorts001.join('、')}\n`;
+        if (state.selectedOriginPorts.length > 0) {
+          dataDescription += `起运港：${state.selectedOriginPorts.join('、')}\n`;
+        }
+        if (state.selectedDestPorts.length > 0) {
+          dataDescription += `目的港：${state.selectedDestPorts.join('、')}\n`;
         }
         if (state.selectedCarriers.length > 0) {
-          dataDescription += `船公司：${state.selectedCarriers.join('、')}\n`;
-        }
-        if (state.currentMode === MODE_365 && state.selectedDestPorts365.length > 0) {
-          dataDescription += `365目的港：${state.selectedDestPorts365.join('、')}\n`;
+          dataDescription += `共舱船公司：${state.selectedCarriers.join('、')}\n`;
         }
         dataDescription += `数据模式：${state.currentMode}\n\n`;
 

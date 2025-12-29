@@ -116,11 +116,11 @@
                         </div>
                     </div>
                     
-                    <div class="tool-card" role="listitem" aria-label="明日数航 船期完整解析工具">
+                    <div class="tool-card" role="listitem" aria-label="船期完整解析工具">
                         <div class="tool-header">
                             <div class="tool-icon orange" aria-hidden="true">🔍</div>
                             <div class="tool-title">
-                                <h3>明日数航 船期完整解析工具</h3>
+                                <h3>船期完整解析工具</h3>
                                 <div class="tool-id">365-02</div>
                             </div>
                         </div>
@@ -128,16 +128,16 @@
                             解析明日数航船期网页，支持 AI 船期和历史船期解析。自动去重、数据补全和日期格式转换。
                         </div>
                         <div class="tool-actions">
-                            <a href="365-02-schedule-full-parser.html?from=tools365" class="tool-link" aria-label="打开明日数航 船期完整解析工具">打开工具 →</a>
-                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看明日数航 船期完整解析工具使用说明">使用说明</a>
+                            <a href="365-02-schedule-full-parser.html?from=tools365" class="tool-link" aria-label="打开船期完整解析工具">打开工具 →</a>
+                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看船期完整解析工具使用说明">使用说明</a>
                         </div>
                     </div>
                     
-                    <div class="tool-card" role="listitem" aria-label="明日数航 航线路径解析工具">
+                    <div class="tool-card" role="listitem" aria-label="航线路径解析工具">
                         <div class="tool-header">
                             <div class="tool-icon blue" aria-hidden="true">🗺️</div>
                             <div class="tool-title">
-                                <h3>明日数航 航线路径解析工具</h3>
+                                <h3>航线路径解析工具</h3>
                                 <div class="tool-id">365-02</div>
                             </div>
                         </div>
@@ -145,16 +145,16 @@
                             从船期网页中提取航线路径信息。自动解析正向路径、反向路径、中间时间，并提取航线ID和共舱船公司信息。
                         </div>
                         <div class="tool-actions">
-                            <a href="365-02-rotation-parser.html?from=tools365" class="tool-link" aria-label="打开明日数航 航线路径解析工具">打开工具 →</a>
-                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看明日数航 航线路径解析工具使用说明">使用说明</a>
+                            <a href="365-02-rotation-parser.html?from=tools365" class="tool-link" aria-label="打开航线路径解析工具">打开工具 →</a>
+                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看航线路径解析工具使用说明">使用说明</a>
                         </div>
                     </div>
                     
-                    <div class="tool-card" role="article" aria-label="明日数航 港口行情解析工具">
+                    <div class="tool-card" role="article" aria-label="港口行情解析工具">
                         <div class="tool-header">
                             <div class="tool-icon orange" aria-hidden="true">💰</div>
                             <div class="tool-title">
-                                <h3>明日数航 港口行情解析工具</h3>
+                                <h3>港口行情解析工具</h3>
                                 <div class="tool-id">365-02</div>
                             </div>
                         </div>
@@ -162,8 +162,8 @@
                             解析明日数航网页中的价格信息。提取各港口的 20GP/40GP 报价，支持批量解析和 CSV 导出。
                         </div>
                         <div class="tool-actions">
-                            <a href="365-02-market-rate-parser.html?from=tools365" class="tool-link" aria-label="打开明日数航 港口行情解析工具">打开工具 →</a>
-                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看明日数航 港口行情解析工具使用说明">使用说明</a>
+                            <a href="365-02-market-rate-parser.html?from=tools365" class="tool-link" aria-label="打开港口行情解析工具">打开工具 →</a>
+                            <a href="365-02-market-rate-schedule-README.html" class="tool-link secondary" aria-label="查看港口行情解析工具使用说明">使用说明</a>
                         </div>
                     </div>
                     
@@ -283,7 +283,7 @@
             </div>
             
             <!-- Admin 系列工具 -->
-            <div id="admin" class="tab-content" style="display: none;">
+            <div id="admin" class="tab-content">
                 <div class="section-intro">
                     <h2>Admin 系列工具</h2>
                     <p>管理工具集，提供访客统计分析、健身记录可视化和代码质量保障功能。支持访问日志分析、用户行为统计、运动数据追踪、单元测试等功能，帮助了解工具使用情况、运动习惯和代码质量。</p>
@@ -373,12 +373,16 @@
             // 隐藏所有tab内容
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
+                // 移除可能存在的内联样式，确保CSS控制显示/隐藏
+                content.style.display = '';
             });
             
             // 显示目标tab内容
             const targetContent = document.getElementById(tabId);
             if (targetContent) {
                 targetContent.classList.add('active');
+                // 确保移除内联样式，让CSS控制显示
+                targetContent.style.display = '';
             }
             
             // 更新导航激活状态
@@ -481,8 +485,8 @@
                 // 检查admin权限，如果没有权限则隐藏admin tab
                 if (typeof window.hasPermission === 'function') {
                     const hasAdminPermission = window.hasPermission('admin');
+                    const adminTab = document.getElementById('admin');
                     if (!hasAdminPermission) {
-                        const adminTab = document.getElementById('admin');
                         if (adminTab) {
                             adminTab.style.display = 'none';
                         }
@@ -491,6 +495,11 @@
                             switchTab('tools001');
                             expandAndActivateNav('tools001');
                             return;
+                        }
+                    } else {
+                        // 如果有权限，确保admin tab可以正常显示（移除内联样式，让CSS控制）
+                        if (adminTab) {
+                            adminTab.style.display = '';
                         }
                     }
                 }

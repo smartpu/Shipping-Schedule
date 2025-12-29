@@ -724,12 +724,33 @@
                                     }
                                     marketRegions.forEach(region => {
                                         const portMap = marketRegionPortMap[region];
-                                        // 提取港口名称列表并排序
-                                        const portNames = Array.from(portMap.keys());
+                                        
+                                        // 检查 portMap 是否已经是数组格式（如果已经处理过，跳过）
+                                        if (Array.isArray(portMap)) {
+                                            return; // 已经是数组格式，跳过处理
+                                        }
+                                        
+                                        // 确保 portMap 是 Map
+                                        if (!(portMap instanceof Map)) {
+                                            debugWarn(`marketRegionPortMap[${region}] 不是 Map 类型，跳过排序`);
+                                            return;
+                                        }
+                                        
+                                        // 提取港口名称列表并排序（确保所有元素都是字符串）
+                                        const portNames = Array.from(portMap.keys()).filter(name => typeof name === 'string' && name.trim());
+                                        if (portNames.length === 0) {
+                                            return; // 没有有效的港口名称，跳过
+                                        }
+                                        
                                         // 使用新的统一排序函数（按区域顺序和代码顺序排序）
                                         const sortedPortNames = window.portSortUtils.sortPortsByDataAndRegion(portNames);
                                         // 重新构建 portArray，保持 port -> portDisplay 的映射关系
                                         const portArray = sortedPortNames.map(portName => {
+                                            // 确保 portName 是字符串
+                                            if (typeof portName !== 'string') {
+                                                debugWarn(`排序后的港口名称不是字符串: ${portName}`);
+                                                return [String(portName), String(portName)];
+                                            }
                                             // 如果排序后的名称是标准化格式，使用它；否则使用原始映射
                                             const display = portName.startsWith('[') && portName.includes('|')
                                                 ? portName
@@ -1280,7 +1301,7 @@
                         }
                     });
                 } catch (error) {
-                    console.warn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
+                    debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
                     allOriginPorts = Array.from(availableOriginPorts).sort((a, b) => {
                         const displayA = marketOriginPortDisplayMap[a] || a;
                         const displayB = marketOriginPortDisplayMap[b] || b;
@@ -1353,11 +1374,24 @@
         async function updatePortSelect(portMap) {
             if (!marketPortSelect) return;
             
-            const allPorts = Array.from(portMap.keys());
+            // 确保 portMap 是 Map 类型
+            let allPorts = [];
+            if (portMap instanceof Map) {
+                allPorts = Array.from(portMap.keys()).filter(port => typeof port === 'string' && port.trim());
+            } else if (Array.isArray(portMap)) {
+                // 如果已经是数组格式，提取第一个元素（港口名称）
+                allPorts = portMap.map(item => {
+                    if (Array.isArray(item) && item.length > 0) {
+                        return String(item[0] || '').trim();
+                    }
+                    return String(item || '').trim();
+                }).filter(port => port);
+            }
+            
             let uniquePorts;
             
             // 使用统一的排序函数（按区域顺序和代码顺序排序）
-            if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
+            if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined' && allPorts.length > 0) {
                 try {
                     // 确保港口映射已加载
                     if (!window.portSortUtils.portsMappingLoaded) {
@@ -1366,7 +1400,7 @@
                     // 使用新的统一排序函数（按区域顺序和代码顺序排序）
                     uniquePorts = window.portSortUtils.sortPortsByDataAndRegion(allPorts);
                 } catch (error) {
-                    console.warn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
+                    debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
                     // 降级方案：使用 sortPortsByStandardOrder 或简单排序
                     uniquePorts = (typeof sortPortsByStandardOrder === 'function')
                         ? sortPortsByStandardOrder(allPorts)
@@ -1379,9 +1413,47 @@
                     : allPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
             }
             
+            // 创建一个辅助函数来获取 portDisplay（支持 Map 和数组两种格式）
+            const getPortDisplay = (port) => {
+                if (portMap instanceof Map) {
+                    return portMap.get(port) || port;
+                } else if (Array.isArray(portMap)) {
+                    // 如果是数组格式，查找匹配的项
+                    const found = portMap.find(item => {
+                        if (Array.isArray(item) && item.length > 0) {
+                            return String(item[0] || '') === String(port);
+                        }
+                        return String(item || '') === String(port);
+                    });
+                    if (found) {
+                        if (Array.isArray(found) && found.length > 1) {
+                            return found[1]; // 返回 display 值
+                        }
+                        return found;
+                    }
+                    return port;
+                }
+                return port;
+            };
+            
+            // 创建一个辅助函数来检查 port 是否存在（支持 Map 和数组两种格式）
+            const hasPort = (port) => {
+                if (portMap instanceof Map) {
+                    return portMap.has(port);
+                } else if (Array.isArray(portMap)) {
+                    return portMap.some(item => {
+                        if (Array.isArray(item) && item.length > 0) {
+                            return String(item[0] || '') === String(port);
+                        }
+                        return String(item || '') === String(port);
+                    });
+                }
+                return false;
+            };
+            
             const filteredPorts = marketPortSearchValue.trim()
                 ? uniquePorts.filter(port => {
-                    const portDisplay = portMap.get(port) || port;
+                    const portDisplay = getPortDisplay(port);
                     return portDisplay.toLowerCase().includes(marketPortSearchValue.toLowerCase()) ||
                            port.toLowerCase().includes(marketPortSearchValue.toLowerCase());
                 })
@@ -1389,7 +1461,7 @@
             
             // 保留已选择的选项（即使它们不在当前过滤后的列表中，也要保留，允许用户多选）
             // 只过滤掉那些确实不在 portMap 中的选项
-            marketSelectedPorts = marketSelectedPorts.filter(port => portMap.has(port));
+            marketSelectedPorts = marketSelectedPorts.filter(port => hasPort(port));
             const selectedSet = new Set(marketSelectedPorts);
             
             // 合并已选择的港口和过滤后的港口列表，确保已选择的港口始终显示
@@ -1403,7 +1475,9 @@
                     if (!window.portSortUtils.portsMappingLoaded) {
                         await window.portSortUtils.loadPortsMapping();
                     }
-                    finalPortsToShow = window.portSortUtils.sortPortsByDataAndRegion(sortedPortsToShow);
+                    // 确保所有元素都是字符串
+                    const filteredPortsToShow = sortedPortsToShow.filter(port => typeof port === 'string' && port.trim());
+                    finalPortsToShow = window.portSortUtils.sortPortsByDataAndRegion(filteredPortsToShow);
                 } catch (error) {
                     finalPortsToShow = sortedPortsToShow.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
                 }
@@ -1422,7 +1496,7 @@
             finalPortsToShow.forEach(port => {
                 const option = document.createElement('option');
                 option.value = port;
-                option.textContent = portMap.get(port) || port;
+                option.textContent = getPortDisplay(port);
                 if (selectedSet.has(port)) {
                     option.selected = true;
                 }
@@ -1572,9 +1646,11 @@
                             await window.portSortUtils.loadPortsMapping();
                         }
                         // 使用新的统一排序函数（按区域顺序和代码顺序排序）
-                        marketOriginPorts = window.portSortUtils.sortPortsByDataAndRegion(Array.from(originPortSet));
+                        // 确保所有元素都是字符串
+                        const originPortArray = Array.from(originPortSet).filter(port => typeof port === 'string' && port.trim());
+                        marketOriginPorts = window.portSortUtils.sortPortsByDataAndRegion(originPortArray);
                     } catch (error) {
-                        console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
+                        debugWarn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
                         marketOriginPorts = Array.from(originPortSet).sort((a, b) => {
                             const displayA = marketOriginPortDisplayMap[a] || a;
                             const displayB = marketOriginPortDisplayMap[b] || b;
@@ -1624,7 +1700,18 @@
                 } else {
                     marketRegions = [...allRegions].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
                 }
-                const totalPorts = marketRegions.reduce((sum, region) => sum + marketRegionPortMap[region].size, 0);
+                // 计算总港口数（在转换为数组之前）
+                const totalPorts = marketRegions.reduce((sum, region) => {
+                    const portMap = marketRegionPortMap[region];
+                    // 检查 portMap 是 Map 还是数组
+                    if (portMap instanceof Map) {
+                        return sum + portMap.size;
+                    } else if (Array.isArray(portMap)) {
+                        return sum + portMap.length;
+                    }
+                    return sum;
+                }, 0);
+                
                 // 将Map转换为数组，保持port -> portDisplay的映射关系
                 // 使用 portSortUtils 对每个区域的港口进行排序（按 Material-parsed_ports_list.txt 顺序）
                 if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
@@ -1636,12 +1723,33 @@
                         
                         marketRegions.forEach(region => {
                             const portMap = marketRegionPortMap[region];
-                            // 提取港口名称列表并排序
-                            const portNames = Array.from(portMap.keys());
+                            
+                            // 检查 portMap 是否已经是数组格式（如果已经处理过，跳过）
+                            if (Array.isArray(portMap)) {
+                                return; // 已经是数组格式，跳过处理
+                            }
+                            
+                            // 确保 portMap 是 Map
+                            if (!(portMap instanceof Map)) {
+                                debugWarn(`marketRegionPortMap[${region}] 不是 Map 类型，跳过排序`);
+                                return;
+                            }
+                            
+                            // 提取港口名称列表并排序（确保所有元素都是字符串）
+                            const portNames = Array.from(portMap.keys()).filter(name => typeof name === 'string' && name.trim());
+                            if (portNames.length === 0) {
+                                return; // 没有有效的港口名称，跳过
+                            }
+                            
                             // 使用新的统一排序函数（按区域顺序和代码顺序排序）
                             const sortedPortNames = window.portSortUtils.sortPortsByDataAndRegion(portNames);
                             // 重新构建 portArray，保持 port -> portDisplay 的映射关系
                             const portArray = sortedPortNames.map(portName => {
+                                // 确保 portName 是字符串
+                                if (typeof portName !== 'string') {
+                                    debugWarn(`排序后的港口名称不是字符串: ${portName}`);
+                                    return [String(portName), String(portName)];
+                                }
                                 // 如果排序后的名称是标准化格式，使用它；否则使用原始映射
                                 const display = portName.startsWith('[') && portName.includes('|')
                                     ? portName
@@ -1651,21 +1759,51 @@
                             marketRegionPortMap[region] = portArray; // 存储为 [port, portDisplay] 的数组
                         });
                     } catch (error) {
-                        console.warn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
+                        debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
                         marketRegions.forEach(region => {
                             const portMap = marketRegionPortMap[region];
-                            const portArray = Array.from(portMap.entries()).sort((a, b) => {
-                                return a[0].localeCompare(b[0], 'zh-Hans-CN');
-                            });
+                            
+                            // 检查 portMap 是否已经是数组格式
+                            if (Array.isArray(portMap)) {
+                                return; // 已经是数组格式，跳过处理
+                            }
+                            
+                            // 确保 portMap 是 Map
+                            if (!(portMap instanceof Map)) {
+                                return;
+                            }
+                            
+                            const portArray = Array.from(portMap.entries())
+                                .filter(([key]) => typeof key === 'string' && key.trim())
+                                .sort((a, b) => {
+                                    const keyA = String(a[0] || '');
+                                    const keyB = String(b[0] || '');
+                                    return keyA.localeCompare(keyB, 'zh-Hans-CN');
+                                });
                             marketRegionPortMap[region] = portArray;
                         });
                     }
                 } else {
                     marketRegions.forEach(region => {
                         const portMap = marketRegionPortMap[region];
-                        const portArray = Array.from(portMap.entries()).sort((a, b) => {
-                            return a[0].localeCompare(b[0], 'zh-Hans-CN');
-                        });
+                        
+                        // 检查 portMap 是否已经是数组格式
+                        if (Array.isArray(portMap)) {
+                            return; // 已经是数组格式，跳过处理
+                        }
+                        
+                        // 确保 portMap 是 Map
+                        if (!(portMap instanceof Map)) {
+                            return;
+                        }
+                        
+                        const portArray = Array.from(portMap.entries())
+                            .filter(([key]) => typeof key === 'string' && key.trim())
+                            .sort((a, b) => {
+                                const keyA = String(a[0] || '');
+                                const keyB = String(b[0] || '');
+                                return keyA.localeCompare(keyB, 'zh-Hans-CN');
+                            });
                         marketRegionPortMap[region] = portArray;
                     });
                 }
@@ -2179,10 +2317,13 @@
                         await window.portSortUtils.loadPortsMapping();
                     }
                     // 使用新的统一排序函数（按区域顺序和代码顺序排序）
-                    allOriginPortOptions = window.portSortUtils.sortPortsByDataAndRegion(allOriginPortOptions);
-                    allDestPortOptions = window.portSortUtils.sortPortsByDataAndRegion(allDestPortOptions);
+                    // 确保所有元素都是字符串
+                    const filteredOriginPorts = allOriginPortOptions.filter(port => typeof port === 'string' && port.trim());
+                    const filteredDestPorts = allDestPortOptions.filter(port => typeof port === 'string' && port.trim());
+                    allOriginPortOptions = window.portSortUtils.sortPortsByDataAndRegion(filteredOriginPorts);
+                    allDestPortOptions = window.portSortUtils.sortPortsByDataAndRegion(filteredDestPorts);
                 } catch (error) {
-                    console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
+                    debugWarn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
                     // 降级方案：简单排序
                     allOriginPortOptions = allOriginPortOptions.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
                     allDestPortOptions = allDestPortOptions.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));

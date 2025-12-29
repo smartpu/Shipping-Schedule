@@ -1138,6 +1138,14 @@
           return;
         }
 
+        // 只显示筛选选中的港口
+        const selectedPorts = state.filters.ports.length > 0 ? state.filters.ports : [];
+        if (selectedPorts.length === 0) {
+          dom.trendTableBody.innerHTML =
+            '<tr><td colspan="7" class="empty-row">请先选择港口以查看周度涨跌统计</td></tr>';
+          return;
+        }
+
         const portIndex = buildPortWeekIndex(allRows);
         const timeline = buildWeekTimeline(allRows);
         if (timeline.order.length < 2) {
@@ -1148,13 +1156,19 @@
 
         const columns = buildTrendColumns(timeline.order, timeline.info);
         updateTrendHeaders(columns);
-        const rowsHtml = Array.from(portIndex.entries())
-          .map(([port, weeks]) => renderTrendRow(port, weeks, columns))
+        
+        // 按照筛选选中的港口顺序显示（保持当前顺序）
+        const rowsHtml = selectedPorts
+          .map((port) => {
+            const weeks = portIndex.get(port);
+            if (!weeks) return null;
+            return renderTrendRow(port, weeks, columns);
+          })
           .filter(Boolean)
           .join("");
 
         dom.trendTableBody.innerHTML =
-          rowsHtml || '<tr><td colspan="7" class="empty-row">暂无可用港口</td></tr>';
+          rowsHtml || '<tr><td colspan="7" class="empty-row">选中的港口暂无可用数据</td></tr>';
       }
 
       function buildPortWeekIndex(rows) {

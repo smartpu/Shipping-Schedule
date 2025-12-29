@@ -20,66 +20,8 @@
     // ============================================
 
     /**
-     * 标准港口顺序（按照航线区域顺序排列）
-     * 用于 001-04 和 365-04 的港口排序
-     */
-    const STANDARD_PORT_ORDER = [
-        // 美西
-        '长滩', '洛杉矶',
-        // 美东
-        '纽约',
-        // 加拿大
-        '温哥华',
-        // 墨西哥
-        '曼萨尼约', '墨西哥曼萨尼约',
-        // 中南美
-        '巴尔博亚', '考赛多', '库特扎尔',
-        // 南美西
-        '布埃纳文图拉', '圣安东尼奥',
-        // 南美东
-        '桑托斯',
-        // 欧基
-        '鹿特丹', '费利克斯托',
-        // 地西
-        '巴塞罗那', '巴塞罗纳', '瓦伦西亚',
-        // 黑海
-        '伊斯坦布尔',
-        // 中东
-        '杰贝阿里', '达曼',
-        // 红海
-        '吉达',
-        // 印巴
-        '吉大', '吉大港', '科伦坡', '纳瓦西瓦', '那瓦西瓦', '清奈',
-        // 澳洲
-        '布里斯班',
-        // 东非
-        '蒙巴萨',
-        // 南非
-        '德班',
-        // 西非
-        '黑角', '特马',
-        // 香港
-        '香港',
-        // 台湾
-        '高雄',
-        // 新加坡
-        '新加坡',
-        // 马来
-        '巴生西', '巴生北', '巴西古单', '槟城', '丹戎帕拉帕斯',
-        // 泰国
-        '林查班',
-        // 越南
-        '盖梅港', '盖美', '海防', '胡志明', '同奈',
-        // 柬埔寨
-        '西哈努克',
-        // 印尼
-        '雅加达', '泗水',
-        // 菲律宾
-        '马尼拉南', '马尼拉北'
-    ];
-
-    /**
      * 标准区域顺序（用于 365-04 的大类排序）
+     * 注意：港口名称标准化和排序已迁移到 portSortUtils，使用 Material-parsed_ports_list.txt 作为数据源
      */
     const STANDARD_AREA_ORDER = [
         '北美洲',
@@ -90,167 +32,6 @@
         '非洲',
         '东南亚'
     ];
-
-    /**
-     * 港口名称匹配规则（处理不同数据源的港口名称差异，与 Monitor-Sailing-Schedule 保持一致）
-     */
-    const PORT_NAME_MAPPING = {
-        // 美西
-        'LONG BEACH': '长滩',
-        'LONG BEACH, CA': '长滩',
-        'LONG BEACH,CA': '长滩',
-        'LONG BEACH CA': '长滩',
-        '长滩,加利福尼亚州': '长滩',
-        'LOS ANGELES': '洛杉矶',
-        'LOS ANGELES, CA': '洛杉矶',
-        'LOS ANGELES,CA': '洛杉矶',
-        'LOS ANGELES CA': '洛杉矶',
-        '洛杉矶,加利福尼亚州': '洛杉矶',
-        // 美东
-        'NEW YORK': '纽约',
-        'NEW YORK,NY': '纽约',
-        'NEW YORK, NY': '纽约',
-        'NEW YORK NY': '纽约',
-        '纽约,纽约州': '纽约',
-        // 加拿大
-        'VANCOUVER': '温哥华',
-        'VANCOUVER.BC': '温哥华',
-        'VANCOUVER,BC': '温哥华',
-        'VANCOUVER, BC': '温哥华',
-        'VANCOUVER BC': '温哥华',
-        // 墨西哥
-        'MANZANILLO': '曼萨尼约',
-        'MANZANILLO,MX': '曼萨尼约',
-        'MANZANILLO, MX': '曼萨尼约',
-        'MANZANILLO MX': '曼萨尼约',
-        '墨西哥曼萨尼约': '曼萨尼约',
-        // 中南美
-        'BALBOA': '巴尔博亚',
-        'BALBOA(巴尔博亚)': '巴尔博亚',
-        'CAUCEDO': '考赛多',
-        'PUERTO QUETZAL': '库特扎尔',
-        // 南美西
-        'BUENAVENTURA': '布埃纳文图拉',
-        'BUENAVENTURA(布埃纳文图拉)': '布埃纳文图拉',
-        'SAN ANTONIO': '圣安东尼奥',
-        'SAN ANTONIO, CHILE': '圣安东尼奥',
-        'SAN ANTONIO,CHILE': '圣安东尼奥',
-        'SAN ANTONIO CHILE': '圣安东尼奥',
-        // 南美东
-        'SANTOS': '桑托斯',
-        'SANTOS(桑托斯)': '桑托斯',
-        // 欧基
-        'ROTTERDAM': '鹿特丹',
-        'ROTTERDAM,NL': '鹿特丹',
-        'ROTTERDAM, NL': '鹿特丹',
-        'ROTTERDAM NL': '鹿特丹',
-        'FELIXSTOWE': '费利克斯托',
-        'FELIXSTOWE(费利克斯托)': '费利克斯托',
-        // 地西
-        'BARCELONA': '巴塞罗那',
-        'BARCELONA(巴塞罗纳)': '巴塞罗那',
-        '巴塞罗纳': '巴塞罗那',
-        'VALENCIA': '瓦伦西亚',
-        'VALENCIA,ES': '瓦伦西亚',
-        'VALENCIA, ES': '瓦伦西亚',
-        'VALENCIA ES': '瓦伦西亚',
-        // 黑海
-        'ISTANBUL': '伊斯坦布尔',
-        'ISTANBUL(伊斯坦布尔)': '伊斯坦布尔',
-        // 中东
-        'JEBEL ALI': '杰贝阿里',
-        'JEBEL ALI(杰贝阿里)': '杰贝阿里',
-        'DAMMAM': '达曼',
-        'DAMMAM(达曼)': '达曼',
-        // 红海
-        'JEDDAH': '吉达',
-        'JEDDAH(吉达)': '吉达',
-        // 印巴
-        'CHATTOGRAM': '吉大',
-        'CHATTOGRAM(吉大港)': '吉大',
-        '吉大港': '吉大',
-        'COLOMBO': '科伦坡',
-        'COLOMBO(科伦坡)': '科伦坡',
-        'NHAVA SHEVA': '纳瓦西瓦',
-        'NHAVA SHEVA(那瓦西瓦)': '纳瓦西瓦',
-        '那瓦西瓦': '纳瓦西瓦',
-        'CHENNAI': '清奈',
-        'CHENNAI(清奈)': '清奈',
-        // 澳洲
-        'BRISBANE': '布里斯班',
-        'BRISBANE,AU': '布里斯班',
-        'BRISBANE, AU': '布里斯班',
-        'BRISBANE AU': '布里斯班',
-        'BRISBANE,AU(布里斯班)': '布里斯班',
-        // 东非
-        'MOMBASA': '蒙巴萨',
-        'MOMBASA(蒙巴萨)': '蒙巴萨',
-        // 南非
-        'DURBAN': '德班',
-        'DURBAN(德班)': '德班',
-        // 西非
-        'POINTE NOIRE': '黑角',
-        'POINTE NOIRE(黑角)': '黑角',
-        'TEMA': '特马',
-        'TEMA(特马)': '特马',
-        // 香港
-        'HONG KONG': '香港',
-        'HONG KONG(香港)': '香港',
-        // 台湾
-        'KAOHSIUNG': '高雄',
-        'KAOHSIUNG(高雄)': '高雄',
-        // 新加坡
-        'SINGAPORE': '新加坡',
-        'SINGAPORE(新加坡)': '新加坡',
-        // 马来
-        'PORT KELANG N': '巴生北',
-        'PORT KELANG N(巴生北)': '巴生北',
-        'PORT KELANG NORTH': '巴生北',
-        'PORT KELANG S': '巴生西',
-        'PORT KELANG S(巴生西)': '巴生西',
-        'PORT KELANG SOUTH': '巴生西',
-        'PASIR GUDANG': '巴西古单',
-        'PASIR GUDANG(巴西古单)': '巴西古单',
-        'PENANG': '槟城',
-        'PENANG(槟城)': '槟城',
-        'TANJUNG PELEPAS': '丹戎帕拉帕斯',
-        'TANJUNG PELEPAS(丹戎帕拉帕斯)': '丹戎帕拉帕斯',
-        // 泰国
-        'LAEM CHABANG': '林查班',
-        'LAEM CHABANG(林查班)': '林查班',
-        // 越南
-        'CAI MEP': '盖梅港',
-        'CAI MEP, VUNG TAU': '盖梅港',
-        'CAI MEP,VUNG TAU': '盖梅港',
-        'CAI MEP, VUNG TAU(盖梅港,头顿)': '盖梅港',
-        '盖梅港,头顿': '盖梅港',
-        '盖梅港, 头顿': '盖梅港',
-        '盖美港,头顿': '盖梅港',
-        '盖美港, 头顿': '盖梅港',
-        '盖美': '盖梅港',
-        'HAIPHONG': '海防',
-        'HAIPHONG(海防)': '海防',
-        'HOCHIMINH': '胡志明',
-        'HO CHI MINH': '胡志明',
-        'HOCHIMINH(胡志明)': '胡志明',
-        'DONG NAI': '同奈',
-        'DONG NAI(同奈)': '同奈',
-        // 柬埔寨
-        'SIHANOUKVILLE': '西哈努克',
-        'SIHANOUKVILLE(西哈努克)': '西哈努克',
-        // 印尼
-        'JAKARTA': '雅加达',
-        'JAKARTA(雅加达)': '雅加达',
-        'SURABAYA': '泗水',
-        'SURABAYA(泗水)': '泗水',
-        // 菲律宾
-        'MANILA N': '马尼拉北',
-        'MANILA N(马尼拉北)': '马尼拉北',
-        'MANILA NORTH': '马尼拉北',
-        'MANILA S': '马尼拉南',
-        'MANILA S(马尼拉南)': '马尼拉南',
-        'MANILA SOUTH': '马尼拉南'
-    };
 
     // ============================================
     // 数据工具函数
@@ -302,241 +83,63 @@
             }
         }
         
-        // 降级方案：使用旧的映射表逻辑（兼容性）
-        let result = normalized;
-        const originalNormalized = normalized;
+        // 降级方案：尝试预处理输入，然后通过 portSortUtils 标准化
+        // 处理常见格式：括号、逗号、点号等
+        let preprocessed = normalized;
         
-        // 1. 先检查映射表（精确匹配）
-        if (PORT_NAME_MAPPING[normalized]) {
-            result = PORT_NAME_MAPPING[normalized];
-            // 如果映射结果是中文，尝试通过 portSortUtils 获取标准化显示格式
-            if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                if (standardized && standardized.startsWith('[')) {
-                    return standardized;
-                }
-            }
-            return result;
-        }
-        
-        // 2. 处理英文格式：BALBOA(巴尔博亚) 或 BRISBANE,AU(布里斯班) 或 CHATTOGRAM(吉大港)
-        if (normalized.includes('(') && normalized.includes(')')) {
-            // 提取括号前的英文部分，尝试匹配
-            const beforeBracket = normalized.split('(')[0].trim();
-            const upperBeforeBracket = beforeBracket.toUpperCase();
-            if (PORT_NAME_MAPPING[upperBeforeBracket]) {
-                result = PORT_NAME_MAPPING[upperBeforeBracket];
-                // 尝试获取标准化显示格式
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
+        // 1. 处理括号格式：BALBOA(巴尔博亚) 或 BRISBANE,AU(布里斯班)
+        if (preprocessed.includes('(') && preprocessed.includes(')')) {
+            // 提取括号前的部分
+            const beforeBracket = preprocessed.split('(')[0].trim();
             // 提取括号内的中文名称
-            const match = normalized.match(/\(([^)]+)\)/);
+            const match = preprocessed.match(/\(([^)]+)\)/);
             if (match && match[1]) {
-                const chineseName = match[1].split(',')[0].trim(); // 如果有逗号，取第一部分
-                if (PORT_NAME_MAPPING[chineseName]) {
-                    result = PORT_NAME_MAPPING[chineseName];
-                    // 尝试获取标准化显示格式
-                    if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                        const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                        if (standardized && standardized.startsWith('[')) {
-                            return standardized;
-                        }
+                const chineseName = match[1].split(',')[0].trim();
+                // 优先尝试中文名称
+                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
+                    const standardized = window.portSortUtils.getStandardizedDisplay(chineseName);
+                    if (standardized && standardized.startsWith('[')) {
+                        return standardized;
                     }
-                    return result;
                 }
-                // 直接使用括号内的中文名称（如果它在标准港口列表中）
-                if (STANDARD_PORT_ORDER.includes(chineseName)) {
-                    result = chineseName;
-                    // 尝试获取标准化显示格式
-                    if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                        const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                        if (standardized && standardized.startsWith('[')) {
-                            return standardized;
-                        }
-                    }
-                    return result;
+                // 如果中文名称不行，尝试括号前的英文部分
+                if (beforeBracket) {
+                    preprocessed = beforeBracket;
                 }
             }
         }
         
-        // 3. 处理包含逗号的情况（如"盖梅港,头顿" -> "盖梅港" 或 "LOS ANGELES, CA" -> "LOS ANGELES"）
-        if (normalized.includes(',')) {
-            const mainPart = normalized.split(',')[0].trim();
-            // 先检查原始格式（带逗号的完整格式）
-            const upperFull = normalized.toUpperCase();
-            if (PORT_NAME_MAPPING[upperFull]) {
-                result = PORT_NAME_MAPPING[upperFull];
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-            // 检查主部分（中文或英文）
-            if (PORT_NAME_MAPPING[mainPart]) {
-                result = PORT_NAME_MAPPING[mainPart];
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-            // 检查英文格式：LOS ANGELES, CA -> LOS ANGELES
-            const upperPart = mainPart.toUpperCase();
-            if (PORT_NAME_MAPPING[upperPart]) {
-                result = PORT_NAME_MAPPING[upperPart];
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-            // 对于中文格式，尝试直接匹配标准港口名称
-            if (/[\u4e00-\u9fa5]/.test(mainPart)) {
-                // 如果主部分是中文，尝试精确匹配标准港口
-                if (STANDARD_PORT_ORDER.includes(mainPart)) {
-                    result = mainPart;
-                    if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                        const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                        if (standardized && standardized.startsWith('[')) {
-                            return standardized;
-                        }
-                    }
-                    return result;
-                }
-                // 尝试模糊匹配（包含关系）
-                for (const standardPort of STANDARD_PORT_ORDER) {
-                    if (mainPart.includes(standardPort) || standardPort.includes(mainPart)) {
-                        result = standardPort;
-                        if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                            const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                            if (standardized && standardized.startsWith('[')) {
-                                return standardized;
-                            }
-                        }
-                        return result;
-                    }
-                }
-            }
-        }
-        
-        // 4. 处理点号分隔：VANCOUVER.BC -> VANCOUVER
-        if (normalized.includes('.')) {
-            const mainPart = normalized.split('.')[0].trim();
-            const upperPart = mainPart.toUpperCase();
-            if (PORT_NAME_MAPPING[upperPart]) {
-                result = PORT_NAME_MAPPING[upperPart];
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-        }
-        
-        // 5. 处理括号内容（如"青岛(青岛)" -> "青岛"）
-        if (normalized.includes('(')) {
-            const beforeBracket = normalized.split('(')[0].trim();
-            if (PORT_NAME_MAPPING[beforeBracket]) {
-                result = PORT_NAME_MAPPING[beforeBracket];
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-        }
-        
-        // 6. 再次检查映射表（处理后的值）
-        if (normalized !== originalNormalized && PORT_NAME_MAPPING[normalized]) {
-            result = PORT_NAME_MAPPING[normalized];
+        // 2. 处理逗号分隔：LOS ANGELES, CA 或 盖梅港,头顿
+        if (preprocessed.includes(',')) {
+            const mainPart = preprocessed.split(',')[0].trim();
+            // 先尝试完整格式
             if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                const standardized = window.portSortUtils.getStandardizedDisplay(result);
+                const standardized = window.portSortUtils.getStandardizedDisplay(preprocessed);
                 if (standardized && standardized.startsWith('[')) {
                     return standardized;
                 }
             }
-            return result;
+            // 再尝试主部分
+            preprocessed = mainPart;
         }
         
-        // 7. 检查大写格式（英文港口名）
-        const upperNormalized = normalized.toUpperCase();
-        if (PORT_NAME_MAPPING[upperNormalized]) {
-            result = PORT_NAME_MAPPING[upperNormalized];
+        // 3. 处理点号分隔：VANCOUVER.BC
+        if (preprocessed.includes('.')) {
+            const mainPart = preprocessed.split('.')[0].trim();
+            preprocessed = mainPart;
+        }
+        
+        // 4. 尝试通过 portSortUtils 获取标准化显示格式（使用预处理后的值）
+        if (preprocessed !== normalized) {
             if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                const standardized = window.portSortUtils.getStandardizedDisplay(result);
+                const standardized = window.portSortUtils.getStandardizedDisplay(preprocessed);
                 if (standardized && standardized.startsWith('[')) {
                     return standardized;
                 }
             }
-            return result;
         }
         
-        // 8. 对于中文格式，先尝试精确匹配标准港口名称
-        if (/[\u4e00-\u9fa5]/.test(normalized)) {
-            // 精确匹配
-            if (STANDARD_PORT_ORDER.includes(normalized)) {
-                result = normalized;
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-            // 去除常见后缀（如"港"、"港口"等，但保留在标准名称中的）
-            const cleaned = normalized.replace(/港$/, '').trim();
-            if (cleaned !== normalized && STANDARD_PORT_ORDER.includes(cleaned)) {
-                result = cleaned;
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-            // 模糊匹配（包含关系，优先匹配更长的标准名称）
-            const matches = [];
-            for (const standardPort of STANDARD_PORT_ORDER) {
-                // 检查是否包含标准港口名（双向包含）
-                if (normalized.includes(standardPort) || standardPort.includes(normalized) ||
-                    cleaned.includes(standardPort) || standardPort.includes(cleaned)) {
-                    matches.push({ port: standardPort, length: standardPort.length });
-                }
-            }
-            if (matches.length > 0) {
-                // 优先匹配最长的标准港口名
-                matches.sort((a, b) => b.length - a.length);
-                result = matches[0].port;
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    const standardized = window.portSortUtils.getStandardizedDisplay(result);
-                    if (standardized && standardized.startsWith('[')) {
-                        return standardized;
-                    }
-                }
-                return result;
-            }
-        }
-        
-        // 9. 最后尝试通过 portSortUtils 获取标准化显示格式（即使没有找到映射）
+        // 5. 最后尝试原始值
         if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
             const standardized = window.portSortUtils.getStandardizedDisplay(normalized);
             if (standardized && standardized !== normalized && standardized.startsWith('[')) {
@@ -544,7 +147,7 @@
             }
         }
         
-        // 10. 如果以上都不匹配，返回原始值
+        // 6. 如果以上都不匹配，返回原始值
         return normalized;
     }
 
@@ -606,17 +209,10 @@
             }
         }
         
-        // 降级方案：使用旧的排序逻辑
-        const portOrderMap = new Map();
-        STANDARD_PORT_ORDER.forEach((port, index) => {
-            portOrderMap.set(port, index);
-        });
-        
-        // 先标准化港口名称，再排序
+        // 降级方案：先标准化港口名称，然后按字母排序
         const normalizedPorts = ports.map(port => {
-            // 如果已经是标准化格式，提取中文名用于排序
+            // 如果已经是标准化格式，直接返回
             if (port.startsWith('[') && port.includes('|')) {
-                // 尝试从标准化格式中提取信息用于排序
                 return port;
             }
             // 标准化港口名称
@@ -624,12 +220,13 @@
             return normalized;
         });
         
+        // 按字母排序（中文按拼音，英文按字母）
         const sorted = normalizedPorts.sort((a, b) => {
-            // 提取用于排序的键（中文名或英文名）
+            // 提取用于排序的键
             let keyA = a;
             let keyB = b;
             
-            // 如果是标准化格式，提取英文名或代码用于排序
+            // 如果是标准化格式，提取英文名用于排序
             if (a.startsWith('[') && a.includes('|')) {
                 const parts = a.match(/\[([^\]]+)\]/);
                 if (parts && parts[1]) {
@@ -645,15 +242,6 @@
                 }
             }
             
-            // 尝试从映射表获取排序索引
-            const indexA = portOrderMap.has(keyA) ? portOrderMap.get(keyA) : Infinity;
-            const indexB = portOrderMap.has(keyB) ? portOrderMap.get(keyB) : Infinity;
-            
-            if (indexA !== Infinity && indexB !== Infinity) {
-                return indexA - indexB;
-            }
-            if (indexA !== Infinity) return -1;
-            if (indexB !== Infinity) return 1;
             return keyA.localeCompare(keyB, 'zh-Hans-CN');
         });
         
@@ -887,10 +475,8 @@
     // 导出常量和函数到全局
     // ============================================
     if (typeof window !== 'undefined') {
-        // 导出常量
-        window.STANDARD_PORT_ORDER = window.STANDARD_PORT_ORDER || STANDARD_PORT_ORDER;
+        // 导出常量（注意：PORT_NAME_MAPPING 和 STANDARD_PORT_ORDER 已移除，使用 portSortUtils 代替）
         window.STANDARD_AREA_ORDER = window.STANDARD_AREA_ORDER || STANDARD_AREA_ORDER;
-        window.PORT_NAME_MAPPING = window.PORT_NAME_MAPPING || PORT_NAME_MAPPING;
         
         // 导出函数
         window.normalizeDestinationValue = window.normalizeDestinationValue || normalizeDestinationValue;

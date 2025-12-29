@@ -316,10 +316,10 @@
       const DAYS_PER_WEEK = 7;
       
       /** @constant {number} 日历每天显示的最大项目数 */
-      const MAX_ITEMS_PER_DAY = 4;
+      const MAX_ITEMS_PER_DAY = 5;
       
-      /** @constant {number} 日历单元格高度（像素）- 设置为显示4条记录，留有上下空隙 */
-      const CALENDAR_DAY_HEIGHT = 460;
+      /** @constant {number} 日历单元格高度（像素）- 设置为显示5条记录（每条2行），留有上下空隙 */
+      const CALENDAR_DAY_HEIGHT = 430;
       
       /** @constant {number} 日历单元格最小宽度（像素） */
       const CALENDAR_DAY_MIN_WIDTH = 180;
@@ -375,252 +375,8 @@
       
       // 调试函数已统一到 vendor/debug-utils.js
 
-      // 航线区域分类规则（按指定顺序排列）
-      const regionMapping = {
-        '美西': ['长滩', '洛杉矶'],
-        '美东': ['纽约'],
-        '加拿大': ['温哥华'],
-        '墨西哥': ['曼萨尼约', '墨西哥曼萨尼约'],
-        '中南美': ['巴尔博亚', '考赛多', '库特扎尔'],
-        '南美西': ['布埃纳文图拉', '圣安东尼奥'],
-        '南美东': ['桑托斯'],
-        '欧基': ['鹿特丹', '费利克斯托'],
-        '地西': ['巴塞罗那', '巴塞罗纳', '瓦伦西亚'],
-        '黑海': ['伊斯坦布尔'],
-        '中东': ['杰贝阿里', '达曼'],
-        '红海': ['吉达'],
-        '印巴': ['吉大', '吉大港', '科伦坡', '纳瓦西瓦', '那瓦西瓦', '清奈'],
-        '澳洲': ['布里斯班'],
-        '东非': ['蒙巴萨'],
-        '南非': ['德班'],
-        '西非': ['黑角', '特马'],
-        '香港': ['香港'],
-        '台湾': ['高雄'],
-        '新加坡': ['新加坡'],
-        '马来': ['巴生西', '巴生北', '巴西古单', '槟城', '丹戎帕拉帕斯'],
-        '泰国': ['林查班'],
-        '越南': ['盖梅港', '盖美', '海防', '胡志明', '同奈'],
-        '柬埔寨': ['西哈努克'],
-        '印尼': ['雅加达', '泗水'],
-        '菲律宾': ['马尼拉南', '马尼拉北']
-      };
-
-      // 所有46个港口列表（按照航线区域顺序排列）
-      const allPorts = [
-        // 美西
-        '长滩', '洛杉矶',
-        // 美东
-        '纽约',
-        // 加拿大
-        '温哥华',
-        // 墨西哥
-        '曼萨尼约', '墨西哥曼萨尼约',
-        // 中南美
-        '巴尔博亚', '考赛多', '库特扎尔',
-        // 南美西
-        '布埃纳文图拉', '圣安东尼奥',
-        // 南美东
-        '桑托斯',
-        // 欧基
-        '鹿特丹', '费利克斯托',
-        // 地西
-        '巴塞罗那', '巴塞罗纳', '瓦伦西亚',
-        // 黑海
-        '伊斯坦布尔',
-        // 中东
-        '杰贝阿里', '达曼',
-        // 红海
-        '吉达',
-        // 印巴
-        '吉大', '吉大港', '科伦坡', '纳瓦西瓦', '那瓦西瓦', '清奈',
-        // 澳洲
-        '布里斯班',
-        // 东非
-        '蒙巴萨',
-        // 南非
-        '德班',
-        // 西非
-        '黑角', '特马',
-        // 香港
-        '香港',
-        // 台湾
-        '高雄',
-        // 新加坡
-        '新加坡',
-        // 马来
-        '巴生西', '巴生北', '巴西古单', '槟城', '丹戎帕拉帕斯',
-        // 泰国
-        '林查班',
-        // 越南
-        '盖梅港', '盖美', '海防', '胡志明', '同奈',
-        // 柬埔寨
-        '西哈努克',
-        // 印尼
-        '雅加达', '泗水',
-        // 菲律宾
-        '马尼拉南', '马尼拉北'
-      ];
-
-      // 港口名称匹配规则（处理不同数据源的港口名称差异，按港口顺序排列）
-      const portNameMapping = {
-        // 美西
-        'LONG BEACH': '长滩',
-        'LONG BEACH, CA': '长滩',
-        'LONG BEACH,CA': '长滩',
-        'LONG BEACH CA': '长滩',
-        '长滩,加利福尼亚州': '长滩',
-        'LOS ANGELES': '洛杉矶',
-        'LOS ANGELES, CA': '洛杉矶',
-        'LOS ANGELES,CA': '洛杉矶',
-        'LOS ANGELES CA': '洛杉矶',
-        '洛杉矶,加利福尼亚州': '洛杉矶',
-        // 美东
-        'NEW YORK': '纽约',
-        'NEW YORK,NY': '纽约',
-        'NEW YORK, NY': '纽约',
-        'NEW YORK NY': '纽约',
-        '纽约,纽约州': '纽约',
-        // 加拿大
-        'VANCOUVER': '温哥华',
-        'VANCOUVER.BC': '温哥华',
-        'VANCOUVER,BC': '温哥华',
-        'VANCOUVER, BC': '温哥华',
-        'VANCOUVER BC': '温哥华',
-        // 墨西哥
-        'MANZANILLO': '曼萨尼约',
-        'MANZANILLO,MX': '曼萨尼约',
-        'MANZANILLO, MX': '曼萨尼约',
-        'MANZANILLO MX': '曼萨尼约',
-        '墨西哥曼萨尼约': '曼萨尼约',
-        // 中南美
-        'BALBOA': '巴尔博亚',
-        'BALBOA(巴尔博亚)': '巴尔博亚',
-        'CAUCEDO': '考赛多',
-        'PUERTO QUETZAL': '库特扎尔',
-        // 南美西
-        'BUENAVENTURA': '布埃纳文图拉',
-        'BUENAVENTURA(布埃纳文图拉)': '布埃纳文图拉',
-        'SAN ANTONIO': '圣安东尼奥',
-        'SAN ANTONIO, CHILE': '圣安东尼奥',
-        'SAN ANTONIO,CHILE': '圣安东尼奥',
-        'SAN ANTONIO CHILE': '圣安东尼奥',
-        // 南美东
-        'SANTOS': '桑托斯',
-        'SANTOS(桑托斯)': '桑托斯',
-        // 欧基
-        'ROTTERDAM': '鹿特丹',
-        'ROTTERDAM,NL': '鹿特丹',
-        'ROTTERDAM, NL': '鹿特丹',
-        'ROTTERDAM NL': '鹿特丹',
-        'FELIXSTOWE': '费利克斯托',
-        'FELIXSTOWE(费利克斯托)': '费利克斯托',
-        // 地西
-        'BARCELONA': '巴塞罗那',
-        'BARCELONA(巴塞罗纳)': '巴塞罗那',
-        '巴塞罗纳': '巴塞罗那',
-        'VALENCIA': '瓦伦西亚',
-        'VALENCIA,ES': '瓦伦西亚',
-        'VALENCIA, ES': '瓦伦西亚',
-        'VALENCIA ES': '瓦伦西亚',
-        // 黑海
-        'ISTANBUL': '伊斯坦布尔',
-        'ISTANBUL(伊斯坦布尔)': '伊斯坦布尔',
-        // 中东
-        'JEBEL ALI': '杰贝阿里',
-        'JEBEL ALI(杰贝阿里)': '杰贝阿里',
-        'DAMMAM': '达曼',
-        'DAMMAM(达曼)': '达曼',
-        // 红海
-        'JEDDAH': '吉达',
-        'JEDDAH(吉达)': '吉达',
-        // 印巴
-        'CHATTOGRAM': '吉大',
-        'CHATTOGRAM(吉大港)': '吉大',
-        '吉大港': '吉大',
-        'COLOMBO': '科伦坡',
-        'COLOMBO(科伦坡)': '科伦坡',
-        'NHAVA SHEVA': '纳瓦西瓦',
-        'NHAVA SHEVA(那瓦西瓦)': '纳瓦西瓦',
-        '那瓦西瓦': '纳瓦西瓦',
-        'CHENNAI': '清奈',
-        'CHENNAI(清奈)': '清奈',
-        // 澳洲
-        'BRISBANE': '布里斯班',
-        'BRISBANE,AU': '布里斯班',
-        'BRISBANE, AU': '布里斯班',
-        'BRISBANE AU': '布里斯班',
-        'BRISBANE,AU(布里斯班)': '布里斯班',
-        // 东非
-        'MOMBASA': '蒙巴萨',
-        'MOMBASA(蒙巴萨)': '蒙巴萨',
-        // 南非
-        'DURBAN': '德班',
-        'DURBAN(德班)': '德班',
-        // 西非
-        'POINTE NOIRE': '黑角',
-        'POINTE NOIRE(黑角)': '黑角',
-        'TEMA': '特马',
-        'TEMA(特马)': '特马',
-        // 香港
-        'HONG KONG': '香港',
-        'HONG KONG(香港)': '香港',
-        // 台湾
-        'KAOHSIUNG': '高雄',
-        'KAOHSIUNG(高雄)': '高雄',
-        // 新加坡
-        'SINGAPORE': '新加坡',
-        'SINGAPORE(新加坡)': '新加坡',
-        // 马来
-        'PORT KELANG N': '巴生北',
-        'PORT KELANG N(巴生北)': '巴生北',
-        'PORT KELANG NORTH': '巴生北',
-        '巴生北': '巴生北',
-        'PORT KELANG S': '巴生西',
-        'PORT KELANG S(巴生西)': '巴生西',
-        'PORT KELANG SOUTH': '巴生西',
-        '巴生西': '巴生西',
-        'PASIR GUDANG': '巴西古单',
-        'PASIR GUDANG(巴西古单)': '巴西古单',
-        'PENANG': '槟城',
-        'PENANG(槟城)': '槟城',
-        'TANJUNG PELEPAS': '丹戎帕拉帕斯',
-        'TANJUNG PELEPAS(丹戎帕拉帕斯)': '丹戎帕拉帕斯',
-        // 泰国
-        'LAEM CHABANG': '林查班',
-        'LAEM CHABANG(林查班)': '林查班',
-        // 越南
-        'CAI MEP': '盖梅港',
-        'CAI MEP, VUNG TAU': '盖梅港',
-        'CAI MEP,VUNG TAU': '盖梅港',
-        'CAI MEP, VUNG TAU(盖梅港,头顿)': '盖梅港',
-        '盖梅港,头顿': '盖梅港',
-        '盖梅港, 头顿': '盖梅港',
-        '盖美港,头顿': '盖梅港',
-        '盖美港, 头顿': '盖梅港',
-        '盖美': '盖梅港',
-        'HAIPHONG': '海防',
-        'HAIPHONG(海防)': '海防',
-        'HOCHIMINH': '胡志明',
-        'HO CHI MINH': '胡志明',
-        'HOCHIMINH(胡志明)': '胡志明',
-        'DONG NAI': '同奈',
-        'DONG NAI(同奈)': '同奈',
-        // 柬埔寨
-        'SIHANOUKVILLE': '西哈努克',
-        'SIHANOUKVILLE(西哈努克)': '西哈努克',
-        // 印尼
-        'JAKARTA': '雅加达',
-        'JAKARTA(雅加达)': '雅加达',
-        'SURABAYA': '泗水',
-        'SURABAYA(泗水)': '泗水',
-        // 菲律宾
-        'MANILA N': '马尼拉北',
-        'MANILA N(马尼拉北)': '马尼拉北',
-        'MANILA NORTH': '马尼拉北',
-        'MANILA S': '马尼拉南',
-        'MANILA S(马尼拉南)': '马尼拉南',
-        'MANILA SOUTH': '马尼拉南'
-      };
+      // 注意：港口标准化和排序现在统一使用 portSortUtils 和 Material-parsed_ports_list.txt
+      // 废弃的 regionMapping、getPortRegion、getAvailableRegions 等函数已删除
 
       // 调试函数已统一到 vendor/debug-utils.js
       // 使用：debugLog(), debugWarn(), debugError()
@@ -994,34 +750,8 @@
 
       }
 
-      /**
-       * 处理筛选器按钮操作
-       * @param {string} filterType - 筛选类型（'region', 'carrier', 'port'）
-       * @param {string} action - 操作类型（'select-all', 'clear-all'）
-       */
-      function handleFilterAction(filterType, action) {
-        let select;
-        if (filterType === 'region') select = dom.originPort001Select;
-        else if (filterType === 'carrier') select = dom.carrierSelect;
-        else select = dom.destPort365Select;
-
-        if (action === 'select-all') {
-          // 全部选择（只选择可见的选项）
-          Array.from(select.options).forEach(option => {
-            if (!option.classList.contains('hidden') && option.style.display !== 'none') {
-              option.selected = true;
-            }
-          });
-        } else if (action === 'clear-all') {
-          // 清除选择
-          Array.from(select.options).forEach(option => {
-            option.selected = false;
-          });
-        }
-
-        // 触发change事件以更新筛选
-        select.dispatchEvent(new Event('change'));
-      }
+      // 注意：handleFilterAction 函数已废弃，引用了不存在的 DOM 元素（originPort001Select, destPort365Select）
+      // 当前筛选器使用统一的 originPortSelect, destPortSelect, carrierSelect
 
       // 搜索筛选选项
       function filterOptions(type, searchText) {
@@ -1524,38 +1254,36 @@
           return null;
         };
 
-        // 365文件列定义
+        // 365文件列定义（删除C-F列后更新）
         const originPortCol = findColumnKey(['起运港', 'pol', 'origin'], 0); // A列（索引0）- 起运港（不标准化）
         const portCol = findColumnKey(['港口', '目的港', 'pod'], 1); // B列（索引1）- 目的港（不标准化）
-        const carrierCol = findColumnKey(['共舱', '船公司'], 9); // J列（索引9）- 强制使用索引9
-        const dateCol = findColumnKey(['船期', '开船', '离港', 'etd'], 12); // M列（索引12）
-        const vesselCol = columnKeys[11] || findColumnKey(['船名', '航次', 'vessel'], 11); // L列（索引11）- 船名航次
-        const routeIdCol = findColumnKey(['航线id', '航线ID', 'route id', 'group_id', 'groupid'], 6); // G列（索引6）- 航线ID
-        const vesselNameCol = columnKeys[16] || findColumnKey(['船名'], 16); // Q列（索引16）- 船名
-        
-        // 额外列：H、I、N、O、S、U、Y
-        const weekdayCol = columnKeys[7] || null; // H列（索引7）- 标准开航日
-        const voyageDaysCol = columnKeys[8] || null; // I列（索引8）- 标准航程
-        const originTerminalCol = columnKeys[13] || null; // N列（索引13）- 起运港码头
-        const destTerminalCol = columnKeys[14] || null; // O列（索引14）- 目的港码头
-        const shipTypeCol = columnKeys[18] || null; // S列（索引18）- 船型
-        const yearCol = columnKeys[20] || null; // U列（索引20）- 年份
-        const routePathCol = columnKeys[24] || null; // Y列（索引24）- 路径
+        const routeIdCol = findColumnKey(['航线id', '航线ID', 'route id', 'group_id', 'groupid'], 2); // C列（索引2）- 航线ID
+        const weekdayCol = columnKeys[3] || null; // D列（索引3）- 标准开航日
+        const voyageDaysCol = columnKeys[4] || null; // E列（索引4）- 标准航程
+        const carrierCol = findColumnKey(['共舱', '船公司'], 5); // F列（索引5）- 共舱船公司
+        const routeRemarkCol = columnKeys[6] || null; // G列（索引6）- 航线备注
+        const vesselCol = columnKeys[7] || findColumnKey(['船名', '航次', 'vessel'], 7); // H列（索引7）- 船名航次
+        const dateCol = findColumnKey(['船期', '开船', '离港', 'etd'], 8); // I列（索引8）- 开船日期
+        const originTerminalCol = columnKeys[9] || null; // J列（索引9）- 起运港码头
+        const destTerminalCol = columnKeys[10] || null; // K列（索引10）- 目的港码头
+        const vesselNameCol = columnKeys[12] || null; // M列（索引12）- 船名
+        const shipTypeCol = columnKeys[14] || null; // O列（索引14）- 船型
+        const yearCol = columnKeys[16] || null; // Q列（索引16）- 年份
+        const routePathCol = columnKeys[20] || null; // U列（索引20）- 航线路径
 
         if (!portCol || !carrierCol || !dateCol) {
           debugWarn('365文件缺少必要的列:', { portCol, carrierCol, dateCol, allColumns: columnKeys });
-          // 如果通过关键词找不到，强制使用索引
-          const portColFallback = columnKeys[1] || null;
-          const carrierColFallback = columnKeys[9] || null; // J列
-          const dateColFallback = columnKeys[12] || null; // M列
-          const routeIdColFallback = columnKeys[6] || null; // G列
-          const vesselNameColFallback = columnKeys[16] || null; // Q列
+          // 如果通过关键词找不到，强制使用索引（删除C-F列后的新索引）
+          const portColFallback = columnKeys[1] || null; // B列
+          const carrierColFallback = columnKeys[5] || null; // F列
+          const dateColFallback = columnKeys[8] || null; // I列
+          const routeIdColFallback = columnKeys[2] || null; // C列
           
           if (!portColFallback || !carrierColFallback || !dateColFallback) {
             const missingCols = [];
             if (!portColFallback) missingCols.push('目的港(B列)');
-            if (!carrierColFallback) missingCols.push('船公司(J列)');
-            if (!dateColFallback) missingCols.push('船期(M列)');
+            if (!carrierColFallback) missingCols.push('船公司(F列)');
+            if (!dateColFallback) missingCols.push('船期(I列)');
             const errorMsg = `365文件缺少必要的列：${missingCols.join('、')}`;
             debugError('365文件缺少必要的列:', { portCol, carrierCol, dateCol, portColFallback, carrierColFallback, dateColFallback, allColumns: columnKeys });
             throw new Error(errorMsg);
@@ -1566,11 +1294,10 @@
           const finalCarrierCol = carrierCol || carrierColFallback;
           const finalDateCol = dateCol || dateColFallback;
           const finalRouteIdCol = routeIdCol || routeIdColFallback;
-          const finalVesselNameCol = vesselNameCol || vesselNameColFallback;
           
           return parse365WithColumns(jsonData, originPortCol || columnKeys[0] || null, finalPortCol, finalCarrierCol, finalDateCol, vesselCol,
             weekdayCol, voyageDaysCol, originTerminalCol, destTerminalCol, shipTypeCol, yearCol, routePathCol,
-            finalRouteIdCol, finalVesselNameCol);
+            finalRouteIdCol, vesselNameCol);
         }
 
         return parse365WithColumns(jsonData, originPortCol || columnKeys[0] || null, portCol, carrierCol, dateCol, vesselCol,
@@ -1628,36 +1355,7 @@
       }
 
       // parseDate 函数已移至 vendor/common-utils.js
-
-      // 港口名称处理函数（保持 Excel 中的原始值，不进行标准化）
-      // 用户将通过其他方式实现港口标准化
-      function normalizePortName(portName) {
-        if (!portName) return '';
-        
-        // 直接返回原始值，去除多余空格
-        return String(portName).trim();
-        
-        // 注意：港口标准化已通过 portSortUtils 统一处理，此处仅做基本清理
-        if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-          const standardized = window.portSortUtils.getStandardizedDisplay(normalized);
-          if (standardized && standardized !== normalized && standardized.startsWith('[')) {
-            return standardized;
-          }
-        }
-
-        // 如果都不匹配，返回空字符串（跳过这条记录）
-        return '';
-      }
-
-      // 获取港口所属区域
-      function getPortRegion(port) {
-        for (const [region, ports] of Object.entries(regionMapping)) {
-          if (ports.some(p => port.includes(p) || p.includes(port))) {
-            return region;
-          }
-        }
-        return null;
-      }
+      // 港口标准化功能已迁移到 portSortUtils，使用 Material-parsed_ports_list.txt 作为数据源
 
       /**
        * 更新船公司筛选器（联动更新）
@@ -1797,69 +1495,9 @@
         updateCarrierFilter();
       }
 
-      /**
-       * 更新港口筛选器（联动更新）
-       * 根据当前选中的区域和船公司，更新可用的港口选项
-       */
-      function updatePortFilter() {
-        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
-        if (!currentData || currentData.length === 0) {
-          return;
-        }
-
-        // 根据当前筛选条件，获取可用的港口
-        const availablePorts = getAvailablePorts(currentData);
-        
-        // 保存当前选中的值
-        const currentSelected = Array.from(dom.destPort365Select.selectedOptions).map(o => o.value);
-        
-        // 更新选项，只显示可用的港口
-        Array.from(dom.destPort365Select.options).forEach(option => {
-          if (availablePorts.includes(option.value)) {
-            option.style.display = '';
-            if (currentSelected.includes(option.value)) {
-              option.selected = true;
-            }
-          } else {
-            option.style.display = 'none';
-            option.selected = false;
-          }
-        });
-      }
-
-      // 获取可用的航线区域（基于当前船公司和港口筛选）
-      function getAvailableRegions(data) {
-        const filtered = data.filter(item => {
-          // 起运港筛选
-          if (state.selectedOriginPorts.length > 0) {
-            if (!item.originPort || !state.selectedOriginPorts.includes(item.originPort)) {
-              return false;
-            }
-          }
-          // 目的港筛选
-          if (state.selectedDestPorts.length > 0) {
-            if (!item.port || !state.selectedDestPorts.includes(item.port)) {
-              return false;
-            }
-          }
-          // 船公司筛选
-          if (state.selectedCarriers.length > 0) {
-            if (!state.selectedCarriers.includes(item.carrier)) {
-              return false;
-            }
-          }
-          return true;
-        });
-        
-        const regions = new Set();
-        filtered.forEach(item => {
-          const region = getPortRegion(item.port);
-          if (region) {
-            regions.add(region);
-          }
-        });
-        return Array.from(regions).sort();
-      }
+      // 注意：updatePortFilter 函数已废弃，引用了不存在的 DOM 元素（destPort365Select）
+      // 当前使用统一的 updateFilterOptions 函数更新所有筛选器
+      // 注意：getAvailableRegions 函数已删除（未使用，依赖已废弃的 getPortRegion）
 
       // 获取可用的船公司（基于当前起运港和目的港筛选）
       function getAvailableCarriers(data) {
@@ -1909,35 +1547,8 @@
         return Array.from(ports);
       }
 
-      /**
-       * 更新航线区域筛选器（联动更新）
-       * 根据当前选中的船公司和港口，更新可用的区域选项
-       */
-      function updateRegionFilter() {
-        const currentData = state.currentMode === MODE_001 ? state.data001 : state.data365;
-        if (!currentData || currentData.length === 0) {
-          return;
-        }
-
-        // 根据当前筛选条件，获取可用的航线区域
-        const availableRegions = getAvailableRegions(currentData);
-        
-        // 保存当前选中的值
-        const currentSelected = Array.from(dom.originPort001Select.selectedOptions).map(o => o.value);
-        
-        // 更新选项，只显示可用的区域
-        Array.from(dom.originPort001Select.options).forEach(option => {
-          if (availableRegions.includes(option.value)) {
-            option.style.display = '';
-            if (currentSelected.includes(option.value)) {
-              option.selected = true;
-            }
-          } else {
-            option.style.display = 'none';
-            option.selected = false;
-          }
-        });
-      }
+      // 注意：updateRegionFilter 函数已废弃，引用了不存在的 DOM 元素（originPort001Select）
+      // 当前使用统一的 updateFilterOptions 函数更新所有筛选器
 
       // 处理筛选变化（联动更新）- 使用防抖优化性能
       const handleFilterChange = debounce(async () => {
@@ -2025,12 +1636,12 @@
             const routeId = item.routeId || '';
             groupKey = `${dateKey}_${vesselName}_${routeId}`;
           } else {
-            // 001模式：船名 + 航次 + 船型 + 船公司
+            // 001模式：同一天 + 船名 + 航次 + 船公司（去掉船型，因为001数据中有时候会漏掉船型数据）
+            const dateKey = formatDateKey(item.date);
             vesselName = getVesselName(item.vessel || '');
             voyageNumber = getVoyageNumber(item.vessel || '');
-            shipType = item.shipType || '';
             carrier = item.carrier || '';
-            groupKey = `${vesselName}_${voyageNumber}_${shipType}_${carrier}`;
+            groupKey = `${dateKey}_${vesselName}_${voyageNumber}_${carrier}`;
           }
           
           if (!grouped[groupKey]) {
@@ -2043,6 +1654,7 @@
                 carriersSet: new Set(),
                 ports: [],
                 portsSet: new Set(),
+                portDetails: [], // 365模式也需要portDetails数组（用于统一处理）
                 weekday: item.weekday,
                 voyageDays: item.voyageDays,
                 originTerminal: item.originTerminal,
@@ -2054,30 +1666,80 @@
                 date: item.date
               };
             } else {
+              // 001模式：存储每个港口的详细信息，合并时取资料最全的
               grouped[groupKey] = {
                 vessel: item.vessel || '',
                 vesselName: vesselName,
                 voyageNumber: voyageNumber,
-                shipType: shipType,
+                shipType: item.shipType || '', // 合并时取最全的
                 carrier: carrier,
-                ports: [],
-                portsSet: new Set(),
-                weekday: item.weekday,
-                voyageDays: item.voyageDays,
-                originTerminal: item.originTerminal,
-                destTerminal: item.destTerminal,
-                year: item.year,
-                routePath: item.routePath,
+                ports: [], // 存储港口名称数组
+                portsSet: new Set(), // 用于去重
+                portDetails: [], // 存储每个港口的详细信息 [{port, weekday, voyageDays, originTerminal, destTerminal}]
+                weekday: item.weekday || '', // 合并时取最全的
+                voyageDays: item.voyageDays || '', // 合并时取最全的
+                originTerminal: item.originTerminal || '', // 合并时取最全的
+                destTerminal: item.destTerminal || '', // 合并时取最全的
+                year: item.year || '',
+                routePath: item.routePath || '',
                 mode: item.mode,
                 date: item.date
               };
             }
           }
           
-          // 添加港口（去重）
-          if (item.port && !grouped[groupKey].portsSet.has(item.port)) {
-            grouped[groupKey].ports.push(item.port);
-            grouped[groupKey].portsSet.add(item.port);
+          // 001模式：合并时补全资料（取最全的）
+          if (item.mode === MODE_001) {
+            const group = grouped[groupKey];
+            // 补全基础字段（取最全的，优先保留非空值）
+            if (!group.vessel && item.vessel) group.vessel = item.vessel;
+            if (!group.shipType && item.shipType) group.shipType = item.shipType;
+            if (!group.weekday && item.weekday) group.weekday = item.weekday;
+            if (!group.voyageDays && item.voyageDays) group.voyageDays = item.voyageDays;
+            if (!group.originTerminal && item.originTerminal) group.originTerminal = item.originTerminal;
+            if (!group.destTerminal && item.destTerminal) group.destTerminal = item.destTerminal;
+            if (!group.year && item.year) group.year = item.year;
+            if (!group.routePath && item.routePath) group.routePath = item.routePath;
+          }
+          
+          // 添加港口（去重）并存储详细信息
+          if (item.port) {
+            const portKey = String(item.port).trim();
+            if (!grouped[groupKey].portsSet.has(portKey)) {
+              grouped[groupKey].ports.push(portKey);
+              grouped[groupKey].portsSet.add(portKey);
+              // 存储该港口的详细信息
+              grouped[groupKey].portDetails.push({
+                port: portKey,
+                weekday: item.weekday || '',
+                voyageDays: item.voyageDays || '',
+                originTerminal: item.originTerminal || '',
+                destTerminal: item.destTerminal || ''
+              });
+            } else {
+              // 如果港口已存在，更新详细信息（保留非空值，补全资料）
+              const existingDetail = grouped[groupKey].portDetails.find(d => d.port === portKey);
+              if (existingDetail) {
+                if (!existingDetail.weekday && item.weekday) existingDetail.weekday = item.weekday;
+                if (!existingDetail.voyageDays && item.voyageDays) existingDetail.voyageDays = item.voyageDays;
+                if (!existingDetail.originTerminal && item.originTerminal) existingDetail.originTerminal = item.originTerminal;
+                if (!existingDetail.destTerminal && item.destTerminal) existingDetail.destTerminal = item.destTerminal;
+              }
+            }
+          }
+          
+          // 365模式：合并时补全资料（取最全的）
+          if (item.mode === MODE_365) {
+            const group = grouped[groupKey];
+            // 补全基础字段（取最全的，优先保留非空值）
+            if (!group.vessel && item.vessel) group.vessel = item.vessel;
+            if (!group.shipType && item.shipType) group.shipType = item.shipType;
+            if (!group.weekday && item.weekday) group.weekday = item.weekday;
+            if (!group.voyageDays && item.voyageDays) group.voyageDays = item.voyageDays;
+            if (!group.originTerminal && item.originTerminal) group.originTerminal = item.originTerminal;
+            if (!group.destTerminal && item.destTerminal) group.destTerminal = item.destTerminal;
+            if (!group.year && item.year) group.year = item.year;
+            if (!group.routePath && item.routePath) group.routePath = item.routePath;
           }
           
           // 365模式：收集共舱船公司
@@ -2106,12 +1768,14 @@
               ...group,
               ports: group.ports,
               portsText: group.ports.join('、'),
+              portDetails: group.portDetails || [], // 确保包含portDetails
               isMerged: true
             };
           } else {
             return {
               ...group,
               port: group.ports[0] || '',
+              portDetails: group.portDetails || [], // 确保包含portDetails
               isMerged: false
             };
           }
@@ -2524,12 +2188,12 @@
               const routeId = item.routeId || '';
               groupKey = `${dateKey}_${vesselName}_${routeId}`;
             } else {
-              // 001模式：船名 + 航次 + 船型 + 船公司
+              // 001模式：同一天 + 船名 + 航次 + 船公司（去掉船型，因为001数据中有时候会漏掉船型数据）
+              const dateKey = formatDateKey(item.date);
               vesselName = getVesselName(item.vessel || '');
               voyageNumber = getVoyageNumber(item.vessel || '');
-              shipType = item.shipType || '';
               carrier = item.carrier || '';
-              groupKey = `${vesselName}_${voyageNumber}_${shipType}_${carrier}`;
+              groupKey = `${dateKey}_${vesselName}_${voyageNumber}_${carrier}`;
             }
             
             if (!grouped[groupKey]) {
@@ -2542,29 +2206,86 @@
                   carriersSet: new Set(),
                   ports: [],
                   portsSet: new Set(),
+                  portDetails: [], // 365模式也需要portDetails数组（用于统一处理）
                   routeId: item.routeId || '',
                   mode: item.mode,
                   date: item.date
                 };
               } else {
+                // 001模式：存储每个港口的详细信息，合并时取资料最全的
                 grouped[groupKey] = {
                   vessel: item.vessel || '',
                   vesselName: vesselName,
                   voyageNumber: voyageNumber,
-                  shipType: shipType,
+                  shipType: item.shipType || '', // 合并时取最全的
                   carrier: carrier,
                   ports: [],
                   portsSet: new Set(),
+                  portDetails: [], // 存储每个港口的详细信息
+                  weekday: item.weekday || '', // 合并时取最全的
+                  voyageDays: item.voyageDays || '', // 合并时取最全的
+                  originTerminal: item.originTerminal || '', // 合并时取最全的
+                  destTerminal: item.destTerminal || '', // 合并时取最全的
+                  year: item.year || '',
+                  routePath: item.routePath || '',
                   mode: item.mode,
                   date: item.date
                 };
               }
             }
             
-            // 添加港口（去重）
-            if (item.port && !grouped[groupKey].portsSet.has(item.port)) {
-              grouped[groupKey].ports.push(item.port);
-              grouped[groupKey].portsSet.add(item.port);
+            // 001模式：合并时补全资料（取最全的）
+            if (item.mode === MODE_001) {
+              const group = grouped[groupKey];
+              // 补全基础字段（取最全的，优先保留非空值）
+              if (!group.vessel && item.vessel) group.vessel = item.vessel;
+              if (!group.shipType && item.shipType) group.shipType = item.shipType;
+              if (!group.weekday && item.weekday) group.weekday = item.weekday;
+              if (!group.voyageDays && item.voyageDays) group.voyageDays = item.voyageDays;
+              if (!group.originTerminal && item.originTerminal) group.originTerminal = item.originTerminal;
+              if (!group.destTerminal && item.destTerminal) group.destTerminal = item.destTerminal;
+              if (!group.year && item.year) group.year = item.year;
+              if (!group.routePath && item.routePath) group.routePath = item.routePath;
+            }
+            
+            // 添加港口（去重）并存储详细信息
+            if (item.port) {
+              const portKey = String(item.port).trim();
+              if (!grouped[groupKey].portsSet.has(portKey)) {
+                grouped[groupKey].ports.push(portKey);
+                grouped[groupKey].portsSet.add(portKey);
+                // 存储该港口的详细信息
+                grouped[groupKey].portDetails.push({
+                  port: portKey,
+                  weekday: item.weekday || '',
+                  voyageDays: item.voyageDays || '',
+                  originTerminal: item.originTerminal || '',
+                  destTerminal: item.destTerminal || ''
+                });
+              } else {
+                // 如果港口已存在，更新详细信息（保留非空值，补全资料）
+                const existingDetail = grouped[groupKey].portDetails.find(d => d.port === portKey);
+                if (existingDetail) {
+                  if (!existingDetail.weekday && item.weekday) existingDetail.weekday = item.weekday;
+                  if (!existingDetail.voyageDays && item.voyageDays) existingDetail.voyageDays = item.voyageDays;
+                  if (!existingDetail.originTerminal && item.originTerminal) existingDetail.originTerminal = item.originTerminal;
+                  if (!existingDetail.destTerminal && item.destTerminal) existingDetail.destTerminal = item.destTerminal;
+                }
+              }
+            }
+            
+            // 365模式：合并时补全资料（取最全的）
+            if (item.mode === MODE_365) {
+              const group = grouped[groupKey];
+              // 补全基础字段（取最全的，优先保留非空值）
+              if (!group.vessel && item.vessel) group.vessel = item.vessel;
+              if (!group.shipType && item.shipType) group.shipType = item.shipType;
+              if (!group.weekday && item.weekday) group.weekday = item.weekday;
+              if (!group.voyageDays && item.voyageDays) group.voyageDays = item.voyageDays;
+              if (!group.originTerminal && item.originTerminal) group.originTerminal = item.originTerminal;
+              if (!group.destTerminal && item.destTerminal) group.destTerminal = item.destTerminal;
+              if (!group.year && item.year) group.year = item.year;
+              if (!group.routePath && item.routePath) group.routePath = item.routePath;
             }
             
             // 365模式：收集共舱船公司
@@ -2592,12 +2313,14 @@
                 ...group,
                 ports: group.ports,
                 portsText: group.ports.join('、'),
+                portDetails: group.portDetails || [], // 确保包含portDetails
                 isMerged: true
               };
             } else {
               return {
                 ...group,
                 port: group.ports[0] || '',
+                portDetails: group.portDetails || [], // 确保包含portDetails
                 isMerged: false
               };
             }
@@ -2855,58 +2578,26 @@
        */
       function renderScheduleItem(itemEl, item, currentMode) {
         // 准备数据
-        const portText = item.isMerged ? item.portsText : (item.port || '');
         const vesselText = item.vessel || '';
         const shipTypeText = item.shipType ? ` ${item.shipType}TEU` : '';
-        const thirdLine = vesselText + shipTypeText;
+        const secondLine = vesselText + shipTypeText;
         
-        // 001 模式：只在有 thirdLine 时显示第三行
-        // 365 模式：总是显示第三行
-        const showThirdLine = currentMode === MODE_365 || thirdLine;
-        
+        // 001 模式和 365 模式都显示2行：
+        // 第一行：共舱船公司
+        // 第二行：船名/航次 + 船型（不显示港口，港口信息移到悬停中）
         // 构建 HTML
         itemEl.innerHTML = `
           <div class="carrier" style="font-weight: 600; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #1f2d3d;">${item.carrier || ''}</div>
-          <div class="port" style="color: #3E62AD; font-weight: 500; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px;">${portText}</div>
-          ${showThirdLine ? `<div class="vessel" style="color: #495057; font-size: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${thirdLine || ''}</div>` : ''}
+          <div class="vessel" style="color: #495057; font-size: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${secondLine || ''}</div>
         `;
         
         // 存储航线信息用于点击高亮
         itemEl.dataset.carrier = item.carrier || '';
         
-        // 判断是否需要显示 tooltip
-        // 365 模式：只要有任意一个字段就显示
-        // 001 模式：只要有 carrier 或 shipType 或其他额外信息就显示
-        const shouldShowTooltip = currentMode === MODE_365
-          ? (item.weekday || item.voyageDays || item.originTerminal || item.destTerminal || 
-             item.shipType || item.year || item.routePath)
-          : (item.carrier || item.shipType || item.weekday || item.voyageDays || 
-             item.originTerminal || item.destTerminal);
-        
-        if (shouldShowTooltip) {
-          attachTooltipToItem(itemEl, item);
-        }
+        // 始终显示 tooltip（因为港口信息在悬停中显示）
+        attachTooltipToItem(itemEl, item);
       }
       
-      /**
-       * 渲染剩余项目（用于"还有 X 条"提示框）
-       * @param {Object} item - 数据项
-       * @param {string} currentMode - 当前模式
-       * @returns {string} HTML 字符串
-       */
-      function renderRemainingItem(item, currentMode) {
-        const portText = item.isMerged ? item.portsText : (item.port || '');
-        const vesselText = item.vessel || '';
-        const shipTypeText = item.shipType ? ` ${item.shipType}TEU` : '';
-        const thirdLine = vesselText + shipTypeText;
-        const showThirdLine = currentMode === MODE_365 || thirdLine;
-        
-        return `
-          <div style="font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1f2d3d;">${item.carrier || ''}</div>
-          <div style="color: #667eea; font-weight: 500; margin-bottom: 4px; font-size: 12px;">${portText}</div>
-          ${showThirdLine ? `<div style="color: #495057; font-size: 11px; line-height: 1.5;">${thirdLine || ''}</div>` : ''}
-        `;
-      }
 
       // 提取船名（去除航次号）
       function getVesselName(vesselText) {
@@ -3080,54 +2771,117 @@
           `);
         }
         
-        // 第二行：标准开航日 + 标准航程（对齐格式）
-        if (item.weekday || item.voyageDays) {
-          // 处理weekday：如果已经是"周x"格式，直接使用；如果是数字，转换为"周x"
-          let weekdayText = '';
-          if (item.weekday) {
-            const weekdayStr = String(item.weekday).trim();
-            // 如果已经包含"周"字，直接使用；否则添加"周"前缀
-            if (weekdayStr.includes('周')) {
-              weekdayText = weekdayStr.replace(/周+/g, '周'); // 去掉重复的"周"字
-            } else {
-              weekdayText = `周${weekdayStr}`;
+        // 001模式：显示所有目的港的详细信息
+        if (is001Mode && item.portDetails && item.portDetails.length > 0) {
+          item.portDetails.forEach((portDetail, index) => {
+            // 目的港
+            lines.push(`
+              <div class="tooltip-grid-line">
+                <span class="tooltip-label">目的港：</span>
+                <span class="tooltip-value" style="grid-column: 2 / -1;">${portDetail.port || ''}</span>
+              </div>
+            `);
+            
+            // 标准开航日 + 标准航程
+            let weekdayText = '';
+            if (portDetail.weekday) {
+              const weekdayStr = String(portDetail.weekday).trim();
+              if (weekdayStr.includes('周')) {
+                weekdayText = weekdayStr.replace(/周+/g, '周');
+              } else {
+                weekdayText = `周${weekdayStr}`;
+              }
             }
+            
+            let voyageText = '';
+            if (portDetail.voyageDays) {
+              const voyageStr = String(portDetail.voyageDays).trim();
+              voyageText = voyageStr.replace(/天+$/, '') + '天';
+            }
+            
+            if (weekdayText || voyageText) {
+              lines.push(`
+                <div class="tooltip-grid-line">
+                  <span class="tooltip-label">标准开航日：</span>
+                  <span class="tooltip-value">${weekdayText}</span>
+                  <span class="tooltip-label">标准航程：</span>
+                  <span class="tooltip-value">${voyageText}</span>
+                </div>
+              `);
+            }
+            
+            // 起运港码头 + 目的港码头
+            if (portDetail.originTerminal || portDetail.destTerminal) {
+              lines.push(`
+                <div class="tooltip-grid-line">
+                  <span class="tooltip-label">起运港码头：</span>
+                  <span class="tooltip-value">${portDetail.originTerminal || ''}</span>
+                  <span class="tooltip-label">目的港码头：</span>
+                  <span class="tooltip-value">${portDetail.destTerminal || ''}</span>
+                </div>
+              `);
+            }
+            
+            // 如果有多个港口，在最后一个港口后添加分隔线（除了最后一个）
+            if (index < item.portDetails.length - 1) {
+              lines.push(`<div style="height: 1px; background: #e9ecef; margin: 8px 0;"></div>`);
+            }
+          });
+        } else if (is001Mode) {
+          // 001模式降级：如果没有portDetails，使用旧的显示方式
+          // 目的港
+          const portText = item.isMerged ? item.portsText : (item.port || '');
+          if (portText) {
+            lines.push(`
+              <div class="tooltip-grid-line">
+                <span class="tooltip-label">目的港：</span>
+                <span class="tooltip-value" style="grid-column: 2 / -1;">${portText}</span>
+              </div>
+            `);
           }
           
-          // 处理voyageDays：去掉重复的"天"字
-          let voyageText = '';
-          if (item.voyageDays) {
-            const voyageStr = String(item.voyageDays).trim();
-            // 去掉末尾的"天"字，然后统一添加一个"天"
-            voyageText = voyageStr.replace(/天+$/, '') + '天';
+          // 标准开航日 + 标准航程
+          if (item.weekday || item.voyageDays) {
+            let weekdayText = '';
+            if (item.weekday) {
+              const weekdayStr = String(item.weekday).trim();
+              if (weekdayStr.includes('周')) {
+                weekdayText = weekdayStr.replace(/周+/g, '周');
+              } else {
+                weekdayText = `周${weekdayStr}`;
+              }
+            }
+            
+            let voyageText = '';
+            if (item.voyageDays) {
+              const voyageStr = String(item.voyageDays).trim();
+              voyageText = voyageStr.replace(/天+$/, '') + '天';
+            }
+            
+            lines.push(`
+              <div class="tooltip-grid-line">
+                <span class="tooltip-label">标准开航日：</span>
+                <span class="tooltip-value">${weekdayText}</span>
+                <span class="tooltip-label">标准航程：</span>
+                <span class="tooltip-value">${voyageText}</span>
+              </div>
+            `);
           }
           
-          lines.push(`
-            <div class="tooltip-grid-line">
-              <span class="tooltip-label">标准开航日：</span>
-              <span class="tooltip-value">${weekdayText}</span>
-              <span class="tooltip-label">标准航程：</span>
-              <span class="tooltip-value">${voyageText}</span>
-            </div>
-          `);
-        }
-        
-        // 第三行：起运港码头 + 目的港码头（对齐格式）
-        if (item.originTerminal || item.destTerminal) {
-          const originText = item.originTerminal || '';
-          const destText = item.destTerminal || '';
-          lines.push(`
-            <div class="tooltip-grid-line">
-              <span class="tooltip-label">起运港码头：</span>
-              <span class="tooltip-value">${originText}</span>
-              <span class="tooltip-label">目的港码头：</span>
-              <span class="tooltip-value">${destText}</span>
-            </div>
-          `);
-        }
-        
-        // 第四行：船舶船型 + 建造年份（仅365模式显示）
-        if (!is001Mode) {
+          // 起运港码头 + 目的港码头
+          if (item.originTerminal || item.destTerminal) {
+            lines.push(`
+              <div class="tooltip-grid-line">
+                <span class="tooltip-label">起运港码头：</span>
+                <span class="tooltip-value">${item.originTerminal || ''}</span>
+                <span class="tooltip-label">目的港码头：</span>
+                <span class="tooltip-value">${item.destTerminal || ''}</span>
+              </div>
+            `);
+          }
+        } else {
+          // 365模式：参照001模式，显示所有目的港的详细信息
+          // 先显示船舶船型 + 建造年份
           if (item.shipType || item.year) {
             const shipTypeText = item.shipType ? `${item.shipType} TEU` : '';
             const yearText = item.year || '';
@@ -3140,16 +2894,115 @@
               </div>
             `);
           }
-        }
-        
-        // 第五行：航线路径（仅365模式显示）
-        if (!is001Mode && item.routePath) {
-          lines.push(`
-            <div class="tooltip-grid-line">
-              <span class="tooltip-label">航线路径：</span>
-              <span class="tooltip-value tooltip-path" style="grid-column: 2 / -1;">${item.routePath}</span>
-            </div>
-          `);
+          
+          // 然后显示航线路径
+          if (item.routePath) {
+            lines.push(`
+              <div class="tooltip-grid-line">
+                <span class="tooltip-label">航线路径：</span>
+                <span class="tooltip-value tooltip-path" style="grid-column: 2 / -1;">${item.routePath}</span>
+              </div>
+            `);
+          }
+          
+          // 最后显示所有目的港的详细信息（参照001模式）
+          if (item.portDetails && item.portDetails.length > 0) {
+            item.portDetails.forEach((portDetail, index) => {
+              // 目的港
+              lines.push(`
+                <div class="tooltip-grid-line">
+                  <span class="tooltip-label">目的港：</span>
+                  <span class="tooltip-value" style="grid-column: 2 / -1;">${portDetail.port || ''}</span>
+                </div>
+              `);
+              
+              // 标准开航日 + 标准航程
+              let weekdayText = '';
+              if (portDetail.weekday) {
+                const weekdayStr = String(portDetail.weekday).trim();
+                if (weekdayStr.includes('周')) {
+                  weekdayText = weekdayStr.replace(/周+/g, '周');
+                } else {
+                  weekdayText = `周${weekdayStr}`;
+                }
+              }
+              
+              let voyageText = '';
+              if (portDetail.voyageDays) {
+                const voyageStr = String(portDetail.voyageDays).trim();
+                voyageText = voyageStr.replace(/天+$/, '') + '天';
+              }
+              
+              if (weekdayText || voyageText) {
+                lines.push(`
+                  <div class="tooltip-grid-line">
+                    <span class="tooltip-label">标准开航日：</span>
+                    <span class="tooltip-value">${weekdayText}</span>
+                    <span class="tooltip-label">标准航程：</span>
+                    <span class="tooltip-value">${voyageText}</span>
+                  </div>
+                `);
+              }
+              
+              // 起运港码头 + 目的港码头
+              if (portDetail.originTerminal || portDetail.destTerminal) {
+                lines.push(`
+                  <div class="tooltip-grid-line">
+                    <span class="tooltip-label">起运港码头：</span>
+                    <span class="tooltip-value">${portDetail.originTerminal || ''}</span>
+                    <span class="tooltip-label">目的港码头：</span>
+                    <span class="tooltip-value">${portDetail.destTerminal || ''}</span>
+                  </div>
+                `);
+              }
+              
+              // 如果有多个港口，在最后一个港口后添加分隔线（除了最后一个）
+              if (index < item.portDetails.length - 1) {
+                lines.push(`<div style="height: 1px; background: #e9ecef; margin: 8px 0;"></div>`);
+              }
+            });
+          } else {
+            // 365模式降级：如果没有portDetails，使用旧的显示方式
+            // 标准开航日 + 标准航程
+            if (item.weekday || item.voyageDays) {
+              let weekdayText = '';
+              if (item.weekday) {
+                const weekdayStr = String(item.weekday).trim();
+                if (weekdayStr.includes('周')) {
+                  weekdayText = weekdayStr.replace(/周+/g, '周');
+                } else {
+                  weekdayText = `周${weekdayStr}`;
+                }
+              }
+              
+              let voyageText = '';
+              if (item.voyageDays) {
+                const voyageStr = String(item.voyageDays).trim();
+                voyageText = voyageStr.replace(/天+$/, '') + '天';
+              }
+              
+              lines.push(`
+                <div class="tooltip-grid-line">
+                  <span class="tooltip-label">标准开航日：</span>
+                  <span class="tooltip-value">${weekdayText}</span>
+                  <span class="tooltip-label">标准航程：</span>
+                  <span class="tooltip-value">${voyageText}</span>
+                </div>
+              `);
+            }
+            
+            // 起运港码头 + 目的港码头
+            if (item.originTerminal || item.destTerminal) {
+              lines.push(`
+                <div class="tooltip-grid-line">
+                  <span class="tooltip-label">起运港码头：</span>
+                  <span class="tooltip-value">${item.originTerminal || ''}</span>
+                  <span class="tooltip-label">目的港码头：</span>
+                  <span class="tooltip-value">${item.destTerminal || ''}</span>
+                </div>
+              `);
+            }
+          }
         }
         
         // 如果没有内容，返回null
@@ -3360,11 +3213,18 @@
           return null;
         }
 
-        // 应用筛选条件
+        // 应用筛选条件（使用统一的筛选逻辑）
         let filteredData = currentData.filter(item => {
-          // 001模式：筛选001目的港
-          if (state.currentMode === MODE_001 && state.selectedDestPorts001.length > 0) {
-            if (!item.port || !state.selectedDestPorts001.includes(item.port)) {
+          // 起运港筛选
+          if (state.selectedOriginPorts.length > 0) {
+            if (!item.originPort || !state.selectedOriginPorts.includes(item.originPort)) {
+              return false;
+            }
+          }
+          
+          // 目的港筛选（统一使用 selectedDestPorts）
+          if (state.selectedDestPorts.length > 0) {
+            if (!item.port || !state.selectedDestPorts.includes(item.port)) {
               return false;
             }
           }
@@ -3372,13 +3232,6 @@
           // 船公司筛选
           if (state.selectedCarriers.length > 0) {
             if (!state.selectedCarriers.includes(item.carrier)) {
-              return false;
-            }
-          }
-          
-          // 港口筛选
-          if (state.selectedDestPorts365.length > 0) {
-            if (!state.selectedDestPorts365.includes(item.port)) {
               return false;
             }
           }

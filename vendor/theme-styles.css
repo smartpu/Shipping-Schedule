@@ -4166,7 +4166,7 @@ thead th.table-header > div {
 
 .chart-wrapper {
     position: relative;
-    height: 800px;
+    height: 400px;
     margin-top: 30px;
 }
 
@@ -4651,6 +4651,10 @@ body[data-page="Monitor-SCFI-Trends.html"] #comparisonSection .control-group {
 }
 
 /* 图例容器 - 多列布局 */
+body[data-page="Monitor-SCFI-Trends.html"] .chart-wrapper {
+    height: 400px;
+}
+
 body[data-page="Monitor-SCFI-Trends.html"] .legend-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -4857,9 +4861,9 @@ body[data-page="Monitor-SCFI-Trends.html"] #comparisonTable tbody tr:hover {
 
 /* 日历日期单元格 */
 .calendar-day {
-    height: 460px;
-    min-height: 460px;
-    max-height: 460px;
+    height: 430px;
+    min-height: 430px;
+    max-height: 430px;
     min-width: 180px;
     padding: 12px;
     border: 2px solid #e9ecef;
@@ -5103,9 +5107,9 @@ body[data-page="Monitor-SCFI-Trends.html"] #comparisonTable tbody tr:hover {
     }
     .calendar-day {
         min-width: 120px;
-        height: 410px;
-        min-height: 410px;
-        max-height: 410px;
+        height: 380px;
+        min-height: 380px;
+        max-height: 380px;
     }
 }
 

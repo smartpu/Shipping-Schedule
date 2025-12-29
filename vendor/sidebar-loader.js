@@ -29,6 +29,7 @@
                 { href: '365-02-rotation-parser.html?from=tools365', icon: '🗺️', label: '航线路径解析工具' },
                 { href: '365-02-market-rate-parser.html?from=tools365', icon: '💰', label: '港口行情解析工具' },
                 { href: '365-03-port-standardizer.html?from=tools365', icon: '🔧', label: '港口标准化工具' },
+                { href: '365-03-market-port-standardizer.html?from=tools365', icon: '🏢', label: '行情标准化工具' },
                 { href: '365-04-market-watch.html?from=tools365', icon: '📊', label: '市场观察工具' }
             ]
         },

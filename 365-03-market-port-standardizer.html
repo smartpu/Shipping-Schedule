@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明日数航 行情标准化工具</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/auth-gist.js"></script>
+    <script src="vendor/port-sort-utils.js"></script>
+</head>
+<body data-page="365-03-market-port-standardizer.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>明日数航 行情标准化工具</h2>
+                            <p>针对 Market 表的港口标准化工具，对启运港和目的港进行标准化，支持模糊匹配（CSV：A列=启运港，B列=目的港；Excel：B列=启运港，C列=目的港）</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools365" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="365-03-market-port-standardizer-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件上传区域 -->
+                <div class="grid-2-col" style="margin-bottom: 0;">
+                    <!-- 左侧：载入 Excel/CSV 文件 -->
+                    <div class="card-white">
+                        <div class="file-upload-section">
+                            <label for="csvFileInput" class="file-upload-label" aria-label="选择CSV文件上传">
+                                <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradCsv)" />
+                                    <rect x="8" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                    <line x1="8" y1="14" x2="28" y2="14" stroke="#fff" stroke-width="1.5"/>
+                                    <line x1="8" y1="20" x2="28" y2="20" stroke="#fff" stroke-width="1.5"/>
+                                    <line x1="14" y1="8" x2="14" y2="28" stroke="#fff" stroke-width="1.5"/>
+                                    <path d="M18 22L22 26L14 26Z" fill="#fff"/>
+                                    <defs>
+                                        <linearGradient id="gradCsv" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                            <stop stop-color="#28a745" />
+                                            <stop offset="1" stop-color="#5cb85c" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="file-upload-content">
+                                    <div class="file-upload-title">载入 Market 表文件</div>
+                                    <div class="file-upload-desc">选择包含 Market 数据的 Excel 或 CSV 文件（CSV：A列=启运港，B列=目的港；Excel：B列=启运港，C列=目的港）</div>
+                                </div>
+                                <input type="file" id="csvFileInput" class="file-upload-input" accept=".xlsx,.xls,.csv" aria-label="选择Excel或CSV文件">
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：载入港口列表文件（可选） -->
+                    <div class="card-white" id="portListFileCard">
+                        <div class="file-upload-section">
+                            <label for="portListFileInput" class="file-upload-label" aria-label="选择港口列表文件上传">
+                                <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradPortList)" />
+                                    <rect x="10" y="9" width="16" height="18" rx="1" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                    <path d="M10 9L10 15L16 15" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <line x1="13" y1="20" x2="23" y2="20" stroke="#fff" stroke-width="1.2"/>
+                                    <line x1="13" y1="23" x2="23" y2="23" stroke="#fff" stroke-width="1.2"/>
+                                    <defs>
+                                        <linearGradient id="gradPortList" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                            <stop stop-color="#0071e3" />
+                                            <stop offset="1" stop-color="#54a4ff" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="file-upload-content">
+                                    <div class="file-upload-title">载入港口列表（可选）</div>
+                                    <div class="file-upload-desc">可选择自定义港口列表文件覆盖默认列表</div>
+                                </div>
+                                <input type="file" id="portListFileInput" class="file-upload-input" accept=".txt" aria-label="选择港口列表文件">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 处理状态和下载区域 -->
+                <div class="grid-2-col mt-20 hidden" id="processingCard" style="margin-bottom: 0;">
+                    <!-- 左侧：处理状态 -->
+                    <div class="card-white">
+                        <div class="data-status-container">
+                            <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradProcessing)" />
+                                <rect x="11" y="10" width="14" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                <rect x="15" y="8" width="6" height="4" rx="1" fill="#fff"/>
+                                <path d="M14 18L17 21L23 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="gradProcessing" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#FF8A00" />
+                                        <stop offset="1" stop-color="#FFB347" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="data-status-content">
+                                <div class="data-status-title">处理状态</div>
+                                <div id="processingStatus" class="data-status-text">准备处理...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：下载区域（可点击） -->
+                    <div class="card-white hidden" id="downloadCard" style="cursor: pointer; transition: all 0.2s ease; min-height: 100px;" role="button" tabindex="0" aria-label="下载标准化后的CSV文件">
+                        <div class="data-status-container">
+                            <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradDownload)" />
+                                <path d="M18 10V22M18 22L13 17M18 22L23 17M8 26H28" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="gradDownload" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#007AFF" />
+                                        <stop offset="1" stop-color="#5AC8FA" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="data-status-content">
+                                <div class="data-status-title">下载标准化后的 CSV</div>
+                                <div id="fileInfo" class="data-status-text" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">处理完成后可下载</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 转换报告区域 -->
+                <div class="card-white mt-20 hidden" id="reportCard">
+                    <h3 class="section-title" style="margin-bottom: 20px;">转换报告</h3>
+                    <div id="reportContent">
+                        <!-- 报告内容将动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">明日数航 行情标准化工具使用声明</h2>
+                    <p class="usage-statement-text">本工具专门针对 Market 表进行港口标准化，对启运港和目的港进行标准化处理，支持模糊匹配。CSV 文件：A列=启运港，B列=目的港；Excel 文件：B列=启运港，C列=目的港。工具会自动识别各种港口名称格式，包括英文名、中文名、带括号的格式等，并转换为统一格式 [英文名|代码|区域]。</p>
+                    <p class="usage-statement-text">转换过程中会生成详细的转换报告，包括成功匹配、模糊匹配和未匹配的项目，便于改进代码或手动处理。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        // 初始化 365 工具页面（如果函数存在）
+        if (typeof init365ToolPage === 'function') {
+            init365ToolPage('365-03-market-port-standardizer.html', 'tools365');
+        } else if (typeof init001ToolPage === 'function') {
+            // 降级方案：使用 001 的初始化函数
+            init001ToolPage('365-03-market-port-standardizer.html', 'tools365');
+        }
+    </script>
+    <script>
+        (function() {
+            'use strict';
+
+            // DOM 元素
+            const csvFileInput = document.getElementById('csvFileInput');
+            const portListFileInput = document.getElementById('portListFileInput');
+            const portListFileCard = document.getElementById('portListFileCard');
+            const processingCard = document.getElementById('processingCard');
+            const processingStatus = document.getElementById('processingStatus');
+            const reportCard = document.getElementById('reportCard');
+            const reportContent = document.getElementById('reportContent');
+            const fileInfo = document.getElementById('fileInfo');
+
+            // 全局变量
+            let portMapping = new Map(); // 港口名称映射：原始名称 -> [英文名|代码|区域]
+            let processedCsvData = null; // 处理后的 CSV 数据
+            let originalFileName = ''; // 原始文件名
+            let portListText = null; // 港口列表文件内容（如果手动加载）
+
+            /**
+             * 从文本内容构建港口映射
+             */
+            function buildPortMappingFromText(text) {
+                const lines = text.split('\n').filter(l => l.trim());
+                
+                // 清空映射
+                portMapping.clear();
+
+                // 解析每一行，构建映射
+                lines.forEach((line) => {
+                    const portInfo = window.portSortUtils.parsePortLine(line);
+                    if (portInfo && portInfo.code) {
+                        const standardized = `[${portInfo.englishName}|${portInfo.code}|${portInfo.region}]`;
+                        
+                        // 1. 001 格式（最后一部分，带引号）："BALBOA(巴尔博亚)"
+                        if (portInfo.port001) {
+                            // 提取英文部分（括号前）
+                            const enMatch = portInfo.port001.match(/^([^(,]+)/);
+                            if (enMatch) {
+                                const enPart = enMatch[1].trim();
+                                portMapping.set(enPart, standardized);
+                                portMapping.set(enPart.toUpperCase(), standardized);
+                                portMapping.set(enPart.toLowerCase(), standardized);
+                            }
+                            
+                            // 提取中文部分（括号内，逗号前）
+                            const cnMatch = portInfo.port001.match(/\(([^,)]+)/);
+                            if (cnMatch) {
+                                const cnPart = cnMatch[1].trim();
+                                portMapping.set(cnPart, standardized);
+                                // 去除"港"后缀
+                                if (cnPart.endsWith('港')) {
+                                    portMapping.set(cnPart.slice(0, -1), standardized);
+                                }
+                            }
+                            
+                            // 完整格式
+                            portMapping.set(portInfo.port001, standardized);
+                            // 去掉引号
+                            const withoutQuotes = portInfo.port001.replace(/^"|"$/g, '');
+                            portMapping.set(withoutQuotes, standardized);
+                        }
+
+                        // 2. 英文名
+                        if (portInfo.englishName) {
+                            portMapping.set(portInfo.englishName, standardized);
+                            portMapping.set(portInfo.englishName.toUpperCase(), standardized);
+                            portMapping.set(portInfo.englishName.toLowerCase(), standardized);
+                        }
+
+                        // 3. Alphaliner 名称
+                        if (portInfo.alphalinerName) {
+                            portMapping.set(portInfo.alphalinerName, standardized);
+                            portMapping.set(portInfo.alphalinerName.toUpperCase(), standardized);
+                        }
+
+                        // 4. 365 格式（提取中文部分）
+                        if (portInfo.port365) {
+                            // 完整 365 格式（如"北美洲美西美国洛杉矶"）
+                            portMapping.set(portInfo.port365, standardized);
+                            
+                            // 提取最后的中文部分（如"洛杉矶"）
+                            const cnMatch = portInfo.port365.match(/[\u4e00-\u9fa5]+$/);
+                            if (cnMatch) {
+                                const cnPart = cnMatch[0];
+                                portMapping.set(cnPart, standardized);
+                                // 去除"港"后缀
+                                if (cnPart.endsWith('港')) {
+                                    portMapping.set(cnPart.slice(0, -1), standardized);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            /**
+             * 加载港口列表并构建映射关系
+             */
+            async function loadPortMapping() {
+                try {
+                    // 确保 portSortUtils 已加载
+                    if (typeof window.portSortUtils === 'undefined') {
+                        throw new Error('portSortUtils 未加载，请刷新页面重试');
+                    }
+
+                    // 加载港口列表和映射
+                    await window.portSortUtils.loadPortsList();
+                    await window.portSortUtils.loadPortsMapping();
+
+                    // 优先使用手动加载的港口列表文件
+                    if (portListText) {
+                        buildPortMappingFromText(portListText);
+                        debugLog(`港口映射已加载（手动文件），共 ${portMapping.size} 个映射`);
+                        return true;
+                    }
+
+                    // 降级方案：使用 portSortUtils 已有的映射数据（如果可用）
+                    if (window.portSortUtils.portCodeToDisplayMap && Object.keys(window.portSortUtils.portCodeToDisplayMap).length > 0) {
+                        portMapping.clear();
+                        for (const [code, info] of Object.entries(window.portSortUtils.portCodeToDisplayMap)) {
+                            const standardized = info.displayText;
+                            if (info.englishName) {
+                                portMapping.set(info.englishName, standardized);
+                                portMapping.set(info.englishName.toUpperCase(), standardized);
+                            }
+                        }
+                        debugLog(`港口映射已加载（降级方案），共 ${portMapping.size} 个映射`);
+                        debugWarn('注意：降级方案的映射可能不完整，建议手动上传港口列表文件');
+                        return true;
+                    }
+
+                    throw new Error('请先上传港口列表文件');
+                } catch (error) {
+                    debugError('加载港口映射失败:', error);
+                    throw error;
+                }
+            }
+
+            /**
+             * 去除方向词（东西南北）
+             */
+            function removeDirectionWords(portName) {
+                if (!portName) return '';
+                return portName
+                    .replace(/^东|^西|^南|^北/g, '')
+                    .replace(/东$|西$|南$|北$/g, '')
+                    .trim();
+            }
+
+            /**
+             * 计算字符串相似度（简单的包含匹配）
+             */
+            function calculateSimilarity(str1, str2) {
+                if (!str1 || !str2) return 0;
+                const s1 = str1.toLowerCase();
+                const s2 = str2.toLowerCase();
+                
+                // 完全匹配
+                if (s1 === s2) return 1.0;
+                
+                // 包含匹配
+                if (s1.includes(s2) || s2.includes(s1)) {
+                    const minLen = Math.min(s1.length, s2.length);
+                    const maxLen = Math.max(s1.length, s2.length);
+                    return minLen / maxLen;
+                }
+                
+                // 计算公共字符数
+                let common = 0;
+                const minLen = Math.min(s1.length, s2.length);
+                for (let i = 0; i < minLen; i++) {
+                    if (s1[i] === s2[i]) common++;
+                }
+                
+                return common / Math.max(s1.length, s2.length);
+            }
+
+            /**
+             * 模糊匹配港口名称（增强版，支持相似度匹配）
+             */
+            function fuzzyMatchPort(portName) {
+                if (!portName) return null;
+
+                // 1. 精确匹配
+                if (portMapping.has(portName)) {
+                    return { matched: portMapping.get(portName), method: 'exact', similarity: 1.0 };
+                }
+
+                // 2. 去除方向词后匹配
+                const withoutDirection = removeDirectionWords(portName);
+                if (withoutDirection && withoutDirection !== portName) {
+                    if (portMapping.has(withoutDirection)) {
+                        return { matched: portMapping.get(withoutDirection), method: 'direction_removed', similarity: 0.95 };
+                    }
+                }
+
+                // 3. 大小写不敏感匹配
+                const upper = portName.toUpperCase();
+                if (portMapping.has(upper)) {
+                    return { matched: portMapping.get(upper), method: 'case_insensitive', similarity: 0.98 };
+                }
+
+                const lower = portName.toLowerCase();
+                if (portMapping.has(lower)) {
+                    return { matched: portMapping.get(lower), method: 'case_insensitive', similarity: 0.98 };
+                }
+
+                // 4. 去除方向词 + 大小写不敏感
+                if (withoutDirection) {
+                    const upperWithout = withoutDirection.toUpperCase();
+                    if (portMapping.has(upperWithout)) {
+                        return { matched: portMapping.get(upperWithout), method: 'direction_case', similarity: 0.93 };
+                    }
+                }
+
+                // 5. 包含匹配（模糊）- 优先匹配较长的键
+                let bestMatch = null;
+                let bestSimilarity = 0;
+                for (const [key, value] of portMapping.entries()) {
+                    if (key.includes(portName) || portName.includes(key)) {
+                        const similarity = calculateSimilarity(portName, key);
+                        if (similarity > bestSimilarity && similarity >= 0.6) {
+                            bestSimilarity = similarity;
+                            bestMatch = { matched: value, method: 'fuzzy_contains', similarity };
+                        }
+                    }
+                }
+                if (bestMatch) {
+                    return bestMatch;
+                }
+
+                // 6. 相似度匹配（计算所有键的相似度，选择最高的）
+                bestMatch = null;
+                bestSimilarity = 0;
+                for (const [key, value] of portMapping.entries()) {
+                    const similarity = calculateSimilarity(portName, key);
+                    if (similarity > bestSimilarity && similarity >= 0.7) {
+                        bestSimilarity = similarity;
+                        bestMatch = { matched: value, method: 'fuzzy_similarity', similarity };
+                    }
+                }
+                if (bestMatch) {
+                    return bestMatch;
+                }
+
+                return null;
+            }
+
+            /**
+             * 标准化单个港口名称（针对 Market 表格式）
+             * Market 表格式示例：
+             * - "青岛" -> 标准化
+             * - "BANDAR ABBAS(阿巴斯,伊朗)" -> 提取英文或中文部分
+             * - "KUWAIT--SHUAIBA(科威特舒艾拜,科威特)" -> 处理特殊格式
+             */
+            function standardizePort(portName) {
+                if (!portName || !portName.trim()) {
+                    return { standardized: '', method: 'empty' };
+                }
+
+                const trimmed = portName.trim();
+
+                // 首先尝试精确匹配（包括完整的格式）
+                const exactMatch = fuzzyMatchPort(trimmed);
+                if (exactMatch) {
+                    return { standardized: exactMatch.matched, method: exactMatch.method, original: trimmed, similarity: exactMatch.similarity };
+                }
+
+                // 处理包含 -- 的格式：提取 -- 之前的部分进行模糊匹配
+                // 格式示例："KUWAIT--SHUAIBA"、"KUWAIT--SHUAIBA(科威特舒艾拜,科威特)"
+                if (trimmed.includes('--')) {
+                    const beforeDoubleDash = trimmed.split('--')[0].trim();
+                    if (beforeDoubleDash) {
+                        const match = fuzzyMatchPort(beforeDoubleDash);
+                        if (match) {
+                            return { standardized: match.matched, method: match.method + '_double_dash', original: trimmed, similarity: match.similarity };
+                        }
+                    }
+                }
+
+                // Market 表特殊格式处理：提取括号内的内容
+                // 格式示例："BANDAR ABBAS(阿巴斯,伊朗)"、"KUWAIT--SHUAIBA(科威特舒艾拜,科威特)"
+                if (trimmed.includes('(') && trimmed.includes(')')) {
+                    // 提取括号前的英文部分
+                    const beforeBracket = trimmed.split('(')[0].trim();
+                    if (beforeBracket) {
+                        // 如果包含 --，已经在上一步处理过了，这里处理其他情况
+                        // 处理空格分隔的多个单词，如 "LOS ANGELES" -> 尝试完整匹配或最后一个单词
+                        const normalized = beforeBracket.replace(/\s+/g, ' ').trim();
+                        const parts = normalized.split(/\s+/);
+                        
+                        // 尝试完整英文名匹配
+                        let match = fuzzyMatchPort(normalized);
+                        if (match) {
+                            return { standardized: match.matched, method: match.method + '_bracket_en', original: trimmed, similarity: match.similarity };
+                        }
+                        
+                        // 尝试最后一个单词（通常是城市名）
+                        if (parts.length > 1) {
+                            match = fuzzyMatchPort(parts[parts.length - 1]);
+                            if (match) {
+                                return { standardized: match.matched, method: match.method + '_bracket_en_last', original: trimmed, similarity: match.similarity };
+                            }
+                        }
+                    }
+
+                    // 提取括号内的中文部分（逗号前）
+                    const cnMatch = trimmed.match(/\(([^,)]+)/);
+                    if (cnMatch && cnMatch[1]) {
+                        const cnPart = cnMatch[1].trim();
+                        const match = fuzzyMatchPort(cnPart);
+                        if (match) {
+                            return { standardized: match.matched, method: match.method + '_bracket_cn', original: trimmed, similarity: match.similarity };
+                        }
+                        
+                        // 如果提取的中文部分不匹配，尝试去除"港"后缀
+                        if (cnPart.endsWith('港')) {
+                            const withoutPort = cnPart.slice(0, -1);
+                            const match2 = fuzzyMatchPort(withoutPort);
+                            if (match2) {
+                                return { standardized: match2.matched, method: match2.method + '_bracket_cn_no_port', original: trimmed, similarity: match2.similarity };
+                            }
+                        }
+                    }
+                }
+
+                // 如果包含逗号，尝试提取逗号前的部分
+                if (trimmed.includes(',')) {
+                    const beforeComma = trimmed.split(',')[0].trim();
+                    if (beforeComma) {
+                        const match = fuzzyMatchPort(beforeComma);
+                        if (match) {
+                            return { standardized: match.matched, method: match.method + '_comma', original: trimmed, similarity: match.similarity };
+                        }
+                    }
+                }
+
+                // 365 格式特殊处理：提取最后的中文部分
+                // 格式示例："北美洲美西美国洛杉矶"、"欧洲荷兰鹿特丹"
+                const cnMatch365 = trimmed.match(/[\u4e00-\u9fa5]+$/);
+                if (cnMatch365) {
+                    const cnPart = cnMatch365[0];
+                    const match = fuzzyMatchPort(cnPart);
+                    if (match) {
+                        return { standardized: match.matched, method: match.method + '_365_extracted', original: trimmed, similarity: match.similarity };
+                    }
+                    
+                    // 如果提取的中文部分不匹配，尝试去除"港"后缀
+                    if (cnPart.endsWith('港')) {
+                        const withoutPort = cnPart.slice(0, -1);
+                        const match2 = fuzzyMatchPort(withoutPort);
+                        if (match2) {
+                            return { standardized: match2.matched, method: match2.method + '_365_extracted_no_port', original: trimmed, similarity: match2.similarity };
+                        }
+                    }
+                }
+
+                return { standardized: trimmed, method: 'no_match', original: trimmed, similarity: 0 };
+            }
+
+            /**
+             * 解析 Excel 文件
+             */
+            async function parseExcel(file) {
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('XLSX 库未加载，请刷新页面重试');
+                }
+
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array', cellDates: false, raw: true });
+                
+                // 使用第一个工作表
+                const firstSheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[firstSheetName];
+                
+                // 读取为矩阵格式（保留原始值）
+                const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                
+                if (matrix.length === 0) {
+                    throw new Error('Excel 文件为空');
+                }
+
+                // 第一行作为表头
+                const headers = matrix[0].map(h => String(h || '').trim());
+                
+                // Market 表：B列（索引1）= 启运港，C列（索引2）= 目的港
+                // 如果表头中有明确的列名，优先使用列名；否则使用索引
+                const originPortIndex = headers.findIndex(h => 
+                    h === '启运港' || h.toLowerCase().includes('origin') || h.toLowerCase().includes('pol') || h.toLowerCase().includes('起运')
+                );
+                const destPortIndex = headers.findIndex(h => 
+                    h === '目的港' || h.toLowerCase().includes('destination') || h.toLowerCase().includes('pod') || h.toLowerCase().includes('目的')
+                );
+                
+                // 如果找不到，使用默认索引：B列（索引1）= 启运港，C列（索引2）= 目的港
+                const finalOriginIndex = originPortIndex !== -1 ? originPortIndex : 1;
+                const finalDestIndex = destPortIndex !== -1 ? destPortIndex : 2;
+
+                // 解析数据行
+                const rows = [];
+                for (let i = 1; i < matrix.length; i++) {
+                    const row = matrix[i];
+                    if (!row || row.length === 0) continue;
+
+                    // 获取起运港和目的港
+                    const originPort = String(row[finalOriginIndex] || '').trim();
+                    const destPort = String(row[finalDestIndex] || '').trim();
+
+                    // 构建完整的行数据（用于后续生成 CSV）
+                    const values = [];
+                    for (let j = 0; j < headers.length; j++) {
+                        values.push(String(row[j] || '').trim());
+                    }
+
+                    rows.push({
+                        values: values,
+                        originPort: originPort,
+                        destPort: destPort
+                    });
+                }
+
+                return { headers, rows, originPortIndex: finalOriginIndex, destPortIndex: finalDestIndex };
+            }
+
+            /**
+             * 解析 CSV 文件
+             */
+            function parseCsv(csvText) {
+                const lines = csvText.split('\n').filter(l => l.trim());
+                if (lines.length === 0) {
+                    throw new Error('CSV 文件为空');
+                }
+
+                // 解析表头
+                const headers = [];
+                let current = '';
+                let inQuotes = false;
+                for (let j = 0; j < lines[0].length; j++) {
+                    const char = lines[0][j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        headers.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                headers.push(current.trim());
+
+                // Market 表 CSV：A列（索引0）= 启运港，B列（索引1）= 目的港
+                const originPortIndex = headers.findIndex(h => 
+                    h === '启运港' || h.toLowerCase().includes('origin') || h.toLowerCase().includes('pol') || h.toLowerCase().includes('起运')
+                );
+                const destPortIndex = headers.findIndex(h => 
+                    h === '目的港' || h.toLowerCase().includes('destination') || h.toLowerCase().includes('pod') || h.toLowerCase().includes('目的')
+                );
+                
+                // 如果找不到，使用默认索引：A列（索引0）= 启运港，B列（索引1）= 目的港
+                const finalOriginIndex = originPortIndex !== -1 ? originPortIndex : 0;
+                const finalDestIndex = destPortIndex !== -1 ? destPortIndex : 1;
+
+                // 解析数据行
+                const rows = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // 处理包含逗号的字段（使用简单的 CSV 解析）
+                    const values = [];
+                    current = '';
+                    inQuotes = false;
+                    for (let j = 0; j < line.length; j++) {
+                        const char = line[j];
+                        if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else if (char === ',' && !inQuotes) {
+                            values.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    values.push(current.trim());
+
+                    if (values.length >= Math.max(finalOriginIndex, finalDestIndex) + 1) {
+                        rows.push({
+                            values: values,
+                            originPort: values[finalOriginIndex] || '',
+                            destPort: values[finalDestIndex] || ''
+                        });
+                    }
+                }
+
+                return { headers, rows, originPortIndex: finalOriginIndex, destPortIndex: finalDestIndex };
+            }
+
+            /**
+             * 处理文件数据（支持 Excel 和 CSV）
+             */
+            async function processFile(file) {
+                try {
+                    processingStatus.textContent = '正在加载港口映射...';
+                    
+                    // 加载港口映射
+                    await loadPortMapping();
+
+                    processingStatus.textContent = '正在解析文件...';
+                    
+                    // 根据文件类型选择解析方式
+                    let parsed;
+                    const fileName = file.name.toLowerCase();
+                    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                        // Excel 文件
+                        parsed = await parseExcel(file);
+                    } else {
+                        // CSV 文件
+                        const text = await file.text();
+                        parsed = parseCsv(text);
+                    }
+
+                    processingStatus.textContent = '正在标准化港口名称...';
+
+                    // 统计信息
+                    const stats = {
+                        total: parsed.rows.length,
+                        originMatched: { exact: 0, fuzzy: 0, noMatch: 0 },
+                        destMatched: { exact: 0, fuzzy: 0, noMatch: 0 },
+                        originNoMatch: [],
+                        destNoMatch: []
+                    };
+
+                    // 处理每一行
+                    const processedRows = parsed.rows.map(row => {
+                        // 标准化起运港
+                        const originResult = standardizePort(row.originPort);
+                        if (originResult.method === 'exact' || originResult.method === 'case_insensitive') {
+                            stats.originMatched.exact++;
+                        } else if (originResult.method !== 'no_match' && originResult.method !== 'empty') {
+                            stats.originMatched.fuzzy++;
+                        } else {
+                            stats.originMatched.noMatch++;
+                            if (originResult.original && !stats.originNoMatch.includes(originResult.original)) {
+                                stats.originNoMatch.push(originResult.original);
+                            }
+                        }
+
+                        // 标准化目的港
+                        const destResult = standardizePort(row.destPort);
+                        if (destResult.method === 'exact' || destResult.method === 'case_insensitive') {
+                            stats.destMatched.exact++;
+                        } else if (destResult.method !== 'no_match' && destResult.method !== 'empty') {
+                            stats.destMatched.fuzzy++;
+                        } else {
+                            stats.destMatched.noMatch++;
+                            if (destResult.original && !stats.destNoMatch.includes(destResult.original)) {
+                                stats.destNoMatch.push(destResult.original);
+                            }
+                        }
+
+                        // 更新行数据
+                        const newValues = [...row.values];
+                        newValues[parsed.originPortIndex] = originResult.standardized;
+                        newValues[parsed.destPortIndex] = destResult.standardized;
+
+                        return {
+                            values: newValues,
+                            originResult,
+                            destResult
+                        };
+                    });
+
+                    processingStatus.textContent = '处理完成！';
+
+                    return {
+                        headers: parsed.headers,
+                        rows: processedRows,
+                        stats
+                    };
+                } catch (error) {
+                    debugError('处理文件失败:', error);
+                    throw error;
+                }
+            }
+
+            /**
+             * 生成转换报告（卡片式设计，符合苹果审美）
+             */
+            function generateReport(result) {
+                const { stats } = result;
+                
+                let html = '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">';
+                
+                // 总体统计卡片（居中显示）
+                html += '<div style="padding: 20px; background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(90, 200, 250, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(0, 122, 255, 0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">';
+                html += '<div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">';
+                html += '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L12 7H17L13 10L15 15L10 12L5 15L7 10L3 7H8L10 2Z" fill="white"/></svg>';
+                html += '</div>';
+                html += '<h4 style="margin: 0 0 12px 0; color: var(--color-text-primary); font-size: 16px; font-weight: 600;">总体统计</h4>';
+                html += `<div style="font-size: 48px; font-weight: 700; color: var(--color-primary); line-height: 1.2; margin-bottom: 8px;">${stats.total.toLocaleString()}</div>`;
+                html += '<div style="font-size: 14px; color: var(--color-text-secondary);">总行数</div>';
+                html += '</div>';
+
+                // 起运港统计卡片
+                html += '<div style="padding: 20px; background: var(--color-bg-secondary); border-radius: 12px; border: 1px solid var(--color-border-light);">';
+                html += '<h4 style="margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font-weight: 600;">起运港匹配</h4>';
+                html += '<div style="display: flex; flex-direction: column; gap: 12px;">';
+                
+                // 精确匹配
+                html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(52, 199, 89, 0.08); border-radius: 8px; border: 1px solid rgba(52, 199, 89, 0.2);">';
+                html += '<div style="display: flex; align-items: center; gap: 8px;">';
+                html += '<div style="width: 8px; height: 8px; border-radius: 50%; background: #34C759;"></div>';
+                html += '<span style="font-size: 14px; color: var(--color-text-primary);">精确匹配</span>';
+                html += '</div>';
+                html += `<span style="font-size: 18px; font-weight: 600; color: #34C759;">${stats.originMatched.exact}</span>`;
+                html += '</div>';
+                
+                // 模糊匹配
+                html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255, 149, 0, 0.08); border-radius: 8px; border: 1px solid rgba(255, 149, 0, 0.2);">';
+                html += '<div style="display: flex; align-items: center; gap: 8px;">';
+                html += '<div style="width: 8px; height: 8px; border-radius: 50%; background: #FF9500;"></div>';
+                html += '<span style="font-size: 14px; color: var(--color-text-primary);">模糊匹配</span>';
+                html += '</div>';
+                html += `<span style="font-size: 18px; font-weight: 600; color: #FF9500;">${stats.originMatched.fuzzy}</span>`;
+                html += '</div>';
+                
+                // 未匹配
+                html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255, 59, 48, 0.08); border-radius: 8px; border: 1px solid rgba(255, 59, 48, 0.2);">';
+                html += '<div style="display: flex; align-items: center; gap: 8px;">';
+                html += '<div style="width: 8px; height: 8px; border-radius: 50%; background: #FF3B30;"></div>';
+                html += '<span style="font-size: 14px; color: var(--color-text-primary);">未匹配</span>';
+                html += '</div>';
+                html += `<span style="font-size: 18px; font-weight: 600; color: #FF3B30;">${stats.originMatched.noMatch}</span>`;
+                html += '</div>';
+                
+                html += '</div>';
+                
+                // 未匹配列表
+                if (stats.originNoMatch.length > 0) {
+                    html += '<div style="margin-top: 16px; padding: 12px; background: rgba(255, 149, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 149, 0, 0.15);">';
+                    html += '<div style="font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 8px;">未匹配的起运港</div>';
+                    html += '<div style="display: flex; flex-wrap: wrap; gap: 6px;">';
+                    html += stats.originNoMatch.map(p => `<span style="padding: 4px 10px; background: var(--color-bg-secondary); border-radius: 6px; font-size: 12px; color: var(--color-text-primary); border: 1px solid var(--color-border-light);">${p}</span>`).join('');
+                    html += '</div>';
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+
+                // 目的港统计卡片
+                html += '<div style="padding: 20px; background: var(--color-bg-secondary); border-radius: 12px; border: 1px solid var(--color-border-light);">';
+                html += '<h4 style="margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font-weight: 600;">目的港匹配</h4>';
+                html += '<div style="display: flex; flex-direction: column; gap: 12px;">';
+                
+                // 精确匹配
+                html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(52, 199, 89, 0.08); border-radius: 8px; border: 1px solid rgba(52, 199, 89, 0.2);">';
+                html += '<div style="display: flex; align-items: center; gap: 8px;">';
+                html += '<div style="width: 8px; height: 8px; border-radius: 50%; background: #34C759;"></div>';
+                html += '<span style="font-size: 14px; color: var(--color-text-primary);">精确匹配</span>';
+                html += '</div>';
+                html += `<span style="font-size: 18px; font-weight: 600; color: #34C759;">${stats.destMatched.exact}</span>`;
+                html += '</div>';
+                
+                // 模糊匹配
+                html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255, 149, 0, 0.08); border-radius: 8px; border: 1px solid rgba(255, 149, 0, 0.2);">';
+                html += '<div style="display: flex; align-items: center; gap: 8px;">';
+                html += '<div style="width: 8px; height: 8px; border-radius: 50%; background: #FF9500;"></div>';
+                html += '<span style="font-size: 14px; color: var(--color-text-primary);">模糊匹配</span>';
+                html += '</div>';
+                html += `<span style="font-size: 18px; font-weight: 600; color: #FF9500;">${stats.destMatched.fuzzy}</span>`;
+                html += '</div>';
+                
+                // 未匹配
+                html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255, 59, 48, 0.08); border-radius: 8px; border: 1px solid rgba(255, 59, 48, 0.2);">';
+                html += '<div style="display: flex; align-items: center; gap: 8px;">';
+                html += '<div style="width: 8px; height: 8px; border-radius: 50%; background: #FF3B30;"></div>';
+                html += '<span style="font-size: 14px; color: var(--color-text-primary);">未匹配</span>';
+                html += '</div>';
+                html += `<span style="font-size: 18px; font-weight: 600; color: #FF3B30;">${stats.destMatched.noMatch}</span>`;
+                html += '</div>';
+                
+                html += '</div>';
+                
+                // 未匹配列表
+                if (stats.destNoMatch.length > 0) {
+                    html += '<div style="margin-top: 16px; padding: 12px; background: rgba(255, 149, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 149, 0, 0.15);">';
+                    html += '<div style="font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 8px;">未匹配的目的港</div>';
+                    html += '<div style="display: flex; flex-wrap: wrap; gap: 6px;">';
+                    html += stats.destNoMatch.map(p => `<span style="padding: 4px 10px; background: var(--color-bg-secondary); border-radius: 6px; font-size: 12px; color: var(--color-text-primary); border: 1px solid var(--color-border-light);">${p}</span>`).join('');
+                    html += '</div>';
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+                html += '</div>';
+                
+                reportContent.innerHTML = html;
+            }
+
+            /**
+             * 生成 CSV 内容
+             */
+            function generateCsv(result) {
+                const { headers, rows } = result;
+                
+                // 生成 CSV 行
+                const csvLines = [];
+                
+                // 表头
+                csvLines.push(headers.join(','));
+                
+                // 数据行
+                rows.forEach(row => {
+                    // 处理包含逗号的字段，用引号包裹
+                    const escapedValues = row.values.map(val => {
+                        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+                            return `"${val.replace(/"/g, '""')}"`;
+                        }
+                        return val;
+                    });
+                    csvLines.push(escapedValues.join(','));
+                });
+                
+                return csvLines.join('\n');
+            }
+
+            /**
+             * 下载 CSV 文件
+             */
+            function downloadCsv(csvContent, fileName) {
+                const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName.replace(/\.(csv|xlsx|xls)$/i, '_标准化.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+
+            // 事件监听：港口列表文件
+            portListFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    portListText = text;
+                    
+                    debugLog(`港口列表文件已加载`);
+                } catch (error) {
+                    debugError('读取港口列表文件失败:', error);
+                    showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { 
+                        message: '读取港口列表文件失败' 
+                    }, error);
+                    portListFileInput.value = '';
+                }
+            });
+
+            // 事件监听：文件上传（支持 Excel 和 CSV）
+            csvFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const fileName = file.name.toLowerCase();
+                if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+                    showError(ErrorType.FILE_LOAD, 'FILE_VALIDATION_FAILED', { 
+                        message: '请选择 Excel (.xlsx, .xls) 或 CSV (.csv) 文件' 
+                    });
+                    csvFileInput.value = '';
+                    return;
+                }
+
+                // 检查 XLSX 库是否已加载（Excel 文件需要）
+                if ((fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) && typeof XLSX === 'undefined') {
+                    // 尝试加载 XLSX 库
+                    if (typeof window.ensureXlsx === 'function') {
+                        try {
+                            await window.ensureXlsx();
+                        } catch (xlsxError) {
+                            showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED', { 
+                                message: 'XLSX 库加载失败，请刷新页面重试' 
+                            });
+                            csvFileInput.value = '';
+                            return;
+                        }
+                    } else {
+                        showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED', { 
+                            message: 'XLSX 库未加载，请刷新页面重试' 
+                        });
+                        csvFileInput.value = '';
+                        return;
+                    }
+                }
+
+                try {
+                    // 显示处理卡片
+                    processingCard.classList.remove('hidden');
+                    processingStatus.textContent = '正在读取文件...';
+
+                    originalFileName = file.name;
+
+                    // 处理文件（支持 Excel 和 CSV）
+                    const result = await processFile(file);
+                    processedCsvData = result;
+
+                    // 生成报告
+                    generateReport(result);
+                    reportCard.classList.remove('hidden');
+
+                    // 显示下载卡片和信息
+                    const downloadCardEl2 = document.getElementById('downloadCard');
+                    if (downloadCardEl2) {
+                        downloadCardEl2.classList.remove('hidden');
+                    }
+                    if (fileInfo) {
+                        fileInfo.innerHTML = `<span>已处理 ${result.stats.total.toLocaleString()} 行数据</span>`;
+                    }
+
+                } catch (error) {
+                    debugError('处理失败:', error);
+                    showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', { 
+                        message: error.message || '处理文件时发生错误' 
+                    }, error);
+                    processingCard.classList.add('hidden');
+                    reportCard.classList.add('hidden');
+                    const downloadCardEl = document.getElementById('downloadCard');
+                    if (downloadCardEl) {
+                        downloadCardEl.classList.add('hidden');
+                    }
+                } finally {
+                    csvFileInput.value = '';
+                }
+            });
+
+            // 下载卡片点击事件
+            const downloadCardEl = document.getElementById('downloadCard');
+            if (downloadCardEl) {
+                downloadCardEl.addEventListener('click', () => {
+                    if (!processedCsvData) {
+                        showError(ErrorType.USER_ACTION, 'NO_DATA', { 
+                            message: '没有可下载的数据，请先处理文件' 
+                        });
+                        return;
+                    }
+
+                    try {
+                        const csvContent = generateCsv(processedCsvData);
+                        downloadCsv(csvContent, originalFileName);
+                    } catch (error) {
+                        debugError('生成 CSV 失败:', error);
+                        showError(ErrorType.SYSTEM_ERROR, 'EXPORT_FAILED', { 
+                            message: '生成 CSV 文件时发生错误' 
+                        }, error);
+                    }
+                });
+                
+                // 添加悬停效果
+                downloadCardEl.addEventListener('mouseenter', () => {
+                    downloadCardEl.style.transform = 'translateY(-2px)';
+                    downloadCardEl.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+                });
+                
+                downloadCardEl.addEventListener('mouseleave', () => {
+                    downloadCardEl.style.transform = 'translateY(0)';
+                    downloadCardEl.style.boxShadow = '';
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
+

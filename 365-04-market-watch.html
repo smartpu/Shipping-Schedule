@@ -622,10 +622,15 @@
                                 if (!region || !portRaw) return;
                                 
                                 // 使用原始港口名称（保持 Excel 中的原始值，不进行标准化）
+                                // 如果 C 列已经是标准化格式，直接使用；否则才拼接
                                 const port = portRaw;
-                                const portDisplay = portCode 
-                                    ? `[${portRaw}|${portCode}|${region}]`
-                                    : `[${portRaw}||${region}]`;
+                                let portDisplay = portRaw;
+                                // 如果 portRaw 不是标准化格式（不以 [ 开头），才需要拼接
+                                if (!portRaw.startsWith('[') || !portRaw.includes('|')) {
+                                    portDisplay = portCode 
+                                        ? `[${portRaw}|${portCode}|${region}]`
+                                        : `[${portRaw}||${region}]`;
+                                }
                                 
                                 // 使用原始起运港名称（保持 Excel 中的原始值，不进行标准化）
                                 const originPort = originPortRaw;
@@ -679,105 +684,100 @@
                             }
 
                             const allRegions = Object.keys(marketRegionPortMap);
-                            // 处理区域名称变体（如"中东印巴红海" -> "中东红海印巴"）
-                            const normalizeAreaName = (areaName) => {
-                                if (!areaName) return areaName;
-                                // 如果包含"中东"、"印巴"、"红海"这些关键词，统一映射到"中东红海印巴"
-                                if (areaName.includes('中东') && (areaName.includes('印巴') || areaName.includes('红海'))) {
-                                    return '中东红海印巴';
-                                }
-                                return areaName;
+                            
+                            // 使用 portSortUtils 的 regionLastIndices 进行区域排序
+                            // 确保 portSortUtils 已初始化
+                            if (typeof window !== 'undefined' && typeof window.portSortUtils === 'undefined') {
+                                window.portSortUtils = new PortSortUtils();
+                            }
+                            
+                            // 直接使用 regionLastIndices 定义的顺序
+                            const regionOrder = {
+                                '美西': 6, '美东': 24, '加拿大': 31, '墨西哥': 34, '南美西': 49, '南美东': 65,
+                                '中美洲': 81, '欧基港': 89, '欧洲偏港': 103, '地西': 114, '地东': 135, '黑海': 143,
+                                '中东': 166, '红海': 174, '印巴': 196, '澳大利亚': 209, '新西兰': 219, '南太平洋': 246,
+                                '西太平洋': 250, '东非': 261, '南非': 264, '西非': 282, '新马越泰': 316, '印尼菲律宾': 347,
+                                '中国香港': 348, '中国台湾': 352, '中国': 399, '韩国': 411, '关东': 420, '关西': 426,
+                                '关西/濑户内海': 433, '九州': 445, '本州': 464, '四国岛': 469, '北海道': 474, '冲绳': 477,
+                                '远东': 486
                             };
                             
-                            if (typeof sortAreasByStandardOrder === 'function') {
-                                marketRegions = sortAreasByStandardOrder(allRegions);
-                            } else if (typeof STANDARD_AREA_ORDER !== 'undefined') {
-                                // 如果 sortAreasByStandardOrder 不可用，手动排序
-                                const areaOrderMap = new Map();
-                                STANDARD_AREA_ORDER.forEach((area, index) => {
-                                    areaOrderMap.set(area, index);
-                                });
-                                // 创建新数组进行排序，不修改原数组
-                                marketRegions = [...allRegions].sort((a, b) => {
-                                    const normalizedA = normalizeAreaName(a);
-                                    const normalizedB = normalizeAreaName(b);
-                                    const indexA = areaOrderMap.has(normalizedA) ? areaOrderMap.get(normalizedA) : Infinity;
-                                    const indexB = areaOrderMap.has(normalizedB) ? areaOrderMap.get(normalizedB) : Infinity;
-                                    if (indexA !== Infinity && indexB !== Infinity) {
-                                        return indexA - indexB;
-                                    }
-                                    if (indexA !== Infinity) return -1;
-                                    if (indexB !== Infinity) return 1;
-                                    return a.localeCompare(b, 'zh-Hans-CN');
-                                });
-                            } else {
-                                marketRegions = [...allRegions].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
-                            }
+                            // 尝试从 portSortUtils 获取，如果不存在则使用上面的硬编码
+                            const finalRegionOrder = (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined' && window.portSortUtils.regionLastIndices) 
+                                ? window.portSortUtils.regionLastIndices 
+                                : regionOrder;
+                            
+                            // 按照 regionLastIndices 的顺序排序
+                            marketRegions = [...allRegions].sort((a, b) => {
+                                const indexA = finalRegionOrder.hasOwnProperty(a) ? finalRegionOrder[a] : Infinity;
+                                const indexB = finalRegionOrder.hasOwnProperty(b) ? finalRegionOrder[b] : Infinity;
+                                if (indexA !== Infinity && indexB !== Infinity) {
+                                    return indexA - indexB;
+                                }
+                                if (indexA !== Infinity) return -1;
+                                if (indexB !== Infinity) return 1;
+                                return a.localeCompare(b, 'zh-Hans-CN');
+                            });
                             const totalPorts = marketRegions.reduce((sum, region) => sum + marketRegionPortMap[region].size, 0);
                             // 将Map转换为数组，保持port -> portDisplay的映射关系
-                            // 使用统一的排序函数（按区域顺序和代码顺序排序）
-                            if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                                try {
-                                    // 确保港口映射已加载
-                                    if (!window.portSortUtils.portsMappingLoaded) {
-                                        await window.portSortUtils.loadPortsMapping();
-                                    }
-                                    marketRegions.forEach(region => {
-                                        const portMap = marketRegionPortMap[region];
-                                        
-                                        // 检查 portMap 是否已经是数组格式（如果已经处理过，跳过）
-                                        if (Array.isArray(portMap)) {
-                                            return; // 已经是数组格式，跳过处理
-                                        }
-                                        
-                                        // 确保 portMap 是 Map
-                                        if (!(portMap instanceof Map)) {
-                                            debugWarn(`marketRegionPortMap[${region}] 不是 Map 类型，跳过排序`);
-                                            return;
-                                        }
-                                        
-                                        // 提取港口名称列表并排序（确保所有元素都是字符串）
-                                        const portNames = Array.from(portMap.keys()).filter(name => typeof name === 'string' && name.trim());
-                                        if (portNames.length === 0) {
-                                            return; // 没有有效的港口名称，跳过
-                                        }
-                                        
-                                        // 使用新的统一排序函数（按区域顺序和代码顺序排序）
-                                        const sortedPortNames = window.portSortUtils.sortPortsByDataAndRegion(portNames);
-                                        // 重新构建 portArray，保持 port -> portDisplay 的映射关系
-                                        const portArray = sortedPortNames.map(portName => {
-                                            // 确保 portName 是字符串
-                                            if (typeof portName !== 'string') {
-                                                debugWarn(`排序后的港口名称不是字符串: ${portName}`);
-                                                return [String(portName), String(portName)];
-                                            }
-                                            // 如果排序后的名称是标准化格式，使用它；否则使用原始映射
-                                            const display = portName.startsWith('[') && portName.includes('|')
-                                                ? portName
-                                                : (portMap.get(portName) || portName);
-                                            return [portName, display];
-                                        });
-                                        marketRegionPortMap[region] = portArray; // 存储为 [port, portDisplay] 的数组
-                                    });
-                                } catch (error) {
-                                    debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
-                                    marketRegions.forEach(region => {
-                                        const portMap = marketRegionPortMap[region];
-                                        const portArray = Array.from(portMap.entries()).sort((a, b) => {
-                                            return a[0].localeCompare(b[0], 'zh-Hans-CN');
-                                        });
-                                        marketRegionPortMap[region] = portArray;
-                                    });
+                            // 使用 EMBEDDED_PORTS_SORT_MAP 中的港口代码顺序进行排序
+                            // 从标准化格式 [英文名|代码|区域] 中提取代码（中间部分）进行排序
+                            const portSortMap = typeof EMBEDDED_PORTS_SORT_MAP !== 'undefined' ? EMBEDDED_PORTS_SORT_MAP : null;
+                            
+                            marketRegions.forEach(region => {
+                                const portMap = marketRegionPortMap[region];
+                                
+                                // 检查 portMap 是否已经是数组格式（如果已经处理过，跳过）
+                                if (Array.isArray(portMap)) {
+                                    return; // 已经是数组格式，跳过处理
                                 }
-                            } else {
-                                marketRegions.forEach(region => {
-                                    const portMap = marketRegionPortMap[region];
-                                    const portArray = Array.from(portMap.entries()).sort((a, b) => {
-                                        return a[0].localeCompare(b[0], 'zh-Hans-CN');
-                                    });
-                                    marketRegionPortMap[region] = portArray;
+                                
+                                // 确保 portMap 是 Map
+                                if (!(portMap instanceof Map)) {
+                                    debugWarn(`marketRegionPortMap[${region}] 不是 Map 类型，跳过排序`);
+                                    return;
+                                }
+                                
+                                // 提取港口名称列表（确保所有元素都是字符串）
+                                const portEntries = Array.from(portMap.entries())
+                                    .filter(([key]) => typeof key === 'string' && key.trim());
+                                
+                                if (portEntries.length === 0) {
+                                    return; // 没有有效的港口名称，跳过
+                                }
+                                
+                                // 对港口进行排序：从 portDisplay 中提取代码，使用 EMBEDDED_PORTS_SORT_MAP 排序
+                                const portArray = portEntries.sort((a, b) => {
+                                    const [, displayA] = a;
+                                    const [, displayB] = b;
+                                    
+                                    // 从标准化格式中提取代码：[英文名|代码|区域]
+                                    const extractCode = (display) => {
+                                        if (typeof display !== 'string') return null;
+                                        const match = display.match(/\|([A-Z0-9]+)\|/);
+                                        return match ? match[1] : null;
+                                    };
+                                    
+                                    const codeA = extractCode(displayA);
+                                    const codeB = extractCode(displayB);
+                                    
+                                    // 如果两个都有代码，使用 EMBEDDED_PORTS_SORT_MAP 排序
+                                    if (codeA && codeB && portSortMap) {
+                                        const indexA = portSortMap.hasOwnProperty(codeA) ? portSortMap[codeA] : Infinity;
+                                        const indexB = portSortMap.hasOwnProperty(codeB) ? portSortMap[codeB] : Infinity;
+                                        if (indexA !== Infinity && indexB !== Infinity) {
+                                            return indexA - indexB;
+                                        }
+                                        if (indexA !== Infinity) return -1;
+                                        if (indexB !== Infinity) return 1;
+                                    }
+                                    
+                                    // 降级方案：按显示名称排序
+                                    return String(displayA || a[0]).localeCompare(String(displayB || b[0]), 'zh-Hans-CN');
                                 });
-                            }
+                                
+                                marketRegionPortMap[region] = portArray; // 存储为 [port, portDisplay] 的数组
+                            });
 
                             // 先设置 marketData，然后再更新筛选器选项
                             marketData = marketDataResult;
@@ -1246,9 +1246,13 @@
                 if (originPort) availableOriginPorts.add(originPort);
                 if (region) availableRegions.add(region);
                 if (port && region) {
-                    const portDisplay = portCode 
-                        ? `[${port}|${portCode}|${region}]`
-                        : `[${port}||${region}]`;
+                    // 如果 port 已经是标准化格式，直接使用；否则才拼接
+                    let portDisplay = port;
+                    if (!port.startsWith('[') || !port.includes('|')) {
+                        portDisplay = portCode 
+                            ? `[${port}|${portCode}|${region}]`
+                            : `[${port}||${region}]`;
+                    }
                     if (!portMap.has(port)) {
                         portMap.set(port, portDisplay);
                     }
@@ -1265,51 +1269,53 @@
         async function updateOriginPortSelect(availableOriginPorts) {
             if (!marketOriginPortSelect) return;
             
-            // 使用统一的排序函数（按区域顺序和代码顺序排序）
-            let allOriginPorts;
-            if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                try {
-                    // 确保港口映射已加载
-                    if (!window.portSortUtils.portsMappingLoaded) {
-                        await window.portSortUtils.loadPortsMapping();
-                    }
-                    // 使用新的统一排序函数（按区域顺序和代码顺序排序）
-                    allOriginPorts = window.portSortUtils.sortPortsByDataAndRegion(Array.from(availableOriginPorts));
-                    // 更新显示映射（如果港口已被标准化）
-                    allOriginPorts.forEach(port => {
-                        if (port.startsWith('[') && port.includes('|')) {
-                            // 提取代码用于查找原始名称
-                            const codeMatch = port.match(/\|([A-Z0-9]+)\|/);
-                            if (codeMatch && codeMatch[1]) {
-                                const code = codeMatch[1];
-                                // 查找原始名称（从 availableOriginPorts 中）
-                                const originalPort = Array.from(availableOriginPorts).find(p => {
-                                    // 如果原始名称已经是标准化格式，提取代码比较
-                                    if (p.startsWith('[') && p.includes('|')) {
-                                        const pCodeMatch = p.match(/\|([A-Z0-9]+)\|/);
-                                        return pCodeMatch && pCodeMatch[1] === code;
-                                    }
-                                    // 否则尝试通过 portSortUtils 获取代码
-                                    const pCode = window.portSortUtils.getCodeByPortName(p);
-                                    return pCode === code;
-                                });
-                                if (originalPort && originalPort !== port) {
-                                    marketOriginPortDisplayMap[originalPort] = port;
-                                }
-                                marketOriginPortDisplayMap[port] = port;
-                            }
-                        }
-                    });
-                } catch (error) {
-                    debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
-                    allOriginPorts = Array.from(availableOriginPorts).sort((a, b) => {
-                        const displayA = marketOriginPortDisplayMap[a] || a;
-                        const displayB = marketOriginPortDisplayMap[b] || b;
-                        return displayA.localeCompare(displayB, 'zh-Hans-CN');
-                    });
+            // 使用 EMBEDDED_PORTS_SORT_MAP 中的港口代码顺序进行排序
+            // 从标准化格式 [英文名|代码|区域] 中提取代码（中间部分）进行排序
+            const portSortMap = typeof EMBEDDED_PORTS_SORT_MAP !== 'undefined' ? EMBEDDED_PORTS_SORT_MAP : null;
+            
+            // 提取代码的辅助函数
+            const extractCode = (port) => {
+                if (typeof port !== 'string') return null;
+                // 如果已经是标准化格式，提取代码
+                if (port.startsWith('[') && port.includes('|')) {
+                    const match = port.match(/\|([A-Z0-9]+)\|/);
+                    return match ? match[1] : null;
                 }
+                // 如果不在标准化格式，尝试从显示映射中获取
+                const display = marketOriginPortDisplayMap[port] || port;
+                if (display.startsWith('[') && display.includes('|')) {
+                    const match = display.match(/\|([A-Z0-9]+)\|/);
+                    return match ? match[1] : null;
+                }
+                return null;
+            };
+            
+            let allOriginPorts = Array.from(availableOriginPorts);
+            
+            // 如果有 portSortMap，使用代码排序
+            if (portSortMap) {
+                allOriginPorts.sort((a, b) => {
+                    const codeA = extractCode(a);
+                    const codeB = extractCode(b);
+                    
+                    if (codeA && codeB) {
+                        const indexA = portSortMap.hasOwnProperty(codeA) ? portSortMap[codeA] : Infinity;
+                        const indexB = portSortMap.hasOwnProperty(codeB) ? portSortMap[codeB] : Infinity;
+                        if (indexA !== Infinity && indexB !== Infinity) {
+                            return indexA - indexB;
+                        }
+                        if (indexA !== Infinity) return -1;
+                        if (indexB !== Infinity) return 1;
+                    }
+                    
+                    // 降级方案：按显示名称排序
+                    const displayA = marketOriginPortDisplayMap[a] || a;
+                    const displayB = marketOriginPortDisplayMap[b] || b;
+                    return displayA.localeCompare(displayB, 'zh-Hans-CN');
+                });
             } else {
-                allOriginPorts = Array.from(availableOriginPorts).sort((a, b) => {
+                // 降级方案：按显示名称排序
+                allOriginPorts.sort((a, b) => {
                     const displayA = marketOriginPortDisplayMap[a] || a;
                     const displayB = marketOriginPortDisplayMap[b] || b;
                     return displayA.localeCompare(displayB, 'zh-Hans-CN');
@@ -1356,7 +1362,40 @@
         function updateRegionSelect(availableRegions) {
             if (!marketRegionSelect) return;
             
-            const allRegions = Array.from(availableRegions).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+            // 使用 portSortUtils 的 regionLastIndices 进行区域排序
+            let allRegions;
+            // 确保 portSortUtils 已初始化
+            if (typeof window !== 'undefined' && typeof window.portSortUtils === 'undefined') {
+                window.portSortUtils = new PortSortUtils();
+            }
+            
+            // 直接使用 regionLastIndices 定义的顺序
+            const regionOrder = {
+                '美西': 6, '美东': 24, '加拿大': 31, '墨西哥': 34, '南美西': 49, '南美东': 65,
+                '中美洲': 81, '欧基港': 89, '欧洲偏港': 103, '地西': 114, '地东': 135, '黑海': 143,
+                '中东': 166, '红海': 174, '印巴': 196, '澳大利亚': 209, '新西兰': 219, '南太平洋': 246,
+                '西太平洋': 250, '东非': 261, '南非': 264, '西非': 282, '新马越泰': 316, '印尼菲律宾': 347,
+                '中国香港': 348, '中国台湾': 352, '中国': 399, '韩国': 411, '关东': 420, '关西': 426,
+                '关西/濑户内海': 433, '九州': 445, '本州': 464, '四国岛': 469, '北海道': 474, '冲绳': 477,
+                '远东': 486
+            };
+            
+            // 尝试从 portSortUtils 获取，如果不存在则使用上面的硬编码
+            const finalRegionOrder = (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined' && window.portSortUtils.regionLastIndices) 
+                ? window.portSortUtils.regionLastIndices 
+                : regionOrder;
+            
+            allRegions = Array.from(availableRegions).sort((a, b) => {
+                const indexA = finalRegionOrder.hasOwnProperty(a) ? finalRegionOrder[a] : Infinity;
+                const indexB = finalRegionOrder.hasOwnProperty(b) ? finalRegionOrder[b] : Infinity;
+                if (indexA !== Infinity && indexB !== Infinity) {
+                    return indexA - indexB;
+                }
+                if (indexA !== Infinity) return -1;
+                if (indexB !== Infinity) return 1;
+                return a.localeCompare(b, 'zh-Hans-CN');
+            });
+            
             const filteredRegions = marketRegionSearchValue.trim()
                 ? allRegions.filter(region => region.toLowerCase().includes(marketRegionSearchValue.toLowerCase()))
                 : allRegions;
@@ -1364,7 +1403,26 @@
             // 保留已选择的选项
             marketSelectedRegions = marketSelectedRegions.filter(region => filteredRegions.includes(region));
             
-            populateSelect(marketRegionSelect, filteredRegions, '全部区域', marketSelectedRegions, false);
+            // 直接操作 DOM，保持排序后的顺序（不使用 populateSelect，因为它会重新按字母排序）
+            marketRegionSelect.innerHTML = '';
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = filteredRegions.length ? '全部区域' : '请先加载数据';
+            if (!marketSelectedRegions.length) {
+                placeholderOption.selected = true;
+            }
+            marketRegionSelect.appendChild(placeholderOption);
+            
+            const selectedSet = new Set(marketSelectedRegions);
+            filteredRegions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                if (selectedSet.has(region)) {
+                    option.selected = true;
+                }
+                marketRegionSelect.appendChild(option);
+            });
         }
 
         /**
@@ -1388,30 +1446,9 @@
                 }).filter(port => port);
             }
             
-            let uniquePorts;
-            
-            // 使用统一的排序函数（按区域顺序和代码顺序排序）
-            if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined' && allPorts.length > 0) {
-                try {
-                    // 确保港口映射已加载
-                    if (!window.portSortUtils.portsMappingLoaded) {
-                        await window.portSortUtils.loadPortsMapping();
-                    }
-                    // 使用新的统一排序函数（按区域顺序和代码顺序排序）
-                    uniquePorts = window.portSortUtils.sortPortsByDataAndRegion(allPorts);
-                } catch (error) {
-                    debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
-                    // 降级方案：使用 sortPortsByStandardOrder 或简单排序
-                    uniquePorts = (typeof sortPortsByStandardOrder === 'function')
-                        ? sortPortsByStandardOrder(allPorts)
-                        : allPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
-                }
-            } else {
-                // 降级方案：使用 sortPortsByStandardOrder 或简单排序
-                uniquePorts = (typeof sortPortsByStandardOrder === 'function')
-                    ? sortPortsByStandardOrder(allPorts)
-                    : allPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
-            }
+            // 使用 EMBEDDED_PORTS_SORT_MAP 中的港口代码顺序进行排序
+            // 从标准化格式 [英文名|代码|区域] 中提取代码（中间部分）进行排序
+            const portSortMapForPorts = typeof EMBEDDED_PORTS_SORT_MAP !== 'undefined' ? EMBEDDED_PORTS_SORT_MAP : null;
             
             // 创建一个辅助函数来获取 portDisplay（支持 Map 和数组两种格式）
             const getPortDisplay = (port) => {
@@ -1435,6 +1472,46 @@
                 }
                 return port;
             };
+            
+            // 提取代码的辅助函数
+            const extractCodeFromPortDisplay = (port) => {
+                const display = getPortDisplay(port);
+                // 从标准化格式中提取代码：[英文名|代码|区域]
+                if (typeof display === 'string' && display.startsWith('[') && display.includes('|')) {
+                    const match = display.match(/\|([A-Z0-9]+)\|/);
+                    return match ? match[1] : null;
+                }
+                return null;
+            };
+            
+            if (portSortMapForPorts && allPorts.length > 0) {
+                uniquePorts = [...allPorts].sort((a, b) => {
+                    const codeA = extractCodeFromPortDisplay(a);
+                    const codeB = extractCodeFromPortDisplay(b);
+                    
+                    if (codeA && codeB) {
+                        const indexA = portSortMapForPorts.hasOwnProperty(codeA) ? portSortMapForPorts[codeA] : Infinity;
+                        const indexB = portSortMapForPorts.hasOwnProperty(codeB) ? portSortMapForPorts[codeB] : Infinity;
+                        if (indexA !== Infinity && indexB !== Infinity) {
+                            return indexA - indexB;
+                        }
+                        if (indexA !== Infinity) return -1;
+                        if (indexB !== Infinity) return 1;
+                    }
+                    
+                    // 降级方案：按显示名称排序
+                    const displayA = getPortDisplay(a);
+                    const displayB = getPortDisplay(b);
+                    return String(displayA).localeCompare(String(displayB), 'zh-Hans-CN');
+                });
+            } else {
+                // 降级方案：按显示名称排序
+                uniquePorts = allPorts.sort((a, b) => {
+                    const displayA = getPortDisplay(a);
+                    const displayB = getPortDisplay(b);
+                    return String(displayA).localeCompare(String(displayB), 'zh-Hans-CN');
+                });
+            }
             
             // 创建一个辅助函数来检查 port 是否存在（支持 Map 和数组两种格式）
             const hasPort = (port) => {
@@ -1468,21 +1545,47 @@
             const allPortsToShow = new Set([...marketSelectedPorts, ...filteredPorts]);
             const sortedPortsToShow = Array.from(allPortsToShow);
             
-            // 对要显示的港口进行排序
-            let finalPortsToShow;
-            if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                try {
-                    if (!window.portSortUtils.portsMappingLoaded) {
-                        await window.portSortUtils.loadPortsMapping();
-                    }
-                    // 确保所有元素都是字符串
-                    const filteredPortsToShow = sortedPortsToShow.filter(port => typeof port === 'string' && port.trim());
-                    finalPortsToShow = window.portSortUtils.sortPortsByDataAndRegion(filteredPortsToShow);
-                } catch (error) {
-                    finalPortsToShow = sortedPortsToShow.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+            // 对要显示的港口进行排序，使用 EMBEDDED_PORTS_SORT_MAP 中的港口代码顺序
+            const portSortMapForFinal = typeof EMBEDDED_PORTS_SORT_MAP !== 'undefined' ? EMBEDDED_PORTS_SORT_MAP : null;
+            
+            // 提取代码的辅助函数（用于最终排序）
+            const extractCodeFromDisplayFinal = (port) => {
+                const display = getPortDisplay(port);
+                if (typeof display === 'string' && display.startsWith('[') && display.includes('|')) {
+                    const match = display.match(/\|([A-Z0-9]+)\|/);
+                    return match ? match[1] : null;
                 }
+                return null;
+            };
+            
+            let finalPortsToShow;
+            if (portSortMapForFinal) {
+                finalPortsToShow = sortedPortsToShow.sort((a, b) => {
+                    const codeA = extractCodeFromDisplayFinal(a);
+                    const codeB = extractCodeFromDisplayFinal(b);
+                    
+                    if (codeA && codeB) {
+                        const indexA = portSortMapForFinal.hasOwnProperty(codeA) ? portSortMapForFinal[codeA] : Infinity;
+                        const indexB = portSortMapForFinal.hasOwnProperty(codeB) ? portSortMapForFinal[codeB] : Infinity;
+                        if (indexA !== Infinity && indexB !== Infinity) {
+                            return indexA - indexB;
+                        }
+                        if (indexA !== Infinity) return -1;
+                        if (indexB !== Infinity) return 1;
+                    }
+                    
+                    // 降级方案：按显示名称排序
+                    const displayA = getPortDisplay(a);
+                    const displayB = getPortDisplay(b);
+                    return String(displayA).localeCompare(String(displayB), 'zh-Hans-CN');
+                });
             } else {
-                finalPortsToShow = sortedPortsToShow.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+                // 降级方案：按显示名称排序
+                finalPortsToShow = sortedPortsToShow.sort((a, b) => {
+                    const displayA = getPortDisplay(a);
+                    const displayB = getPortDisplay(b);
+                    return String(displayA).localeCompare(String(displayB), 'zh-Hans-CN');
+                });
             }
             
             marketPortSelect.innerHTML = '';
@@ -1605,10 +1708,15 @@
                     if (!region || !portRaw) return;
                     
                     // 使用原始港口名称（保持 Excel 中的原始值，不进行标准化）
+                    // 如果 C 列已经是标准化格式，直接使用；否则才拼接
                     const port = portRaw;
-                    const portDisplay = portCode 
-                        ? `[${portRaw}|${portCode}|${region}]`
-                        : `[${portRaw}||${region}]`;
+                    let portDisplay = portRaw;
+                    // 如果 portRaw 不是标准化格式（不以 [ 开头），才需要拼接
+                    if (!portRaw.startsWith('[') || !portRaw.includes('|')) {
+                        portDisplay = portCode 
+                            ? `[${portRaw}|${portCode}|${region}]`
+                            : `[${portRaw}||${region}]`;
+                    }
                     
                     // 使用原始起运港名称（保持 Excel 中的原始值，不进行标准化）
                     const originPort = originPortRaw;
@@ -1666,40 +1774,40 @@
                 }
 
                 const allRegions = Object.keys(marketRegionPortMap);
-                // 处理区域名称变体（如"中东印巴红海" -> "中东红海印巴"）
-                const normalizeAreaName = (areaName) => {
-                    if (!areaName) return areaName;
-                    // 如果包含"中东"、"印巴"、"红海"这些关键词，统一映射到"中东红海印巴"
-                    if (areaName.includes('中东') && (areaName.includes('印巴') || areaName.includes('红海'))) {
-                        return '中东红海印巴';
-                    }
-                    return areaName;
+                
+                // 使用 portSortUtils 的 regionLastIndices 进行区域排序
+                // 确保 portSortUtils 已初始化
+                if (typeof window !== 'undefined' && typeof window.portSortUtils === 'undefined') {
+                    window.portSortUtils = new PortSortUtils();
+                }
+                
+                // 直接使用 regionLastIndices 定义的顺序
+                const regionOrder = {
+                    '美西': 6, '美东': 24, '加拿大': 31, '墨西哥': 34, '南美西': 49, '南美东': 65,
+                    '中美洲': 81, '欧基港': 89, '欧洲偏港': 103, '地西': 114, '地东': 135, '黑海': 143,
+                    '中东': 166, '红海': 174, '印巴': 196, '澳大利亚': 209, '新西兰': 219, '南太平洋': 246,
+                    '西太平洋': 250, '东非': 261, '南非': 264, '西非': 282, '新马越泰': 316, '印尼菲律宾': 347,
+                    '中国香港': 348, '中国台湾': 352, '中国': 399, '韩国': 411, '关东': 420, '关西': 426,
+                    '关西/濑户内海': 433, '九州': 445, '本州': 464, '四国岛': 469, '北海道': 474, '冲绳': 477,
+                    '远东': 486
                 };
                 
-                if (typeof sortAreasByStandardOrder === 'function') {
-                    marketRegions = sortAreasByStandardOrder(allRegions);
-                } else if (typeof STANDARD_AREA_ORDER !== 'undefined') {
-                    // 如果 sortAreasByStandardOrder 不可用，手动排序
-                    const areaOrderMap = new Map();
-                    STANDARD_AREA_ORDER.forEach((area, index) => {
-                        areaOrderMap.set(area, index);
-                    });
-                    // 创建新数组进行排序，不修改原数组
-                    marketRegions = [...allRegions].sort((a, b) => {
-                        const normalizedA = normalizeAreaName(a);
-                        const normalizedB = normalizeAreaName(b);
-                        const indexA = areaOrderMap.has(normalizedA) ? areaOrderMap.get(normalizedA) : Infinity;
-                        const indexB = areaOrderMap.has(normalizedB) ? areaOrderMap.get(normalizedB) : Infinity;
-                        if (indexA !== Infinity && indexB !== Infinity) {
-                            return indexA - indexB;
-                        }
-                        if (indexA !== Infinity) return -1;
-                        if (indexB !== Infinity) return 1;
-                        return a.localeCompare(b, 'zh-Hans-CN');
-                    });
-                } else {
-                    marketRegions = [...allRegions].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
-                }
+                // 尝试从 portSortUtils 获取，如果不存在则使用上面的硬编码
+                const finalRegionOrder = (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined' && window.portSortUtils.regionLastIndices) 
+                    ? window.portSortUtils.regionLastIndices 
+                    : regionOrder;
+                
+                // 按照 regionLastIndices 的顺序排序
+                marketRegions = [...allRegions].sort((a, b) => {
+                    const indexA = finalRegionOrder.hasOwnProperty(a) ? finalRegionOrder[a] : Infinity;
+                    const indexB = finalRegionOrder.hasOwnProperty(b) ? finalRegionOrder[b] : Infinity;
+                    if (indexA !== Infinity && indexB !== Infinity) {
+                        return indexA - indexB;
+                    }
+                    if (indexA !== Infinity) return -1;
+                    if (indexB !== Infinity) return 1;
+                    return a.localeCompare(b, 'zh-Hans-CN');
+                });
                 // 计算总港口数（在转换为数组之前）
                 const totalPorts = marketRegions.reduce((sum, region) => {
                     const portMap = marketRegionPortMap[region];
@@ -1713,100 +1821,64 @@
                 }, 0);
                 
                 // 将Map转换为数组，保持port -> portDisplay的映射关系
-                // 使用 portSortUtils 对每个区域的港口进行排序（按 Material-parsed_ports_list.txt 顺序）
-                if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-                    try {
-                        // 确保港口映射已加载
-                        if (!window.portSortUtils.portsMappingLoaded) {
-                            await window.portSortUtils.loadPortsMapping();
-                        }
-                        
-                        marketRegions.forEach(region => {
-                            const portMap = marketRegionPortMap[region];
-                            
-                            // 检查 portMap 是否已经是数组格式（如果已经处理过，跳过）
-                            if (Array.isArray(portMap)) {
-                                return; // 已经是数组格式，跳过处理
-                            }
-                            
-                            // 确保 portMap 是 Map
-                            if (!(portMap instanceof Map)) {
-                                debugWarn(`marketRegionPortMap[${region}] 不是 Map 类型，跳过排序`);
-                                return;
-                            }
-                            
-                            // 提取港口名称列表并排序（确保所有元素都是字符串）
-                            const portNames = Array.from(portMap.keys()).filter(name => typeof name === 'string' && name.trim());
-                            if (portNames.length === 0) {
-                                return; // 没有有效的港口名称，跳过
-                            }
-                            
-                            // 使用新的统一排序函数（按区域顺序和代码顺序排序）
-                            const sortedPortNames = window.portSortUtils.sortPortsByDataAndRegion(portNames);
-                            // 重新构建 portArray，保持 port -> portDisplay 的映射关系
-                            const portArray = sortedPortNames.map(portName => {
-                                // 确保 portName 是字符串
-                                if (typeof portName !== 'string') {
-                                    debugWarn(`排序后的港口名称不是字符串: ${portName}`);
-                                    return [String(portName), String(portName)];
-                                }
-                                // 如果排序后的名称是标准化格式，使用它；否则使用原始映射
-                                const display = portName.startsWith('[') && portName.includes('|')
-                                    ? portName
-                                    : (portMap.get(portName) || portName);
-                                return [portName, display];
-                            });
-                            marketRegionPortMap[region] = portArray; // 存储为 [port, portDisplay] 的数组
-                        });
-                    } catch (error) {
-                        debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
-                        marketRegions.forEach(region => {
-                            const portMap = marketRegionPortMap[region];
-                            
-                            // 检查 portMap 是否已经是数组格式
-                            if (Array.isArray(portMap)) {
-                                return; // 已经是数组格式，跳过处理
-                            }
-                            
-                            // 确保 portMap 是 Map
-                            if (!(portMap instanceof Map)) {
-                                return;
-                            }
-                            
-                            const portArray = Array.from(portMap.entries())
-                                .filter(([key]) => typeof key === 'string' && key.trim())
-                                .sort((a, b) => {
-                                    const keyA = String(a[0] || '');
-                                    const keyB = String(b[0] || '');
-                                    return keyA.localeCompare(keyB, 'zh-Hans-CN');
-                                });
-                            marketRegionPortMap[region] = portArray;
-                        });
+                // 使用 EMBEDDED_PORTS_SORT_MAP 中的港口代码顺序进行排序
+                // 从标准化格式 [英文名|代码|区域] 中提取代码（中间部分）进行排序
+                const portSortMap = typeof EMBEDDED_PORTS_SORT_MAP !== 'undefined' ? EMBEDDED_PORTS_SORT_MAP : null;
+                
+                marketRegions.forEach(region => {
+                    const portMap = marketRegionPortMap[region];
+                    
+                    // 检查 portMap 是否已经是数组格式（如果已经处理过，跳过）
+                    if (Array.isArray(portMap)) {
+                        return; // 已经是数组格式，跳过处理
                     }
-                } else {
-                    marketRegions.forEach(region => {
-                        const portMap = marketRegionPortMap[region];
+                    
+                    // 确保 portMap 是 Map
+                    if (!(portMap instanceof Map)) {
+                        debugWarn(`marketRegionPortMap[${region}] 不是 Map 类型，跳过排序`);
+                        return;
+                    }
+                    
+                    // 提取港口名称列表（确保所有元素都是字符串）
+                    const portEntries = Array.from(portMap.entries())
+                        .filter(([key]) => typeof key === 'string' && key.trim());
+                    
+                    if (portEntries.length === 0) {
+                        return; // 没有有效的港口名称，跳过
+                    }
+                    
+                    // 对港口进行排序：从 portDisplay 中提取代码，使用 EMBEDDED_PORTS_SORT_MAP 排序
+                    const portArray = portEntries.sort((a, b) => {
+                        const [, displayA] = a;
+                        const [, displayB] = b;
                         
-                        // 检查 portMap 是否已经是数组格式
-                        if (Array.isArray(portMap)) {
-                            return; // 已经是数组格式，跳过处理
+                        // 从标准化格式中提取代码：[英文名|代码|区域]
+                        const extractCode = (display) => {
+                            if (typeof display !== 'string') return null;
+                            const match = display.match(/\|([A-Z0-9]+)\|/);
+                            return match ? match[1] : null;
+                        };
+                        
+                        const codeA = extractCode(displayA);
+                        const codeB = extractCode(displayB);
+                        
+                        // 如果两个都有代码，使用 EMBEDDED_PORTS_SORT_MAP 排序
+                        if (codeA && codeB && portSortMap) {
+                            const indexA = portSortMap.hasOwnProperty(codeA) ? portSortMap[codeA] : Infinity;
+                            const indexB = portSortMap.hasOwnProperty(codeB) ? portSortMap[codeB] : Infinity;
+                            if (indexA !== Infinity && indexB !== Infinity) {
+                                return indexA - indexB;
+                            }
+                            if (indexA !== Infinity) return -1;
+                            if (indexB !== Infinity) return 1;
                         }
                         
-                        // 确保 portMap 是 Map
-                        if (!(portMap instanceof Map)) {
-                            return;
-                        }
-                        
-                        const portArray = Array.from(portMap.entries())
-                            .filter(([key]) => typeof key === 'string' && key.trim())
-                            .sort((a, b) => {
-                                const keyA = String(a[0] || '');
-                                const keyB = String(b[0] || '');
-                                return keyA.localeCompare(keyB, 'zh-Hans-CN');
-                            });
-                        marketRegionPortMap[region] = portArray;
+                        // 降级方案：按显示名称排序
+                        return String(displayA || a[0]).localeCompare(String(displayB || b[0]), 'zh-Hans-CN');
                     });
-                }
+                    
+                    marketRegionPortMap[region] = portArray; // 存储为 [port, portDisplay] 的数组
+                });
 
                 initMarketSelectors();
                 marketSelectedOriginPorts = [];
@@ -2890,21 +2962,31 @@
                 return null;
             };
 
-            const weekCol = findColumnKey(['周别', '周次', '周数', 'week'], 17);
-            const capacityCol = findColumnKey(['运力', 'teu', '舱位'], 18);
-            const shipNameCol = findColumnKey(['船名', '航次', 'vessel'], 11);
-            const shipDateCol = findColumnKey(['开船', '船期', '离港', 'etd', '时间'], 12);
-            const routeIdCol = findColumnKey(['航线id', '航线ID', 'route id', 'group_id', 'groupid'], 6);
-
-            const originPortCol = findColumnKey(['起运港', 'pol', 'origin'], 0); // A列（索引0）
-            const destPortCol = findColumnKey(['目的港', 'pod', 'destination'], 1); // B列（索引1）
+            // Schedule 表列对应关系（删除C-F列后更新）
+            // 起运港：A列（索引0）
+            const originPortCol = findColumnKey(['起运港', 'pol', 'origin'], 0);
+            // 目的港：B列（索引1）
+            const destPortCol = findColumnKey(['目的港', 'pod', 'destination'], 1);
+            // 航线ID：C列（索引2）
+            const routeIdCol = findColumnKey(['航线id', '航线ID', 'route id', 'group_id', 'groupid'], 2);
+            // 共舱船公司：F列（索引5）
             const routeCol =
                 columnKeys.find(col => matchesKeyword(col, '共舱')) ||
                 columnKeys.find(col => matchesKeyword(col, '船公司')) ||
                 columnKeys.find(col => matchesKeyword(col, 'route')) ||
-                (columnKeys[9] || null); // J列（索引9）
-            const routeRemarkCol = columnKeys[10] || null; // K列（索引10）
-            const routePathCol = columnKeys[24] || null; // Y列（索引24）
+                (columnKeys[5] || null);
+            // 航线备注：G列（索引6）
+            const routeRemarkCol = columnKeys[6] || null;
+            // 船名/航次：H列（索引7）
+            const shipNameCol = findColumnKey(['船名', '航次', 'vessel'], 7);
+            // 开船日期：I列（索引8）
+            const shipDateCol = findColumnKey(['开船', '船期', '离港', 'etd', '时间'], 8);
+            // 航线路径：U列（索引20）
+            const routePathCol = columnKeys[20] || null;
+            // 运力 (TEU)：O列（索引14）
+            const capacityCol = findColumnKey(['运力', 'teu', '舱位'], 14);
+            // 周别：N列（索引13）
+            const weekCol = findColumnKey(['周别', '周次', '周数', 'week'], 13);
 
             if (!weekCol || !capacityCol || !shipNameCol || !shipDateCol || !routeCol || !originPortCol || !destPortCol) {
                 showError(ErrorType.FILE_PARSE, 'MISSING_COLUMNS', { columns: columnKeys.join(', ') });

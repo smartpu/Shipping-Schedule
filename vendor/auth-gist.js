@@ -158,6 +158,15 @@
             }));
             
             debugLog(`[Auth] 白名单加载成功，共 ${userWhitelist.length} 个用户`);
+            
+            // 触发白名单加载完成事件
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+                const event = new CustomEvent('whitelistLoaded', {
+                    detail: { userCount: userWhitelist.length }
+                });
+                window.dispatchEvent(event);
+            }
+            
             return userWhitelist;
         } catch (error) {
             debugError('[Auth] 加载白名单失败:', {
@@ -368,30 +377,101 @@
     }
 
     /**
-     * 检查用户是否有权限访问指定工具组
-     * @param {string} toolGroup - 工具组名称 (tools001, tools365, monitor, admin)
-     * @returns {boolean} 是否有权限
+     * 等待白名单加载完成
+     * @param {number} timeout - 超时时间（毫秒），默认 10000ms
+     * @returns {Promise<boolean>} 是否加载成功
      */
-    function hasPermission(toolGroup) {
-        // 本地测试模式：允许所有访问
+    async function waitForWhitelist(timeout = 10000) {
+        // 本地测试模式：直接返回 true
         if (isLocalTestMode) {
             return true;
         }
-
-        const authData = getAuthData();
-        if (!authData) return false;
         
-        // 检查是否为本地测试用户（即使不在白名单中，也允许访问）
-        if (isLocalTestUser(authData)) {
+        // 如果已经加载，直接返回
+        if (userWhitelist.length > 0) {
             return true;
         }
         
-        // 如果白名单未加载，尝试加载（同步调用，但可能返回 false）
-        if (userWhitelist.length === 0) {
-            debugWarn('[Auth] 白名单未加载，无法检查权限');
-            return false;
+        // 如果正在加载，等待加载完成事件
+        return new Promise((resolve) => {
+            const startTime = Date.now();
+            
+            // 先尝试立即加载
+            loadWhitelist().then(() => {
+                resolve(userWhitelist.length > 0);
+            }).catch(() => {
+                resolve(false);
+            });
+            
+            // 监听加载完成事件（作为备用）
+            const handler = () => {
+                if (userWhitelist.length > 0) {
+                    window.removeEventListener('whitelistLoaded', handler);
+                    resolve(true);
+                }
+            };
+            window.addEventListener('whitelistLoaded', handler);
+            
+            // 超时处理
+            setTimeout(() => {
+                window.removeEventListener('whitelistLoaded', handler);
+                if (userWhitelist.length === 0) {
+                    debugWarn('[Auth] 等待白名单加载超时');
+                    resolve(false);
+                }
+            }, timeout);
+        });
+    }
+
+    /**
+     * 检查用户是否有权限访问指定工具组
+     * @param {string} toolGroup - 工具组名称 (tools001, tools365, monitor, admin)
+     * @param {boolean} waitForLoad - 是否等待白名单加载完成，默认 false（同步检查）
+     * @returns {boolean|Promise<boolean>} 是否有权限（如果 waitForLoad=true，返回 Promise）
+     */
+    function hasPermission(toolGroup, waitForLoad = false) {
+        // 本地测试模式：允许所有访问
+        if (isLocalTestMode) {
+            return waitForLoad ? Promise.resolve(true) : true;
+        }
+
+        const authData = getAuthData();
+        if (!authData) {
+            return waitForLoad ? Promise.resolve(false) : false;
         }
         
+        // 检查是否为本地测试用户（即使不在白名单中，也允许访问）
+        if (isLocalTestUser(authData)) {
+            return waitForLoad ? Promise.resolve(true) : true;
+        }
+        
+        // 如果白名单未加载
+        if (userWhitelist.length === 0) {
+            if (waitForLoad) {
+                // 异步等待加载完成
+                return waitForWhitelist().then((loaded) => {
+                    if (!loaded) {
+                        debugWarn('[Auth] 白名单未加载，无法检查权限');
+                        return false;
+                    }
+                    return checkPermissionInternal(authData, toolGroup);
+                });
+            } else {
+                debugWarn('[Auth] 白名单未加载，无法检查权限');
+                return false;
+            }
+        }
+        
+        return waitForLoad ? Promise.resolve(checkPermissionInternal(authData, toolGroup)) : checkPermissionInternal(authData, toolGroup);
+    }
+    
+    /**
+     * 内部权限检查函数（假设白名单已加载）
+     * @param {Object} authData - 认证数据
+     * @param {string} toolGroup - 工具组名称
+     * @returns {boolean} 是否有权限
+     */
+    function checkPermissionInternal(authData, toolGroup) {
         const user = getUserFromWhitelist(authData);
         if (!user) {
             debugWarn('[Auth] 用户不在白名单中，无法检查权限', {
@@ -591,9 +671,7 @@
 
         // 其他用户必须通过白名单验证
         // 确保白名单已加载
-        if (userWhitelist.length === 0) {
-            await loadWhitelist();
-        }
+        await waitForWhitelist();
         
         // 检查用户是否在白名单中
         const user = getUserFromWhitelist(authData);
@@ -611,11 +689,14 @@
             return false;
         }
 
-        // 如果指定了工具组，检查权限
+        // 如果指定了工具组，检查权限（等待白名单加载）
         if (toolGroup) {
-            if (!hasPermission(toolGroup)) {
+            const hasAccess = await hasPermission(toolGroup, true);
+            if (!hasAccess) {
                 debugWarn(`[Auth] 用户无权限访问工具组: ${toolGroup}`);
-                // 可以显示提示或重定向
+                // 显示提示并重定向到 dashboard
+                alert(`您没有权限访问 ${toolGroup} 系列工具`);
+                window.location.href = 'dashboard.html';
                 return false;
             }
         }
@@ -852,6 +933,7 @@
     window.updateUserGroups = updateUserGroups;
     window.batchUpdateUserGroups = batchUpdateUserGroups;
     window.getToolGroupFromPage = getToolGroupFromPage;
+    window.waitForWhitelist = waitForWhitelist;
 
     // 自动初始化（带权限检查）
     async function autoInitWithAuth() {

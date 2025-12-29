@@ -4657,7 +4657,7 @@ body[data-page="Monitor-SCFI-Trends.html"] .chart-wrapper {
 
 /* 001-04 和 365-04 派船趋势图：1.5倍高度 */
 body[data-page="001-04-market-analysis.html"] #chartContainer .chart-wrapper,
-body[data-page="365-04-market-watch.html"] #marketModule .chart-wrapper {
+body[data-page="365-04-market-watch.html"] #chartContainer .chart-wrapper {
     height: 600px !important; /* 1.5倍高度，便于对比多航线 */
 }
 

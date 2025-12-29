@@ -62,10 +62,11 @@
      * @param {string} options.currentPage - 当前页面路径，用于设置active状态
      * @param {string} options.currentSection - 当前激活的section（tools001/tools365/monitor）
      * @param {boolean} options.isDashboard - 是否为dashboard页面（决定主菜单链接）
+     * @param {boolean} options.hasAdminPermission - 是否有admin权限（如果已检查）
      * @returns {string} 导航栏HTML字符串
      */
     function generateSidebarHTML(options = {}) {
-        const { currentPage = '', currentSection = '', isDashboard = false } = options;
+        const { currentPage = '', currentSection = '', isDashboard = false, hasAdminPermission: providedPermission = false } = options;
         
         let html = `
         <aside class="dashboard-sidebar" id="sidebar">
@@ -81,9 +82,9 @@
                         <div class="nav-section-title">工具导航</div>
         `;
 
-        // 检查用户是否有admin权限
-        let hasAdminPermission = false;
-        if (typeof window.hasPermission === 'function') {
+        // 检查用户是否有admin权限（如果未提供，则同步检查）
+        let hasAdminPermission = providedPermission;
+        if (!providedPermission && typeof window.hasPermission === 'function') {
             hasAdminPermission = window.hasPermission('admin');
         }
         
@@ -348,7 +349,7 @@
      * @param {string|HTMLElement} container - 容器选择器或元素
      * @param {Object} options - 配置选项
      */
-    function loadSidebar(container, options = {}) {
+    async function loadSidebar(container, options = {}) {
         const containerEl = typeof container === 'string' ? document.querySelector(container) : container;
         
         if (!containerEl) {
@@ -360,7 +361,7 @@
         const currentPage = options.currentPage || window.location.pathname.split('/').pop() || window.location.href.split('/').pop() || '';
         const urlParams = new URLSearchParams(window.location.search);
         const fromParam = urlParams.get('from');
-        
+
         // 根据from参数或当前页面确定section（优先使用传入的options）
         let currentSection = options.currentSection || '';
         if (!currentSection) {
@@ -381,11 +382,21 @@
         // 判断是否为dashboard页面（优先使用传入的options）
         const isDashboard = options.isDashboard !== undefined ? options.isDashboard : (currentPage === 'dashboard.html' || currentPage === 'index.html' || !currentPage);
 
+        // 等待白名单加载完成后再检查权限
+        let hasAdminPermission = false;
+        if (typeof window.waitForWhitelist === 'function') {
+            await window.waitForWhitelist();
+        }
+        if (typeof window.hasPermission === 'function') {
+            hasAdminPermission = await window.hasPermission('admin', true);
+        }
+
         // 生成并插入HTML
         const sidebarHTML = generateSidebarHTML({
             currentPage,
             currentSection,
             isDashboard,
+            hasAdminPermission,
             ...options
         });
 

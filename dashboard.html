@@ -500,10 +500,16 @@
             });
             
             // 等待导航栏加载完成后，绑定dashboard特定的点击事件
-            waitForSidebar(() => {
+            waitForSidebar(async () => {
+                // 等待白名单加载完成后再检查权限
+                if (typeof window.waitForWhitelist === 'function') {
+                    await window.waitForWhitelist();
+                }
+                
                 // 检查admin权限，如果没有权限则隐藏admin tab
                 if (typeof window.hasPermission === 'function') {
-                    const hasAdminPermission = window.hasPermission('admin');
+                    // 使用异步权限检查（等待白名单加载）
+                    const hasAdminPermission = await window.hasPermission('admin', true);
                     const adminTab = document.getElementById('admin');
                     if (!hasAdminPermission) {
                         if (adminTab) {

@@ -282,7 +282,7 @@
                     // 优先使用手动加载的港口列表文件
                     if (portListText) {
                         buildPortMappingFromText(portListText);
-                        console.log(`港口映射已加载（手动文件），共 ${portMapping.size} 个映射`);
+                        debugLog(`港口映射已加载（手动文件），共 ${portMapping.size} 个映射`);
                         return true;
                     }
 
@@ -296,14 +296,14 @@
                                 portMapping.set(info.englishName.toUpperCase(), standardized);
                             }
                         }
-                        console.log(`港口映射已加载（降级方案），共 ${portMapping.size} 个映射`);
-                        console.warn('注意：降级方案的映射可能不完整，建议手动上传港口列表文件');
+                        debugLog(`港口映射已加载（降级方案），共 ${portMapping.size} 个映射`);
+                        debugWarn('注意：降级方案的映射可能不完整，建议手动上传港口列表文件');
                         return true;
                     }
 
                     throw new Error('请先上传港口列表文件');
                 } catch (error) {
-                    console.error('加载港口映射失败:', error);
+                    debugError('加载港口映射失败:', error);
                     throw error;
                 }
             }
@@ -675,7 +675,7 @@
                         stats
                     };
                 } catch (error) {
-                    console.error('处理 CSV 失败:', error);
+                    debugError('处理 CSV 失败:', error);
                     throw error;
                 }
             }
@@ -845,9 +845,9 @@
                     const text = await file.text();
                     portListText = text;
                     
-                    console.log(`港口列表文件已加载`);
+                    debugLog(`港口列表文件已加载`);
                 } catch (error) {
-                    console.error('读取港口列表文件失败:', error);
+                    debugError('读取港口列表文件失败:', error);
                     showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { 
                         message: '读取港口列表文件失败' 
                     }, error);
@@ -916,7 +916,7 @@
                     }
 
                 } catch (error) {
-                    console.error('处理失败:', error);
+                    debugError('处理失败:', error);
                     showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', { 
                         message: error.message || '处理 CSV 文件时发生错误' 
                     }, error);
@@ -946,7 +946,7 @@
                         const csvContent = generateCsv(processedCsvData);
                         downloadCsv(csvContent, originalFileName);
                     } catch (error) {
-                        console.error('生成 CSV 失败:', error);
+                        debugError('生成 CSV 失败:', error);
                         showError(ErrorType.SYSTEM_ERROR, 'EXPORT_FAILED', { 
                             message: '生成 CSV 文件时发生错误' 
                         }, error);

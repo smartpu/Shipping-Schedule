@@ -208,7 +208,7 @@
         const submitBtn = document.querySelector('.login-submit-btn');
 
         if (!loginForm || !nameInput || !passwordInput || !emailInput || !submitBtn) {
-            console.error('登录表单元素未找到');
+            debugError('登录表单元素未找到');
         } else {
             // 实时验证
             nameInput.addEventListener('blur', () => {

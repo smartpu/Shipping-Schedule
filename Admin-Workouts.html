@@ -1766,7 +1766,7 @@
         async function loadDefaultCsvFile() {
           // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
           if (window.location.protocol === 'file:') {
-            console.log('本地文件系统环境，跳过自动加载，请手动选择文件');
+            debugLog('本地文件系统环境，跳过自动加载，请手动选择文件');
             return;
           }
 
@@ -1782,18 +1782,18 @@
                 }
               }
             } catch (e) {
-              console.log('无法读取配置文件，请手动选择文件');
+              debugLog('无法读取配置文件，请手动选择文件');
               return;
             }
 
             if (!csvFileName) {
-              console.log('配置文件中未找到文件路径，请手动选择文件');
+              debugLog('配置文件中未找到文件路径，请手动选择文件');
               return;
             }
 
             const response = await fetch(`Data/${csvFileName}`);
             if (!response.ok) {
-              console.log('默认 CSV 文件不存在，等待用户手动选择');
+              debugLog('默认 CSV 文件不存在，等待用户手动选择');
               return;
             }
             const blob = await response.blob();
@@ -1810,9 +1810,9 @@
           } catch (error) {
             // 如果是CORS错误，静默处理（本地文件系统环境）
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
-              console.log('本地文件系统环境，无法自动加载，请手动选择文件');
+              debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
             } else {
-              console.log('自动加载 CSV 文件失败，等待用户手动选择:', error);
+              debugLog('自动加载 CSV 文件失败，等待用户手动选择:', error);
             }
           }
         }

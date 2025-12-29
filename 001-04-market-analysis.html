@@ -930,7 +930,7 @@
                     
                     availableDestPorts = sortedDestPorts;
                 } catch (error) {
-                    console.warn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
+                    debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
                     // 降级方案：简单排序
                     availableOriginPorts = Array.from(originPortSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
                     availableDestPorts = Array.from(destPortSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));

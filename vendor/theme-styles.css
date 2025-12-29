@@ -3688,6 +3688,12 @@ thead th.table-header > div {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+/* index-info 内的第一个 div（包含标题和内容）应该占据剩余空间 */
+.index-info > div:first-child {
+    flex: 1;
+    min-width: 0; /* 允许 flex 子元素缩小 */
+}
+
 .index-info h4 {
     margin: 0 0 6px;
     font-size: 15px;
@@ -3699,6 +3705,9 @@ thead th.table-header > div {
     color: var(--color-text-primary);
     font-size: 13px;
     white-space: pre-line;
+    /* 确保 p 标签内的 iframe 可以扩展到 1200px */
+    max-width: 100%;
+    width: 100%;
 }
 
 .index-meta {
@@ -3706,6 +3715,20 @@ thead th.table-header > div {
     margin-top: 4px;
     font-size: 12px;
     color: var(--color-text-tertiary);
+}
+
+/* 确保 index-info 内的 iframe 可以扩展到 900px */
+.index-info p iframe {
+    width: 100% !important;
+    max-width: 900px !important;
+    display: block;
+}
+
+/* 响应式：在小屏幕上，iframe 仍然可以正常显示 */
+@media (max-width: 900px) {
+    .index-info p iframe {
+        max-width: 100% !important;
+    }
 }
 
 /* AI 分析相关样式 */

@@ -1637,191 +1637,7 @@
         // 直接返回原始值，去除多余空格
         return String(portName).trim();
         
-        // 以下代码已禁用，用户将通过其他方式实现港口标准化
-        /*
-        // 优先使用全局 normalizePortName 函数（如果可用）
-        if (typeof window !== 'undefined' && typeof window.normalizePortName === 'function') {
-          try {
-            const standardized = window.normalizePortName(portName);
-            if (standardized && standardized !== portName) {
-              return standardized;
-            }
-          } catch (error) {
-            console.warn('全局 normalizePortName 失败，使用本地逻辑:', error);
-          }
-        }
-        
-        // 降级方案：使用本地逻辑（兼容性）
-        // 去除多余空格
-        let normalized = String(portName).trim();
-        const originalNormalized = normalized;
-        
-        // 先检查映射表（精确匹配）
-        if (portNameMapping[normalized]) {
-          const mapped = portNameMapping[normalized];
-          // 如果全局函数可用，尝试获取标准化显示格式
-          if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-            const standardized = window.portSortUtils.getStandardizedDisplay(mapped);
-            if (standardized && standardized.startsWith('[')) {
-              return standardized;
-            }
-          }
-          return mapped;
-        }
-
-        */
-        
-        // 以下代码已禁用，用户将通过其他方式实现港口标准化
-        /*
-        // 处理英文格式：BALBOA(巴尔博亚) 或 BRISBANE,AU(布里斯班) 或 CHATTOGRAM(吉大港)
-        if (normalized.includes('(') && normalized.includes(')')) {
-          // 先提取括号前的英文部分，尝试匹配
-          const beforeBracket = normalized.split('(')[0].trim();
-          const upperBeforeBracket = beforeBracket.toUpperCase();
-          if (portNameMapping[upperBeforeBracket]) {
-            return portNameMapping[upperBeforeBracket];
-          }
-          // 提取括号内的中文名称
-          const match = normalized.match(/\(([^)]+)\)/);
-          if (match && match[1]) {
-            const chineseName = match[1].split(',')[0].trim(); // 如果有逗号，取第一部分
-            if (portNameMapping[chineseName]) {
-              return portNameMapping[chineseName];
-            }
-            // 直接使用括号内的中文名称（如果它在标准港口列表中）
-            if (allPorts.includes(chineseName)) {
-              return chineseName;
-            }
-            normalized = chineseName;
-          }
-        }
-
-        // 处理包含逗号的情况（如"盖梅港,头顿" -> "盖梅港" 或 "LOS ANGELES, CA" -> "LOS ANGELES"）
-        if (normalized.includes(',')) {
-          const mainPart = normalized.split(',')[0].trim();
-          // 先检查原始格式（带逗号的完整格式）
-          const upperFull = normalized.toUpperCase();
-          if (portNameMapping[upperFull]) {
-            return portNameMapping[upperFull];
-          }
-          // 检查主部分（中文或英文）
-          if (portNameMapping[mainPart]) {
-            return portNameMapping[mainPart];
-          }
-          // 检查英文格式：LOS ANGELES, CA -> LOS ANGELES
-          const upperPart = mainPart.toUpperCase();
-          if (portNameMapping[upperPart]) {
-            return portNameMapping[upperPart];
-          }
-          // 对于中文格式，尝试直接匹配标准港口名称
-          if (/[\u4e00-\u9fa5]/.test(mainPart)) {
-            // 如果主部分是中文，尝试精确匹配标准港口
-            if (allPorts.includes(mainPart)) {
-              return mainPart;
-            }
-            // 尝试模糊匹配（包含关系）
-            for (const standardPort of allPorts) {
-              if (mainPart.includes(standardPort) || standardPort.includes(mainPart)) {
-                return standardPort;
-              }
-            }
-          }
-          normalized = mainPart;
-        }
-
-        // 处理点号分隔：VANCOUVER.BC -> VANCOUVER
-        if (normalized.includes('.')) {
-          const mainPart = normalized.split('.')[0].trim();
-          const upperPart = mainPart.toUpperCase();
-          if (portNameMapping[upperPart]) {
-            return portNameMapping[upperPart];
-          }
-          normalized = mainPart;
-        }
-
-        // 处理括号内容（如"青岛(青岛)" -> "青岛"）
-        if (normalized.includes('(')) {
-          const beforeBracket = normalized.split('(')[0].trim();
-          if (portNameMapping[beforeBracket]) {
-            return portNameMapping[beforeBracket];
-          }
-          normalized = beforeBracket;
-        }
-
-        // 再次检查映射表（处理后的值）
-        if (normalized !== originalNormalized && portNameMapping[normalized]) {
-          return portNameMapping[normalized];
-        }
-
-        // 检查大写格式（英文港口名）
-        const upperNormalized = normalized.toUpperCase();
-        if (portNameMapping[upperNormalized]) {
-          return portNameMapping[upperNormalized];
-        }
-
-        // 对于中文格式，先尝试精确匹配标准港口名称
-        if (/[\u4e00-\u9fa5]/.test(normalized)) {
-          // 精确匹配
-          if (allPorts.includes(normalized)) {
-            return normalized;
-          }
-          // 去除常见后缀（如"港"、"港口"等，但保留在标准名称中的）
-          const cleaned = normalized.replace(/港$/, '').trim();
-          if (cleaned !== normalized && allPorts.includes(cleaned)) {
-            return cleaned;
-          }
-          // 模糊匹配（包含关系，优先匹配更长的标准名称）
-          const matches = [];
-          for (const standardPort of allPorts) {
-            // 检查是否包含标准港口名（双向包含）
-            if (normalized.includes(standardPort) || standardPort.includes(normalized) ||
-                cleaned.includes(standardPort) || standardPort.includes(cleaned)) {
-              matches.push({ port: standardPort, length: standardPort.length });
-            }
-          }
-          if (matches.length > 0) {
-            // 优先返回更长的匹配（更精确）
-            matches.sort((a, b) => b.length - a.length);
-            return matches[0].port;
-          }
-        }
-        
-        // 对于英文格式，去除常见后缀
-        const cleaned = normalized.replace(/港$/, '').trim();
-        
-        // 精确匹配
-        for (const standardPort of allPorts) {
-          if (normalized === standardPort || cleaned === standardPort) {
-            return standardPort;
-          }
-        }
-
-        // 模糊匹配（包含关系，优先匹配更长的标准名称）
-        const matches = [];
-        for (const standardPort of allPorts) {
-          // 检查是否包含标准港口名
-          if (normalized.includes(standardPort) || standardPort.includes(normalized) ||
-              cleaned.includes(standardPort) || standardPort.includes(cleaned)) {
-            matches.push({ port: standardPort, length: standardPort.length });
-          }
-        }
-        
-        if (matches.length > 0) {
-          // 返回最长的匹配（更精确）
-          matches.sort((a, b) => b.length - a.length);
-          const matchedPort = matches[0].port;
-          // 如果全局函数可用，尝试获取标准化显示格式
-          if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
-            const standardized = window.portSortUtils.getStandardizedDisplay(matchedPort);
-            if (standardized && standardized.startsWith('[')) {
-              return standardized;
-            }
-          }
-          return matchedPort;
-        }
-        */
-        
-        // 最后尝试通过 portSortUtils 获取标准化显示格式（即使没有找到映射）
+        // 注意：港口标准化已通过 portSortUtils 统一处理，此处仅做基本清理
         if (typeof window !== 'undefined' && typeof window.portSortUtils !== 'undefined') {
           const standardized = window.portSortUtils.getStandardizedDisplay(normalized);
           if (standardized && standardized !== normalized && standardized.startsWith('[')) {
@@ -1913,7 +1729,7 @@
               // 使用新的统一排序函数
               originPorts = window.portSortUtils.sortPortsByDataAndRegion(originPorts, originPortOrder);
             } catch (error) {
-              console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
+              debugWarn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
               // 降级方案：简单排序
               originPorts = originPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
             }
@@ -1952,7 +1768,7 @@
               // 使用新的统一排序函数
               destPorts = window.portSortUtils.sortPortsByDataAndRegion(destPorts, destPortOrder);
             } catch (error) {
-              console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
+              debugWarn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
               // 降级方案：简单排序
               destPorts = destPorts.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
             }

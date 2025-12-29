@@ -1360,7 +1360,7 @@
 
       function createLineChart(canvas, series, { maxTicks, isYearly }) {
         if (typeof window.Chart === "undefined") {
-          console.error("Chart.js 尚未加载，无法创建图表");
+          debugError("Chart.js 尚未加载，无法创建图表");
           return null;
         }
         const ctx = canvas.getContext("2d");

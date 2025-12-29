@@ -469,7 +469,10 @@
                 if (typeof window.debugError === 'function') {
                     window.debugError('[Dashboard] SidebarLoader未加载');
                 } else {
-                    console.error('[Dashboard] SidebarLoader未加载');
+                    // 降级方案：如果 debugError 不可用，使用 console.error
+                    if (typeof console !== 'undefined' && console.error) {
+                        console.error('[Dashboard] SidebarLoader未加载');
+                    }
                 }
                 return;
             }

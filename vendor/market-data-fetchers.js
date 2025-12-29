@@ -635,14 +635,41 @@
             // 创建 iframe
             const iframe = document.createElement('iframe');
             iframe.src = canvaUrl;
+            // 使用 max-width: 900px 和 width: 100%，确保在大屏幕上达到 900px，小屏幕上响应式
             iframe.style.width = '100%';
-            iframe.style.maxWidth = '1200px';
+            iframe.style.maxWidth = '900px';
             iframe.style.height = '500px';
             iframe.style.border = 'none';
             iframe.style.borderRadius = '8px';
             iframe.style.background = '#f5f5f5';
+            iframe.style.display = 'block';
             iframe.allow = 'fullscreen';
             iframe.title = 'WCI 主要航线现货价';
+            
+            // 确保容器可以容纳 900px 宽度的 iframe
+            // 移除容器的宽度限制，让它能够扩展到 900px
+            if (container) {
+                container.style.width = '100%';
+                container.style.maxWidth = '900px';
+                container.style.display = 'block';
+                // 确保父元素（p 标签）也不限制宽度
+                const parentP = container.parentElement;
+                if (parentP && parentP.tagName === 'P') {
+                    parentP.style.width = '100%';
+                    parentP.style.maxWidth = '900px';
+                    parentP.style.display = 'block';
+                }
+                // 确保 index-info 内的 div 也不限制宽度
+                const parentDiv = parentP ? parentP.parentElement : null;
+                if (parentDiv && parentDiv.classList.contains('index-info')) {
+                    const contentDiv = parentDiv.querySelector('div:first-child');
+                    if (contentDiv) {
+                        contentDiv.style.width = '100%';
+                        contentDiv.style.maxWidth = '900px';
+                        contentDiv.style.flex = '1 1 auto';
+                    }
+                }
+            }
             
             // 检测 iframe 是否成功加载
             let loadTimeout;

@@ -603,6 +603,10 @@
                         const portCodeCol = findColumn(['港口代码', 'port code', 'code', '代码'], 9); // J列（索引9）
                         const dateCol = findColumn(['日期', 'date', '时间', 'time'], 0);
                         if (regionCol && portCol) {
+                            // 检查日期列是否存在，如果不存在则给出警告
+                            if (!dateCol) {
+                                debugWarn('未找到日期列，走势图功能可能无法正常工作。请确保 Excel 文件包含日期列（列名包含"日期"、"date"、"时间"或"time"）');
+                            }
                             marketColumnConfig = { originPortCol, portCol, dateCol, portCodeCol, regionCol };
                             marketRegionPortMap = {};
                             marketOriginPortMap = {};
@@ -667,7 +671,7 @@
                                     // 使用新的统一排序函数（按区域顺序和代码顺序排序）
                                     marketOriginPorts = window.portSortUtils.sortPortsByDataAndRegion(Array.from(originPortSet));
                                 } catch (error) {
-                                    console.warn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
+                                    debugWarn('portSortUtils.sortPortsByDataAndRegion 失败，使用降级方案:', error);
                                     marketOriginPorts = Array.from(originPortSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
                                 }
                             } else {
@@ -735,7 +739,7 @@
                                         marketRegionPortMap[region] = portArray; // 存储为 [port, portDisplay] 的数组
                                     });
                                 } catch (error) {
-                                    console.warn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
+                                    debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
                                     marketRegions.forEach(region => {
                                         const portMap = marketRegionPortMap[region];
                                         const portArray = Array.from(portMap.entries()).sort((a, b) => {
@@ -1431,20 +1435,18 @@
          * 更新所有筛选器选项（级联筛选）
          */
         async function updateMarketFilterOptions() {
-            // 根据当前已选择的筛选条件，计算可用的选项
+            // 从所有原始数据中提取可用的选项，确保筛选器始终显示完整的选项列表
+            // 这样用户可以选择多个筛选条件，覆盖所有可能的数据组合
+            const { availableOriginPorts: allOriginPorts, availableRegions: allRegions } = extractAvailableOptions(marketData);
+            
+            // 根据当前已选择的起运港和区域，计算可用的目的港选项
             // 注意：对于目的港，不根据已选择的目的港进行过滤，保留完整的港口列表供用户多选
-            const filteredDataForOriginAndRegion = filterMarketDataBySelections(false); // 不根据目的港过滤
-            
-            // 从过滤后的数据中提取可用的选项（起运港和区域）
-            const { availableOriginPorts, availableRegions } = extractAvailableOptions(filteredDataForOriginAndRegion);
-            
-            // 对于目的港，从所有数据中提取（根据起运港和区域过滤，但不根据已选择的目的港过滤）
-            const allPortData = filterMarketDataBySelections(false);
-            const { portMap } = extractAvailableOptions(allPortData);
+            const filteredDataForPort = filterMarketDataBySelections(false); // 不根据目的港过滤
+            const { portMap } = extractAvailableOptions(filteredDataForPort);
             
             // 更新各个选择器（注意：updateOriginPortSelect 和 updatePortSelect 现在是异步的）
-            await updateOriginPortSelect(availableOriginPorts);
-            updateRegionSelect(availableRegions);
+            await updateOriginPortSelect(allOriginPorts);
+            updateRegionSelect(allRegions);
             await updatePortSelect(portMap);
         }
 
@@ -1506,6 +1508,11 @@
                 if (!regionCol || !portCol) {
                     showError(ErrorType.FILE_PARSE, 'MISSING_REGION_PORT', { columns: columnKeys.join(', ') });
                     return;
+                }
+
+                // 检查日期列是否存在，如果不存在则给出警告
+                if (!dateCol) {
+                    debugWarn('未找到日期列，走势图功能可能无法正常工作。请确保 Excel 文件包含日期列（列名包含"日期"、"date"、"时间"或"time"）');
                 }
 
                 marketColumnConfig = { originPortCol, portCol, dateCol, portCodeCol, regionCol };
@@ -1788,6 +1795,15 @@
                 return;
             }
 
+            // 检查日期列是否存在
+            if (!marketColumnConfig.dateCol) {
+                if (marketInfoText) {
+                    marketInfoText.textContent = '未找到日期列，无法生成走势图。请确保 Excel 文件包含日期列';
+                }
+                marketChartContainer?.classList.add('hidden');
+                return;
+            }
+
             const selectedPorts = Array.isArray(ports) ? ports.filter(Boolean) : [ports].filter(Boolean);
             if (!selectedPorts.length) {
                 marketChartContainer?.classList.add('hidden');
@@ -1808,14 +1824,30 @@
                 const portVal = String(row[portCol] || '').trim();
                 if (!selectedPorts.includes(portVal)) return;
 
-                const rawDate = dateCol ? row[dateCol] : '';
-                const parsedDate = dateCol ? marketParseDate(rawDate) : null;
-                let label = (rawDate ?? '').toString().trim();
-                let ts = null;
-                if (parsedDate instanceof Date && !isNaN(parsedDate)) {
-                    label = formatDateLabel(parsedDate) || label;
-                    ts = parsedDate.getTime();
+                // 检查日期列是否存在
+                if (!dateCol) {
+                    debugWarn('日期列未识别，无法生成走势图');
+                    return;
                 }
+
+                const rawDate = row[dateCol];
+                const parsedDate = marketParseDate(rawDate);
+                let label = '';
+                let ts = null;
+                
+                // 优先使用解析后的日期
+                if (parsedDate instanceof Date && !isNaN(parsedDate)) {
+                    label = formatDateLabel(parsedDate);
+                    ts = parsedDate.getTime();
+                } else if (rawDate !== null && rawDate !== undefined) {
+                    // 如果解析失败，尝试使用原始值作为标签
+                    label = String(rawDate).trim();
+                    if (!label) return;
+                } else {
+                    // 如果日期为空，跳过这条记录
+                    return;
+                }
+                
                 if (!label) return;
 
                 if (!labelMeta.has(label)) {

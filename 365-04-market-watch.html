@@ -758,13 +758,14 @@
                                 });
                             }
 
+                            // 先设置 marketData，然后再更新筛选器选项
+                            marketData = marketDataResult;
+                            
                             initMarketSelectors();
                             marketSelectedOriginPorts = [];
                             marketSelectedRegions = [];
                             marketSelectedPorts = [];
                             await updateMarketFilterOptions();
-
-                            marketData = marketDataResult;
                             excelLoadState.market = true;
                             
                             // 显示信息

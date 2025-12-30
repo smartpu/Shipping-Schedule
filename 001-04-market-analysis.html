@@ -2839,6 +2839,26 @@
         });
 
         // 筛选功能在renderTable中已实现
+        
+        // 移动端筛选框展开时，确保选项已加载
+        window.addEventListener('filterExpanded', (e) => {
+            const { containerId, selectId } = e.detail;
+            if (containerId === 'destinationFilters') {
+                // 检查选项是否已加载
+                const originSelect = document.getElementById('originPortSelect');
+                const destSelect = document.getElementById('destPortSelect');
+                const routeSelect = document.getElementById('routeSelect');
+                
+                // 如果选项未加载（只有默认选项），重新加载
+                if (originSelect && originSelect.options.length <= 1 && processedRecords && processedRecords.length > 0) {
+                    updateFilterOptions(processedRecords);
+                } else if (destSelect && destSelect.options.length <= 1 && processedRecords && processedRecords.length > 0) {
+                    updateFilterOptions(processedRecords);
+                } else if (routeSelect && routeSelect.options.length <= 1 && processedRecords && processedRecords.length > 0) {
+                    updateFilterOptions(processedRecords);
+                }
+            }
+        });
     </script>
 </body>
 </html>

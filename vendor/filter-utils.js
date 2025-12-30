@@ -196,6 +196,39 @@
                 filterContainer.classList.remove('hidden');
                 toggleBtn.classList.add('expanded');
                 toggleBtn.textContent = '收起筛选条件';
+                
+                // 展开时，确保筛选框选项已加载
+                // 检查是否有空的select元素，如果有则尝试触发选项更新
+                const selects = filterContainer.querySelectorAll('select[multiple]');
+                let needsReload = false;
+                selects.forEach(select => {
+                    // 如果select只有默认选项（如"全部起运港"或"请先加载数据"），可能需要重新加载选项
+                    const hasOnlyDefault = select.options.length <= 1 && 
+                                          select.options[0] && 
+                                          (select.options[0].value === '' || 
+                                           select.options[0].textContent.includes('全部') ||
+                                           select.options[0].textContent.includes('请先'));
+                    if (hasOnlyDefault) {
+                        needsReload = true;
+                        // 触发一个自定义事件，让页面知道筛选框已展开，需要加载选项
+                        const event = new CustomEvent('filterExpanded', {
+                            detail: { containerId: filterContainerId, selectId: select.id }
+                        });
+                        window.dispatchEvent(event);
+                    }
+                });
+                
+                // 如果检测到需要重新加载，延迟一下再检查（给页面时间响应事件）
+                if (needsReload) {
+                    setTimeout(() => {
+                        // 再次检查选项是否已加载
+                        selects.forEach(select => {
+                            if (select.options.length <= 1) {
+                                console.warn(`[Filter] 筛选框 ${select.id} 选项未加载，可能需要手动触发选项更新`);
+                            }
+                        });
+                    }, 500);
+                }
             }
         });
     }
@@ -208,21 +241,34 @@
         
         // 查找所有筛选框容器
         const filterContainers = [
-            document.getElementById('destinationFilters'),
-            document.getElementById('filtersContainer')
-        ].filter(el => el !== null);
+            { id: 'destinationFilters', name: 'destinationFilters' },
+            { id: 'filtersContainer', name: 'filtersContainer' },
+            { id: 'marketFilterControls', name: 'marketFilterControls' } // 365-04 运费趋势筛选框
+        ].map(item => {
+            const el = document.getElementById(item.id);
+            return el ? { element: el, id: item.id, name: item.name } : null;
+        }).filter(item => item !== null);
         
-        filterContainers.forEach(container => {
+        filterContainers.forEach(({ element: container, id, name }) => {
             // 查找对应的模块标题
             let moduleHeader = container.closest('.feature-section')?.querySelector('.module-header');
             if (!moduleHeader) {
                 // 尝试查找父级模块标题
                 moduleHeader = container.previousElementSibling?.querySelector('.module-header') ||
-                              container.parentElement?.querySelector('.module-header');
+                              container.parentElement?.querySelector('.module-header') ||
+                              container.closest('.module-card')?.querySelector('.module-header');
+            }
+            
+            // 对于 marketFilterControls，它在 module-card 内部，需要找到对应的 feature-section
+            if (!moduleHeader && name === 'marketFilterControls') {
+                const featureSection = container.closest('#marketModule');
+                if (featureSection) {
+                    moduleHeader = featureSection.querySelector('.module-header');
+                }
             }
             
             if (moduleHeader) {
-                initMobileFilterToggle(container.id, moduleHeader);
+                initMobileFilterToggle(id, moduleHeader);
             }
         });
     }

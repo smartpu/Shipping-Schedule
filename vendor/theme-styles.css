@@ -3320,6 +3320,21 @@ button.file-btn:disabled {
         display: none !important;
     }
     
+    /* 365-04 运费趋势筛选框在移动端 */
+    .filter-controls#marketFilterControls {
+        display: none; /* 移动端默认隐藏 */
+    }
+    
+    .filter-controls#marketFilterControls.show {
+        display: grid !important; /* 展开时显示 */
+        grid-template-columns: 1fr !important; /* 移动端单列 */
+        gap: 16px;
+    }
+    
+    .filter-controls#marketFilterControls.hidden {
+        display: none !important;
+    }
+    
     /* 多选框在移动端优化高度 */
     .filter-group select[multiple] {
         height: 150px;

@@ -4103,6 +4103,43 @@
             ]);
             }
         });
+        
+        // 移动端筛选框展开时，确保选项已加载
+        window.addEventListener('filterExpanded', (e) => {
+            const { containerId, selectId } = e.detail;
+            
+            // 处理 destinationFilters（运力分析筛选框）
+            if (containerId === 'destinationFilters') {
+                const originSelect = document.getElementById('originPortSelect');
+                const destSelect = document.getElementById('destPortSelect');
+                const routeSelect = document.getElementById('routeSelect');
+                
+                // 如果选项未加载（只有默认选项），重新加载
+                if ((originSelect && originSelect.options.length <= 1) || 
+                    (destSelect && destSelect.options.length <= 1) || 
+                    (routeSelect && routeSelect.options.length <= 1)) {
+                    if (processedRecords && processedRecords.length > 0) {
+                        updateDestinationFilterOptions();
+                    }
+                }
+            }
+            
+            // 处理 marketFilterControls（运费趋势筛选框）
+            if (containerId === 'marketFilterControls') {
+                const marketOriginSelect = document.getElementById('marketOriginPortSelect');
+                const marketRegionSelect = document.getElementById('marketRegionSelect');
+                const marketPortSelect = document.getElementById('marketPortSelect');
+                
+                // 如果选项未加载（只有默认选项），重新加载
+                if ((marketOriginSelect && marketOriginSelect.options.length <= 1) || 
+                    (marketRegionSelect && marketRegionSelect.options.length <= 1) || 
+                    (marketPortSelect && marketPortSelect.options.length <= 1)) {
+                    if (marketData && marketData.length > 0) {
+                        updateMarketFilterOptions();
+                    }
+                }
+            }
+        });
 
     </script>
 </body>

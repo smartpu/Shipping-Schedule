@@ -137,15 +137,31 @@
             if (authData) {
                 try {
                     const auth = JSON.parse(authData);
-                    const expiryTime = auth.expiryTime || 0;
-                    const isExpired = Date.now() > expiryTime;
-                    checks.push({
-                        name: '用户认证状态',
-                        status: isExpired ? 'warning' : 'ok',
-                        message: isExpired 
-                            ? `⚠️ 认证已过期（过期时间: ${new Date(expiryTime).toLocaleString()}）`
-                            : `✅ 用户已认证: ${auth.name || '未知'} (${auth.email || '未知'})`
-                    });
+                    // 注意：认证数据中使用的是 expiry，不是 expiryTime
+                    const expiryTime = auth.expiry || auth.expiryTime || 0;
+                    const isExpired = expiryTime > 0 && Date.now() > expiryTime;
+                    
+                    if (expiryTime === 0) {
+                        // 如果没有过期时间，可能是旧格式数据
+                        checks.push({
+                            name: '用户认证状态',
+                            status: 'warning',
+                            message: `⚠️ 认证数据格式异常（缺少过期时间），建议重新登录: ${auth.name || '未知'} (${auth.email || '未知'})`
+                        });
+                    } else if (isExpired) {
+                        checks.push({
+                            name: '用户认证状态',
+                            status: 'warning',
+                            message: `⚠️ 认证已过期（过期时间: ${new Date(expiryTime).toLocaleString('zh-CN')}）`
+                        });
+                    } else {
+                        const remainingDays = Math.ceil((expiryTime - Date.now()) / (24 * 60 * 60 * 1000));
+                        checks.push({
+                            name: '用户认证状态',
+                            status: 'ok',
+                            message: `✅ 用户已认证: ${auth.name || '未知'} (${auth.email || '未知'})，剩余 ${remainingDays} 天`
+                        });
+                    }
                 } catch (e) {
                     checks.push({
                         name: '用户认证状态',

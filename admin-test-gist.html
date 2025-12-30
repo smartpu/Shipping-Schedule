@@ -41,6 +41,9 @@
                         <button type="button" class="filter-btn btn-sweep-blue" onclick="testSaveLog()">
                             📝 测试保存访问记录
                         </button>
+                        <button type="button" class="filter-btn btn-sweep-blue" onclick="fixAuthData()">
+                            🔧 修复认证数据
+                        </button>
                     </div>
                 </div>
 
@@ -141,12 +144,16 @@
                     const expiryTime = auth.expiry || auth.expiryTime || 0;
                     const isExpired = expiryTime > 0 && Date.now() > expiryTime;
                     
+                    // 调试信息：显示认证数据的实际内容
+                    const authDebugInfo = `认证数据字段: ${Object.keys(auth).join(', ')}`;
+                    const expiryDebugInfo = `expiry: ${auth.expiry}, expiryTime: ${auth.expiryTime}, 当前时间: ${Date.now()}`;
+                    
                     if (expiryTime === 0) {
                         // 如果没有过期时间，可能是旧格式数据
                         checks.push({
                             name: '用户认证状态',
                             status: 'warning',
-                            message: `⚠️ 认证数据格式异常（缺少过期时间），建议重新登录: ${auth.name || '未知'} (${auth.email || '未知'})`
+                            message: `⚠️ 认证数据格式异常（缺少过期时间），建议重新登录: ${auth.name || '未知'} (${auth.email || '未知'})<br><small style="color: var(--color-text-tertiary); font-size: 11px;">${authDebugInfo}<br>${expiryDebugInfo}</small>`
                         });
                     } else if (isExpired) {
                         checks.push({
@@ -192,9 +199,9 @@
                         <h3 style="margin: 0 0 8px 0; font-size: 15px; color: var(--color-text-primary);">
                             ${statusIcon} ${check.name}
                         </h3>
-                        <p style="margin: 0; font-size: 13px; color: var(--color-text-secondary); line-height: 1.6;">
+                        <div style="margin: 0; font-size: 13px; color: var(--color-text-secondary); line-height: 1.6;">
                             ${check.message}
-                        </p>
+                        </div>
                     </div>
                 `;
             });
@@ -290,6 +297,43 @@
                         </p>
                     </div>
                 `;
+            }
+        }
+        
+        // 修复认证数据：如果缺少 expiry 字段，重新设置
+        function fixAuthData() {
+            const authData = localStorage.getItem('shipping_tools_auth');
+            if (!authData) {
+                alert('未找到认证数据，请先登录');
+                return;
+            }
+            
+            try {
+                const auth = JSON.parse(authData);
+                if (!auth.expiry || auth.expiry === 0) {
+                    // 如果缺少 expiry 字段，重新计算并保存
+                    const AUTH_EXPIRY_DAYS = 7;
+                    const expiry = Date.now() + (AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+                    auth.expiry = expiry;
+                    auth.timestamp = Date.now();
+                    localStorage.setItem('shipping_tools_auth', JSON.stringify(auth));
+                    
+                    const results = document.getElementById('results');
+                    results.innerHTML = `
+                        <div class="stat-card" style="border-left: 4px solid var(--color-brand-blue);">
+                            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: var(--color-text-primary);">
+                                ✅ 修复成功
+                            </h3>
+                            <p style="margin: 0; font-size: 13px; color: var(--color-text-secondary);">
+                                已为认证数据添加过期时间字段（过期时间: ${new Date(expiry).toLocaleString('zh-CN')}），请重新运行诊断。
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    alert('认证数据格式正常，无需修复');
+                }
+            } catch (e) {
+                alert(`修复失败: ${e.message}`);
             }
         }
     </script>

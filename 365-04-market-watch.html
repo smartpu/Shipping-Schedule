@@ -1115,14 +1115,18 @@
         function initMarketSelectors() {
             if (marketSelectorsInitialized) return;
             
-            // 起运港选择器
+            // 起运港选择器（使用防抖优化性能）
             if (marketOriginPortSelect) {
                 setupMultiSelect(marketOriginPortSelect);
+                let originPortTimer = null;
                 marketOriginPortSelect.addEventListener('change', () => {
-                    marketSelectedOriginPorts = getSelectedValues(marketOriginPortSelect);
-                    // 级联更新：根据选择的起运港更新区域和港口选项
-                    updateMarketFilterOptions();
-                    updateMarketChartFromSelection(false);
+                    if (originPortTimer) clearTimeout(originPortTimer);
+                    originPortTimer = setTimeout(() => {
+                        marketSelectedOriginPorts = getSelectedValues(marketOriginPortSelect);
+                        // 级联更新：根据选择的起运港更新区域和港口选项
+                        updateMarketFilterOptions();
+                        updateMarketChartFromSelection(false);
+                    }, 200);
                 });
             }
             if (marketOriginPortSearch) {
@@ -1140,14 +1144,18 @@
                 }
             }
             
-            // 区域选择器
+            // 区域选择器（使用防抖优化性能）
             if (marketRegionSelect) {
                 setupMultiSelect(marketRegionSelect);
+                let regionTimer = null;
                 marketRegionSelect.addEventListener('change', () => {
-                    marketSelectedRegions = getSelectedValues(marketRegionSelect);
-                    // 级联更新：根据选择的区域更新起运港和港口选项
-                    updateMarketFilterOptions();
-                    updateMarketChartFromSelection(false);
+                    if (regionTimer) clearTimeout(regionTimer);
+                    regionTimer = setTimeout(() => {
+                        marketSelectedRegions = getSelectedValues(marketRegionSelect);
+                        // 级联更新：根据选择的区域更新起运港和港口选项
+                        updateMarketFilterOptions();
+                        updateMarketChartFromSelection(false);
+                    }, 200);
                 });
             }
             if (marketRegionSearch) {
@@ -1165,13 +1173,17 @@
                 }
             }
 
-            // 港口选择器
+            // 港口选择器（使用防抖优化性能）
             if (marketPortSelect) {
                 setupMultiSelect(marketPortSelect);
+                let portTimer = null;
                 marketPortSelect.addEventListener('change', () => {
-                    marketSelectedPorts = getSelectedValues(marketPortSelect);
-                    // 只更新图表，不更新筛选器选项（保留完整的港口列表供用户多选）
-                    updateMarketChartFromSelection(true);
+                    if (portTimer) clearTimeout(portTimer);
+                    portTimer = setTimeout(() => {
+                        marketSelectedPorts = getSelectedValues(marketPortSelect);
+                        // 只更新图表，不更新筛选器选项（保留完整的港口列表供用户多选）
+                        updateMarketChartFromSelection(true);
+                    }, 200);
                 });
             }
             if (marketPortSearch) {

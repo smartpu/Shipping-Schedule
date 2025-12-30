@@ -50,7 +50,7 @@
             submenuId: 'submenuAdmin',
             items: [
                 { href: 'Admin-Access-Log.html?from=admin', icon: '👥', label: '访客统计排名' },
-                { href: 'Admin-Workouts.html?from=admin', icon: '💪', label: '健身记录面板' },
+                { href: 'admin-test-gist.html?from=admin', icon: '🔍', label: 'Gist 访问日志测试' },
                 { href: 'tests/index.html?from=admin', icon: '🧪', label: '单元测试工具' }
             ]
         }

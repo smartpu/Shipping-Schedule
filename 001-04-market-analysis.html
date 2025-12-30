@@ -1217,14 +1217,19 @@
             renderTable();
         });
 
-        // 起运港选择相关事件
+        // 起运港选择相关事件（使用防抖优化性能）
         if (originPortSelect) {
             setupMultiSelect(originPortSelect);
+            // 防抖函数
+            let originPortChangeTimer = null;
             originPortSelect.addEventListener('change', async () => {
-                destinationFilters.originPorts = getSelectedValues(originPortSelect);
-                // 级联更新：根据选择的起运港更新目的港和共舱船公司选项
-                await updateFilterOptions(processedRecords);
-                renderTable();
+                if (originPortChangeTimer) clearTimeout(originPortChangeTimer);
+                originPortChangeTimer = setTimeout(async () => {
+                    destinationFilters.originPorts = getSelectedValues(originPortSelect);
+                    // 级联更新：根据选择的起运港更新目的港和共舱船公司选项
+                    await updateFilterOptions(processedRecords);
+                    renderTable();
+                }, 200);
             });
         }
         if (originPortSelectAllBtn && originPortClearAllBtn && originPortSelect) {
@@ -1244,14 +1249,19 @@
             }
         }
         
-        // 目的港选择相关事件
+        // 目的港选择相关事件（使用防抖优化性能）
         if (destPortSelect) {
             setupMultiSelect(destPortSelect);
+            // 防抖函数
+            let destPortChangeTimer = null;
             destPortSelect.addEventListener('change', async () => {
-                destinationFilters.destPorts = getSelectedValues(destPortSelect);
-                // 级联更新：根据选择的目的港更新起运港和共舱船公司选项
-                await updateFilterOptions(processedRecords);
-                renderTable();
+                if (destPortChangeTimer) clearTimeout(destPortChangeTimer);
+                destPortChangeTimer = setTimeout(async () => {
+                    destinationFilters.destPorts = getSelectedValues(destPortSelect);
+                    // 级联更新：根据选择的目的港更新起运港和共舱船公司选项
+                    await updateFilterOptions(processedRecords);
+                    renderTable();
+                }, 200);
             });
         }
         if (destPortSelectAllBtn && destPortClearAllBtn && destPortSelect) {
@@ -1271,14 +1281,19 @@
             }
         }
 
-        // 航线选择相关事件
+        // 航线选择相关事件（使用防抖优化性能）
         if (routeSelect) {
             setupMultiSelect(routeSelect);
+            // 防抖函数
+            let routeChangeTimer = null;
             routeSelect.addEventListener('change', async () => {
-                destinationFilters.routes = getSelectedValues(routeSelect);
-                // 级联更新：根据选择的共舱船公司更新起运港和目的港选项
-                await updateFilterOptions(processedRecords);
-                renderTable();
+                if (routeChangeTimer) clearTimeout(routeChangeTimer);
+                routeChangeTimer = setTimeout(async () => {
+                    destinationFilters.routes = getSelectedValues(routeSelect);
+                    // 级联更新：根据选择的共舱船公司更新起运港和目的港选项
+                    await updateFilterOptions(processedRecords);
+                    renderTable();
+                }, 200);
             });
         }
         if (routeSelectAllBtn && routeClearAllBtn && routeSelect) {

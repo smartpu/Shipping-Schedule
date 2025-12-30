@@ -318,25 +318,42 @@
                 }
                 
                 // 筛选器change事件（级联更新）
+                // 使用防抖优化筛选性能
+                let tradeFilterTimer = null;
                 dom.tradeFilter.addEventListener('change', () => {
-                    state.filters.trade = getSelectedValues(dom.tradeFilter);
-                    updateFilterOptions();
-                    applyFilters();
+                    if (tradeFilterTimer) clearTimeout(tradeFilterTimer);
+                    tradeFilterTimer = setTimeout(() => {
+                        state.filters.trade = getSelectedValues(dom.tradeFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
                 });
+                let serviceFilterTimer = null;
                 dom.serviceFilter.addEventListener('change', () => {
-                    state.filters.service = getSelectedValues(dom.serviceFilter);
-                    updateFilterOptions();
-                    applyFilters();
+                    if (serviceFilterTimer) clearTimeout(serviceFilterTimer);
+                    serviceFilterTimer = setTimeout(() => {
+                        state.filters.service = getSelectedValues(dom.serviceFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
                 });
+                let serviceBrandingFilterTimer = null;
                 dom.serviceBrandingFilter.addEventListener('change', () => {
-                    state.filters.serviceBranding = getSelectedValues(dom.serviceBrandingFilter);
-                    updateFilterOptions();
-                    applyFilters();
+                    if (serviceBrandingFilterTimer) clearTimeout(serviceBrandingFilterTimer);
+                    serviceBrandingFilterTimer = setTimeout(() => {
+                        state.filters.serviceBranding = getSelectedValues(dom.serviceBrandingFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
                 });
+                let portRotationFilterTimer = null;
                 dom.portRotationFilter.addEventListener('change', () => {
-                    state.filters.portRotation = getSelectedValues(dom.portRotationFilter);
-                    updateFilterOptions();
-                    applyFilters();
+                    if (portRotationFilterTimer) clearTimeout(portRotationFilterTimer);
+                    portRotationFilterTimer = setTimeout(() => {
+                        state.filters.portRotation = getSelectedValues(dom.portRotationFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
                 });
                 
                 // 筛选器按钮事件

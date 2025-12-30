@@ -791,9 +791,17 @@
                     date: new Date().toLocaleString('zh-CN')
                 };
                 // 异步保存，不阻塞页面加载，但会等待保存完成
-                saveLogToGist(logEntry).catch(error => {
-                    debugError('[Auth] 访问记录保存失败（非阻塞）:', error);
-                });
+                // 使用 await 确保错误被正确捕获和记录
+                (async () => {
+                    try {
+                        const result = await saveLogToGist(logEntry);
+                        if (!result) {
+                            debugWarn('[Auth] 访问记录保存返回 false，可能保存失败');
+                        }
+                    } catch (error) {
+                        debugError('[Auth] 访问记录保存失败（非阻塞）:', error);
+                    }
+                })();
             }
             return;
         }

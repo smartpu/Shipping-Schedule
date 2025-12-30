@@ -1156,6 +1156,15 @@ input:disabled {
     .tools-grid.grid-3 {
         grid-template-columns: 1fr !important;
     }
+    
+    /* 确保 dashboard 容器在移动端正确显示 */
+    .dashboard-content {
+        padding: 16px;
+    }
+    
+    .section-intro {
+        margin-bottom: 24px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -4088,6 +4097,28 @@ button.file-btn:disabled {
         gap: 16px;
     }
     
+    /* 移动端：隐藏所有 select 的原生下拉箭头，使用统一的自定义箭头 */
+    .filter-group select:not([multiple]) {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 12px center !important;
+        background-size: 12px !important;
+        padding-right: 32px !important;
+    }
+    
+    /* 移动端：优化筛选栏性能，减少重绘 */
+    .filter-group {
+        will-change: auto;
+        contain: layout style;
+    }
+    
+    .filter-group select {
+        will-change: auto;
+    }
+    
     /* 移动端筛选框优化：添加展开/收缩按钮 */
     .module-header {
         position: relative;
@@ -4582,14 +4613,22 @@ button.file-btn:disabled {
 .filter-group select {
     width: 100%;
     padding: 10px 12px;
+    padding-right: 32px; /* 为自定义箭头留出空间 */
     border-radius: 8px;
     border: 1px solid rgba(0, 0, 0, 0.06) !important;
     font-size: 13px;
     background: white;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
     color: var(--color-text-primary);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 }
 
 /* 多选框特殊样式 */
@@ -4605,6 +4644,10 @@ button.file-btn:disabled {
     font-size: 13px;
     line-height: 1.6;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none; /* 多选框不需要下拉箭头 */
 }
 
 /* 统一多选框选项样式 */
@@ -4976,6 +5019,99 @@ thead th.table-header > div {
     margin-top: 20px;
     border: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden; /* 防止内容溢出 */
+}
+
+/* 移动端 AI 分析容器优化 */
+@media (max-width: 768px) {
+    .ai-analysis-container {
+        padding: 16px;
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .ai-analysis-container * {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .api-config {
+        width: 100%;
+        max-width: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+    
+    .api-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .api-input-group label {
+        min-width: auto;
+        margin-bottom: 8px;
+    }
+    
+    .api-input-group input {
+        width: 100%;
+    }
+    
+    .api-action-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .api-save-btn,
+    .api-analyze-btn {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .ai-tabs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .ai-tab-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .ai-tab-btn {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    /* AI 配置面板在移动端 */
+    #aiConfigSection {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+    
+    #aiConfigPanelsContainer {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* 表格容器在移动端 */
+    #bookingDataTableContainer,
+    #marketDataInfoBlocksContainer {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 .api-config {

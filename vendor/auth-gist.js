@@ -780,7 +780,7 @@
             
             authOverlay.classList.add('hidden');
             enableAllLinks();
-            // 记录访问
+            // 记录访问（使用 await 确保保存完成，但不阻塞页面加载）
             if (authData) {
                 const logEntry = {
                     page: pageName,
@@ -790,7 +790,10 @@
                     timestamp: Date.now(),
                     date: new Date().toLocaleString('zh-CN')
                 };
-                saveLogToGist(logEntry);
+                // 异步保存，不阻塞页面加载，但会等待保存完成
+                saveLogToGist(logEntry).catch(error => {
+                    debugError('[Auth] 访问记录保存失败（非阻塞）:', error);
+                });
             }
             return;
         }
@@ -879,7 +882,10 @@
                 timestamp: Date.now(),
                 date: new Date().toLocaleString('zh-CN')
             };
-            await saveLogToGist(logEntry);
+            // 等待保存完成，如果失败会记录错误但不影响登录流程
+            await saveLogToGist(logEntry).catch(error => {
+                debugError('[Auth] 登录时访问记录保存失败（非阻塞）:', error);
+            });
 
             authOverlay.classList.add('hidden');
             enableAllLinks();

@@ -1,6 +1,6 @@
 {
   "files": [
-    "Linerlytica-25MP51.pdf"
+    "Linerlytica-25MP52.pdf"
   ],
   "description": "市场周报文件列表。将当前周报的文件名添加到 files 数组中，系统会自动加载。每周更新时，只需更新此文件中的文件名即可。将此文件重命名为 index.json 以启用自动加载。"
 }

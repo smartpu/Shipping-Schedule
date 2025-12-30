@@ -2177,9 +2177,18 @@
             chartWrapper.classList.remove('hidden');
             
             const weekCodes = weekColumns.map(week => week.code);
+            // 检测是否为移动端
+            const isMobile = window.innerWidth <= 900;
             const weekLabels = weekColumns.map(week => {
-                const range = week.range ? ` (${week.range})` : '';
-                return `${week.label}${range}`;
+                if (isMobile) {
+                    // 移动端只显示周号，如：53, 1, 2, 3
+                    const weekNo = week.label.split('/')[1] || week.label;
+                    return weekNo.replace(/^0+/, ''); // 去掉前导零
+                } else {
+                    // 桌面端显示完整信息
+                    const range = week.range ? ` (${week.range})` : '';
+                    return `${week.label}${range}`;
+                }
             });
             
             const shipData = [];
@@ -2848,6 +2857,21 @@
         });
 
         // 筛选功能在renderTable中已实现
+        
+        // 窗口大小改变时，重新渲染图表以更新X轴标签（移动端/桌面端切换）
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (capacityChart && latestFilteredRecords && latestFilteredRecords.length > 0) {
+                    const hasPortSelection = destinationFilters.originPorts.length > 0 || destinationFilters.destPorts.length > 0;
+                    if (hasPortSelection) {
+                        const groupedResult = groupRecords(latestFilteredRecords);
+                        updateChart(hasPortSelection, groupedResult.data);
+                    }
+                }
+            }, 300); // 防抖，300ms后执行
+        });
         
         // 移动端筛选框展开时，确保选项已加载
         window.addEventListener('filterExpanded', (e) => {

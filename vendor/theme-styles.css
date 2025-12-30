@@ -1146,8 +1146,20 @@ input:disabled {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     /* 移动端：所有工具卡片一行一个 */
+    .tools-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+    
+    .tools-grid.grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* 移动端：所有工具卡片一行一个（确保小屏幕也生效） */
     .tools-grid {
         grid-template-columns: 1fr !important;
         gap: 20px;
@@ -1626,9 +1638,13 @@ input:disabled {
         left: -280px;
         z-index: 1000;
         height: 100vh;
+        height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         box-shadow: var(--shadow-xl);
         width: 260px; /* 移动端侧边栏宽度 */
         transition: left 0.3s ease;
+        /* Safe Area 支持 */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
     }
 
     .dashboard-sidebar.show {
@@ -1637,15 +1653,20 @@ input:disabled {
 
     .dashboard-content {
         width: 100%;
-        padding: 20px 16px;
+        /* Safe Area 支持：使用 max() 确保最小间距 */
+        padding-top: max(20px, env(safe-area-inset-top));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
         margin-left: 0; /* 确保内容区域占满宽度 */
     }
     
     /* 添加移动端菜单按钮（如果不存在） */
     .mobile-menu-toggle {
         position: fixed;
-        top: 16px;
-        left: 16px;
+        /* Safe Area 支持 */
+        top: max(16px, env(safe-area-inset-top));
+        left: max(16px, env(safe-area-inset-left));
         z-index: 1001;
         width: 44px;
         height: 44px;
@@ -1659,6 +1680,9 @@ input:disabled {
         align-items: center;
         justify-content: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        /* 触摸优化 */
+        -webkit-tap-highlight-color: rgba(62, 98, 173, 0.2);
+        touch-action: manipulation;
     }
     
     /* ==================== 顶部按钮布局优化 ==================== */
@@ -1858,21 +1882,89 @@ input:disabled {
         -webkit-overflow-scrolling: touch;
         margin: 0 -16px;
         padding: 0 16px;
+        position: relative;
+        /* 确保可以滚动 */
+        scroll-behavior: smooth;
+        /* 触摸滚动优化 */
+        touch-action: pan-x;
     }
     
-    table {
+    /* 为表格容器添加滚动提示（仅在移动端且内容可滚动时显示） */
+    .table-container::after {
+        content: '← 滑动查看更多 →';
+        display: block;
+        text-align: center;
+        color: var(--color-text-secondary);
+        font-size: 13px; /* 从12px提升到13px */
+        padding: 10px 0; /* 从8px提升到10px */
+        margin-top: 8px;
+        opacity: 0.8; /* 从0.7提升到0.8，更明显 */
+        pointer-events: none;
+        font-weight: 500; /* 添加字重，更醒目 */
+    }
+    
+    /* 滚动指示器（右侧渐变遮罩） */
+    .table-container::before {
+        content: '';
+        position: sticky;
+        right: 0;
+        top: 0;
+        width: 30px;
+        height: 100%;
+        background: linear-gradient(to left, 
+            rgba(255, 255, 255, 0.95) 0%, 
+            rgba(255, 255, 255, 0.7) 50%,
+            transparent 100%);
+        pointer-events: none;
+        z-index: 1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    /* 当表格可滚动时显示指示器 */
+    .table-container:not(:hover)::before {
+        opacity: 0.6;
+    }
+    
+    /* 确保表格可以横向滚动 */
+    .table-container table {
         min-width: 600px; /* 确保表格最小宽度，触发横向滚动 */
         font-size: 12px;
+        width: 100%;
     }
     
-    table th,
-    table td {
+    .table-container table th,
+    .table-container table td {
         padding: 8px 10px;
         white-space: nowrap;
     }
     
-    /* 表格在移动端显示滚动提示 */
-    .table-container::after {
+    /* 其他影响因素表格和其他宽表格的横向滚动 */
+    #bookingDataTableContainer,
+    #bookingDataTableContainer table,
+    .data-table-container,
+    .data-table-container table,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #bookingDataTableContainer,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container {
+        margin: 0 -16px;
+        padding: 0 16px;
+        position: relative;
+    }
+    
+    /* 确保Monitor-Geo-Trades-Service的表格可以横向滚动 */
+    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table {
+        min-width: 800px; /* 确保表格最小宽度，触发横向滚动 */
+        width: 100%;
+    }
+    
+    #bookingDataTableContainer::after,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container::after {
         content: '← 滑动查看更多 →';
         display: block;
         text-align: center;
@@ -1880,6 +1972,8 @@ input:disabled {
         font-size: 12px;
         padding: 8px 0;
         margin-top: 8px;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
     /* ==================== 按钮组和控制区域优化 ==================== */
@@ -2415,6 +2509,9 @@ input:disabled {
         display: inline-flex;
         align-items: center;
         padding: 8px 0;
+        /* 触摸优化 */
+        -webkit-tap-highlight-color: rgba(62, 98, 173, 0.2);
+        touch-action: manipulation;
     }
     
     /* ==================== 按钮文字不换行优化 ==================== */
@@ -2423,6 +2520,54 @@ input:disabled {
         white-space: normal;
         word-wrap: break-word;
         line-height: 1.4;
+        /* 触摸优化 */
+        -webkit-tap-highlight-color: rgba(62, 98, 173, 0.2);
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+    }
+    
+    /* ==================== 触摸交互优化 ==================== */
+    /* 全局触摸高亮优化 */
+    * {
+        -webkit-tap-highlight-color: rgba(62, 98, 173, 0.15);
+    }
+    
+    /* 可交互元素触摸优化 */
+    button, a, [role="button"], .btn, .tool-link, .card-white {
+        touch-action: manipulation; /* 禁用双击缩放，提升响应速度 */
+    }
+    
+    /* 防止长按选择（某些元素） */
+    .no-select,
+    button, .btn {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+    
+    /* 文本内容允许选择 */
+    p, span, div:not(.no-select), .text-content {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+    
+    /* ==================== 字体可读性优化 ==================== */
+    body {
+        font-size: 16px; /* 确保基础字体大小 */
+    }
+    
+    .table-container table {
+        font-size: 13px; /* 从12px提升到13px，提升可读性 */
+    }
+    
+    /* 标题字体优化 */
+    h1 { font-size: 24px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 18px; }
+    
+    /* 行高优化 */
+    p, .text-content, .section-intro-content p {
+        line-height: 1.6; /* 从1.5提升到1.6，提升可读性 */
     }
 }
 
@@ -6325,6 +6470,8 @@ body[data-page="Monitor-SCFI-Trends.html"] #comparisonTable tbody tr:hover {
     border-collapse: collapse;
     margin-top: 20px;
     font-size: 13px;
+    /* 使用固定布局，让各列均分宽度 */
+    table-layout: fixed;
 }
 
 .ranking-table th {
@@ -6335,6 +6482,8 @@ body[data-page="Monitor-SCFI-Trends.html"] #comparisonTable tbody tr:hover {
     font-size: 13px;
     color: var(--color-text-primary);
     border-bottom: 2px solid var(--color-border);
+    /* 各列均分宽度 - 使用百分比，让浏览器自动计算 */
+    width: 1%;
 }
 
 .ranking-table td {
@@ -6342,6 +6491,11 @@ body[data-page="Monitor-SCFI-Trends.html"] #comparisonTable tbody tr:hover {
     border-bottom: 1px solid var(--color-border);
     font-size: 13px;
     color: var(--color-text-primary);
+    /* 各列均分宽度 */
+    width: 1%;
+    /* 允许文本换行，但保持列宽均分 */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .ranking-table tbody tr:hover {
@@ -6349,7 +6503,7 @@ body[data-page="Monitor-SCFI-Trends.html"] #comparisonTable tbody tr:hover {
 }
 
 .ranking-table .rank {
-    width: 60px;
+    /* 移除固定宽度，让各列均分 */
     text-align: center;
     font-weight: 600;
     color: var(--color-brand-blue);

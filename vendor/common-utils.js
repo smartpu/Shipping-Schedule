@@ -100,6 +100,54 @@ function clearSelectOptions(selectEl) {
 }
 
 /**
+ * 优化移动端顶部按钮布局
+ * 为不支持的浏览器提供降级方案
+ */
+function optimizeMobileButtonLayout() {
+    if (window.innerWidth > 768) return; // 只在移动端执行
+    
+    const actionContainers = document.querySelectorAll('.section-intro-actions');
+    actionContainers.forEach(container => {
+        const buttons = Array.from(container.children);
+        const buttonCount = buttons.length;
+        
+        // 移除之前的类
+        container.classList.remove('has-2-buttons', 'has-3-buttons');
+        
+        if (buttonCount === 2) {
+            container.classList.add('has-2-buttons');
+        } else if (buttonCount === 3) {
+            container.classList.add('has-3-buttons');
+        }
+    });
+}
+
+// 页面加载完成后执行
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            optimizeMobileButtonLayout();
+            // 监听窗口大小变化
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(optimizeMobileButtonLayout, 250);
+            });
+        });
+    } else {
+        optimizeMobileButtonLayout();
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(optimizeMobileButtonLayout, 250);
+        });
+    }
+    
+    // 导出函数
+    window.optimizeMobileButtonLayout = optimizeMobileButtonLayout;
+}
+
+/**
  * 根据自定义顺序排序（未命中顺序的放在末尾，按字母排序）
  * @param {string[]} list
  * @param {string[]} order

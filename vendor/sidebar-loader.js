@@ -212,9 +212,61 @@
             return;
         }
 
-        // 侧边栏折叠/展开
+        // 检测是否为移动端
+        const isMobile = window.innerWidth <= 768;
+        
+        // 移动端：默认隐藏导航栏，添加移动端菜单按钮
+        if (isMobile) {
+            sidebar.classList.remove('show'); // 确保默认不显示
+            
+            // 创建移动端菜单按钮（如果不存在）
+            let mobileMenuBtn = document.getElementById('mobileMenuToggle');
+            if (!mobileMenuBtn) {
+                mobileMenuBtn = document.createElement('button');
+                mobileMenuBtn.id = 'mobileMenuToggle';
+                mobileMenuBtn.className = 'mobile-menu-toggle';
+                mobileMenuBtn.innerHTML = '☰';
+                mobileMenuBtn.setAttribute('aria-label', '打开导航菜单');
+                document.body.appendChild(mobileMenuBtn);
+                
+                // 点击按钮显示/隐藏导航栏
+                mobileMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('show');
+                    // 更新按钮图标
+                    mobileMenuBtn.innerHTML = sidebar.classList.contains('show') ? '✕' : '☰';
+                });
+                
+                // 点击导航栏外部区域关闭导航栏
+                document.addEventListener('click', (e) => {
+                    if (sidebar.classList.contains('show') && 
+                        !sidebar.contains(e.target) && 
+                        !mobileMenuBtn.contains(e.target)) {
+                        sidebar.classList.remove('show');
+                        mobileMenuBtn.innerHTML = '☰';
+                    }
+                });
+            }
+        }
+
+        // 侧边栏折叠/展开（桌面端）
         sidebarToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
+            if (!isMobile) {
+                sidebar.classList.toggle('collapsed');
+            }
+        });
+        
+        // 监听窗口大小变化
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const nowIsMobile = window.innerWidth <= 768;
+                if (nowIsMobile !== isMobile) {
+                    // 重新初始化（可以刷新页面或重新加载导航栏）
+                    location.reload();
+                }
+            }, 250);
         });
 
         // 导航菜单展开/折叠功能 - 每个菜单独立控制

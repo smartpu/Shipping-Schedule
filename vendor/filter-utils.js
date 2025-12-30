@@ -147,6 +147,106 @@
         searchInput.addEventListener('input', debouncedCallback);
     }
 
+    /**
+     * 初始化移动端筛选框展开/收缩功能
+     * @param {string} filterContainerId - 筛选框容器ID（如 'destinationFilters' 或 'filtersContainer'）
+     * @param {HTMLElement} moduleHeader - 模块标题元素（用于添加展开按钮）
+     */
+    function initMobileFilterToggle(filterContainerId, moduleHeader) {
+        // 只在移动端执行
+        if (window.innerWidth > 768) return;
+        
+        const filterContainer = document.getElementById(filterContainerId);
+        if (!filterContainer || !moduleHeader) return;
+        
+        // 检查是否已存在按钮
+        let toggleBtn = moduleHeader.querySelector('.filter-toggle-btn');
+        if (!toggleBtn) {
+            toggleBtn = document.createElement('button');
+            toggleBtn.className = 'filter-toggle-btn';
+            toggleBtn.textContent = '展开筛选条件';
+            toggleBtn.setAttribute('aria-label', '展开/收缩筛选条件');
+            moduleHeader.appendChild(toggleBtn);
+        }
+        
+        // 初始化状态：如果筛选框有 hidden 类，则隐藏；否则根据移动端规则处理
+        const isHidden = filterContainer.classList.contains('hidden');
+        if (!isHidden) {
+            // 移动端默认隐藏，除非明确标记为 show
+            if (!filterContainer.classList.contains('show')) {
+                filterContainer.style.display = 'none';
+            }
+        }
+        
+        // 切换显示/隐藏
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = filterContainer.style.display !== 'none' && 
+                             !filterContainer.classList.contains('hidden') &&
+                             filterContainer.classList.contains('show');
+            
+            if (isVisible) {
+                filterContainer.style.display = 'none';
+                filterContainer.classList.remove('show');
+                toggleBtn.classList.remove('expanded');
+                toggleBtn.textContent = '展开筛选条件';
+            } else {
+                filterContainer.style.display = 'block';
+                filterContainer.classList.add('show');
+                filterContainer.classList.remove('hidden');
+                toggleBtn.classList.add('expanded');
+                toggleBtn.textContent = '收起筛选条件';
+            }
+        });
+    }
+
+    /**
+     * 自动检测并初始化所有筛选框的移动端展开/收缩功能
+     */
+    function initAllMobileFilterToggles() {
+        if (window.innerWidth > 768) return;
+        
+        // 查找所有筛选框容器
+        const filterContainers = [
+            document.getElementById('destinationFilters'),
+            document.getElementById('filtersContainer')
+        ].filter(el => el !== null);
+        
+        filterContainers.forEach(container => {
+            // 查找对应的模块标题
+            let moduleHeader = container.closest('.feature-section')?.querySelector('.module-header');
+            if (!moduleHeader) {
+                // 尝试查找父级模块标题
+                moduleHeader = container.previousElementSibling?.querySelector('.module-header') ||
+                              container.parentElement?.querySelector('.module-header');
+            }
+            
+            if (moduleHeader) {
+                initMobileFilterToggle(container.id, moduleHeader);
+            }
+        });
+    }
+
+    // 页面加载完成后自动初始化
+    if (typeof window !== 'undefined') {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(initAllMobileFilterToggles, 100);
+            });
+        } else {
+            setTimeout(initAllMobileFilterToggles, 100);
+        }
+        
+        // 监听窗口大小变化
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                initAllMobileFilterToggles();
+            }, 250);
+        });
+    }
+
     // 导出到全局
     if (typeof window !== 'undefined') {
         window.debounce = window.debounce || debounce;
@@ -157,6 +257,8 @@
         window.selectAllOptions = window.selectAllOptions || selectAllOptions;
         window.clearSelectOptions = window.clearSelectOptions || clearSelectOptions;
         window.addDebouncedSearch = window.addDebouncedSearch || addDebouncedSearch;
+        window.initMobileFilterToggle = window.initMobileFilterToggle || initMobileFilterToggle;
+        window.initAllMobileFilterToggles = window.initAllMobileFilterToggles || initAllMobileFilterToggles;
     }
 })();
 

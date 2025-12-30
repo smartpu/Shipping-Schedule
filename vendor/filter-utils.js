@@ -148,6 +148,215 @@
     }
 
     /**
+     * 创建移动端筛选弹出框
+     * @param {HTMLSelectElement} selectElement - 多选下拉框元素
+     * @param {string} label - 筛选框标签
+     */
+    function createMobileFilterModal(selectElement, label) {
+        if (!selectElement || window.innerWidth > 768) return null;
+        
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'mobile-filter-modal';
+        modal.innerHTML = `
+            <div class="mobile-filter-modal-overlay"></div>
+            <div class="mobile-filter-modal-content">
+                <div class="mobile-filter-modal-header">
+                    <h3>${label}</h3>
+                    <button class="mobile-filter-modal-close" aria-label="关闭">✕</button>
+                </div>
+                <div class="mobile-filter-modal-search">
+                    <input type="text" class="mobile-filter-search-input" placeholder="搜索..." autocomplete="off">
+                </div>
+                <div class="mobile-filter-modal-list">
+                    <!-- 选项列表将动态生成 -->
+                </div>
+                <div class="mobile-filter-modal-footer">
+                    <button class="mobile-filter-btn-select-all">全部选择</button>
+                    <button class="mobile-filter-btn-clear">清除选择</button>
+                    <button class="mobile-filter-btn-confirm">确认</button>
+                </div>
+            </div>
+        `;
+        
+        // 生成选项列表
+        const listContainer = modal.querySelector('.mobile-filter-modal-list');
+        const searchInput = modal.querySelector('.mobile-filter-search-input');
+        let allOptions = [];
+        let filteredOptions = [];
+        
+        function renderOptions(options) {
+            listContainer.innerHTML = '';
+            options.forEach(option => {
+                if (option.value === '') return; // 跳过默认选项
+                
+                const item = document.createElement('div');
+                item.className = 'mobile-filter-option';
+                if (option.selected) {
+                    item.classList.add('selected');
+                }
+                item.innerHTML = `
+                    <input type="checkbox" value="${option.value}" ${option.selected ? 'checked' : ''} id="mobile-opt-${selectElement.id}-${option.value}">
+                    <label for="mobile-opt-${selectElement.id}-${option.value}">${option.textContent}</label>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+        
+        function updateOptions() {
+            allOptions = Array.from(selectElement.options).filter(opt => opt.value !== '');
+            filteredOptions = allOptions;
+            renderOptions(filteredOptions);
+        }
+        
+        // 搜索功能
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filteredOptions = allOptions.filter(opt => 
+                opt.textContent.toLowerCase().includes(searchTerm)
+            );
+            renderOptions(filteredOptions);
+        });
+        
+        // 全选
+        modal.querySelector('.mobile-filter-btn-select-all').addEventListener('click', () => {
+            filteredOptions.forEach(opt => opt.selected = true);
+            modal.querySelectorAll('.mobile-filter-option input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+                cb.closest('.mobile-filter-option').classList.add('selected');
+            });
+        });
+        
+        // 清除
+        modal.querySelector('.mobile-filter-btn-clear').addEventListener('click', () => {
+            filteredOptions.forEach(opt => opt.selected = false);
+            modal.querySelectorAll('.mobile-filter-option input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+                cb.closest('.mobile-filter-option').classList.remove('selected');
+            });
+        });
+        
+        // 确认
+        modal.querySelector('.mobile-filter-btn-confirm').addEventListener('click', () => {
+            // 同步选择状态
+            modal.querySelectorAll('.mobile-filter-option input[type="checkbox"]').forEach(cb => {
+                const option = allOptions.find(opt => opt.value === cb.value);
+                if (option) {
+                    option.selected = cb.checked;
+                }
+            });
+            
+            // 触发change事件
+            selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // 更新显示
+            updateFilterDisplay(selectElement);
+            
+            // 关闭模态框
+            modal.remove();
+        });
+        
+        // 关闭按钮
+        modal.querySelector('.mobile-filter-modal-close').addEventListener('click', () => {
+            modal.remove();
+        });
+        modal.querySelector('.mobile-filter-modal-overlay').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        // 选项点击切换
+        listContainer.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                const item = e.target.closest('.mobile-filter-option');
+                if (e.target.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            }
+        });
+        
+        // 初始化选项
+        updateOptions();
+        
+        return modal;
+    }
+    
+    /**
+     * 更新筛选框显示（显示已选择的数量）
+     * @param {HTMLSelectElement} selectElement - 多选下拉框元素
+     */
+    function updateFilterDisplay(selectElement) {
+        if (!selectElement || window.innerWidth > 768) return;
+        
+        const selectedCount = Array.from(selectElement.selectedOptions).filter(opt => opt.value !== '').length;
+        const totalCount = selectElement.options.length - 1; // 减去默认选项
+        
+        // 查找或创建显示元素
+        let displayElement = selectElement.parentElement.querySelector('.mobile-filter-display');
+        if (!displayElement) {
+            displayElement = document.createElement('div');
+            displayElement.className = 'mobile-filter-display';
+            selectElement.parentElement.insertBefore(displayElement, selectElement);
+        }
+        
+        if (selectedCount === 0) {
+            displayElement.textContent = `0个项目`;
+            displayElement.classList.add('empty');
+        } else {
+            displayElement.textContent = `已选择 ${selectedCount} / ${totalCount} 项`;
+            displayElement.classList.remove('empty');
+        }
+    }
+    
+    /**
+     * 初始化移动端筛选框弹出功能
+     * @param {HTMLSelectElement} selectElement - 多选下拉框元素
+     */
+    function initMobileFilterSelect(selectElement) {
+        if (!selectElement || window.innerWidth > 768) return;
+        
+        // 隐藏原始select
+        selectElement.style.display = 'none';
+        
+        // 创建显示区域
+        const displayElement = document.createElement('div');
+        displayElement.className = 'mobile-filter-display';
+        displayElement.setAttribute('role', 'button');
+        displayElement.setAttribute('tabindex', '0');
+        selectElement.parentElement.insertBefore(displayElement, selectElement);
+        
+        // 获取标签
+        const label = selectElement.previousElementSibling?.textContent || 
+                     selectElement.parentElement.querySelector('label')?.textContent || 
+                     '选择选项';
+        
+        // 点击显示弹出框
+        displayElement.addEventListener('click', () => {
+            const modal = createMobileFilterModal(selectElement, label);
+            if (modal) {
+                document.body.appendChild(modal);
+            }
+        });
+        
+        // 键盘支持
+        displayElement.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                displayElement.click();
+            }
+        });
+        
+        // 初始化显示
+        updateFilterDisplay(selectElement);
+        
+        // 监听选择变化
+        selectElement.addEventListener('change', () => {
+            updateFilterDisplay(selectElement);
+        });
+    }
+    
+    /**
      * 初始化移动端筛选框展开/收缩功能
      * @param {string} filterContainerId - 筛选框容器ID（如 'destinationFilters' 或 'filtersContainer'）
      * @param {HTMLElement} moduleHeader - 模块标题元素（用于添加展开按钮）
@@ -178,6 +387,12 @@
             }
         }
         
+        // 为所有多选框初始化移动端弹出功能
+        const selects = filterContainer.querySelectorAll('select[multiple]');
+        selects.forEach(select => {
+            initMobileFilterSelect(select);
+        });
+        
         // 切换显示/隐藏
         toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -198,11 +413,9 @@
                 toggleBtn.textContent = '收起筛选条件';
                 
                 // 展开时，确保筛选框选项已加载
-                // 检查是否有空的select元素，如果有则尝试触发选项更新
                 const selects = filterContainer.querySelectorAll('select[multiple]');
                 let needsReload = false;
                 selects.forEach(select => {
-                    // 如果select只有默认选项（如"全部起运港"或"请先加载数据"），可能需要重新加载选项
                     const hasOnlyDefault = select.options.length <= 1 && 
                                           select.options[0] && 
                                           (select.options[0].value === '' || 
@@ -210,7 +423,6 @@
                                            select.options[0].textContent.includes('请先'));
                     if (hasOnlyDefault) {
                         needsReload = true;
-                        // 触发一个自定义事件，让页面知道筛选框已展开，需要加载选项
                         const event = new CustomEvent('filterExpanded', {
                             detail: { containerId: filterContainerId, selectId: select.id }
                         });
@@ -218,16 +430,22 @@
                     }
                 });
                 
-                // 如果检测到需要重新加载，延迟一下再检查（给页面时间响应事件）
                 if (needsReload) {
                     setTimeout(() => {
-                        // 再次检查选项是否已加载
                         selects.forEach(select => {
                             if (select.options.length <= 1) {
                                 console.warn(`[Filter] 筛选框 ${select.id} 选项未加载，可能需要手动触发选项更新`);
+                            } else {
+                                // 选项已加载，更新显示
+                                updateFilterDisplay(select);
                             }
                         });
                     }, 500);
+                } else {
+                    // 选项已存在，更新显示
+                    selects.forEach(select => {
+                        updateFilterDisplay(select);
+                    });
                 }
             }
         });
@@ -305,6 +523,8 @@
         window.addDebouncedSearch = window.addDebouncedSearch || addDebouncedSearch;
         window.initMobileFilterToggle = window.initMobileFilterToggle || initMobileFilterToggle;
         window.initAllMobileFilterToggles = window.initAllMobileFilterToggles || initAllMobileFilterToggles;
+        window.initMobileFilterSelect = window.initMobileFilterSelect || initMobileFilterSelect;
+        window.updateFilterDisplay = window.updateFilterDisplay || updateFilterDisplay;
     }
 })();
 

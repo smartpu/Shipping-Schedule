@@ -1015,6 +1015,15 @@
                     false
                 );
             }
+            
+            // 更新移动端筛选框显示
+            if (window.innerWidth <= 768 && typeof window.updateFilterDisplay === 'function') {
+                setTimeout(() => {
+                    if (originPortSelect) window.updateFilterDisplay(originPortSelect);
+                    if (destPortSelect) window.updateFilterDisplay(destPortSelect);
+                    if (routeSelect) window.updateFilterDisplay(routeSelect);
+                }, 50);
+            }
         }
 
 
@@ -2850,12 +2859,27 @@
                 const routeSelect = document.getElementById('routeSelect');
                 
                 // 如果选项未加载（只有默认选项），重新加载
-                if (originSelect && originSelect.options.length <= 1 && processedRecords && processedRecords.length > 0) {
-                    updateFilterOptions(processedRecords);
-                } else if (destSelect && destSelect.options.length <= 1 && processedRecords && processedRecords.length > 0) {
-                    updateFilterOptions(processedRecords);
-                } else if (routeSelect && routeSelect.options.length <= 1 && processedRecords && processedRecords.length > 0) {
-                    updateFilterOptions(processedRecords);
+                if ((originSelect && originSelect.options.length <= 1) || 
+                    (destSelect && destSelect.options.length <= 1) || 
+                    (routeSelect && routeSelect.options.length <= 1)) {
+                    if (processedRecords && processedRecords.length > 0) {
+                        updateFilterOptions(processedRecords);
+                        // 选项加载完成后，更新移动端显示
+                        setTimeout(() => {
+                            if (typeof window.updateFilterDisplay === 'function') {
+                                if (originSelect) window.updateFilterDisplay(originSelect);
+                                if (destSelect) window.updateFilterDisplay(destSelect);
+                                if (routeSelect) window.updateFilterDisplay(routeSelect);
+                            }
+                        }, 100);
+                    }
+                } else {
+                    // 选项已存在，更新移动端显示
+                    if (typeof window.updateFilterDisplay === 'function') {
+                        if (originSelect) window.updateFilterDisplay(originSelect);
+                        if (destSelect) window.updateFilterDisplay(destSelect);
+                        if (routeSelect) window.updateFilterDisplay(routeSelect);
+                    }
                 }
             }
         });

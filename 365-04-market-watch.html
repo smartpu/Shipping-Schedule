@@ -1626,6 +1626,18 @@
             await updateOriginPortSelect(allOriginPorts);
             updateRegionSelect(allRegions);
             await updatePortSelect(portMap);
+            
+            // 更新移动端筛选框显示
+            if (window.innerWidth <= 768 && typeof window.updateFilterDisplay === 'function') {
+                setTimeout(() => {
+                    const marketOriginSelect = document.getElementById('marketOriginPortSelect');
+                    const marketRegionSelect = document.getElementById('marketRegionSelect');
+                    const marketPortSelect = document.getElementById('marketPortSelect');
+                    if (marketOriginSelect) window.updateFilterDisplay(marketOriginSelect);
+                    if (marketRegionSelect) window.updateFilterDisplay(marketRegionSelect);
+                    if (marketPortSelect) window.updateFilterDisplay(marketPortSelect);
+                }, 50);
+            }
         }
 
         function updateMarketChartFromSelection(showAlertIfEmpty) {
@@ -2426,6 +2438,15 @@
             populateSelectLocal(originPortSelect, filteredOriginPortOptions, '全部起运港', destinationFilters.originPorts, false);
             populateSelectLocal(destPortSelect, filteredDestPortOptions, '全部目的港', destinationFilters.destPorts, false);
             populateSelectLocal(routeSelect, filteredRouteOptions, '全部共舱船公司', destinationFilters.routes, false);
+            
+            // 更新移动端筛选框显示
+            if (window.innerWidth <= 768 && typeof window.updateFilterDisplay === 'function') {
+                setTimeout(() => {
+                    if (originPortSelect) window.updateFilterDisplay(originPortSelect);
+                    if (destPortSelect) window.updateFilterDisplay(destPortSelect);
+                    if (routeSelect) window.updateFilterDisplay(routeSelect);
+                }, 50);
+            }
         }
 
 
@@ -4120,6 +4141,21 @@
                     (routeSelect && routeSelect.options.length <= 1)) {
                     if (processedRecords && processedRecords.length > 0) {
                         updateDestinationFilterOptions();
+                        // 选项加载完成后，更新移动端显示
+                        setTimeout(() => {
+                            if (typeof window.updateFilterDisplay === 'function') {
+                                if (originSelect) window.updateFilterDisplay(originSelect);
+                                if (destSelect) window.updateFilterDisplay(destSelect);
+                                if (routeSelect) window.updateFilterDisplay(routeSelect);
+                            }
+                        }, 100);
+                    }
+                } else {
+                    // 选项已存在，更新移动端显示
+                    if (typeof window.updateFilterDisplay === 'function') {
+                        if (originSelect) window.updateFilterDisplay(originSelect);
+                        if (destSelect) window.updateFilterDisplay(destSelect);
+                        if (routeSelect) window.updateFilterDisplay(routeSelect);
                     }
                 }
             }
@@ -4136,6 +4172,21 @@
                     (marketPortSelect && marketPortSelect.options.length <= 1)) {
                     if (marketData && marketData.length > 0) {
                         updateMarketFilterOptions();
+                        // 选项加载完成后，更新移动端显示
+                        setTimeout(() => {
+                            if (typeof window.updateFilterDisplay === 'function') {
+                                if (marketOriginSelect) window.updateFilterDisplay(marketOriginSelect);
+                                if (marketRegionSelect) window.updateFilterDisplay(marketRegionSelect);
+                                if (marketPortSelect) window.updateFilterDisplay(marketPortSelect);
+                            }
+                        }, 100);
+                    }
+                } else {
+                    // 选项已存在，更新移动端显示
+                    if (typeof window.updateFilterDisplay === 'function') {
+                        if (marketOriginSelect) window.updateFilterDisplay(marketOriginSelect);
+                        if (marketRegionSelect) window.updateFilterDisplay(marketRegionSelect);
+                        if (marketPortSelect) window.updateFilterDisplay(marketPortSelect);
                     }
                 }
             }

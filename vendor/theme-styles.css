@@ -1662,20 +1662,26 @@ input:disabled {
     }
     
     /* ==================== 顶部按钮布局优化 ==================== */
-    /* 移动端：顶部按钮移到最上方，工具说明在下方 */
+    /* 移动端：顶部按钮移到最上方一行，工具说明在下方 */
+    .section-intro {
+        padding: 16px;
+    }
+    
     .section-intro-header {
         flex-direction: column;
         gap: 16px;
     }
     
+    /* 按钮区域：最上方一行显示 */
     .section-intro-actions {
         width: 100%;
         display: grid;
-        gap: 12px;
+        gap: 10px;
         order: -1; /* 按钮移到最上方 */
+        margin-bottom: 0;
     }
     
-    /* 3个按钮：均分宽度 */
+    /* 3个按钮：均分宽度，一行显示 */
     .section-intro-actions:has(> *:nth-child(3)),
     .section-intro-actions.has-3-buttons {
         grid-template-columns: repeat(3, 1fr);
@@ -1697,19 +1703,31 @@ input:disabled {
         grid-column: 3; /* 第二个按钮靠右 */
     }
     
+    /* 按钮样式优化 */
+    .section-intro-actions .tool-link {
+        width: 100%;
+        padding: 12px 8px;
+        font-size: 13px;
+        min-width: 0;
+        text-align: center;
+    }
+    
     /* 工具说明在按钮下方 */
     .section-intro-content {
         order: 1;
+        width: 100%;
     }
     
     .section-intro-content h2 {
         font-size: 20px;
         margin-bottom: 8px;
+        margin-top: 0;
     }
     
     .section-intro-content p {
         font-size: 14px;
         line-height: 1.5;
+        margin: 0;
     }
     
     /* ==================== POL选项卡优化 ==================== */
@@ -4019,11 +4037,228 @@ button.file-btn:disabled {
         display: none !important;
     }
     
-    /* 多选框在移动端优化高度 */
+    /* 多选框在移动端：隐藏原始select，显示自定义按钮 */
     .filter-group select[multiple] {
-        height: 150px;
-        min-height: 150px;
-        max-height: 150px;
+        display: none; /* 移动端隐藏原始select */
+    }
+    
+    /* 移动端筛选框显示区域 */
+    .mobile-filter-display {
+        width: 100%;
+        padding: 12px 16px;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        margin-bottom: 8px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-filter-display::after {
+        content: '▼';
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        margin-left: 8px;
+    }
+    
+    .mobile-filter-display.empty {
+        color: var(--color-text-secondary);
+    }
+    
+    .mobile-filter-display:active {
+        background: #f8f9fa;
+        transform: scale(0.98);
+    }
+    
+    /* 移动端筛选弹出框 */
+    .mobile-filter-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .mobile-filter-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+    
+    .mobile-filter-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 16px 16px 0 0;
+        width: 100%;
+        max-width: 100%;
+        height: 80vh;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+    
+    .mobile-filter-modal-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    
+    .mobile-filter-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+    
+    .mobile-filter-modal-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .mobile-filter-modal-close:active {
+        background: rgba(0, 0, 0, 0.05);
+    }
+    
+    .mobile-filter-modal-search {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        flex-shrink: 0;
+    }
+    
+    .mobile-filter-search-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 8px;
+        font-size: 16px;
+        background: #f8f9fa;
+    }
+    
+    .mobile-filter-modal-list {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 12px 20px;
+    }
+    
+    .mobile-filter-option {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-filter-option:active {
+        transform: scale(0.98);
+    }
+    
+    .mobile-filter-option.selected {
+        background: rgba(62, 98, 173, 0.08);
+        border-color: var(--color-brand-blue);
+    }
+    
+    .mobile-filter-option input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-right: 12px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    
+    .mobile-filter-option label {
+        flex: 1;
+        font-size: 14px;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        margin: 0;
+    }
+    
+    .mobile-filter-modal-footer {
+        padding: 16px 20px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        flex-shrink: 0;
+        background: #f8f9fa;
+    }
+    
+    .mobile-filter-btn-select-all,
+    .mobile-filter-btn-clear,
+    .mobile-filter-btn-confirm {
+        padding: 12px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-filter-btn-select-all,
+    .mobile-filter-btn-clear {
+        background: white;
+        color: var(--color-brand-blue);
+        border: 1px solid var(--color-brand-blue);
+    }
+    
+    .mobile-filter-btn-select-all:active,
+    .mobile-filter-btn-clear:active {
+        background: rgba(62, 98, 173, 0.1);
+    }
+    
+    .mobile-filter-btn-confirm {
+        background: var(--color-brand-blue);
+        color: white;
+        grid-column: 3;
+    }
+    
+    .mobile-filter-btn-confirm:active {
+        background: var(--color-brand-blue-dark);
+        transform: scale(0.98);
     }
     
     /* 筛选操作按钮在移动端优化 */

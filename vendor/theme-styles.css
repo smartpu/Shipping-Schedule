@@ -1484,6 +1484,35 @@ input:disabled {
         0 0 0 1px rgba(255, 255, 255, 0.2) inset;
 }
 
+/* 禁用状态的灰色使用说明按钮（无链接） */
+.tool-link.secondary.disabled {
+    background: linear-gradient(135deg, #9E9E9E 0%, #757575 100%); /* 灰色渐变 */
+    color: #FFFFFF;
+    border: 1px solid rgba(158, 158, 158, 0.3);
+    box-shadow:
+        0 2px 8px rgba(158, 158, 158, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* 灰色按钮光扫效果 */
+.tool-link.secondary.disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(200, 200, 200, 0.5), transparent); /* 灰色光扫效果 */
+    transition: left 0.5s ease;
+    will-change: left;
+}
+
+.tool-link.secondary.disabled:hover::before {
+    left: 100%;
+}
+
 /* 米色按钮样式（导出PDF）- 增强立体感，与蓝色/橙色按钮一致 */
 .tool-link.beige {
     background: linear-gradient(135deg, #F6E4C8 0%, #E8D4B0 100%); /* 米色渐变背景，增强立体感 */

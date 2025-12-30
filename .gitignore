@@ -37,7 +37,6 @@ Data/**
 !Data/Monitor-Geo-Trades-Service.xlsx
 !Data/Monitor-SCFI-Trends.xlsx
 !Data/Monitor-Rate-Trends.xlsx
-!Data/Admin-Workouts.csv
 !Data/Admin-access-logs.json
 
 # linerlytica 目录：允许所有文件上传到 GitHub

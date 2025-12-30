@@ -57,7 +57,7 @@
                         </div>
                     </div>
                     <div class="card-white module-card mt-20" id="results">
-                        <div style="text-align: center; padding: 40px; color: var(--color-text-tertiary);">
+                        <div style="text-align: center; padding: 40px; color: #6E6E73; font-size: 14px;">
                             点击上方按钮开始诊断
                         </div>
                     </div>
@@ -83,7 +83,7 @@
         
         async function runDiagnostics() {
             const results = document.getElementById('results');
-            results.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--color-text-secondary);">正在诊断...</div>';
+            results.innerHTML = '<div style="text-align: center; padding: 40px; color: #3A3A3C; font-size: 14px;">正在诊断...</div>';
             
             const checks = [];
             
@@ -195,11 +195,11 @@
                                     check.status === 'warning' ? 'var(--color-brand-orange)' : '#dc3545';
                 
                 html += `
-                    <div class="stat-card" style="border-left: 4px solid ${statusColor}; margin-bottom: 16px;">
-                        <h3 style="margin: 0 0 8px 0; font-size: 15px; color: var(--color-text-primary);">
+                    <div class="stat-card" style="border-left: 4px solid ${statusColor}; margin-bottom: 16px; background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                        <h3 style="margin: 0 0 8px 0; font-size: 15px; color: #1D1D1F; font-weight: 600;">
                             ${statusIcon} ${check.name}
                         </h3>
-                        <div style="margin: 0; font-size: 13px; color: var(--color-text-secondary); line-height: 1.6;">
+                        <div style="margin: 0; font-size: 14px; color: #3A3A3C; line-height: 1.7;">
                             ${check.message}
                         </div>
                     </div>
@@ -208,8 +208,8 @@
             
             // 添加建议
             html += '<div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--color-border);">';
-            html += '<h3 style="margin: 0 0 12px 0; font-size: 15px; color: var(--color-text-primary);">💡 建议</h3>';
-            html += '<ul style="margin: 0; padding-left: 20px; color: var(--color-text-secondary); font-size: 13px; line-height: 1.8;">';
+            html += '<h3 style="margin: 0 0 12px 0; font-size: 15px; color: #1D1D1F; font-weight: 600;">💡 建议</h3>';
+            html += '<ul style="margin: 0; padding-left: 20px; color: #3A3A3C; font-size: 14px; line-height: 1.8;">';
             if (isLocalTest) {
                 html += '<li>如果在本地测试，访问记录会被跳过。部署到服务器后会自动记录。</li>';
             }
@@ -226,7 +226,7 @@
         
         async function testSaveLog() {
             const results = document.getElementById('results');
-            results.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--color-text-secondary);">正在测试保存访问记录...</div>';
+            results.innerHTML = '<div style="text-align: center; padding: 40px; color: #3A3A3C; font-size: 14px;">正在测试保存访问记录...</div>';
             
             try {
                 const testLogEntry = {
@@ -252,47 +252,47 @@
                 if (response.ok) {
                     const result = await response.json();
                     results.innerHTML = `
-                        <div class="stat-card" style="border-left: 4px solid var(--color-brand-blue);">
-                            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: var(--color-text-primary);">
+                        <div class="stat-card" style="border-left: 4px solid var(--color-brand-blue); background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #1D1D1F; font-weight: 600;">
                                 ✅ 测试成功
                             </h3>
-                            <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--color-text-secondary);">
+                            <p style="margin: 0 0 12px 0; font-size: 14px; color: #3A3A3C;">
                                 <strong>保存成功！</strong>
                             </p>
-                            <pre style="background: var(--color-bg-tertiary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 0;">${JSON.stringify(result, null, 2)}</pre>
+                            <pre style="background: #F5F5F7; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 0; color: #1D1D1F; border: 1px solid #E5E5E7;">${JSON.stringify(result, null, 2)}</pre>
                             <details style="margin-top: 16px;">
-                                <summary style="cursor: pointer; color: var(--color-text-secondary); font-size: 13px;">查看测试数据</summary>
-                                <pre style="background: var(--color-bg-tertiary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-top: 8px;">${JSON.stringify(testLogEntry, null, 2)}</pre>
+                                <summary style="cursor: pointer; color: #3E62AD; font-size: 13px; font-weight: 500;">查看测试数据</summary>
+                                <pre style="background: #F5F5F7; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-top: 8px; color: #1D1D1F; border: 1px solid #E5E5E7;">${JSON.stringify(testLogEntry, null, 2)}</pre>
                             </details>
                         </div>
                     `;
                 } else {
                     const errorText = await response.text();
                     results.innerHTML = `
-                        <div class="stat-card" style="border-left: 4px solid #dc3545;">
-                            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: var(--color-text-primary);">
+                        <div class="stat-card" style="border-left: 4px solid #dc3545; background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #1D1D1F; font-weight: 600;">
                                 ❌ 测试失败
                             </h3>
-                            <p style="margin: 0 0 8px 0; font-size: 13px; color: var(--color-text-secondary);">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #3A3A3C;">
                                 <strong>保存失败</strong>
                             </p>
-                            <p style="margin: 0 0 8px 0; font-size: 13px; color: var(--color-text-secondary);">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #3A3A3C;">
                                 状态码: ${response.status} ${response.statusText}
                             </p>
-                            <pre style="background: var(--color-bg-tertiary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 0; color: #dc3545;">${errorText.substring(0, 500)}</pre>
+                            <pre style="background: #FFF5F5; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 0; color: #C41E3A; border: 1px solid #FFE5E5;">${errorText.substring(0, 500)}</pre>
                         </div>
                     `;
                 }
             } catch (error) {
                 results.innerHTML = `
-                    <div class="stat-card" style="border-left: 4px solid #dc3545;">
-                        <h3 style="margin: 0 0 12px 0; font-size: 15px; color: var(--color-text-primary);">
+                    <div class="stat-card" style="border-left: 4px solid #dc3545; background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                        <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #1D1D1F; font-weight: 600;">
                             ❌ 测试失败
                         </h3>
-                        <p style="margin: 0 0 8px 0; font-size: 13px; color: var(--color-text-secondary);">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #3A3A3C;">
                             <strong>请求失败</strong>
                         </p>
-                        <p style="margin: 0; font-size: 13px; color: var(--color-text-secondary);">
+                        <p style="margin: 0; font-size: 14px; color: #3A3A3C;">
                             错误: ${error.message}
                         </p>
                     </div>
@@ -320,11 +320,11 @@
                     
                     const results = document.getElementById('results');
                     results.innerHTML = `
-                        <div class="stat-card" style="border-left: 4px solid var(--color-brand-blue);">
-                            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: var(--color-text-primary);">
+                        <div class="stat-card" style="border-left: 4px solid var(--color-brand-blue); background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #1D1D1F; font-weight: 600;">
                                 ✅ 修复成功
                             </h3>
-                            <p style="margin: 0; font-size: 13px; color: var(--color-text-secondary);">
+                            <p style="margin: 0; font-size: 14px; color: #3A3A3C; line-height: 1.7;">
                                 已为认证数据添加过期时间字段（过期时间: ${new Date(expiry).toLocaleString('zh-CN')}），请重新运行诊断。
                             </p>
                         </div>

@@ -279,13 +279,30 @@
                 
                 // 保存到 localStorage（auth-gist.js 会读取）
                 // 注意：password 也作为 phone 保存（用于本地测试用户验证）
+                // 保留现有的认证数据（如果有），特别是 expiry 字段
+                const existingAuthData = localStorage.getItem(LOGIN_CONFIG.AUTH_STORAGE_KEY);
+                let existingData = {};
+                if (existingAuthData) {
+                    try {
+                        existingData = JSON.parse(existingAuthData);
+                    } catch (e) {
+                        // 忽略解析错误
+                    }
+                }
+                
+                // 计算过期时间（7天）
+                const AUTH_EXPIRY_DAYS = 7;
+                const expiry = Date.now() + (AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+                
                 const authData = {
                     name: formData.name,
                     password: formData.password,
                     email: formData.email,
                     phone: formData.password, // 密码作为手机号（用于本地测试用户）
                     level: 'user',
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    expiry: expiry, // 添加过期时间字段
+                    verified: true // 标记为已验证
                 };
                 localStorage.setItem(LOGIN_CONFIG.AUTH_STORAGE_KEY, JSON.stringify(authData));
                 

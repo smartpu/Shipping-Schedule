@@ -1329,6 +1329,7 @@ input:disabled {
 
 .tool-title {
     flex: 1;
+    width: 100%; /* 让标题占满宽度 */
 }
 
 .tool-title h3 {
@@ -1337,6 +1338,7 @@ input:disabled {
     font-weight: 600;
     margin-bottom: 4px;
     letter-spacing: -0.3px;
+    width: 100%; /* 工具名称占满宽度 */
 }
 
 .tool-id {
@@ -1357,6 +1359,7 @@ input:disabled {
     transition: opacity 0.2s ease;
     /* 在窄屏模式下，让描述占据剩余空间，使按钮底部对齐 */
     flex: 1;
+    width: 100%; /* 描述占满宽度 */
 }
 
 .tool-card:hover .tool-description {
@@ -1368,6 +1371,8 @@ input:disabled {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+    width: 100%; /* 按钮区域占满宽度 */
+    margin-top: auto; /* 按钮在描述下方 */
 }
 
 @media (max-width: 1280px) {
@@ -1977,41 +1982,59 @@ input:disabled {
         white-space: nowrap;
     }
     
-    /* 其他影响因素表格和其他宽表格的横向滚动 */
+    /* 所有工具的表格容器都应该支持横向滚动 */
     #bookingDataTableContainer,
     #bookingDataTableContainer table,
     .data-table-container,
     .data-table-container table,
     body[data-page="Monitor-Geo-Trades-Service.html"] .table-container,
-    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table {
+    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table,
+    body[data-page="001-04-market-analysis.html"] .table-container,
+    body[data-page="001-04-market-analysis.html"] .table-container table,
+    body[data-page="365-04-market-watch.html"] .table-container,
+    body[data-page="365-04-market-watch.html"] .table-container table,
+    body[data-page="Monitor-Sailing-Schedule.html"] .table-container,
+    body[data-page="Monitor-Sailing-Schedule.html"] .table-container table {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
     
+    /* 表格容器样式 */
     #bookingDataTableContainer,
-    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container {
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container,
+    body[data-page="001-04-market-analysis.html"] .table-container,
+    body[data-page="365-04-market-watch.html"] .table-container,
+    body[data-page="Monitor-Sailing-Schedule.html"] .table-container {
         margin: 0 -16px;
         padding: 0 16px;
         position: relative;
     }
     
-    /* 确保Monitor-Geo-Trades-Service的表格可以横向滚动 */
-    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table {
+    /* 确保所有工具的表格都有最小宽度，触发横向滚动 */
+    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table,
+    body[data-page="001-04-market-analysis.html"] .table-container table,
+    body[data-page="365-04-market-watch.html"] .table-container table,
+    body[data-page="Monitor-Sailing-Schedule.html"] .table-container table {
         min-width: 800px; /* 确保表格最小宽度，触发横向滚动 */
         width: 100%;
     }
     
+    /* 所有工具的表格容器都显示滚动提示 */
     #bookingDataTableContainer::after,
-    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container::after {
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container::after,
+    body[data-page="001-04-market-analysis.html"] .table-container::after,
+    body[data-page="365-04-market-watch.html"] .table-container::after,
+    body[data-page="Monitor-Sailing-Schedule.html"] .table-container::after {
         content: '← 滑动查看更多 →';
         display: block;
         text-align: center;
         color: var(--color-text-secondary);
-        font-size: 12px;
-        padding: 8px 0;
+        font-size: 13px;
+        padding: 10px 0;
         margin-top: 8px;
-        opacity: 0.7;
+        opacity: 0.8;
         pointer-events: none;
+        font-weight: 500;
     }
     
     /* ==================== 按钮组和控制区域优化 ==================== */
@@ -4120,7 +4143,8 @@ button.file-btn:disabled {
     grid-template-columns: 1fr 1fr 1fr 1fr; /* 四个筛选器平均分配宽度 */
 }
 
-@media (max-width: 768px) {
+/* iPad和移动端样式（宽度 <= 1024px） */
+@media (max-width: 1024px) {
     .filter-row {
         grid-template-columns: 1fr;
         gap: 16px;
@@ -4264,6 +4288,7 @@ button.file-btn:disabled {
         justify-content: space-between;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         transition: all 0.2s ease;
+        position: relative;
     }
     
     .mobile-filter-display::after {
@@ -4271,15 +4296,48 @@ button.file-btn:disabled {
         font-size: 12px;
         color: var(--color-text-secondary);
         margin-left: 8px;
+        transition: opacity 0.2s ease;
+    }
+    
+    .mobile-filter-display.loading::after {
+        display: none; /* 加载时隐藏下拉箭头 */
     }
     
     .mobile-filter-display.empty {
         color: var(--color-text-secondary);
     }
     
+    .mobile-filter-display.loading {
+        pointer-events: none; /* 加载时禁用点击 */
+    }
+    
     .mobile-filter-display:active {
         background: #f8f9fa;
         transform: scale(0.98);
+    }
+    
+    /* 加载状态样式 */
+    .filter-loading {
+        color: var(--color-brand-blue);
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .filter-loading::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--color-brand-blue);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: filter-loading-spin 0.8s linear infinite;
+        display: inline-block;
+    }
+    
+    @keyframes filter-loading-spin {
+        to { transform: rotate(360deg); }
     }
     
     /* 移动端筛选弹出框 */

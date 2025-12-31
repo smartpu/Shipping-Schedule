@@ -1016,13 +1016,19 @@
                 );
             }
             
-            // 更新移动端筛选框显示
-            if (window.innerWidth <= 768 && typeof window.updateFilterDisplay === 'function') {
+            // 更新移动端筛选框显示（包括iPad，宽度 <= 1024px）
+            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+                // 显示加载状态
+                if (originPortSelect) window.updateFilterDisplay(originPortSelect, true);
+                if (destPortSelect) window.updateFilterDisplay(destPortSelect, true);
+                if (routeSelect) window.updateFilterDisplay(routeSelect, true);
+                
+                // 延迟更新实际内容，避免频繁刷新
                 setTimeout(() => {
-                    if (originPortSelect) window.updateFilterDisplay(originPortSelect);
-                    if (destPortSelect) window.updateFilterDisplay(destPortSelect);
-                    if (routeSelect) window.updateFilterDisplay(routeSelect);
-                }, 50);
+                    if (originPortSelect) window.updateFilterDisplay(originPortSelect, false);
+                    if (destPortSelect) window.updateFilterDisplay(destPortSelect, false);
+                    if (routeSelect) window.updateFilterDisplay(routeSelect, false);
+                }, 300);
             }
         }
 

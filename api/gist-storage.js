@@ -297,13 +297,25 @@ module.exports = async function handler(req, res) {
             if (action === 'addLog') {
                 // 添加访问记录
                 if (!ACCESS_LOG_GIST_ID) {
+                    console.error('[Gist API] 访问记录 Gist ID 未配置，请检查 Vercel 环境变量 ACCESS_LOG_GIST_ID');
                     res.status(500).json({ 
-                        error: '访问记录 Gist ID 未配置'
+                        error: '访问记录 Gist ID 未配置',
+                        message: '请在 Vercel 环境变量中设置 ACCESS_LOG_GIST_ID'
+                    });
+                    return;
+                }
+
+                if (!GITHUB_TOKEN) {
+                    console.error('[Gist API] GitHub Token 未配置，请检查 Vercel 环境变量 GITHUB_TOKEN');
+                    res.status(500).json({ 
+                        error: 'GitHub Token 未配置',
+                        message: '请在 Vercel 环境变量中设置 GITHUB_TOKEN'
                     });
                     return;
                 }
 
                 if (!data || !data.logEntry) {
+                    console.error('[Gist API] 缺少 logEntry 数据');
                     res.status(400).json({ 
                         error: '缺少 logEntry 数据'
                     });
@@ -401,16 +413,28 @@ module.exports = async function handler(req, res) {
                 }
                 
                 // 4. 更新 Gist（使用压缩格式存储）
-                await updateGist(ACCESS_LOG_GIST_ID, 'access-logs.json', jsonString);
-                
-                console.log(`[Gist API] 访问记录已保存：${logs.length} 条记录，文件大小 ${fileSizeMB.toFixed(3)}MB`);
+                try {
+                    await updateGist(ACCESS_LOG_GIST_ID, 'access-logs.json', jsonString);
+                    console.log(`[Gist API] 访问记录已保存：${logs.length} 条记录，文件大小 ${fileSizeMB.toFixed(3)}MB`);
 
-                res.status(200).json({
-                    success: true,
-                    message: '访问记录已保存',
-                    totalLogs: logs.length
-                });
-                return;
+                    res.status(200).json({
+                        success: true,
+                        message: '访问记录已保存',
+                        totalLogs: logs.length
+                    });
+                    return;
+                } catch (updateError) {
+                    console.error('[Gist API] 更新 Gist 失败:', {
+                        message: updateError.message,
+                        stack: updateError.stack,
+                        gistId: ACCESS_LOG_GIST_ID
+                    });
+                    res.status(500).json({
+                        error: '更新 Gist 失败',
+                        message: updateError.message
+                    });
+                    return;
+                }
             }
 
             if (action === 'getLogs') {

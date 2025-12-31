@@ -114,17 +114,44 @@
                 
                 if (response.ok) {
                     const data = await response.json();
+                    const recordCount = Array.isArray(data) ? data.length : 0;
+                    // 检查最新记录的时间
+                    let latestRecordTime = null;
+                    if (Array.isArray(data) && data.length > 0) {
+                        const latest = data[0];
+                        latestRecordTime = latest.timestamp || (latest.date ? new Date(latest.date).getTime() : null);
+                    }
+                    
+                    let timeInfo = '';
+                    if (latestRecordTime) {
+                        const daysAgo = Math.floor((Date.now() - latestRecordTime) / (24 * 60 * 60 * 1000));
+                        const latestDate = new Date(latestRecordTime).toLocaleString('zh-CN');
+                        timeInfo = `，最新记录：${latestDate}（${daysAgo} 天前）`;
+                    }
+                    
                     checks.push({
                         name: 'API 连接测试',
                         status: 'ok',
-                        message: `✅ API 连接正常，当前有 ${Array.isArray(data) ? data.length : 0} 条访问记录`
+                        message: `✅ API 连接正常，当前有 ${recordCount} 条访问记录${timeInfo}`
                     });
                 } else {
                     const errorText = await response.text();
+                    let errorMessage = `❌ API 返回错误: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.error) {
+                            errorMessage += ` - ${errorJson.error}`;
+                        }
+                        if (errorJson.message) {
+                            errorMessage += ` (${errorJson.message})`;
+                        }
+                    } catch (e) {
+                        errorMessage += ` - ${errorText.substring(0, 200)}`;
+                    }
                     checks.push({
                         name: 'API 连接测试',
                         status: 'error',
-                        message: `❌ API 返回错误: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`
+                        message: errorMessage
                     });
                 }
             } catch (error) {
@@ -257,7 +284,7 @@
                                 ✅ 测试成功
                             </h3>
                             <p style="margin: 0 0 12px 0; font-size: 14px; color: #3A3A3C;">
-                                <strong>保存成功！</strong>
+                                <strong>保存成功！</strong> 记录已保存到 Gist，共 ${result.totalLogs || '未知'} 条记录。
                             </p>
                             <pre style="background: #F5F5F7; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 0; color: #1D1D1F; border: 1px solid #E5E5E7;">${JSON.stringify(result, null, 2)}</pre>
                             <details style="margin-top: 16px;">
@@ -268,6 +295,14 @@
                     `;
                 } else {
                     const errorText = await response.text();
+                    let errorDetails = errorText;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorDetails = JSON.stringify(errorJson, null, 2);
+                    } catch (e) {
+                        // 保持原文本
+                    }
+                    
                     results.innerHTML = `
                         <div class="stat-card" style="border-left: 4px solid #dc3545; background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
                             <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #1D1D1F; font-weight: 600;">
@@ -279,7 +314,15 @@
                             <p style="margin: 0 0 8px 0; font-size: 14px; color: #3A3A3C;">
                                 状态码: ${response.status} ${response.statusText}
                             </p>
-                            <pre style="background: #FFF5F5; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 0; color: #C41E3A; border: 1px solid #FFE5E5;">${errorText.substring(0, 500)}</pre>
+                            <pre style="background: #FFF5F5; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 0; color: #C41E3A; border: 1px solid #FFE5E5; max-height: 300px; overflow-y: auto;">${errorDetails.substring(0, 1000)}</pre>
+                            <p style="margin-top: 12px; font-size: 13px; color: #6E6E73;">
+                                💡 可能的原因：<br>
+                                1. Vercel 环境变量未配置（GITHUB_TOKEN 或 ACCESS_LOG_GIST_ID）<br>
+                                2. GitHub Token 已过期或权限不足<br>
+                                3. Gist ID 不正确<br>
+                                4. 网络连接问题<br>
+                                请检查 Vercel 函数日志获取详细错误信息。
+                            </p>
                         </div>
                     `;
                 }

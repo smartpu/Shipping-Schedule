@@ -1640,15 +1640,21 @@
             await updatePortSelect(portMap);
             
             // 更新移动端筛选框显示
-            if (window.innerWidth <= 768 && typeof window.updateFilterDisplay === 'function') {
+            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+                // 显示加载状态
+                const marketOriginSelect = document.getElementById('marketOriginPortSelect');
+                const marketRegionSelect = document.getElementById('marketRegionSelect');
+                const marketPortSelect = document.getElementById('marketPortSelect');
+                if (marketOriginSelect) window.updateFilterDisplay(marketOriginSelect, true);
+                if (marketRegionSelect) window.updateFilterDisplay(marketRegionSelect, true);
+                if (marketPortSelect) window.updateFilterDisplay(marketPortSelect, true);
+                
+                // 延迟更新实际内容，避免频繁刷新
                 setTimeout(() => {
-                    const marketOriginSelect = document.getElementById('marketOriginPortSelect');
-                    const marketRegionSelect = document.getElementById('marketRegionSelect');
-                    const marketPortSelect = document.getElementById('marketPortSelect');
-                    if (marketOriginSelect) window.updateFilterDisplay(marketOriginSelect);
-                    if (marketRegionSelect) window.updateFilterDisplay(marketRegionSelect);
-                    if (marketPortSelect) window.updateFilterDisplay(marketPortSelect);
-                }, 50);
+                    if (marketOriginSelect) window.updateFilterDisplay(marketOriginSelect, false);
+                    if (marketRegionSelect) window.updateFilterDisplay(marketRegionSelect, false);
+                    if (marketPortSelect) window.updateFilterDisplay(marketPortSelect, false);
+                }, 300);
             }
         }
 
@@ -2451,13 +2457,19 @@
             populateSelectLocal(destPortSelect, filteredDestPortOptions, '全部目的港', destinationFilters.destPorts, false);
             populateSelectLocal(routeSelect, filteredRouteOptions, '全部共舱船公司', destinationFilters.routes, false);
             
-            // 更新移动端筛选框显示
-            if (window.innerWidth <= 768 && typeof window.updateFilterDisplay === 'function') {
+            // 更新移动端筛选框显示（包括iPad，宽度 <= 1024px）
+            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+                // 显示加载状态
+                if (originPortSelect) window.updateFilterDisplay(originPortSelect, true);
+                if (destPortSelect) window.updateFilterDisplay(destPortSelect, true);
+                if (routeSelect) window.updateFilterDisplay(routeSelect, true);
+                
+                // 延迟更新实际内容，避免频繁刷新
                 setTimeout(() => {
-                    if (originPortSelect) window.updateFilterDisplay(originPortSelect);
-                    if (destPortSelect) window.updateFilterDisplay(destPortSelect);
-                    if (routeSelect) window.updateFilterDisplay(routeSelect);
-                }, 50);
+                    if (originPortSelect) window.updateFilterDisplay(originPortSelect, false);
+                    if (destPortSelect) window.updateFilterDisplay(destPortSelect, false);
+                    if (routeSelect) window.updateFilterDisplay(routeSelect, false);
+                }, 300);
             }
         }
 

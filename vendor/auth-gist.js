@@ -280,17 +280,34 @@
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`保存失败: ${response.status} ${response.statusText} - ${errorText}`);
+                let errorMessage = `保存失败: ${response.status} ${response.statusText}`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error) {
+                        errorMessage += ` - ${errorJson.error}`;
+                    }
+                    if (errorJson.message) {
+                        errorMessage += ` (${errorJson.message})`;
+                    }
+                } catch (e) {
+                    errorMessage += ` - ${errorText.substring(0, 200)}`;
+                }
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
             debugLog('[Auth] 访问记录保存成功:', result);
             return true;
         } catch (error) {
-            debugError('[Auth] 保存访问记录失败:', {
+            // 增强错误日志，包含更多诊断信息
+            const errorInfo = {
                 message: error.message,
-                logEntry: logEntry
-            });
+                logEntry: logEntry,
+                apiUrl: GIST_API_URL,
+                timestamp: new Date().toISOString()
+            };
+            debugError('[Auth] 保存访问记录失败:', errorInfo);
+            console.error('[Auth] 访问记录保存失败详情:', errorInfo);
             return false;
         }
     }

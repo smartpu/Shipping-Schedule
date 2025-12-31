@@ -5,6 +5,8 @@
  * 包含：
  * - 自动加载XLSX和Chart.js
  * - 多选下拉框工具函数
+ * - 统一防抖和节流函数
+ * - 事件监听器管理（使用 AbortController）
  * - 其他通用工具函数
  */
 
@@ -664,11 +666,194 @@ function init001ToolPage(currentPage, currentSection = 'tools001', onInit = null
     }
 }
 
+/**
+ * ==================== 统一防抖和节流工具函数 ====================
+ * 高优先级优化：统一防抖实现
+ */
+
+/**
+ * 防抖函数（Debounce）
+ * 延迟执行函数，直到停止调用后等待指定时间
+ * @param {Function} func - 要防抖的函数
+ * @param {number} wait - 等待时间（毫秒），默认 300ms
+ * @param {boolean} immediate - 是否立即执行第一次调用，默认 false
+ * @returns {Function} 防抖后的函数
+ */
+function debounce(func, wait = 300, immediate = false) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            timeout = null;
+            if (!immediate) func(...args);
+        };
+        const callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func(...args);
+    };
+}
+
+/**
+ * 节流函数（Throttle）
+ * 限制函数执行频率，每隔指定时间执行一次
+ * @param {Function} func - 要节流的函数
+ * @param {number} limit - 时间间隔（毫秒），默认 300ms
+ * @returns {Function} 节流后的函数
+ */
+function throttle(func, limit = 300) {
+    let inThrottle;
+    return function executedFunction(...args) {
+        if (!inThrottle) {
+            func(...args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+/**
+ * ==================== 事件监听器管理（使用 AbortController）====================
+ * 高优先级优化：事件监听器清理
+ */
+
+/**
+ * 事件监听器管理器
+ * 使用 AbortController 统一管理事件监听器，防止内存泄漏
+ */
+class EventListenerManager {
+    constructor() {
+        this.controllers = new Map();
+    }
+
+    /**
+     * 添加事件监听器
+     * @param {HTMLElement} element - 目标元素
+     * @param {string} event - 事件类型
+     * @param {Function} handler - 事件处理函数
+     * @param {Object|boolean} options - 事件选项（支持 AbortSignal）
+     * @returns {AbortController} AbortController 实例，用于后续清理
+     */
+    add(element, event, handler, options = false) {
+        if (!element) {
+            console.warn('[EventListenerManager] 元素不存在，无法添加事件监听器');
+            return null;
+        }
+
+        // 创建 AbortController
+        const controller = new AbortController();
+        const key = `${element.id || element.className || 'unknown'}-${event}`;
+
+        // 合并 options，添加 signal
+        const eventOptions = typeof options === 'object' 
+            ? { ...options, signal: controller.signal }
+            : { signal: controller.signal };
+
+        // 添加事件监听器
+        element.addEventListener(event, handler, eventOptions);
+
+        // 存储 controller
+        if (!this.controllers.has(key)) {
+            this.controllers.set(key, []);
+        }
+        this.controllers.get(key).push({ element, event, handler, controller });
+
+        return controller;
+    }
+
+    /**
+     * 移除单个事件监听器
+     * @param {HTMLElement} element - 目标元素
+     * @param {string} event - 事件类型
+     * @param {Function} handler - 事件处理函数
+     */
+    remove(element, event, handler) {
+        if (!element) return;
+
+        const key = `${element.id || element.className || 'unknown'}-${event}`;
+        const listeners = this.controllers.get(key);
+
+        if (listeners) {
+            const index = listeners.findIndex(l => l.handler === handler);
+            if (index >= 0) {
+                const { controller } = listeners[index];
+                controller.abort(); // 中止信号会自动移除监听器
+                listeners.splice(index, 1);
+                if (listeners.length === 0) {
+                    this.controllers.delete(key);
+                }
+            }
+        }
+    }
+
+    /**
+     * 移除元素的所有事件监听器
+     * @param {HTMLElement} element - 目标元素
+     */
+    removeAll(element) {
+        if (!element) return;
+
+        const elementId = element.id || element.className || 'unknown';
+        const keysToRemove = [];
+
+        this.controllers.forEach((listeners, key) => {
+            if (key.startsWith(elementId)) {
+                listeners.forEach(({ controller }) => {
+                    controller.abort();
+                });
+                keysToRemove.push(key);
+            }
+        });
+
+        keysToRemove.forEach(key => this.controllers.delete(key));
+    }
+
+    /**
+     * 清理所有事件监听器
+     */
+    cleanup() {
+        this.controllers.forEach((listeners) => {
+            listeners.forEach(({ controller }) => {
+                controller.abort();
+            });
+        });
+        this.controllers.clear();
+    }
+
+    /**
+     * 获取管理器实例（单例模式）
+     * @returns {EventListenerManager} 管理器实例
+     */
+    static getInstance() {
+        if (!EventListenerManager.instance) {
+            EventListenerManager.instance = new EventListenerManager();
+        }
+        return EventListenerManager.instance;
+    }
+}
+
+// 创建全局实例
+const globalEventManager = EventListenerManager.getInstance();
+
+// 页面卸载时自动清理
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+        globalEventManager.cleanup();
+    });
+}
+
 // 导出到全局
 if (typeof window !== 'undefined') {
     window.loadDefaultExcelFile = window.loadDefaultExcelFile || loadDefaultExcelFile;
     window.loadDefaultExcelFiles = window.loadDefaultExcelFiles || loadDefaultExcelFiles;
     window.loadDefaultMarketReports = window.loadDefaultMarketReports || loadDefaultMarketReports;
     window.init001ToolPage = window.init001ToolPage || init001ToolPage;
+    
+    // 导出统一防抖和节流函数
+    window.debounce = window.debounce || debounce;
+    window.throttle = window.throttle || throttle;
+    
+    // 导出事件监听器管理器
+    window.EventListenerManager = EventListenerManager;
+    window.globalEventManager = globalEventManager;
 }
 

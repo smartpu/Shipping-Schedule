@@ -12,23 +12,56 @@
             <h1>Shipping Tools</h1>
             <p class="subtitle">航运工具集 · 一站式船期运费数据解析与分析平台</p>
             
-            <form id="loginForm" role="form" aria-label="登录表单">
+            <!-- ARIA Live Region：用于表单验证和状态提示（中优先级优化：ARIA 标签完善） -->
+            <div id="form-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+            
+            <form id="loginForm" role="form" aria-label="登录表单" novalidate>
                 <div class="login-form-group">
                     <label for="userName">用户</label>
-                    <input type="text" id="userName" name="userName" placeholder="请输入您的用户名" required autocomplete="username" aria-required="true" aria-describedby="nameError">
-                    <div class="login-error" id="nameError" role="alert" aria-live="polite">请输入您的用户名</div>
+                    <input 
+                        type="text" 
+                        id="userName" 
+                        name="userName" 
+                        placeholder="请输入您的用户名" 
+                        required 
+                        autocomplete="username" 
+                        aria-required="true" 
+                        aria-invalid="false"
+                        aria-describedby="nameError nameHint">
+                    <div class="login-error" id="nameError" role="alert" aria-live="polite" hidden>请输入您的用户名</div>
+                    <div class="sr-only" id="nameHint">用户名用于登录系统</div>
                 </div>
 
                 <div class="login-form-group">
                     <label for="userPassword">密码</label>
-                    <input type="password" id="userPassword" name="userPassword" placeholder="请输入您的密码" required autocomplete="current-password" aria-required="true" aria-describedby="passwordError">
-                    <div class="login-error" id="passwordError" role="alert" aria-live="polite">请输入您的密码</div>
+                    <input 
+                        type="password" 
+                        id="userPassword" 
+                        name="userPassword" 
+                        placeholder="请输入您的密码" 
+                        required 
+                        autocomplete="current-password" 
+                        aria-required="true" 
+                        aria-invalid="false"
+                        aria-describedby="passwordError passwordHint">
+                    <div class="login-error" id="passwordError" role="alert" aria-live="polite" hidden>请输入您的密码</div>
+                    <div class="sr-only" id="passwordHint">密码用于验证身份</div>
                 </div>
 
                 <div class="login-form-group">
                     <label for="userEmail">邮箱</label>
-                    <input type="email" id="userEmail" name="userEmail" placeholder="请输入您的邮箱地址" required autocomplete="email" aria-required="true" aria-describedby="emailError">
-                    <div class="login-error" id="emailError" role="alert" aria-live="polite">请输入有效的邮箱地址</div>
+                    <input 
+                        type="email" 
+                        id="userEmail" 
+                        name="userEmail" 
+                        placeholder="请输入您的邮箱地址" 
+                        required 
+                        autocomplete="email" 
+                        aria-required="true" 
+                        aria-invalid="false"
+                        aria-describedby="emailError emailHint">
+                    <div class="login-error" id="emailError" role="alert" aria-live="polite" hidden>请输入有效的邮箱地址</div>
+                    <div class="sr-only" id="emailHint">邮箱地址格式：example@domain.com</div>
                 </div>
 
                 <button type="submit" class="login-submit-btn" aria-label="提交登录表单">登录</button>
@@ -120,6 +153,15 @@
             clearError(formGroup) {
                 if (formGroup) {
                     formGroup.classList.remove('error');
+                    const input = formGroup.querySelector('input');
+                    if (input) {
+                        input.setAttribute('aria-invalid', 'false');
+                        const errorId = input.getAttribute('aria-describedby')?.split(' ')[0];
+                        const errorEl = errorId ? document.getElementById(errorId) : null;
+                        if (errorEl) {
+                            errorEl.hidden = true;
+                        }
+                    }
                 }
             },
 
@@ -138,9 +180,21 @@
                     formGroup.classList.add('error');
                 }
 
+                // 更新 ARIA 状态
+                input.setAttribute('aria-invalid', 'true');
+                input.setAttribute('aria-describedby', `${errorId} ${inputId}Hint`);
+
                 const errorEl = document.getElementById(errorId);
                 if (errorEl) {
                     errorEl.textContent = message;
+                    errorEl.hidden = false;
+                    errorEl.setAttribute('role', 'alert');
+                }
+
+                // 更新 ARIA Live Region
+                const formStatus = document.getElementById('form-status');
+                if (formStatus) {
+                    formStatus.textContent = `错误：${message}`;
                 }
             },
 

@@ -10,6 +10,8 @@
     <script src="vendor/date-utils.js"></script>
     <script src="vendor/pdf-utils.js"></script>
     <script src="vendor/error-handler.js"></script>
+    <!-- Toast 提示组件（中优先级优化：错误处理和反馈） -->
+    <script src="vendor/toast.js"></script>
     <script src="vendor/debug-utils.js"></script>
     <script src="vendor/auth-gist.js"></script>
     <script src="vendor/filter-utils.js"></script>
@@ -37,6 +39,8 @@
 
         <!-- 右侧内容 -->
         <main class="dashboard-content">
+            <!-- ARIA Live Region：用于动态内容更新提示（中优先级优化：ARIA 标签完善） -->
+            <div id="aria-live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
             <div class="container">
                 <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
                 <div class="section-intro">
@@ -223,10 +227,10 @@
                     <div id="infoBox" class="info-box hidden">
                         <p id="infoText"></p>
                     </div>
-                    <div id="tableContainer" class="table-container hidden">
-                        <table id="pivotTable">
-                            <thead id="tableHead"></thead>
-                            <tbody id="tableBody"></tbody>
+                    <div id="tableContainer" class="table-container hidden" role="region" aria-label="数据表格" aria-live="polite">
+                        <table id="pivotTable" role="table" aria-label="市场分析数据表">
+                            <thead id="tableHead" role="rowgroup"></thead>
+                            <tbody id="tableBody" role="rowgroup"></tbody>
                         </table>
                     </div>
                     <div id="chartContainer" class="chart-container hidden">
@@ -284,6 +288,8 @@
 
     <!-- 引入导航栏公共组件 -->
     <script src="vendor/sidebar-loader.js"></script>
+    <!-- 手势支持组件（低优先级优化：提升移动端操作效率） -->
+    <script src="vendor/gesture-handler.js"></script>
     <script>
         init001ToolPage('001-04-market-analysis.html', 'tools001');
     </script>
@@ -1843,11 +1849,14 @@
                 </th>`;
             }).join('');
             
+            // 为表头单元格添加 ARIA 属性
+            const headerCellsWithAria = headerCells.replace(/<th/g, '<th role="columnheader" scope="col"');
+            
             thead.innerHTML = `
-                <tr>
-                    <th class="table-header" style="width: ${routeRemarkWidth};">航线备注</th>
-                    <th class="table-header" style="width: ${routeLabelWidth};">共舱船公司</th>
-                    ${headerCells}
+                <tr role="row">
+                    <th class="table-header" style="width: ${routeRemarkWidth};" role="columnheader" scope="col">航线备注</th>
+                    <th class="table-header" style="width: ${routeLabelWidth};" role="columnheader" scope="col">共舱船公司</th>
+                    ${headerCellsWithAria}
                 </tr>
             `;
         }
@@ -1908,8 +1917,8 @@
 
         function buildTableCells(item, weekColumns) {
             const cells = [
-                `<td class="route-remark-cell">${escapeHtml(item.routeRemark || '—')}</td>`,
-                `<td class="route-label-cell">${escapeHtml(item.route || '未知航线')}</td>`
+                `<td class="route-remark-cell" role="cell">${escapeHtml(item.routeRemark || '—')}</td>`,
+                `<td class="route-label-cell" role="cell">${escapeHtml(item.route || '未知航线')}</td>`
             ];
 
             weekColumns.forEach((week) => {
@@ -1942,11 +1951,15 @@
                 
                 const cellClass = ships.length > 0 ? 'number-cell hover-cell' : 'number-cell';
                 const tooltipAttr = tooltipData ? `data-tooltip="${escapeHtml(tooltipData)}"` : '';
-                cells.push(`<td class="${cellClass}" ${tooltipAttr}>${cellContent}</td>`);
+                const ariaLabel = tooltipData ? `aria-label="${escapeHtml(tooltipData)}"` : '';
+                cells.push(`<td class="${cellClass}" role="cell" ${tooltipAttr} ${ariaLabel}>${cellContent}</td>`);
             });
 
             return cells;
         }
+
+        // 虚拟滚动实例
+        let virtualScrollInstance = null;
 
         function renderTableBody(groupedData, weekColumns) {
             const tbody = DOMCache.get('tableBody');
@@ -1955,10 +1968,57 @@
                 return;
             }
             
+            // 如果数据量超过阈值，使用虚拟滚动
+            if (groupedData.length >= 100 && typeof window.VirtualScroll !== 'undefined') {
+                // 销毁旧实例
+                if (virtualScrollInstance) {
+                    virtualScrollInstance.destroy();
+                }
+                
+                // 获取表格容器
+                const tableContainer = DOMCache.get('tableContainer') || document.getElementById('tableContainer');
+                if (tableContainer) {
+                    // 创建虚拟滚动
+                    virtualScrollInstance = window.enableVirtualScrollForTable(
+                        tableContainer,
+                        groupedData,
+                        (item, index) => {
+                            const row = document.createElement('tr');
+                            row.setAttribute('role', 'row');
+                            row.setAttribute('aria-rowindex', index + 2); // +2 因为表头是第1行
+                            const cells = buildTableCells(item, weekColumns);
+                            row.innerHTML = cells.join('');
+                            return row;
+                        },
+                        {
+                            itemHeight: 50, // 表格行高度
+                            threshold: 100,
+                            buffer: 5
+                        }
+                    );
+                } else {
+                    // 降级到普通渲染
+                    renderTableBodyNormal(groupedData, weekColumns);
+                }
+            } else {
+                // 数据量不足，使用普通渲染
+                renderTableBodyNormal(groupedData, weekColumns);
+            }
+        }
+
+        function renderTableBodyNormal(groupedData, weekColumns) {
+            const tbody = DOMCache.get('tableBody');
+            if (!tbody) {
+                debugWarn('tableBody element not found');
+                return;
+            }
+            
             const fragment = document.createDocumentFragment();
             
-            groupedData.forEach(item => {
+            groupedData.forEach((item, index) => {
                 const row = document.createElement('tr');
+                row.setAttribute('role', 'row');
+                row.setAttribute('aria-rowindex', index + 2); // +2 因为表头是第1行
                 const cells = buildTableCells(item, weekColumns);
                 row.innerHTML = cells.join('');
                 fragment.appendChild(row);
@@ -1982,9 +2042,11 @@
 
             const summaryRow = document.createElement('tr');
             summaryRow.className = 'summary-row';
+            summaryRow.setAttribute('role', 'row');
+            summaryRow.setAttribute('aria-label', '合计行');
             const summaryCells = [
-                '<td><strong>合计</strong></td>',
-                '<td></td>'
+                '<td role="cell"><strong>合计</strong></td>',
+                '<td role="cell"></td>'
             ];
 
             const totals = weekColumns.reduce((acc, week) => {
@@ -2121,7 +2183,14 @@
             const originPortText = destinationFilters.originPorts.length ? destinationFilters.originPorts.join('、') : '全部起运港';
             const destPortText = destinationFilters.destPorts.length ? destinationFilters.destPorts.join('、') : '全部目的港';
             const routeText = destinationFilters.routes.length ? destinationFilters.routes.join('、') : '全部共舱船公司';
-            infoEl.textContent = `已加载 ${totalRecords} 条记录，组合 ${totalCombos} 行；筛选起运港：${originPortText}；筛选目的港：${destPortText}；筛选共舱船公司：${routeText}`;
+            const infoText = `已加载 ${totalRecords} 条记录，组合 ${totalCombos} 行；筛选起运港：${originPortText}；筛选目的港：${destPortText}；筛选共舱船公司：${routeText}`;
+            infoEl.textContent = infoText;
+            
+            // 更新 ARIA Live Region（中优先级优化：ARIA 标签完善）
+            const ariaLiveRegion = document.getElementById('aria-live-region');
+            if (ariaLiveRegion) {
+                ariaLiveRegion.textContent = `表格已更新：${infoText}`;
+            }
         }
 
         function renderTable() {

@@ -122,7 +122,16 @@
                     contextMsg = `\n\n上下文: ${contextParts.join(', ')}`;
                 }
             }
-            if (typeof alert !== 'undefined') {
+            // 优先使用 Toast（如果可用），否则使用 alert
+            if (typeof window !== 'undefined' && typeof window.showErrorToast === 'function') {
+                window.showErrorToast(fallbackMsg, {
+                    duration: 5000,
+                    dismissible: true
+                });
+                if (contextMsg) {
+                    debugLog('log', '错误上下文:', { contextMsg });
+                }
+            } else if (typeof alert !== 'undefined') {
                 alert(fallbackMsg + contextMsg);
             }
             if (error) {
@@ -178,7 +187,22 @@
         }
         
         // 显示错误提示
-        if (typeof alert !== 'undefined') {
+        // 优先使用 Toast（如果可用），否则使用 alert
+        if (typeof window !== 'undefined' && typeof window.showErrorToast === 'function') {
+            // 移动端使用 Toast，更友好的体验
+            // 将多行消息转换为单行（Toast 更适合单行显示）
+            const toastMessage = message.split('\n')[0]; // 只显示第一行
+            window.showErrorToast(toastMessage, {
+                duration: 5000, // 错误提示显示更长时间
+                dismissible: true
+            });
+            
+            // 如果消息有多行，在控制台显示完整消息
+            if (message.includes('\n')) {
+                debugLog('log', '完整错误消息:', { message });
+            }
+        } else if (typeof alert !== 'undefined') {
+            // 降级到 alert（当 Toast 不可用时）
             alert(message);
         }
         
@@ -207,7 +231,13 @@
      * @param {string} message - 提示消息
      */
     function showSuccess(message) {
-        if (typeof alert !== 'undefined') {
+        // 优先使用 Toast（如果可用），否则使用 alert
+        if (typeof window !== 'undefined' && typeof window.showSuccess === 'function') {
+            window.showSuccess(message, {
+                duration: 3000,
+                dismissible: true
+            });
+        } else if (typeof alert !== 'undefined') {
             alert(message);
         }
     }

@@ -878,6 +878,16 @@
         let availableRoutes = [];
 
         async function updateFilterOptions(records) {
+            // 显示加载状态（移动端）
+            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+                const originPortSelect = document.getElementById('originPortSelect');
+                const destPortSelect = document.getElementById('destPortSelect');
+                const routeSelect = document.getElementById('routeSelect');
+                if (originPortSelect) window.updateFilterDisplay(originPortSelect, true);
+                if (destPortSelect) window.updateFilterDisplay(destPortSelect, true);
+                if (routeSelect) window.updateFilterDisplay(routeSelect, true);
+            }
+            
             // 保留完整的港口列表，允许用户多选多个港口来覆盖所有航线
             // 从所有原始记录中提取完整的港口列表（不进行过滤）
             const originPortSet = new Set();
@@ -1016,19 +1026,13 @@
                 );
             }
             
-            // 更新移动端筛选框显示（包括iPad，宽度 <= 1024px）
+            // 更新移动端筛选框显示（移除加载状态）
             if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
-                // 显示加载状态
-                if (originPortSelect) window.updateFilterDisplay(originPortSelect, true);
-                if (destPortSelect) window.updateFilterDisplay(destPortSelect, true);
-                if (routeSelect) window.updateFilterDisplay(routeSelect, true);
-                
-                // 延迟更新实际内容，避免频繁刷新
                 setTimeout(() => {
                     if (originPortSelect) window.updateFilterDisplay(originPortSelect, false);
                     if (destPortSelect) window.updateFilterDisplay(destPortSelect, false);
                     if (routeSelect) window.updateFilterDisplay(routeSelect, false);
-                }, 300);
+                }, 50);
             }
         }
 
@@ -2909,21 +2913,27 @@
                     (routeSelect && routeSelect.options.length <= 1)) {
                     if (processedRecords && processedRecords.length > 0) {
                         updateFilterOptions(processedRecords);
-                        // 选项加载完成后，更新移动端显示
+                        // 选项加载完成后，更新移动端显示（移除加载状态）
                         setTimeout(() => {
                             if (typeof window.updateFilterDisplay === 'function') {
-                                if (originSelect) window.updateFilterDisplay(originSelect);
-                                if (destSelect) window.updateFilterDisplay(destSelect);
-                                if (routeSelect) window.updateFilterDisplay(routeSelect);
+                                const originSelect = document.getElementById('originPortSelect');
+                                const destSelect = document.getElementById('destPortSelect');
+                                const routeSelect = document.getElementById('routeSelect');
+                                if (originSelect) window.updateFilterDisplay(originSelect, false);
+                                if (destSelect) window.updateFilterDisplay(destSelect, false);
+                                if (routeSelect) window.updateFilterDisplay(routeSelect, false);
                             }
                         }, 100);
                     }
                 } else {
-                    // 选项已存在，更新移动端显示
+                    // 选项已存在，更新移动端显示（移除加载状态）
                     if (typeof window.updateFilterDisplay === 'function') {
-                        if (originSelect) window.updateFilterDisplay(originSelect);
-                        if (destSelect) window.updateFilterDisplay(destSelect);
-                        if (routeSelect) window.updateFilterDisplay(routeSelect);
+                        const originSelect = document.getElementById('originPortSelect');
+                        const destSelect = document.getElementById('destPortSelect');
+                        const routeSelect = document.getElementById('routeSelect');
+                        if (originSelect) window.updateFilterDisplay(originSelect, false);
+                        if (destSelect) window.updateFilterDisplay(destSelect, false);
+                        if (routeSelect) window.updateFilterDisplay(routeSelect, false);
                     }
                 }
             }

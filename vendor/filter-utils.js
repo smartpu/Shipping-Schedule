@@ -153,7 +153,6 @@
      * @param {string} label - 筛选框标签
      */
     function createMobileFilterModal(selectElement, label) {
-        // iPad模式也使用移动端样式（宽度 <= 1024px）
         if (!selectElement || window.innerWidth > 1024) return null;
         
         // 创建模态框
@@ -286,10 +285,8 @@
     /**
      * 更新筛选框显示（显示已选择的数量）
      * @param {HTMLSelectElement} selectElement - 多选下拉框元素
-     * @param {boolean} isLoading - 是否正在加载
      */
     function updateFilterDisplay(selectElement, isLoading = false) {
-        // iPad模式也使用移动端样式（宽度 <= 1024px）
         if (!selectElement || window.innerWidth > 1024) return;
         
         const selectedCount = Array.from(selectElement.selectedOptions).filter(opt => opt.value !== '').length;
@@ -303,17 +300,13 @@
             selectElement.parentElement.insertBefore(displayElement, selectElement);
         }
         
-        // 如果正在加载，显示加载状态
-        if (isLoading) {
-            displayElement.innerHTML = `<span class="filter-loading">加载中...</span>`;
-            displayElement.classList.add('loading');
-            return;
-        }
-        
-        // 清除加载状态
+        // 移除加载状态类
         displayElement.classList.remove('loading');
         
-        if (selectedCount === 0) {
+        if (isLoading) {
+            displayElement.innerHTML = `<span class="loading-spinner"></span> 加载中...`;
+            displayElement.classList.add('loading');
+        } else if (selectedCount === 0) {
             displayElement.textContent = `0个项目`;
             displayElement.classList.add('empty');
         } else {
@@ -327,7 +320,6 @@
      * @param {HTMLSelectElement} selectElement - 多选下拉框元素
      */
     function initMobileFilterSelect(selectElement) {
-        // iPad模式也使用移动端样式（宽度 <= 1024px）
         if (!selectElement || window.innerWidth > 1024) return;
         
         // 隐藏原始select
@@ -376,8 +368,7 @@
      * @param {HTMLElement} moduleHeader - 模块标题元素（用于添加展开按钮）
      */
     function initMobileFilterToggle(filterContainerId, moduleHeader) {
-        // 只在移动端执行
-        // iPad模式也使用移动端样式（宽度 <= 1024px）
+        // 只在移动端执行（包括iPad）
         if (window.innerWidth > 1024) return;
         
         const filterContainer = document.getElementById(filterContainerId);
@@ -470,7 +461,6 @@
      * 自动检测并初始化所有筛选框的移动端展开/收缩功能
      */
     function initAllMobileFilterToggles() {
-        // iPad模式也使用移动端样式（宽度 <= 1024px）
         if (window.innerWidth > 1024) return;
         
         // 查找所有筛选框容器

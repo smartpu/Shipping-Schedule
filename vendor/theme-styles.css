@@ -1298,6 +1298,39 @@ input:disabled {
     margin-bottom: 16px;
 }
 
+/* 移动端：工具名称占满宽度，按钮在介绍下方 */
+@media (max-width: 900px) {
+    .tool-card {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .tool-header {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+    
+    .tool-title {
+        width: 100%;
+    }
+    
+    .tool-title h3 {
+        width: 100%;
+    }
+    
+    .tool-description {
+        width: 100%;
+        margin-bottom: 16px;
+        order: 2;
+    }
+    
+    .tool-actions {
+        width: 100%;
+        order: 3;
+        margin-top: 0;
+    }
+}
+
 .tool-icon {
     width: 52px; /* 统一图标大小，从48px增加到52px */
     height: 52px;
@@ -1329,7 +1362,6 @@ input:disabled {
 
 .tool-title {
     flex: 1;
-    width: 100%; /* 让标题占满宽度 */
 }
 
 .tool-title h3 {
@@ -1338,7 +1370,6 @@ input:disabled {
     font-weight: 600;
     margin-bottom: 4px;
     letter-spacing: -0.3px;
-    width: 100%; /* 工具名称占满宽度 */
 }
 
 .tool-id {
@@ -1359,7 +1390,6 @@ input:disabled {
     transition: opacity 0.2s ease;
     /* 在窄屏模式下，让描述占据剩余空间，使按钮底部对齐 */
     flex: 1;
-    width: 100%; /* 描述占满宽度 */
 }
 
 .tool-card:hover .tool-description {
@@ -1371,8 +1401,6 @@ input:disabled {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    width: 100%; /* 按钮区域占满宽度 */
-    margin-top: auto; /* 按钮在描述下方 */
 }
 
 @media (max-width: 1280px) {
@@ -1970,58 +1998,28 @@ input:disabled {
     }
     
     /* 确保表格可以横向滚动 */
-    .table-container table {
+    .table-container table,
+    body[data-page="001-04-market-analysis.html"] .table-container table,
+    body[data-page="365-04-market-watch.html"] .table-container table,
+    body[data-page="Monitor-Sailing-Schedule.html"] .table-container table {
         min-width: 600px; /* 确保表格最小宽度，触发横向滚动 */
         font-size: 12px;
         width: 100%;
     }
     
-    .table-container table th,
-    .table-container table td {
-        padding: 8px 10px;
-        white-space: nowrap;
-    }
-    
-    /* 所有工具的表格容器都应该支持横向滚动 */
-    #bookingDataTableContainer,
-    #bookingDataTableContainer table,
-    .data-table-container,
-    .data-table-container table,
-    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container,
-    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table,
-    body[data-page="001-04-market-analysis.html"] .table-container,
-    body[data-page="001-04-market-analysis.html"] .table-container table,
-    body[data-page="365-04-market-watch.html"] .table-container,
-    body[data-page="365-04-market-watch.html"] .table-container table,
-    body[data-page="Monitor-Sailing-Schedule.html"] .table-container,
-    body[data-page="Monitor-Sailing-Schedule.html"] .table-container table {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* 表格容器样式 */
-    #bookingDataTableContainer,
-    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container,
+    /* 确保这4个工具的表格容器都有横向滚动 */
     body[data-page="001-04-market-analysis.html"] .table-container,
     body[data-page="365-04-market-watch.html"] .table-container,
     body[data-page="Monitor-Sailing-Schedule.html"] .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
         margin: 0 -16px;
         padding: 0 16px;
         position: relative;
+        scroll-behavior: smooth;
+        touch-action: pan-x;
     }
     
-    /* 确保所有工具的表格都有最小宽度，触发横向滚动 */
-    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table,
-    body[data-page="001-04-market-analysis.html"] .table-container table,
-    body[data-page="365-04-market-watch.html"] .table-container table,
-    body[data-page="Monitor-Sailing-Schedule.html"] .table-container table {
-        min-width: 800px; /* 确保表格最小宽度，触发横向滚动 */
-        width: 100%;
-    }
-    
-    /* 所有工具的表格容器都显示滚动提示 */
-    #bookingDataTableContainer::after,
-    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container::after,
     body[data-page="001-04-market-analysis.html"] .table-container::after,
     body[data-page="365-04-market-watch.html"] .table-container::after,
     body[data-page="Monitor-Sailing-Schedule.html"] .table-container::after {
@@ -2035,6 +2033,49 @@ input:disabled {
         opacity: 0.8;
         pointer-events: none;
         font-weight: 500;
+    }
+    
+    .table-container table th,
+    .table-container table td {
+        padding: 8px 10px;
+        white-space: nowrap;
+    }
+    
+    /* 其他影响因素表格和其他宽表格的横向滚动 */
+    #bookingDataTableContainer,
+    #bookingDataTableContainer table,
+    .data-table-container,
+    .data-table-container table,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #bookingDataTableContainer,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container {
+        margin: 0 -16px;
+        padding: 0 16px;
+        position: relative;
+    }
+    
+    /* 确保Monitor-Geo-Trades-Service的表格可以横向滚动 */
+    body[data-page="Monitor-Geo-Trades-Service.html"] .data-table {
+        min-width: 800px; /* 确保表格最小宽度，触发横向滚动 */
+        width: 100%;
+    }
+    
+    #bookingDataTableContainer::after,
+    body[data-page="Monitor-Geo-Trades-Service.html"] .table-container::after {
+        content: '← 滑动查看更多 →';
+        display: block;
+        text-align: center;
+        color: var(--color-text-secondary);
+        font-size: 12px;
+        padding: 8px 0;
+        margin-top: 8px;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
     /* ==================== 按钮组和控制区域优化 ==================== */
@@ -4143,8 +4184,7 @@ button.file-btn:disabled {
     grid-template-columns: 1fr 1fr 1fr 1fr; /* 四个筛选器平均分配宽度 */
 }
 
-/* iPad和移动端样式（宽度 <= 1024px） */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
     .filter-row {
         grid-template-columns: 1fr;
         gap: 16px;
@@ -4296,19 +4336,15 @@ button.file-btn:disabled {
         font-size: 12px;
         color: var(--color-text-secondary);
         margin-left: 8px;
-        transition: opacity 0.2s ease;
+        flex-shrink: 0;
     }
     
     .mobile-filter-display.loading::after {
-        display: none; /* 加载时隐藏下拉箭头 */
+        display: none;
     }
     
     .mobile-filter-display.empty {
         color: var(--color-text-secondary);
-    }
-    
-    .mobile-filter-display.loading {
-        pointer-events: none; /* 加载时禁用点击 */
     }
     
     .mobile-filter-display:active {
@@ -4316,27 +4352,19 @@ button.file-btn:disabled {
         transform: scale(0.98);
     }
     
-    /* 加载状态样式 */
-    .filter-loading {
-        color: var(--color-brand-blue);
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .filter-loading::before {
-        content: '';
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--color-brand-blue);
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: filter-loading-spin 0.8s linear infinite;
+    .mobile-filter-display .loading-spinner {
         display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(62, 98, 173, 0.2);
+        border-top-color: var(--color-brand-blue);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        margin-right: 8px;
+        flex-shrink: 0;
     }
     
-    @keyframes filter-loading-spin {
+    @keyframes spin {
         to { transform: rotate(360deg); }
     }
     

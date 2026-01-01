@@ -153,7 +153,8 @@
      * @param {string} label - 筛选框标签
      */
     function createMobileFilterModal(selectElement, label) {
-        if (!selectElement || window.innerWidth > 1024) return null;
+        // iPad 横屏时也使用移动端筛选模式
+        if (!selectElement || (window.innerWidth > 1024 && !(window.innerWidth <= 1024 && window.innerHeight <= 768))) return null;
         
         // 创建模态框
         const modal = document.createElement('div');
@@ -287,7 +288,8 @@
      * @param {HTMLSelectElement} selectElement - 多选下拉框元素
      */
     function updateFilterDisplay(selectElement, isLoading = false) {
-        if (!selectElement || window.innerWidth > 1024) return;
+        // iPad 横屏时也使用移动端筛选模式
+        if (!selectElement || (window.innerWidth > 1024 && !(window.innerWidth <= 1024 && window.innerHeight <= 768))) return;
         
         const selectedCount = Array.from(selectElement.selectedOptions).filter(opt => opt.value !== '').length;
         const totalCount = selectElement.options.length - 1; // 减去默认选项
@@ -321,6 +323,19 @@
      */
     function initMobileFilterSelect(selectElement) {
         if (!selectElement || window.innerWidth > 1024) return;
+        
+        // 防止重复初始化：检查是否已经存在显示元素
+        const existingDisplay = selectElement.parentElement.querySelector('.mobile-filter-display');
+        if (existingDisplay) {
+            // 如果已存在，只更新显示，不重复创建
+            updateFilterDisplay(selectElement);
+            return;
+        }
+        
+        // 如果 select 已经被隐藏（说明已经初始化过），不再处理
+        if (selectElement.style.display === 'none' && existingDisplay) {
+            return;
+        }
         
         // 隐藏原始select
         selectElement.style.display = 'none';
@@ -368,8 +383,9 @@
      * @param {HTMLElement} moduleHeader - 模块标题元素（用于添加展开按钮）
      */
     function initMobileFilterToggle(filterContainerId, moduleHeader) {
-        // 只在移动端执行（包括iPad）
-        if (window.innerWidth > 1024) return;
+        // 在移动端和iPad执行（包括横屏和竖屏）
+        // iPad 横屏时也使用移动端筛选模式
+        if (window.innerWidth > 1024 && !(window.innerWidth <= 1024 && window.innerHeight <= 768)) return;
         
         const filterContainer = document.getElementById(filterContainerId);
         if (!filterContainer || !moduleHeader) return;
@@ -393,10 +409,14 @@
             }
         }
         
-        // 为所有多选框初始化移动端弹出功能
+        // 为所有多选框初始化移动端弹出功能（修复：防止重复初始化）
         const selects = filterContainer.querySelectorAll('select[multiple]');
         selects.forEach(select => {
-            initMobileFilterSelect(select);
+            // 防止重复初始化
+            if (select.dataset.mobileInitialized !== 'true') {
+                select.dataset.mobileInitialized = 'true';
+                initMobileFilterSelect(select);
+            }
         });
         
         // 切换显示/隐藏
@@ -418,10 +438,20 @@
                 toggleBtn.classList.add('expanded');
                 toggleBtn.textContent = '收起筛选条件';
                 
-                // 展开时，确保筛选框选项已加载
+                // 展开时，确保筛选框选项已加载（修复：防止重复初始化）
                 const selects = filterContainer.querySelectorAll('select[multiple]');
                 let needsReload = false;
                 selects.forEach(select => {
+                    // 防止重复初始化
+                    if (select.dataset.mobileInitialized === 'true') {
+                        // 已经初始化过，只更新显示
+                        updateFilterDisplay(select);
+                        return;
+                    }
+                    
+                    // 标记为已初始化
+                    select.dataset.mobileInitialized = 'true';
+                    
                     const hasOnlyDefault = select.options.length <= 1 && 
                                           select.options[0] && 
                                           (select.options[0].value === '' || 
@@ -433,6 +463,9 @@
                             detail: { containerId: filterContainerId, selectId: select.id }
                         });
                         window.dispatchEvent(event);
+                    } else {
+                        // 选项已存在，初始化移动端显示
+                        initMobileFilterSelect(select);
                     }
                 });
                 
@@ -442,15 +475,25 @@
                             if (select.options.length <= 1) {
                                 console.warn(`[Filter] 筛选框 ${select.id} 选项未加载，可能需要手动触发选项更新`);
                             } else {
-                                // 选项已加载，更新显示
-                                updateFilterDisplay(select);
+                                // 选项已加载，初始化移动端显示
+                                if (select.dataset.mobileInitialized !== 'true') {
+                                    select.dataset.mobileInitialized = 'true';
+                                    initMobileFilterSelect(select);
+                                } else {
+                                    updateFilterDisplay(select);
+                                }
                             }
                         });
                     }, 500);
                 } else {
-                    // 选项已存在，更新显示
+                    // 选项已存在，确保已初始化移动端显示
                     selects.forEach(select => {
-                        updateFilterDisplay(select);
+                        if (select.dataset.mobileInitialized !== 'true') {
+                            select.dataset.mobileInitialized = 'true';
+                            initMobileFilterSelect(select);
+                        } else {
+                            updateFilterDisplay(select);
+                        }
                     });
                 }
             }
@@ -461,7 +504,9 @@
      * 自动检测并初始化所有筛选框的移动端展开/收缩功能
      */
     function initAllMobileFilterToggles() {
-        if (window.innerWidth > 1024) return;
+        // iPad 横屏时也使用移动端筛选模式（修复：iPad横屏筛选功能）
+        // 判断条件：宽度 <= 1024px 或者（宽度 <= 1024px 且高度 <= 768px，即iPad横屏）
+        if (window.innerWidth > 1024 && !(window.innerWidth <= 1024 && window.innerHeight <= 768)) return;
         
         // 查找所有筛选框容器
         const filterContainers = [

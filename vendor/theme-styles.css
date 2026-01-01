@@ -1146,8 +1146,9 @@ input:disabled {
     }
 }
 
-@media (max-width: 900px) {
-    /* 移动端：所有工具卡片一行一个 */
+/* 手机竖屏：工具卡片单列显示（修复挤压问题） */
+@media (max-width: 900px) and (orientation: portrait) {
+    /* 移动端竖屏：所有工具卡片一行一个 */
     .tools-grid {
         grid-template-columns: 1fr !important;
         gap: 20px;
@@ -2002,7 +2003,7 @@ input:disabled {
     body[data-page="001-04-market-analysis.html"] .table-container table,
     body[data-page="365-04-market-watch.html"] .table-container table,
     body[data-page="Monitor-Sailing-Schedule.html"] .table-container table {
-        min-width: 600px; /* 确保表格最小宽度，触发横向滚动 */
+        min-width: 800px; /* 优化：增加列宽，现在有横向滚动，可以显示更多内容 */
         font-size: 12px;
         width: 100%;
     }
@@ -2061,7 +2062,7 @@ input:disabled {
     
     /* 确保Monitor-Geo-Trades-Service的表格可以横向滚动 */
     body[data-page="Monitor-Geo-Trades-Service.html"] .data-table {
-        min-width: 800px; /* 确保表格最小宽度，触发横向滚动 */
+        min-width: 1000px; /* 优化：增加列宽，现在有横向滚动，可以显示更多内容 */
         width: 100%;
     }
     
@@ -2736,13 +2737,15 @@ input:disabled {
         gap: 8px; /* 减少筛选器间距 */
     }
     
-    /* 横屏时菜单按钮位置和大小优化 */
+    /* 横屏时菜单按钮位置和大小优化（修复：横屏显示导航栏按钮） */
     .mobile-menu-toggle {
+        display: flex !important; /* 横屏时强制显示 */
         top: max(12px, env(safe-area-inset-top));
         left: max(12px, env(safe-area-inset-left));
         width: 40px; /* 横屏时稍微小一点 */
         height: 40px;
         font-size: 18px;
+        z-index: 1001;
     }
     
     /* 横屏时section-intro优化 */
@@ -4252,13 +4255,14 @@ button.file-btn:disabled {
     grid-template-columns: 1fr 1fr 1fr 1fr; /* 四个筛选器平均分配宽度 */
 }
 
-@media (max-width: 768px) {
+/* 移动端和iPad：筛选器优化（修复下拉箭头重复出现，统一iPad和手机端显示） */
+@media (max-width: 1024px) {
     .filter-row {
         grid-template-columns: 1fr;
         gap: 16px;
     }
     
-    /* 移动端：隐藏所有 select 的原生下拉箭头，使用统一的自定义箭头 */
+    /* 移动端和iPad：隐藏所有 select 的原生下拉箭头，使用统一的自定义箭头（修复：防止重复出现） */
     .filter-group select:not([multiple]) {
         appearance: none !important;
         -webkit-appearance: none !important;
@@ -4268,9 +4272,19 @@ button.file-btn:disabled {
         background-position: right 12px center !important;
         background-size: 12px !important;
         padding-right: 32px !important;
+        /* 防止重复应用样式 */
+        background-attachment: scroll !important;
     }
     
-    /* 移动端：优化筛选栏性能，减少重绘 */
+    /* 确保多选框在移动端和iPad也隐藏原生样式 */
+    .filter-group select[multiple] {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        background-image: none !important;
+    }
+    
+    /* 移动端和iPad：优化筛选栏性能，减少重绘 */
     .filter-group {
         will-change: auto;
         contain: layout style;
@@ -4280,7 +4294,7 @@ button.file-btn:disabled {
         will-change: auto;
     }
     
-    /* 移动端筛选框优化：添加展开/收缩按钮 */
+    /* 移动端和iPad筛选框优化：添加展开/收缩按钮（统一iPad竖屏和手机端显示模式） */
     .module-header {
         position: relative;
     }
@@ -4299,6 +4313,9 @@ button.file-btn:disabled {
         cursor: pointer;
         margin-top: 12px;
         transition: all 0.2s ease;
+        /* 确保在所有移动设备和iPad上显示一致 */
+        width: auto;
+        min-width: 120px;
     }
     
     .filter-toggle-btn:hover {
@@ -4374,12 +4391,12 @@ button.file-btn:disabled {
         display: none !important;
     }
     
-    /* 多选框在移动端：隐藏原始select，显示自定义按钮 */
+    /* 多选框在移动端和iPad：隐藏原始select，显示自定义按钮（修复：防止重复处理） */
     .filter-group select[multiple] {
-        display: none; /* 移动端隐藏原始select */
+        display: none !important; /* 移动端和iPad隐藏原始select，防止重复显示 */
     }
     
-    /* 移动端筛选框显示区域 */
+    /* 移动端和iPad筛选框显示区域（修复：防止重复创建） */
     .mobile-filter-display {
         width: 100%;
         padding: 12px 16px;

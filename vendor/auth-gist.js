@@ -154,7 +154,7 @@
                 phone: (user.phone || '').trim(),
                 email: (user.email || '').trim().toLowerCase(),
                 level: user.level || 'user',
-                groups: user.groups || [] // 用户组列表，支持 ['tools001', 'tools365', 'monitor', 'admin'] 或 ['*'] 表示全部权限
+                groups: user.groups || [] // 用户组列表，支持 ['tools001', 'tools365', 'market', 'monitor', 'admin'] 或 ['*'] 表示全部权限
             }));
             
             debugLog(`[Auth] 白名单加载成功，共 ${userWhitelist.length} 个用户`);
@@ -468,7 +468,7 @@
 
     /**
      * 检查用户是否有权限访问指定工具组
-     * @param {string} toolGroup - 工具组名称 (tools001, tools365, monitor, admin)
+     * @param {string} toolGroup - 工具组名称 (tools001, tools365, market, monitor, admin)
      * @param {boolean} waitForLoad - 是否等待白名单加载完成，默认 false（同步检查）
      * @returns {boolean|Promise<boolean>} 是否有权限（如果 waitForLoad=true，返回 Promise）
      */
@@ -551,6 +551,11 @@
         // 365 系列工具
         if (pageNameLower.includes('365-')) {
             return 'tools365';
+        }
+        
+        // Market 系列工具
+        if (pageNameLower.includes('market-')) {
+            return 'market';
         }
         
         // Monitor 系列工具

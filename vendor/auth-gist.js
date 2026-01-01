@@ -829,9 +829,51 @@
         await waitForWhitelist();
         
         // 检查用户是否在白名单中
-        const user = getUserFromWhitelist(authData);
+        let user = getUserFromWhitelist(authData);
+        console.log('[Auth] checkPageAccess - 本地缓存检查结果:', { 
+            found: !!user, 
+            cacheSize: userWhitelist.length,
+            authData: { 
+                name: authData.name, 
+                phone: authData.phone || authData.password ? '***' : 'missing',
+                email: authData.email 
+            }
+        });
+        
+        // 如果缓存中没有，使用服务端验证
         if (!user) {
-            debugWarn('[Auth] 用户不在白名单中，重定向到登录页面');
+            console.log('[Auth] checkPageAccess - 本地缓存中未找到用户，使用服务端验证');
+            const phone = authData.phone || authData.password || '';
+            user = await verifyUserInWhitelist(
+                authData.name || '',
+                phone,
+                authData.email || ''
+            );
+            
+            console.log('[Auth] checkPageAccess - 服务端验证结果:', { 
+                found: !!user, 
+                userInfo: user ? { name: user.name, level: user.level } : null 
+            });
+        }
+        
+        if (!user) {
+            const errorMsg = `[Auth] checkPageAccess - 用户不在白名单中，重定向到登录页面\n` +
+                           `用户信息: name=${authData.name}, phone=${authData.phone || authData.password ? '***' : 'missing'}, email=${authData.email}\n` +
+                           `请检查控制台日志获取更多信息`;
+            debugWarn(errorMsg);
+            console.error('[Auth] checkPageAccess - 验证失败，即将重定向:', {
+                authData: {
+                    name: authData.name,
+                    phone: authData.phone || authData.password ? '***' : 'missing',
+                    email: authData.email
+                },
+                cacheSize: userWhitelist.length,
+                url: window.location.href
+            });
+            
+            // 延迟跳转，让用户有时间查看日志
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
             // 清除无效的认证数据
             localStorage.removeItem(AUTH_STORAGE_KEY);
             const currentPath = window.location.pathname;

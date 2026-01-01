@@ -58,7 +58,6 @@
             submenuId: 'submenuAdmin',
             items: [
                 { href: 'Admin-Access-Log.html?from=admin', icon: '👥', label: '访客统计排名' },
-                { href: 'admin-test-gist.html?from=admin', icon: '🔍', label: '访问日志测试' },
                 { href: 'tests/index.html?from=admin', icon: '🧪', label: '单元测试工具' }
             ]
         }

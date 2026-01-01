@@ -331,6 +331,41 @@
                 // 等待 auth-gist.js 加载完成
                 await waitForAuthGist();
                 
+                // 验证用户是否在白名单中（使用服务端验证）
+                if (typeof window.verifyUserInWhitelist === 'function') {
+                    const verifiedUser = await window.verifyUserInWhitelist(
+                        formData.name,
+                        formData.password, // password 作为 phone
+                        formData.email
+                    );
+                    
+                    if (!verifiedUser) {
+                        ErrorHandler.showError('userEmail', 'emailError', '您不在访问白名单中，请联系管理员');
+                        ErrorHandler.showError('userPassword', 'passwordError', '密码或邮箱不匹配');
+                        setButtonLoading(submitBtn, false, originalText);
+                        return;
+                    }
+                } else {
+                    // 降级处理：如果 verifyUserInWhitelist 不可用，使用旧的验证方式
+                    if (typeof window.isUserInWhitelist === 'function') {
+                        // 需要先加载白名单
+                        if (typeof window.waitForWhitelist === 'function') {
+                            await window.waitForWhitelist();
+                        }
+                        const isAuthorized = window.isUserInWhitelist(
+                            formData.name,
+                            formData.password,
+                            formData.email
+                        );
+                        if (!isAuthorized) {
+                            ErrorHandler.showError('userEmail', 'emailError', '您不在访问白名单中，请联系管理员');
+                            ErrorHandler.showError('userPassword', 'passwordError', '密码或邮箱不匹配');
+                            setButtonLoading(submitBtn, false, originalText);
+                            return;
+                        }
+                    }
+                }
+                
                 // 保存到 localStorage（auth-gist.js 会读取）
                 // 注意：password 也作为 phone 保存（用于本地测试用户验证）
                 // 保留现有的认证数据（如果有），特别是 expiry 字段

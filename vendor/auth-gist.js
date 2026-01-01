@@ -249,7 +249,9 @@
     }
 
     /**
-     * 检查用户是否在白名单中
+     * 检查用户是否在白名单中（同步函数，用于降级处理）
+     * 注意：此函数只检查本地缓存，如果缓存为空，返回 false
+     * 建议使用 verifyUserInWhitelist 进行服务端验证
      */
     function isUserInWhitelist(name, phone, email) {
         // 检查是否为本地测试用户
@@ -272,8 +274,9 @@
             return true;
         }
         
+        // 如果本地缓存为空，返回 false（需要调用 verifyUserInWhitelist 进行服务端验证）
         if (userWhitelist.length === 0) {
-            debugWarn('白名单未加载，拒绝访问');
+            debugWarn('[Auth] 本地白名单缓存为空，建议使用 verifyUserInWhitelist 进行服务端验证');
             return false;
         }
 

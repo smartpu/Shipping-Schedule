@@ -898,6 +898,29 @@
             }
         }
 
+        // 验证成功，保存访问记录（异步，不阻塞）
+        if (authData) {
+            const logEntry = {
+                page: pageName,
+                name: authData.name || '未知',
+                phone: authData.phone || authData.password || '未知',
+                email: authData.email || '未知',
+                timestamp: Date.now(),
+                date: new Date().toLocaleString('zh-CN')
+            };
+            // 异步保存，不阻塞页面加载
+            saveLogToGist(logEntry).catch(error => {
+                debugError('[Auth] checkPageAccess - 访问记录保存失败（非阻塞）:', error);
+                console.error('[Auth] checkPageAccess - 访问记录保存异常:', {
+                    error: error.message,
+                    stack: error.stack,
+                    apiUrl: GIST_API_URL,
+                    logEntry: logEntry,
+                    timestamp: new Date().toISOString()
+                });
+            });
+        }
+
         return true;
     }
 
@@ -1028,11 +1051,12 @@
             authOverlay.classList.add('hidden');
             enableAllLinks();
             // 记录访问（使用 await 确保保存完成，但不阻塞页面加载）
+            // 注意：checkPageAccess 中也会保存访问记录，这里作为备用（避免重复保存）
             if (authData) {
                 const logEntry = {
                     page: pageName,
                     name: authData.name || '未知',
-                    phone: authData.phone || '未知',
+                    phone: authData.phone || authData.password || '未知',
                     email: authData.email || '未知',
                     timestamp: Date.now(),
                     date: new Date().toLocaleString('zh-CN')
@@ -1041,21 +1065,27 @@
                 // 使用 await 确保错误被正确捕获和记录
                 (async () => {
                     try {
-                        debugLog('[Auth] 开始保存访问记录（已登录用户）:', logEntry);
+                        debugLog('[Auth] initGistAuth - 开始保存访问记录（已登录用户）:', logEntry);
+                        console.log('[Auth] initGistAuth - 开始保存访问记录:', {
+                            page: pageName,
+                            name: authData.name,
+                            timestamp: new Date().toISOString()
+                        });
                         const result = await saveLogToGist(logEntry);
                         if (!result) {
-                            debugWarn('[Auth] 访问记录保存返回 false，可能保存失败');
-                            console.warn('[Auth] 访问记录保存失败，请检查：', {
+                            debugWarn('[Auth] initGistAuth - 访问记录保存返回 false，可能保存失败');
+                            console.warn('[Auth] initGistAuth - 访问记录保存失败，请检查：', {
                                 apiUrl: GIST_API_URL,
                                 logEntry: logEntry,
                                 timestamp: new Date().toISOString()
                             });
                         } else {
-                            debugLog('[Auth] 访问记录保存成功（已登录用户）');
+                            debugLog('[Auth] initGistAuth - 访问记录保存成功（已登录用户）');
+                            console.log('[Auth] initGistAuth - 访问记录保存成功');
                         }
                     } catch (error) {
-                        debugError('[Auth] 访问记录保存失败（非阻塞）:', error);
-                        console.error('[Auth] 访问记录保存异常:', {
+                        debugError('[Auth] initGistAuth - 访问记录保存失败（非阻塞）:', error);
+                        console.error('[Auth] initGistAuth - 访问记录保存异常:', {
                             error: error.message,
                             stack: error.stack,
                             apiUrl: GIST_API_URL,

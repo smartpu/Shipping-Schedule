@@ -134,6 +134,12 @@
         
         const url = `${GIST_API_URL}?type=whitelist&name=${encodeURIComponent(normalizedName)}&phone=${encodeURIComponent(normalizedPhone)}&email=${encodeURIComponent(normalizedEmail)}`;
         debugLog(`[Auth] 验证用户是否在白名单中: ${normalizedName}`);
+        console.log('[Auth] 开始验证用户:', {
+            name: normalizedName,
+            phone: normalizedPhone ? '***' : 'missing',
+            email: normalizedEmail,
+            url: url
+        });
         
         try {
             const response = await fetchWithRetry(url, {
@@ -143,12 +149,15 @@
                 }
             });
             
+            console.log('[Auth] API 响应状态:', response.status, response.statusText);
+            
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`验证失败: ${response.status} ${response.statusText} - ${errorText}`);
             }
             
             const data = await response.json();
+            console.log('[Auth] API 返回数据:', data);
             
             // 新格式：返回 { authorized: true, user: {...} } 或 { authorized: false }
             if (data && typeof data === 'object' && 'authorized' in data) {
@@ -173,9 +182,20 @@
                     }
                     
                     debugLog(`[Auth] 用户验证成功: ${normalizedName}`);
+                    console.log('[Auth] 用户验证成功:', {
+                        name: data.user.name,
+                        level: data.user.level,
+                        groups: data.user.groups
+                    });
                     return userInfo;
                 } else {
-                    debugWarn(`[Auth] 用户不在白名单中: ${normalizedName}`);
+                    const reason = data.message || '未知原因';
+                    debugWarn(`[Auth] 用户不在白名单中: ${normalizedName}, 原因: ${reason}`);
+                    console.warn('[Auth] 用户不在白名单中:', {
+                        name: normalizedName,
+                        reason: reason,
+                        response: data
+                    });
                     return null;
                 }
             }
@@ -231,6 +251,8 @@
                 phone: normalizedPhone ? '***' : 'missing',
                 email: normalizedEmail
             });
+            // 在控制台显示明显的错误提示
+            console.error('%c[Auth] 验证失败 - 请检查上述错误信息', 'color: red; font-size: 14px; font-weight: bold;');
             return null;
         }
     }
@@ -925,7 +947,23 @@
                     });
                     
                     if (!user) {
-                        debugWarn('[Auth] 用户不在白名单中，重定向到登录页面');
+                        const errorMsg = `[Auth] 用户不在白名单中，重定向到登录页面\n` +
+                                       `用户信息: name=${authData.name}, phone=${authData.phone || authData.password ? '***' : 'missing'}, email=${authData.email}\n` +
+                                       `请检查控制台日志获取更多信息`;
+                        debugWarn(errorMsg);
+                        console.error('[Auth] 验证失败，即将重定向:', {
+                            authData: {
+                                name: authData.name,
+                                phone: authData.phone || authData.password ? '***' : 'missing',
+                                email: authData.email
+                            },
+                            cacheSize: userWhitelist.length,
+                            url: window.location.href
+                        });
+                        
+                        // 延迟跳转，让用户有时间查看日志
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
                         localStorage.removeItem(AUTH_STORAGE_KEY);
                         const currentPath = window.location.pathname;
                         const isIndexPage = currentPath.endsWith('index.html') || 

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor · SCFI 历史趋势使用说明</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
+</head>
+<body data-page="Market-SCFI-Trends-README.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Monitor · SCFI 历史趋势使用说明</h2>
+                            <p>快速查看 SCFI（上海出口集装箱运价指数）的历史趋势，支持自定义时间范围筛选和年度对比分析</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Market-SCFI-Trends.html?from=market" class="tool-link secondary" aria-label="打开工具">打开工具 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容区域 -->
+                <div class="card-white mt-20">
+                    <div class="readme-content">
+            <h2>工具简介</h2>
+            <p>这个工具用于快速查看 SCFI（上海出口集装箱运价指数）的历史趋势，方便直接在浏览器中载入 Excel 文件并观察各指数走势，无需安装任何额外环境。</p>
+
+            <hr>
+
+            <h2>功能特点</h2>
+            <ul>
+                <li><strong>自动读取数据</strong>：支持载入 SCFI Excel 文件，自动识别 B 列到 Q 列的综合指数及分 trade 指数</li>
+                <li><strong>历史趋势图</strong>：展示完整的 SCFI 历史趋势，支持自定义时间范围筛选</li>
+                <li><strong>年度对比图</strong>：展示最近 3 年的年度对比趋势，便于同期观察和对比分析</li>
+                <li><strong>指数选择</strong>：
+                    <ul style="margin-top: 8px; margin-left: 20px; list-style: disc;">
+                        <li>历史趋势图：支持单选模式，一次只显示一个指数，便于清晰观察</li>
+                        <li>年度对比图：支持多选模式，可同时对比多个指数在不同年份的走势</li>
+                        <li>默认显示"SCFI Comprehensive Container Freight Rate Index"（综合指数）</li>
+                    </ul>
+                </li>
+                <li><strong>自定义筛选</strong>：支持手动调整开始和结束日期，查看不同时间段的数据</li>
+                <li><strong>优化图表尺寸</strong>：图表高度经过优化，在保证清晰度的同时提高页面利用率</li>
+            </ul>
+
+            <hr>
+
+            <h2>使用步骤</h2>
+            <ol>
+                <li>在浏览器中打开工具页面（推荐 Chrome / Edge / Safari）</li>
+                <li>工具会自动从配置文件读取并加载对应的 Excel 测试数据文件（如果配置存在）</li>
+                <li>如果自动加载失败或需要手动选择：
+                    <ul>
+                        <li>点击"载入 Excel"按钮，选择 SCFI Excel 文件</li>
+                    </ul>
+                </li>
+                <li>工具会自动加载数据并显示：
+                    <ul>
+                        <li><strong>SCFI 历史趋势图</strong>：显示完整的历史数据，默认显示综合指数</li>
+                        <li><strong>年度对比图</strong>：显示最近 3 年的年度对比，便于同期观察</li>
+                        <li><strong>指数对比分析</strong>：选择对比日期，查看各指数在不同时间点的对比数据</li>
+                    </ul>
+                </li>
+                <li>在历史趋势图中，点击图例可切换显示不同的指数（单选模式）</li>
+                <li>在年度对比图中，点击图例可同时显示多个指数进行对比（多选模式）</li>
+                <li>如需查看其他时间段，可通过日期选择器调整开始和结束日期</li>
+                <li>年度对比图的右上角显示年份颜色说明，便于识别不同年份</li>
+                <li>点击右上角"导出PDF"按钮，可将所有图表导出为PDF文件</li>
+            </ol>
+
+            <hr>
+
+            <h2>数据格式要求</h2>
+            <ul>
+                <li>Excel 文件第一行为列名</li>
+                <li><strong>A 列</strong>：日期（支持 Excel 日期序列号和标准日期格式）</li>
+                <li><strong>B 列到 Q 列</strong>：各指数数值（综合指数及分 trade 指数）</li>
+                <li>数据按日期升序排列</li>
+            </ul>
+
+            <hr>
+
+            <h2>注意事项</h2>
+            <ul>
+                <li>所有数据仅在本地浏览器解析，不会上传至任何服务器</li>
+                <li>解析结果仅供内部研判，不构成对外报价或投资建议</li>
+                <li>建议使用最新版本的 Chrome、Edge 或 Safari 浏览器以获得最佳体验</li>
+            </ul>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Monitor · SCFI 历史趋势使用声明</h2>
+                    <p class="usage-statement-text">资料整合自 SCFI 数据文件，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+                    <p class="usage-statement-text">所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        // 使用公共初始化函数
+        init001ToolPage('Market-SCFI-Trends-README.html', 'market');
+    </script>
+</body>
+</html>
+

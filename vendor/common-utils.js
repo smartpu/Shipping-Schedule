@@ -381,7 +381,7 @@ async function loadDefaultExcelFile(configKey, onFileLoaded) {
             if (configResponse.ok) {
                 const config = await configResponse.json();
                 if (config.files && config.files[configKey]) {
-                    // 支持嵌套配置（如 Monitor-Sailing-Schedule）
+                    // 支持嵌套配置（如 Market-Sailing-Schedule）
                     const fileConfig = config.files[configKey];
                     if (typeof fileConfig === 'string') {
                         excelFileName = fileConfig;
@@ -435,8 +435,8 @@ async function loadDefaultExcelFile(configKey, onFileLoaded) {
 }
 
 /**
- * 从 Data/index.json 自动加载多个 Excel 测试数据文件（用于 Monitor-Sailing-Schedule）
- * @param {string} configKey - 配置文件中的键名（如 'Monitor-Sailing-Schedule'）
+ * 从 Data/index.json 自动加载多个 Excel 测试数据文件（用于 Market-Sailing-Schedule）
+ * @param {string} configKey - 配置文件中的键名（如 'Market-Sailing-Schedule'）
  * @param {Object} onFileLoaded - 文件加载成功后的回调函数对象，包含 '001' 和 '365' 两个回调
  * @returns {Promise<void>}
  */

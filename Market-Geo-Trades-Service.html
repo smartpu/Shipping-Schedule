@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor · 地理贸易航线</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/error-handler.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/filter-utils.js"></script>
+    <script src="vendor/excel-reader-utils.js"></script>
+    <script src="vendor/auth-gist.js"></script>
+</head>
+<body data-page="Market-Geo-Trades-Service.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Monitor · 地理贸易航线</h2>
+                            <p>载入 Excel 文件后，可筛选 Trade、Service、Service Branding、Port Rotation，悬停查看详细信息</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Market-Geo-Trades-Service-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件上传和数据状态区域 -->
+                <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 0;">
+                    <!-- 第一行：载入 Excel 和 Excel 数据状态 -->
+                    <div class="grid-2-col" style="margin-bottom: 0;">
+                        <!-- 左侧：载入 Excel -->
+                        <div class="card-white">
+                            <label for="excelFile" class="file-upload-label" aria-label="选择Excel文件上传">
+                                <svg class="file-upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradExcel)" />
+                                    <!-- Excel表格图标 -->
+                                    <rect x="8" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                    <line x1="8" y1="14" x2="28" y2="14" stroke="#fff" stroke-width="1.5"/>
+                                    <line x1="8" y1="20" x2="28" y2="20" stroke="#fff" stroke-width="1.5"/>
+                                    <line x1="14" y1="8" x2="14" y2="28" stroke="#fff" stroke-width="1.5"/>
+                                    <!-- 向下箭头 -->
+                                    <path d="M18 22L22 26L14 26Z" fill="#fff"/>
+                                    <defs>
+                                        <linearGradient id="gradExcel" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                            <stop stop-color="#0071e3" />
+                                            <stop offset="1" stop-color="#54a4ff" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="file-upload-content">
+                                    <div class="file-upload-title">载入 Excel</div>
+                                    <div class="file-upload-desc">支持 .xlsx / .xls，数据仅在本地浏览器解析</div>
+                                </div>
+                                <input type="file" id="excelFile" class="file-upload-input" accept=".xlsx,.xls" aria-label="选择Excel文件" title="选择Excel文件：支持 Trade、Service、Service Branding、Port Rotation 等字段">
+                            </label>
+                        </div>
+                        
+                        <!-- 右侧：Excel 数据状态 -->
+                        <div class="card-white">
+                            <div class="data-status-container">
+                                <svg class="data-status-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="4" y="4" width="28" height="28" rx="8" fill="url(#gradStatus)" />
+                                    <!-- 数据状态图标：剪贴板 + 勾 -->
+                                    <rect x="11" y="10" width="14" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+                                    <rect x="15" y="8" width="6" height="4" rx="1" fill="#fff"/>
+                                    <path d="M14 18L17 21L23 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <defs>
+                                        <linearGradient id="gradStatus" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                            <stop stop-color="#FF8A00" />
+                                            <stop offset="1" stop-color="#FFB347" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="data-status-content">
+                                    <div class="data-status-title">数据状态</div>
+                                    <div id="statusValue" class="data-status-text" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">尚未载入数据</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 筛选器区域 -->
+                <section class="feature-section">
+                    <div class="module-header">
+                        <span class="module-badge">筛选条件</span>
+                        <div>
+                            <h2 class="section-title">数据筛选 <span>DATA FILTER</span></h2>
+                            <p class="module-desc">支持 Trade、Service、Service Branding、Port Rotation 多维度筛选，筛选条件联动</p>
+                        </div>
+                    </div>
+                    <div class="card-white module-card hidden mt-20" id="filtersContainer">
+                        <div class="destination-filters">
+                            <div class="filter-row">
+                                <!-- Trade 筛选 -->
+                                <div class="filter-group">
+                                    <label for="tradeFilter">Trade 筛选</label>
+                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
+                                    <input type="text" id="tradeSearch" class="filter-search" placeholder="搜索 Trade..." autocomplete="off">
+                                    <select id="tradeFilter" multiple size="6" class="multi-select">
+                                        <option value="">全部 Trade</option>
+                                    </select>
+                                    <div class="filter-actions">
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="trade" data-action="select-all">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="trade" data-action="clear-all">清除选择</button>
+                                    </div>
+                                </div>
+                                <!-- Service 筛选 -->
+                                <div class="filter-group">
+                                    <label for="serviceFilter">Service 筛选</label>
+                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
+                                    <input type="text" id="serviceSearch" class="filter-search" placeholder="搜索 Service..." autocomplete="off">
+                                    <select id="serviceFilter" multiple size="6" class="multi-select">
+                                        <option value="">全部 Service</option>
+                                    </select>
+                                    <div class="filter-actions">
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="service" data-action="select-all">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="service" data-action="clear-all">清除选择</button>
+                                    </div>
+                                </div>
+                                <!-- Service Branding 筛选 -->
+                                <div class="filter-group">
+                                    <label for="serviceBrandingFilter">Service Branding 筛选</label>
+                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
+                                    <input type="text" id="serviceBrandingSearch" class="filter-search" placeholder="搜索 Service Branding..." autocomplete="off">
+                                    <select id="serviceBrandingFilter" multiple size="6" class="multi-select">
+                                        <option value="">全部 Service Branding</option>
+                                    </select>
+                                    <div class="filter-actions">
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="serviceBranding" data-action="select-all">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="serviceBranding" data-action="clear-all">清除选择</button>
+                                    </div>
+                                </div>
+                                <!-- Port Rotation 筛选 -->
+                                <div class="filter-group">
+                                    <label for="portRotationFilter">Port Rotation 筛选</label>
+                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
+                                    <input type="text" id="portRotationSearch" class="filter-search" placeholder="搜索 Port Rotation（可用逗号分隔多个港口，如：港口1,港口2）..." autocomplete="off">
+                                    <select id="portRotationFilter" multiple size="6" class="multi-select">
+                                        <option value="">全部 Port Rotation</option>
+                                    </select>
+                                    <div class="filter-actions">
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="portRotation" data-action="select-all">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="portRotation" data-action="clear-all">清除选择</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 数据表格区域 -->
+                <div class="card-white module-card hidden mt-20" id="tableContainer">
+                    <div class="table-container">
+                        <table class="data-table" id="dataTable" style="table-layout: fixed; width: 100%;">
+                            <thead>
+                                <tr id="tableHeader"></tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr>
+                                    <td colspan="100" class="no-data">请先载入 Excel 文件</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Monitor · 地理贸易航线使用声明</h2>
+                    <p class="usage-statement-text">资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+                    <p class="usage-statement-text">所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        init001ToolPage('Market-Geo-Trades-Service.html', 'market');
+    </script>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // 状态管理
+            const state = {
+                rawData: [],
+                filteredData: [],
+                columnMap: {}, // 列名映射
+                filters: {
+                    trade: [],
+                    service: [],
+                    serviceBranding: [],
+                    portRotation: []
+                }
+            };
+
+            // DOM 元素
+            const dom = {
+                excelFile: document.getElementById('excelFile'),
+                statusValue: document.getElementById('statusValue'),
+                filtersContainer: document.getElementById('filtersContainer'),
+                tableContainer: document.getElementById('tableContainer'),
+                tradeSearch: document.getElementById('tradeSearch'),
+                tradeFilter: document.getElementById('tradeFilter'),
+                serviceSearch: document.getElementById('serviceSearch'),
+                serviceFilter: document.getElementById('serviceFilter'),
+                serviceBrandingSearch: document.getElementById('serviceBrandingSearch'),
+                serviceBrandingFilter: document.getElementById('serviceBrandingFilter'),
+                portRotationSearch: document.getElementById('portRotationSearch'),
+                portRotationFilter: document.getElementById('portRotationFilter'),
+                tableHeader: document.getElementById('tableHeader'),
+                tableBody: document.getElementById('tableBody')
+            };
+
+            // 自动加载 Data 目录下的 Excel 文件
+            // 使用公共函数加载 Excel 文件（从 vendor/common-utils.js）
+            async function loadDefaultExcelFile() {
+                await window.loadDefaultExcelFile('Market-Geo-Trades-Service', async (file) => {
+                    // 直接调用处理函数
+                    if (typeof window.XLSX === 'undefined') {
+                        dom.statusValue.textContent = 'XLSX 库未加载';
+                        if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
+                            showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
+                        }
+                        return;
+                    }
+
+                    dom.statusValue.textContent = '解析中...';
+
+                    try {
+                        const data = await file.arrayBuffer();
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[firstSheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: '' });
+                        
+                        if (jsonData.length === 0) {
+                            dom.statusValue.textContent = '文件为空';
+                            if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
+                                showError(ErrorType.FILE_PARSE, 'FILE_EMPTY');
+                            }
+                            return;
+                        }
+
+                        identifyColumns(jsonData[0]);
+                        state.rawData = jsonData;
+                        populateFilters();
+                        applyFilters();
+                        
+                        dom.statusValue.innerHTML = `<span>已载入 1 份表格</span><span style="color: #6c757d;">共 ${jsonData.length.toLocaleString()} 条记录</span>`;
+                        dom.filtersContainer.classList.remove('hidden');
+                        dom.tableContainer.classList.remove('hidden');
+                    } catch (error) {
+                        debugError('解析文件失败:', error);
+                        dom.statusValue.textContent = '解析失败';
+                        if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
+                            showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', { message: error.message || String(error) }, error);
+                        }
+                    }
+                });
+            }
+
+            // 初始化
+            async function init() {
+                // 确保 XLSX 库已加载
+                if (typeof window.ensureXlsx === 'function') {
+                    await window.ensureXlsx();
+                }
+
+                // 绑定事件
+                dom.excelFile.addEventListener('change', handleFileUpload);
+                
+                // 自动加载默认文件
+                loadDefaultExcelFile();
+                
+                // 搜索框事件（级联更新，使用防抖优化）
+                if (typeof window.addDebouncedSearch === 'function') {
+                    window.addDebouncedSearch(dom.tradeSearch, () => {
+                        updateFilterOptions();
+                    }, 300);
+                    window.addDebouncedSearch(dom.serviceSearch, () => {
+                        updateFilterOptions();
+                    }, 300);
+                    window.addDebouncedSearch(dom.serviceBrandingSearch, () => {
+                        updateFilterOptions();
+                    }, 300);
+                    window.addDebouncedSearch(dom.portRotationSearch, () => {
+                        updateFilterOptions();
+                    }, 300);
+                } else {
+                    dom.tradeSearch.addEventListener('input', () => {
+                        updateFilterOptions();
+                    });
+                    dom.serviceSearch.addEventListener('input', () => {
+                        updateFilterOptions();
+                    });
+                    dom.serviceBrandingSearch.addEventListener('input', () => {
+                        updateFilterOptions();
+                    });
+                    dom.portRotationSearch.addEventListener('input', () => {
+                        updateFilterOptions();
+                    });
+                }
+                
+                // 筛选器change事件（级联更新）
+                // 使用防抖优化筛选性能
+                let tradeFilterTimer = null;
+                dom.tradeFilter.addEventListener('change', () => {
+                    if (tradeFilterTimer) clearTimeout(tradeFilterTimer);
+                    tradeFilterTimer = setTimeout(() => {
+                        state.filters.trade = getSelectedValues(dom.tradeFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
+                });
+                let serviceFilterTimer = null;
+                dom.serviceFilter.addEventListener('change', () => {
+                    if (serviceFilterTimer) clearTimeout(serviceFilterTimer);
+                    serviceFilterTimer = setTimeout(() => {
+                        state.filters.service = getSelectedValues(dom.serviceFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
+                });
+                let serviceBrandingFilterTimer = null;
+                dom.serviceBrandingFilter.addEventListener('change', () => {
+                    if (serviceBrandingFilterTimer) clearTimeout(serviceBrandingFilterTimer);
+                    serviceBrandingFilterTimer = setTimeout(() => {
+                        state.filters.serviceBranding = getSelectedValues(dom.serviceBrandingFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
+                });
+                let portRotationFilterTimer = null;
+                dom.portRotationFilter.addEventListener('change', () => {
+                    if (portRotationFilterTimer) clearTimeout(portRotationFilterTimer);
+                    portRotationFilterTimer = setTimeout(() => {
+                        state.filters.portRotation = getSelectedValues(dom.portRotationFilter);
+                        updateFilterOptions();
+                        applyFilters();
+                    }, 200);
+                });
+                
+                // 筛选器按钮事件
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const filterType = btn.dataset.filter;
+                        const action = btn.dataset.action;
+                        handleFilterAction(filterType, action);
+                    });
+                });
+
+                // 设置多选下拉框（支持点击切换）
+                setupMultiSelect(dom.tradeFilter);
+                setupMultiSelect(dom.serviceFilter);
+                setupMultiSelect(dom.serviceBrandingFilter);
+                setupMultiSelect(dom.portRotationFilter);
+            }
+
+            // 设置多选下拉框
+            function setupMultiSelect(selectElement) {
+                if (!selectElement) return;
+                selectElement.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const option = e.target;
+                    if (option.tagName === 'OPTION') {
+                        option.selected = !option.selected;
+                        selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
+
+            // 获取选中的值
+            function getSelectedValues(select) {
+                return Array.from(select.selectedOptions).map(opt => opt.value).filter(Boolean);
+            }
+
+            // 处理筛选器按钮操作
+            function handleFilterAction(filterType, action) {
+                let select;
+                if (filterType === 'trade') select = dom.tradeFilter;
+                else if (filterType === 'service') select = dom.serviceFilter;
+                else if (filterType === 'serviceBranding') select = dom.serviceBrandingFilter;
+                else if (filterType === 'portRotation') select = dom.portRotationFilter;
+                else return;
+
+                if (action === 'select-all') {
+                    // 全部选择（只选择非空选项）
+                    Array.from(select.options).forEach(option => {
+                        if (option.value !== '') {
+                            option.selected = true;
+                        }
+                    });
+                } else if (action === 'clear-all') {
+                    // 清除选择
+                    Array.from(select.options).forEach(option => {
+                        option.selected = false;
+                    });
+                }
+
+                // 触发change事件以更新筛选
+                select.dispatchEvent(new Event('change'));
+            }
+
+            // 处理文件载入
+            async function handleFileUpload(event) {
+                const file = event.target.files?.[0];
+                if (!file) return;
+
+                if (typeof window.XLSX === 'undefined') {
+                    dom.statusValue.textContent = 'XLSX 库未加载';
+                    if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
+                        showError(ErrorType.FILE_LOAD, 'XLSX_NOT_LOADED');
+                    }
+                    return;
+                }
+
+                dom.statusValue.textContent = '解析中...';
+
+                try {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[firstSheetName];
+                    
+                    // 读取数据，保留原始值
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: '' });
+                    
+                    if (jsonData.length === 0) {
+                        dom.statusValue.textContent = '文件为空';
+                        if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
+                            showError(ErrorType.FILE_PARSE, 'FILE_EMPTY');
+                        }
+                        return;
+                    }
+
+                    // 识别列名
+                    identifyColumns(jsonData[0]);
+                    
+                    state.rawData = jsonData;
+                    populateFilters();
+                    applyFilters();
+                    
+                    dom.statusValue.innerHTML = `<span>已载入 1 份表格</span><span style="color: #6c757d;">共 ${jsonData.length.toLocaleString()} 条记录</span>`;
+                    dom.filtersContainer.classList.remove('hidden');
+                    dom.tableContainer.classList.remove('hidden');
+                } catch (error) {
+                    debugError('解析文件失败:', error);
+                    dom.statusValue.textContent = '解析失败';
+                    if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
+                        showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', { message: error.message || String(error) }, error);
+                    }
+                }
+            }
+
+            // 识别列名（支持中英文）
+            function identifyColumns(firstRow) {
+                const keys = Object.keys(firstRow);
+                
+                // 查找各列的索引
+                const findColumn = (keywords) => {
+                    for (const key of keys) {
+                        const lowerKey = key.toLowerCase();
+                        for (const keyword of keywords) {
+                            if (lowerKey.includes(keyword.toLowerCase())) {
+                                return key;
+                            }
+                        }
+                    }
+                    return null;
+                };
+
+                // 识别列
+                state.columnMap = {
+                    trade: findColumn(['trade', '航线', '贸易']) || keys[0],
+                    service: findColumn(['service', '服务', '航线服务']) || keys[1],
+                    serviceBranding: findColumn(['service branding', 'branding', '品牌', '服务品牌']) || keys[2],
+                    partners: findColumn(['partners', 'alliance partners', 'alliance', '合作伙伴', '联盟伙伴', 'partner']) || null,
+                    ships: findColumn(['ships', '船舶', '船数']) || keys[4], // E列（索引4）
+                    portRotation: findColumn(['port rotation', 'rotation', '港口', '港口轮换', 'port']) || keys[9], // J列（索引9）
+                    vesselName: findColumn(['vessel name', 'vessel', '船名', '船舶名称']) || keys[10] // K列（索引10）
+                };
+                
+                // 如果找不到partners列，尝试查找包含"partner"的列
+                if (!state.columnMap.partners) {
+                    for (const key of keys) {
+                        if (key.toLowerCase().includes('partner')) {
+                            state.columnMap.partners = key;
+                            break;
+                        }
+                    }
+                }
+
+                // 如果找不到特定列，尝试通过索引获取
+                if (!state.columnMap.ships && keys.length > 4) {
+                    state.columnMap.ships = keys[4];
+                }
+                if (!state.columnMap.portRotation && keys.length > 9) {
+                    state.columnMap.portRotation = keys[9];
+                }
+                if (!state.columnMap.vesselName && keys.length > 10) {
+                    state.columnMap.vesselName = keys[10];
+                }
+
+                debugLog('识别的列映射:', state.columnMap);
+            }
+
+            // 简化Service Branding文本
+            function simplifyServiceBranding(text) {
+                if (!text) return '';
+                // 去掉 "Vessel providers: / Alliance partners: / Slotters:" 这些前缀
+                return String(text)
+                    .replace(/Vessel providers:\s*/gi, '')
+                    .replace(/Alliance partners:\s*/gi, '')
+                    .replace(/Slotters:\s*/gi, '')
+                    .replace(/\s*\/\s*/g, ' / ')
+                    .trim();
+            }
+
+            // 填充筛选器选项（初始加载时使用全部数据）
+            function populateFilters() {
+                updateFilterOptions();
+            }
+
+            // 更新筛选器选项（从所有原始数据中提取，允许用户多选多个条件来覆盖所有数据）
+            function updateFilterOptions() {
+                // 从所有原始记录中提取完整的选项列表（不进行过滤）
+                // 这样用户可以选择多个筛选条件，覆盖所有可能的数据组合
+                const trades = [...new Set(state.rawData.map(row => row[state.columnMap.trade]).filter(Boolean))].sort();
+                const services = [...new Set(state.rawData.map(row => row[state.columnMap.service]).filter(Boolean))].sort();
+                const serviceBrandings = [...new Set(
+                    state.rawData.map(row => simplifyServiceBranding(row[state.columnMap.serviceBranding])).filter(Boolean)
+                )].sort();
+                const portRotations = [...new Set(state.rawData.map(row => row[state.columnMap.portRotation]).filter(Boolean))].sort();
+
+                // 更新 Trade 筛选器（保留已选择的选项）
+                const selectedTrades = state.filters.trade.filter(trade => trades.includes(trade));
+                state.filters.trade = selectedTrades;
+                const tradeSearchValue = dom.tradeSearch.value.trim().toLowerCase();
+                const filteredTrades = tradeSearchValue 
+                    ? trades.filter(trade => trade.toLowerCase().includes(tradeSearchValue))
+                    : trades;
+                dom.tradeFilter.innerHTML = '<option value="">全部 Trade</option>' + filteredTrades.map(trade => {
+                    const selected = state.filters.trade.includes(trade) ? ' selected' : '';
+                    return `<option value="${escapeHtml(trade)}"${selected}>${escapeHtml(trade)}</option>`;
+                }).join('');
+
+                // 更新 Service 筛选器（保留已选择的选项）
+                const selectedServices = state.filters.service.filter(service => services.includes(service));
+                state.filters.service = selectedServices;
+                const serviceSearchValue = dom.serviceSearch.value.trim().toLowerCase();
+                const filteredServices = serviceSearchValue 
+                    ? services.filter(service => service.toLowerCase().includes(serviceSearchValue))
+                    : services;
+                dom.serviceFilter.innerHTML = '<option value="">全部 Service</option>' + filteredServices.map(service => {
+                    const selected = state.filters.service.includes(service) ? ' selected' : '';
+                    return `<option value="${escapeHtml(service)}"${selected}>${escapeHtml(service)}</option>`;
+                }).join('');
+
+                // 更新 Service Branding 筛选器（保留已选择的选项）
+                const selectedBrandings = state.filters.serviceBranding.filter(branding => serviceBrandings.includes(branding));
+                state.filters.serviceBranding = selectedBrandings;
+                const brandingSearchValue = dom.serviceBrandingSearch.value.trim().toLowerCase();
+                const filteredBrandings = brandingSearchValue 
+                    ? serviceBrandings.filter(branding => branding.toLowerCase().includes(brandingSearchValue))
+                    : serviceBrandings;
+                dom.serviceBrandingFilter.innerHTML = '<option value="">全部 Service Branding</option>' + filteredBrandings.map(branding => {
+                    const selected = state.filters.serviceBranding.includes(branding) ? ' selected' : '';
+                    return `<option value="${escapeHtml(branding)}"${selected}>${escapeHtml(branding)}</option>`;
+                }).join('');
+
+                // 更新 Port Rotation 筛选器（保留已选择的选项）
+                const selectedRotations = state.filters.portRotation.filter(rotation => portRotations.includes(rotation));
+                state.filters.portRotation = selectedRotations;
+                const rotationSearchValue = dom.portRotationSearch.value.trim();
+                let filteredRotations = portRotations;
+                if (rotationSearchValue) {
+                    const searchPorts = rotationSearchValue.split(',')
+                        .map(port => port.trim().toLowerCase())
+                        .filter(port => port.length > 0);
+                    if (searchPorts.length > 0) {
+                        filteredRotations = portRotations.filter(rotation => {
+                            const rotationLower = String(rotation).toLowerCase();
+                            return searchPorts.every(port => rotationLower.includes(port));
+                        });
+                    }
+                }
+                dom.portRotationFilter.innerHTML = '<option value="">全部 Port Rotation</option>' + filteredRotations.map(rotation => {
+                    const selected = state.filters.portRotation.includes(rotation) ? ' selected' : '';
+                    return `<option value="${escapeHtml(rotation)}"${selected}>${escapeHtml(rotation)}</option>`;
+                }).join('');
+            }
+
+            // 应用筛选
+            function applyFilters() {
+                state.filteredData = state.rawData.filter(row => {
+                    // Trade筛选
+                    if (state.filters.trade.length > 0) {
+                        const tradeValue = row[state.columnMap.trade] || '';
+                        if (!state.filters.trade.includes(tradeValue)) {
+                            return false;
+                        }
+                    }
+                    
+                    // Service筛选
+                    if (state.filters.service.length > 0) {
+                        const serviceValue = row[state.columnMap.service] || '';
+                        if (!state.filters.service.includes(serviceValue)) {
+                            return false;
+                        }
+                    }
+                    
+                    // Service Branding筛选（需要简化后比较）
+                    if (state.filters.serviceBranding.length > 0) {
+                        const brandingValue = simplifyServiceBranding(row[state.columnMap.serviceBranding] || '');
+                        if (!state.filters.serviceBranding.includes(brandingValue)) {
+                            return false;
+                        }
+                    }
+                    
+                    // Port Rotation筛选（支持多港口匹配）
+                    if (state.filters.portRotation.length > 0) {
+                        const portRotationValue = String(row[state.columnMap.portRotation] || '').trim();
+                        
+                        // 如果 port rotation 为空或无效，排除该行
+                        if (!portRotationValue || portRotationValue.length === 0) {
+                            return false;
+                        }
+                        
+                        const portRotationLower = portRotationValue.toLowerCase();
+                        
+                        // 检查是否至少有一个选中的 port rotation 完全匹配当前行的 port rotation
+                        const matches = state.filters.portRotation.some(selectedRotation => {
+                            if (!selectedRotation || String(selectedRotation).trim().length === 0) {
+                                return false;
+                            }
+                            
+                            const selectedLower = String(selectedRotation).toLowerCase().trim();
+                            
+                            // 完全匹配（最优先）
+                            if (portRotationLower === selectedLower) {
+                                return true;
+                            }
+                            
+                            // 如果选中的 port rotation 包含逗号（多港口搜索），检查当前行是否包含所有港口
+                            if (String(selectedRotation).includes(',')) {
+                                const searchPorts = String(selectedRotation).split(',')
+                                    .map(port => port.trim().toLowerCase())
+                                    .filter(port => port.length > 0);
+                                
+                                // 确保当前行的 port rotation 包含所有搜索的港口
+                                if (searchPorts.length > 0) {
+                                    const containsAllPorts = searchPorts.every(port => portRotationLower.includes(port));
+                                    if (containsAllPorts) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            
+                            // 部分匹配（当前行的 port rotation 包含选中的值，或反之）
+                            // 但只在不包含逗号的情况下使用，避免误匹配
+                            if (!String(selectedRotation).includes(',')) {
+                                if (portRotationLower.includes(selectedLower) || selectedLower.includes(portRotationLower)) {
+                                    return true;
+                                }
+                            }
+                            
+                            return false;
+                        });
+                        
+                        if (!matches) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                });
+
+                renderTable();
+            }
+
+            // 计算文本宽度（用于列宽自适应）
+            function measureTextWidth(text, font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif') {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                context.font = font;
+                return context.measureText(text).width;
+            }
+
+            // 渲染表格
+            function renderTable() {
+                if (state.filteredData.length === 0) {
+                    dom.tableBody.innerHTML = '<tr><td colspan="100" class="no-data">没有匹配的数据</td></tr>';
+                    return;
+                }
+
+                // 渲染表头（排除Port Rotation、Vessel Name和Service Branding列）
+                const firstRow = state.filteredData[0];
+                const allColumns = Object.keys(firstRow);
+                let columns = allColumns.filter(col => 
+                    col !== state.columnMap.portRotation && 
+                    col !== state.columnMap.vesselName &&
+                    col !== state.columnMap.serviceBranding
+                );
+                
+                // 重新排序：Status 列放在第一列，Trade 列放在第二列
+                const statusCol = columns.find(col => col.toLowerCase().includes('status'));
+                const tradeCol = columns.find(col => col.toLowerCase().includes('trade'));
+                const otherCols = columns.filter(col => 
+                    col !== statusCol && col !== tradeCol
+                );
+                
+                // 重新组合：Status 第一，Trade 第二，其他列保持原顺序
+                if (statusCol && tradeCol) {
+                    columns = [statusCol, tradeCol, ...otherCols];
+                } else if (statusCol) {
+                    columns = [statusCol, ...otherCols];
+                } else if (tradeCol) {
+                    columns = [tradeCol, ...otherCols];
+                }
+                
+                // 定义需要固定宽度的列（根据内容最宽设置）
+                const fixedWidthColumns = ['Status', 'Trade', 'Ships', 'Deployed', 'Weekly Capacity', 'Service ID'];
+                
+                // 识别哪些列需要固定宽度
+                const fixedWidthColMap = {};
+                const flexibleColumns = [];
+                
+                columns.forEach(col => {
+                    const lowerCol = col.toLowerCase();
+                    const isFixed = fixedWidthColumns.some(fixedCol => 
+                        lowerCol.includes(fixedCol.toLowerCase())
+                    );
+                    if (isFixed) {
+                        fixedWidthColMap[col] = true;
+                    } else {
+                        flexibleColumns.push(col);
+                    }
+                });
+                
+                // 计算固定宽度列的最大内容宽度
+                const columnWidths = {};
+                const padding = 24; // 单元格内边距（左右各12px）
+                const minWidth = 80; // 最小列宽
+                
+                fixedWidthColumns.forEach(fixedColName => {
+                    let maxWidth = minWidth;
+                    const matchingCol = columns.find(col => 
+                        col.toLowerCase().includes(fixedColName.toLowerCase())
+                    );
+                    
+                    if (matchingCol) {
+                        // 计算表头宽度
+                        const headerWidth = measureTextWidth(matchingCol) + padding;
+                        maxWidth = Math.max(maxWidth, headerWidth);
+                        
+                        // 计算所有数据行的最大宽度
+                        state.filteredData.forEach(row => {
+                            const cellContent = formatCellContent(row, matchingCol);
+                            // 移除HTML标签来计算纯文本宽度
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = cellContent;
+                            const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                            const contentWidth = measureTextWidth(textContent) + padding;
+                            maxWidth = Math.max(maxWidth, contentWidth);
+                        });
+                        
+                        columnWidths[matchingCol] = Math.ceil(maxWidth);
+                    }
+                });
+                
+                // 获取列名对应的CSS类名
+                const getColumnClass = (colName) => {
+                    const lowerName = colName.toLowerCase();
+                    if (lowerName.includes('deployed')) return 'col-deployed';
+                    return '';
+                };
+                
+                // 渲染表头，设置列宽
+                dom.tableHeader.innerHTML = columns.map(col => {
+                    const colClass = getColumnClass(col);
+                    let style = '';
+                    if (columnWidths[col]) {
+                        // 固定宽度列：根据内容最宽设置，不换行
+                        style = `style="width: ${columnWidths[col]}px; min-width: ${columnWidths[col]}px; max-width: ${columnWidths[col]}px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"`;
+                    } else if (flexibleColumns.includes(col)) {
+                        // Service 和 Partners 列：平分剩余宽度，允许换行
+                        style = 'style="width: auto; white-space: normal; word-wrap: break-word;"';
+                    }
+                    return `<th class="${colClass}" ${style}>${escapeHtml(col)}</th>`;
+                }).join('');
+
+                // 渲染表体，设置列宽
+                dom.tableBody.innerHTML = state.filteredData.map(row => {
+                    const cells = columns.map((col) => {
+                        let cellContent = formatCellContent(row, col);
+                        const colClass = getColumnClass(col);
+                        let style = '';
+                        if (columnWidths[col]) {
+                            // 固定宽度列：根据内容最宽设置，不换行
+                            style = `style="width: ${columnWidths[col]}px; min-width: ${columnWidths[col]}px; max-width: ${columnWidths[col]}px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"`;
+                        } else if (flexibleColumns.includes(col)) {
+                            // Service 和 Partners 列：平分剩余宽度，允许换行
+                            style = 'style="width: auto; white-space: normal; word-wrap: break-word;"';
+                        }
+                        return `<td class="${colClass}" ${style}>${cellContent}</td>`;
+                    }).join('');
+                    return `<tr>${cells}</tr>`;
+                }).join('');
+
+                // 为 Service 列添加悬停效果
+                const serviceColIndex = columns.indexOf(state.columnMap.service);
+                if (serviceColIndex !== -1) {
+                    const serviceCells = dom.tableBody.querySelectorAll(`td:nth-child(${serviceColIndex + 1})`);
+                    state.filteredData.forEach((row, rowIndex) => {
+                        const portRotation = row[state.columnMap.portRotation] || '';
+                        if (serviceCells[rowIndex]) {
+                            serviceCells[rowIndex].classList.add('service-cell');
+                            serviceCells[rowIndex].setAttribute('data-port-rotation', escapeHtml(portRotation));
+                        }
+                    });
+                }
+
+                // 为 Partners 列添加悬停效果（显示Service Branding）
+                // 如果没有partners列，使用Service列来显示Service Branding
+                let partnersColIndex = state.columnMap.partners ? columns.indexOf(state.columnMap.partners) : -1;
+                if (partnersColIndex === -1) {
+                    // 如果没有partners列，使用Service列
+                    partnersColIndex = serviceColIndex;
+                }
+                
+                if (partnersColIndex !== -1) {
+                    const partnersCells = dom.tableBody.querySelectorAll(`td:nth-child(${partnersColIndex + 1})`);
+                    state.filteredData.forEach((row, rowIndex) => {
+                        const serviceBranding = simplifyServiceBranding(row[state.columnMap.serviceBranding] || '');
+                        if (partnersCells[rowIndex] && serviceBranding) {
+                            partnersCells[rowIndex].classList.add('partners-cell');
+                            partnersCells[rowIndex].setAttribute('data-service-branding', escapeHtml(serviceBranding));
+                        }
+                    });
+                }
+            }
+
+            // 格式化单元格内容
+            function formatCellContent(row, col) {
+                const value = row[col];
+                
+                // 如果是 Ships 列，特殊处理
+                if (col === state.columnMap.ships) {
+                    return formatShipsCell(value, row[state.columnMap.vesselName] || '');
+                }
+                
+                // 如果是 Deployed 列，特殊处理
+                if (col && col.toLowerCase().includes('deployed')) {
+                    return formatDeployedCell(value);
+                }
+                
+                // Service Branding 列不在表格中显示（改为在partners悬停显示）
+                
+                return escapeHtml(value || '');
+            }
+            
+            // 格式化 Deployed 列：去掉 "from" "to"，用 "~" 连接
+            function formatDeployedCell(value) {
+                if (!value) return '';
+                const valueStr = String(value).trim();
+                // 去掉 "from" 和 "to"，提取数字
+                const cleaned = valueStr
+                    .replace(/from\s*/gi, '')
+                    .replace(/to\s*/gi, '~')
+                    .trim();
+                return escapeHtml(cleaned);
+            }
+
+            // 格式化 Ships 列
+            function formatShipsCell(shipsValue, vesselName) {
+                if (!shipsValue) return '';
+                
+                const shipsStr = String(shipsValue).trim();
+                
+                // 统计K列Vessel Name中的船个数
+                const countVessels = (vesselStr) => {
+                    if (!vesselStr) return 0;
+                    return vesselStr.split(',').map(v => v.trim()).filter(Boolean).length;
+                };
+                
+                const vesselCount = countVessels(vesselName);
+                
+                // 处理 vessel name，将逗号转换为换行符
+                const formatVesselNames = (vesselStr) => {
+                    if (!vesselStr) return '';
+                    // 将逗号分隔的船名转换为换行符分隔
+                    return vesselStr.split(',').map(v => v.trim()).filter(Boolean).join('\n');
+                };
+                
+                // 如果是 "fleet varies"
+                if (shipsStr.toLowerCase().includes('fleet varies')) {
+                    // 如果K列有船，添加悬停效果
+                    if (vesselCount > 0) {
+                        const vesselNames = formatVesselNames(vesselName);
+                        return `<span class="fleet-varies ship-number" data-vessel-names="${escapeHtml(vesselNames)}">fleet varies</span>`;
+                    }
+                    return '<span class="fleet-varies">fleet varies</span>';
+                }
+                
+                // 去掉 "ships" 文字，提取数字
+                const numbers = shipsStr.replace(/ships/gi, '').trim();
+                
+                // 如果包含逗号，说明有多个数字
+                if (numbers.includes(',')) {
+                    const numberList = numbers.split(',').map(n => n.trim()).filter(Boolean);
+                    const vesselList = vesselName ? vesselName.split(',').map(v => v.trim()).filter(Boolean) : [];
+                    
+                    return numberList.map((num, idx) => {
+                        // 如果数字和船名数量一致，每个数字显示对应的船名
+                        // 如果不一致，显示所有船名
+                        let vesselNames = '';
+                        let displayCount = 0;
+                        
+                        if (vesselList.length === numberList.length && vesselList[idx]) {
+                            // 数量一致，显示对应的船名
+                            vesselNames = vesselList[idx];
+                            // 计算当前数字对应的船数（单个船名，所以是1）
+                            displayCount = 1;
+                        } else if (vesselList.length > 0) {
+                            // 数量不一致，显示所有船名（按逗号换行）
+                            vesselNames = formatVesselNames(vesselName);
+                            // 使用总船数
+                            displayCount = vesselCount;
+                        }
+                        
+                        // 显示格式：统计个数 / 原本数字（去掉x）
+                        // 如果K列没有船，显示 0 / 数字
+                        const displayText = displayCount > 0 ? `${displayCount} / ${escapeHtml(num)}` : `0 / ${escapeHtml(num)}`;
+                        return `<span class="ship-number" data-vessel-names="${escapeHtml(vesselNames)}">${displayText}</span>`;
+                    }).join('');
+                } else {
+                    // 单个数字，显示所有vessel name（按逗号换行）
+                    const vesselNames = formatVesselNames(vesselName);
+                    // 显示格式：统计个数 / 原本数字（去掉x）
+                    // 如果K列没有船，显示 0 / 数字
+                    const displayText = vesselCount > 0 ? `${vesselCount} / ${escapeHtml(numbers)}` : `0 / ${escapeHtml(numbers)}`;
+                    return `<span class="ship-number" data-vessel-names="${escapeHtml(vesselNames)}">${displayText}</span>`;
+                }
+            }
+
+            // HTML 转义
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // 启动
+            init();
+
+            // 创建tooltip元素
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            document.body.appendChild(tooltip);
+
+            // 显示tooltip的函数
+            function showTooltip(element, content, event, isShips = false) {
+                if (!content) return;
+                
+                // 使用 tooltip-line 类来显示内容
+                tooltip.innerHTML = `<span class="tooltip-line">${escapeHtml(content)}</span>`;
+                tooltip.style.display = 'block';
+                
+                // 强制重新计算尺寸
+                tooltip.style.left = '-9999px';
+                tooltip.style.top = '-9999px';
+                const tooltipRect = tooltip.getBoundingClientRect();
+                
+                // 使用鼠标位置，而不是元素位置
+                const mouseX = event.clientX || event.pageX;
+                const mouseY = event.clientY || event.pageY;
+                
+                let left = mouseX + 15;
+                let top = mouseY + 15;
+                
+                // 如果右侧空间不够，显示在左侧
+                if (left + tooltipRect.width > window.innerWidth) {
+                    left = mouseX - tooltipRect.width - 15;
+                }
+                
+                // 如果左侧也不够，居中显示
+                if (left < 0) {
+                    left = (window.innerWidth - tooltipRect.width) / 2;
+                }
+                
+                // 如果下方空间不够，向上调整
+                if (top + tooltipRect.height > window.innerHeight) {
+                    top = mouseY - tooltipRect.height - 15;
+                }
+                
+                // 如果上方也不够，居中显示
+                if (top < 0) {
+                    top = (window.innerHeight - tooltipRect.height) / 2;
+                }
+                
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            }
+
+            // 隐藏tooltip的函数
+            function hideTooltip() {
+                tooltip.style.display = 'none';
+            }
+
+            // 为Service列添加悬停事件
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.classList.contains('service-cell')) {
+                    const portRotation = e.target.getAttribute('data-port-rotation');
+                    if (portRotation) {
+                        showTooltip(e.target, portRotation, e);
+                    }
+                } else if (e.target.classList.contains('partners-cell')) {
+                    const serviceBranding = e.target.getAttribute('data-service-branding');
+                    if (serviceBranding) {
+                        showTooltip(e.target, serviceBranding, e);
+                    }
+                } else if (e.target.classList.contains('ship-number')) {
+                    const vesselNames = e.target.getAttribute('data-vessel-names');
+                    if (vesselNames) {
+                        showTooltip(e.target, vesselNames, e);
+                    }
+                }
+            }, true);
+
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.classList.contains('service-cell') || 
+                    e.target.classList.contains('partners-cell') || 
+                    e.target.classList.contains('ship-number')) {
+                    hideTooltip();
+                }
+            }, true);
+        })();
+    </script>
+</body>
+</html>

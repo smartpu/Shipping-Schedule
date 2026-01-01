@@ -4,10 +4,11 @@
     "365-01-manual-download": "Material-Port-Optimization.xlsx",
     "001-04-market-analysis": "001-03-market-analysis.xlsx",
     "365-04-market-watch": "365-03-market-watch.xlsx",
-    "Monitor-Geo-Trades-Service": "Monitor-Geo-Trades-Service.xlsx",
+    "Market-Geo-Trades-Service": "Market-Geo-Trades-Service.xlsx",
+    "Market-SCFI-Trends": "Market-SCFI-Trends.xlsx",
     "Admin-Workouts": "Admin-Workouts.csv",
     "Admin-Access-Log": "Admin-access-logs.json",
-    "Monitor-Sailing-Schedule": {
+    "Market-Sailing-Schedule": {
       "001": "001-03-market-analysis.xlsx",
       "365": "365-03-market-watch.xlsx"
     }

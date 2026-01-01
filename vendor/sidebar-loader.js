@@ -33,15 +33,23 @@
                 { href: '365-04-market-watch.html?from=tools365', icon: '📊', label: '市场观察工具' }
             ]
         },
+        market: {
+            icon: '📊',
+            label: 'Market 系列工具',
+            submenuId: 'submenuMarket',
+            items: [
+                { href: 'Market-SCFI-Trends.html?from=market', icon: '📈', label: 'SCFI 历史趋势' },
+                { href: 'Market-Sailing-Schedule.html?from=market', icon: '📅', label: '专业船期表' },
+                { href: 'Market-Geo-Trades-Service.html?from=market', icon: '🌐', label: '地理贸易航线' }
+            ]
+        },
         monitor: {
             icon: '📡',
             label: 'Monitor 系列工具',
             submenuId: 'submenuMonitor',
             items: [
-                { href: 'Monitor-SCFI-Trends.html?from=monitor', icon: '📈', label: 'SCFI 历史趋势' },
                 { href: 'Monitor-Rate-Trends.html?from=monitor', icon: '💹', label: '运价趋势面板' },
-                { href: 'Monitor-Sailing-Schedule.html?from=monitor', icon: '📅', label: '专业船期表' },
-                { href: 'Monitor-Geo-Trades-Service.html?from=monitor', icon: '🌐', label: '地理贸易航线' }
+                { href: 'Monitor-Daily-Booking.html?from=monitor', icon: '📋', label: '日订舱监控' }
             ]
         },
         admin: {
@@ -100,7 +108,7 @@
             // admin菜单需要权限检查，其他菜单在dashboard中默认展开
             const shouldExpand = sectionKey === 'admin' 
                 ? (isActive || (isDashboard && hasAdminPermission))
-                : (isActive || (isDashboard && ['tools365', 'monitor'].includes(sectionKey)));
+                : (isActive || (isDashboard && ['tools365', 'market', 'monitor'].includes(sectionKey)));
             const isExpanded = shouldExpand;
             // 修正主菜单链接路径
             let mainHref = isDashboard ? '#' : `dashboard.html?tab=${sectionKey}`;
@@ -275,7 +283,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const section = item.dataset.section;
-                const submenuId = NAV_CONFIG[section]?.submenuId || `submenu${section === 'tools001' ? '001' : section === 'tools365' ? '365' : 'Monitor'}`;
+                const submenuId = NAV_CONFIG[section]?.submenuId || `submenu${section === 'tools001' ? '001' : section === 'tools365' ? '365' : section === 'market' ? 'Market' : section === 'monitor' ? 'Monitor' : 'Admin'}`;
                 const submenu = document.getElementById(submenuId);
                 
                 if (submenu) {
@@ -419,12 +427,14 @@
         if (!currentSection) {
             if (fromParam === 'tools001') currentSection = 'tools001';
             else if (fromParam === 'tools365') currentSection = 'tools365';
+            else if (fromParam === 'market') currentSection = 'market';
             else if (fromParam === 'monitor') currentSection = 'monitor';
             else if (fromParam === 'admin') currentSection = 'admin';
             else {
                 // 根据文件名判断
                 if (currentPage.includes('001-')) currentSection = 'tools001';
                 else if (currentPage.includes('365-')) currentSection = 'tools365';
+                else if (currentPage.includes('Market-')) currentSection = 'market';
                 else if (currentPage.includes('Monitor-')) currentSection = 'monitor';
                 else if (currentPage.includes('Admin-')) currentSection = 'admin';
                 else if (currentPage.includes('tests/')) currentSection = 'admin';

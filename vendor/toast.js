@@ -28,6 +28,32 @@
          * 初始化 Toast 容器
          */
         init() {
+            // 确保 DOM 已加载
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.createContainer());
+            } else {
+                this.createContainer();
+            }
+        }
+
+        /**
+         * 创建 Toast 容器
+         */
+        createContainer() {
+            // 检查是否已存在容器
+            let existingContainer = document.querySelector('.toast-container');
+            if (existingContainer) {
+                this.container = existingContainer;
+                return;
+            }
+
+            // 确保 body 存在
+            if (!document.body) {
+                // 如果 body 还不存在，等待一下再重试
+                setTimeout(() => this.createContainer(), 10);
+                return;
+            }
+
             // 创建 Toast 容器
             this.container = document.createElement('div');
             this.container.className = 'toast-container';
@@ -52,6 +78,17 @@
                 dismissible = true,
                 position = 'bottom'
             } = options;
+
+            // 确保容器已初始化
+            if (!this.container) {
+                this.createContainer();
+            }
+
+            // 如果容器仍然不存在，说明 DOM 还没准备好，延迟执行
+            if (!this.container) {
+                setTimeout(() => this.show(message, type, options), 50);
+                return null;
+            }
 
             // 如果超过最大数量，移除最旧的
             if (this.toasts.length >= this.maxToasts) {

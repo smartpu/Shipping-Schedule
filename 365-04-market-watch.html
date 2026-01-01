@@ -2481,7 +2481,7 @@
                 if (destinationFilters.originPorts.length && !destinationFilters.originPorts.includes(record.originPort)) return false;
                 if (destinationFilters.destPorts.length && !destinationFilters.destPorts.includes(record.destPort)) return false;
                 if (destinationFilters.routes.length && !destinationFilters.routes.includes(record.route) && !destinationFilters.routes.includes(record.routeLabel)) return false;
-                // 不进行周别过滤，允许所有数据通过（类似 Monitor-Sailing-Schedule）
+                // 不进行周别过滤，允许所有数据通过（类似 Market-Sailing-Schedule）
                 return true;
             });
             if (typeof deduplicateSailingItems === 'function') {
@@ -3054,7 +3054,7 @@
             data.forEach(row => {
                 const weekText = String(row[weekCol] ?? '').trim();
                 
-                // 解析周别（不进行过滤，允许所有数据通过，类似 Monitor-Sailing-Schedule）
+                // 解析周别（不进行过滤，允许所有数据通过，类似 Market-Sailing-Schedule）
                 // 周别过滤在显示时进行，而不是在数据处理时进行
                 let weekCode = null;
                 if (typeof parseWeekText === 'function') {
@@ -3063,7 +3063,7 @@
                     debugWarn('[365-04] parseWeekText 函数未找到，将不进行周别解析');
                 }
                 
-                // 不进行周别过滤，允许所有数据通过（类似 Monitor-Sailing-Schedule）
+                // 不进行周别过滤，允许所有数据通过（类似 Market-Sailing-Schedule）
 
                 // 读取原始港口名称
                 const originPortRaw = originPortCol ? String(row[originPortCol] ?? '').trim() : '';

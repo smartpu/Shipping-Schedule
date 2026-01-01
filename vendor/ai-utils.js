@@ -1,6 +1,6 @@
 /**
  * AI 分析工具统一管理模块
- * 用于 Monitor-Sailing-Schedule、001-04-market-analysis、365-04-market-watch 等工具
+ * 用于 Market-Sailing-Schedule、001-04-market-analysis、365-04-market-watch 等工具
  * 
  * 提供统一的 AI 配置管理、API 调用、面板切换等功能
  */

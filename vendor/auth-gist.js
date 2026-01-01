@@ -265,17 +265,36 @@
         }
         
         debugLog('[Auth] 保存访问记录:', logEntry);
+        console.log('[Auth] 开始保存访问记录到 Gist:', {
+            apiUrl: GIST_API_URL,
+            logEntry: logEntry,
+            timestamp: new Date().toISOString()
+        });
         
         try {
+            const requestBody = {
+                action: 'addLog',
+                data: { logEntry }
+            };
+            
+            console.log('[Auth] 发送请求到 API:', {
+                url: GIST_API_URL,
+                method: 'POST',
+                body: requestBody
+            });
+            
             const response = await fetchWithRetry(GIST_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    action: 'addLog',
-                    data: { logEntry }
-                })
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log('[Auth] API 响应状态:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
             });
 
             if (!response.ok) {
@@ -289,22 +308,29 @@
                     if (errorJson.message) {
                         errorMessage += ` (${errorJson.message})`;
                     }
+                    console.error('[Auth] API 返回错误:', errorJson);
                 } catch (e) {
                     errorMessage += ` - ${errorText.substring(0, 200)}`;
+                    console.error('[Auth] API 返回错误文本:', errorText.substring(0, 500));
                 }
                 throw new Error(errorMessage);
             }
 
             const result = await response.json();
+            console.log('[Auth] 访问记录保存成功:', result);
             debugLog('[Auth] 访问记录保存成功:', result);
             return true;
         } catch (error) {
             // 增强错误日志，包含更多诊断信息
             const errorInfo = {
                 message: error.message,
+                name: error.name,
+                stack: error.stack,
                 logEntry: logEntry,
                 apiUrl: GIST_API_URL,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                location: window.location.href
             };
             debugError('[Auth] 保存访问记录失败:', errorInfo);
             console.error('[Auth] 访问记录保存失败详情:', errorInfo);
@@ -811,12 +837,27 @@
                 // 使用 await 确保错误被正确捕获和记录
                 (async () => {
                     try {
+                        debugLog('[Auth] 开始保存访问记录（已登录用户）:', logEntry);
                         const result = await saveLogToGist(logEntry);
                         if (!result) {
                             debugWarn('[Auth] 访问记录保存返回 false，可能保存失败');
+                            console.warn('[Auth] 访问记录保存失败，请检查：', {
+                                apiUrl: GIST_API_URL,
+                                logEntry: logEntry,
+                                timestamp: new Date().toISOString()
+                            });
+                        } else {
+                            debugLog('[Auth] 访问记录保存成功（已登录用户）');
                         }
                     } catch (error) {
                         debugError('[Auth] 访问记录保存失败（非阻塞）:', error);
+                        console.error('[Auth] 访问记录保存异常:', {
+                            error: error.message,
+                            stack: error.stack,
+                            apiUrl: GIST_API_URL,
+                            logEntry: logEntry,
+                            timestamp: new Date().toISOString()
+                        });
                     }
                 })();
             }
@@ -908,8 +949,16 @@
                 date: new Date().toLocaleString('zh-CN')
             };
             // 等待保存完成，如果失败会记录错误但不影响登录流程
+            debugLog('[Auth] 开始保存访问记录（新登录）:', logEntry);
             await saveLogToGist(logEntry).catch(error => {
                 debugError('[Auth] 登录时访问记录保存失败（非阻塞）:', error);
+                console.error('[Auth] 登录时访问记录保存异常:', {
+                    error: error.message,
+                    stack: error.stack,
+                    apiUrl: GIST_API_URL,
+                    logEntry: logEntry,
+                    timestamp: new Date().toISOString()
+                });
             });
 
             authOverlay.classList.add('hidden');

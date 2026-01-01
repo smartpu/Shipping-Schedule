@@ -299,34 +299,79 @@
                 </div>
             </div>
             
-            <!-- Monitor 系列工具 -->
-            <div id="monitor" class="tab-content">
+            <!-- Market 系列工具 -->
+            <div id="market" class="tab-content">
                 <div class="section-intro">
-                    <h2>Monitor 系列工具</h2>
-                    <p>专业的市场趋势分析与船期管理工具集，支持运价趋势、SCFI 历史趋势查看和专业船期表可视化。提供 Excel 数据载入、多维度筛选、大尺寸趋势图表展示、AI 智能分析等功能，便于进行市场分析和决策支持。</p>
+                    <h2>Market 系列工具</h2>
+                    <p>专业的市场趋势分析与船期管理工具集，支持 SCFI 历史趋势查看和专业船期表可视化。提供 Excel 数据载入、多维度筛选、大尺寸趋势图表展示、AI 智能分析等功能，便于进行市场分析和决策支持。</p>
                 </div>
                 
-                <div class="tools-grid" role="list" aria-label="Monitor系列工具列表">
+                <div class="tools-grid" role="list" aria-label="Market系列工具列表">
                     <div class="tool-card" role="listitem" aria-label="SCFI 历史趋势">
                         <div class="tool-header">
                             <div class="tool-icon blue" aria-hidden="true">📈</div>
                             <div class="tool-title">
                                 <h3>SCFI 历史趋势</h3>
-                                <div class="tool-id">Monitor-SCFI</div>
+                                <div class="tool-id">Market-SCFI</div>
                             </div>
                         </div>
                         <div class="tool-description">
                             读取 SCFI 文件，展示 B 列到 Q 列的综合指数及分 trade 指数趋势。默认显示最近3年数据，支持自定义日期范围筛选。图表高度为两倍，便于查看详细趋势。
                         </div>
                         <div class="tool-actions">
-                            <a href="Monitor-SCFI-Trends.html?from=monitor" class="tool-link" aria-label="打开 SCFI 历史趋势工具">打开工具 →</a>
-                            <a href="Monitor-SCFI-Trends-README.html" class="tool-link secondary" aria-label="查看 SCFI 历史趋势工具使用说明">使用说明</a>
+                            <a href="Market-SCFI-Trends.html?from=market" class="tool-link" aria-label="打开 SCFI 历史趋势工具">打开工具 →</a>
+                            <a href="Market-SCFI-Trends-README.html" class="tool-link secondary" aria-label="查看 SCFI 历史趋势工具使用说明">使用说明</a>
                         </div>
                     </div>
                     
+                    <div class="tool-card" role="article" aria-label="专业船期表">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">📅</div>
+                            <div class="tool-title">
+                                <h3>专业船期表</h3>
+                                <div class="tool-id">Market-Sailing-Schedule</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            专业的船期可视化与分析工具，支持 001 和 365 两种数据模式。提供日历视图展示、多维度筛选（区域/船公司/港口）、AI 智能分析和 PDF 导出功能，帮助快速掌握船期信息。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Market-Sailing-Schedule.html?from=market" class="tool-link" aria-label="打开专业船期表工具">打开工具 →</a>
+                            <a href="Market-Sailing-Schedule-README.html" class="tool-link secondary" aria-label="查看专业船期表工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="地理贸易航线">
+                        <div class="tool-header">
+                            <div class="tool-icon blue" aria-hidden="true">🌐</div>
+                            <div class="tool-title">
+                                <h3>地理贸易航线</h3>
+                                <div class="tool-id">Market-Geo-Trades-Service</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            地理贸易航线监控工具，支持载入 Excel 文件，通过多维度筛选（Trade、Service、Service Branding、Port Rotation）快速查找和分析服务信息。提供悬停查看详细信息功能，自动统计船舶数量。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Market-Geo-Trades-Service.html?from=market" class="tool-link" aria-label="打开地理贸易航线工具">打开工具 →</a>
+                            <a href="Market-Geo-Trades-Service-README.html" class="tool-link secondary" aria-label="查看地理贸易航线工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <!-- Monitor 系列工具 -->
+            <div id="monitor" class="tab-content">
+                <div class="section-intro">
+                    <h2>Monitor 系列工具</h2>
+                    <p>专业的监控与分析工具集，支持运价趋势监控和日订舱监控。提供 Excel 数据载入、多维度筛选、趋势图表展示等功能，便于进行数据监控和决策支持。</p>
+                </div>
+                
+                <div class="tools-grid" role="list" aria-label="Monitor系列工具列表">
                     <div class="tool-card" role="listitem" aria-label="运价趋势面板">
                         <div class="tool-header">
-                            <div class="tool-icon blue" aria-hidden="true">📊</div>
+                            <div class="tool-icon blue" aria-hidden="true">💹</div>
                             <div class="tool-title">
                                 <h3>运价趋势面板</h3>
                                 <div class="tool-id">Monitor-Rate-Trends</div>
@@ -341,37 +386,20 @@
                         </div>
                     </div>
                     
-                    <div class="tool-card" role="article" aria-label="专业船期表">
+                    <div class="tool-card" role="listitem" aria-label="日订舱监控">
                         <div class="tool-header">
-                            <div class="tool-icon orange" aria-hidden="true">📅</div>
+                            <div class="tool-icon green" aria-hidden="true">📋</div>
                             <div class="tool-title">
-                                <h3>专业船期表</h3>
-                                <div class="tool-id">Monitor-Sailing-Schedule</div>
+                                <h3>日订舱监控</h3>
+                                <div class="tool-id">Monitor-Daily-Booking</div>
                             </div>
                         </div>
                         <div class="tool-description">
-                            专业的船期可视化与分析工具，支持 001 和 365 两种数据模式。提供日历视图展示、多维度筛选（区域/船公司/港口）、AI 智能分析和 PDF 导出功能，帮助快速掌握船期信息。
+                            日订舱记录监控与分析工具，支持按 Trade 维度和客户维度进行订舱情况分析。提供多维度筛选、数据统计、趋势图表、数据对比、排名分析等功能，帮助快速掌握订舱情况。
                         </div>
                         <div class="tool-actions">
-                            <a href="Monitor-Sailing-Schedule.html?from=monitor" class="tool-link" aria-label="打开专业船期表工具">打开工具 →</a>
-                            <a href="Monitor-Sailing-Schedule-README.html" class="tool-link secondary" aria-label="查看专业船期表工具使用说明">使用说明</a>
-                        </div>
-                    </div>
-                    
-                    <div class="tool-card" role="listitem" aria-label="地理贸易航线">
-                        <div class="tool-header">
-                            <div class="tool-icon blue" aria-hidden="true">🌐</div>
-                            <div class="tool-title">
-                                <h3>地理贸易航线</h3>
-                                <div class="tool-id">Monitor-Geo-Trades-Service</div>
-                            </div>
-                        </div>
-                        <div class="tool-description">
-                            地理贸易航线监控工具，支持载入 Excel 文件，通过多维度筛选（Trade、Service、Service Branding、Port Rotation）快速查找和分析服务信息。提供悬停查看详细信息功能，自动统计船舶数量。
-                        </div>
-                        <div class="tool-actions">
-                            <a href="Monitor-Geo-Trades-Service.html?from=monitor" class="tool-link" aria-label="打开地理贸易航线工具">打开工具 →</a>
-                            <a href="Monitor-Geo-Trades-Service-README.html" class="tool-link secondary" aria-label="查看地理贸易航线工具使用说明">使用说明</a>
+                            <a href="Monitor-Daily-Booking.html?from=monitor" class="tool-link" aria-label="打开日订舱监控工具">打开工具 →</a>
+                            <a href="Monitor-Daily-Booking-README.html" class="tool-link secondary" aria-label="查看日订舱监控工具使用说明">使用说明</a>
                         </div>
                     </div>
                     
@@ -458,10 +486,11 @@
             SECTION_MAP: {
                 'tools001': '001',
                 'tools365': '365',
+                'market': 'Market',
                 'monitor': 'Monitor',
                 'admin': 'Admin'
             },
-            VALID_TABS: ['tools001', 'tools365', 'monitor', 'admin']
+            VALID_TABS: ['tools001', 'tools365', 'market', 'monitor', 'admin']
         };
 
         /**

@@ -34,9 +34,10 @@ Data/**
 !Data/index.json
 !Data/001-03-market-analysis.xlsx
 !Data/365-03-market-watch.xlsx
-!Data/Monitor-Geo-Trades-Service.xlsx
-!Data/Monitor-SCFI-Trends.xlsx
+!Data/Market-Geo-Trades-Service.xlsx
+!Data/Market-SCFI-Trends.xlsx
 !Data/Monitor-Rate-Trends.xlsx
+!Data/Monitor-Daily-Booking.xlsx
 !Data/Admin-access-logs.json
 
 # linerlytica 目录：允许所有文件上传到 GitHub

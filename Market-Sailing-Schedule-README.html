@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor · 专业船期表 使用说明</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
+</head>
+<body data-page="Market-Sailing-Schedule-README.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Monitor · 专业船期表 使用说明</h2>
+                            <p>专业的船期可视化与分析工具，支持 001 和 365 两种数据模式，提供日历视图展示、多维度筛选、AI 智能分析等功能。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Market-Sailing-Schedule.html?from=market" class="tool-link secondary" aria-label="打开工具">打开工具 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容区域 -->
+                <div class="card-white mt-20">
+                    <div class="readme-content">
+                        <h2>工具简介</h2>
+                        <p><strong>Monitor · 专业船期表</strong> 是一款专业的船期可视化与分析工具。支持 001 和 365 两种数据模式，提供日历视图展示、多维度筛选、AI 智能分析等功能，帮助用户快速掌握船期信息并做出决策。工具主要特点：</p>
+                        <ul>
+                            <li><strong>双模式支持</strong>：支持 001（维运网）和 365（明日数航）两种数据格式</li>
+                            <li><strong>日历视图</strong>：以周为单位展示船期（当周 + 未来三周，共 4 周），直观清晰，支持分页查看</li>
+                            <li><strong>多维度筛选</strong>：支持 001 目的港、共舱船公司、365 目的港三个筛选器，筛选条件联动</li>
+                            <li><strong>AI 智能分析</strong>：集成 DeepSeek / KIMI / 通义千问 多模型 AI 分析</li>
+                            <li><strong>月度汇总</strong>：自动生成月度航线靠泊汇总表格</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>快速开始</h2>
+                        <h3>前置准备</h3>
+                        <ol>
+                            <li><strong>载入 Excel 数据源</strong>：文件需包含 <strong>schedule</strong> 工作表，并具备区域、港口、航线、周别、运力、船名航次等字段（支持 001 或 365 格式）。</li>
+                            <li><strong>准备 AI 密钥</strong>：工具已集成临时 API Key（服务器配置），可直接使用。使用临时 API Key 时会弹出提示，<strong>强烈建议自行申请 API Key 自用</strong>（临时 API Key 随时可能过期），用户输入的 API Key 优先级高于配置文件中的临时 API Key。调用费用及合规责任由使用方承担。详细说明见下方"AI 智能分析"部分。</li>
+                        </ol>
+
+                        <h3>基本流程</h3>
+                        <ol>
+                            <li>打开工具页面</li>
+                            <li>选择数据模式（001 或 365，默认显示 365 模式）</li>
+                            <li>工具会自动读取配置文件并加载对应的 Excel 测试数据文件（如果配置存在）</li>
+                            <li>如果自动加载失败或需要手动选择：
+                                <ul>
+                                    <li>点击"001文件"或"365文件"按钮，载入包含船期数据的 Excel 文件</li>
+                                </ul>
+                            </li>
+                            <li>数据加载成功后，使用筛选器选择 001 目的港、共舱船公司、365 目的港等条件</li>
+                            <li>在日历视图中查看筛选后的船期信息</li>
+                            <li>（可选）使用 AI 分析功能获取智能建议</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>核心功能</h2>
+                        <h3>1. 数据模式切换</h3>
+                        <ul>
+                            <li><strong>001 模式</strong>：适用于维运网（weiyun001.com）数据格式</li>
+                            <li><strong>365 模式</strong>：适用于明日数航（hangyun365.com）数据格式（默认模式）</li>
+                            <li>切换模式后需要重新载入对应的 Excel 文件</li>
+                        </ul>
+
+                        <h3>2. 多维度筛选</h3>
+                        <ul>
+                            <li><strong>001 目的港筛选</strong>：支持多选 001 模式的目的港，快速定位目标市场</li>
+                            <li><strong>共舱船公司筛选</strong>：支持多选船公司，查看特定承运商的船期（根据显示模式自动切换 001/365 的船公司列表）</li>
+                            <li><strong>365 目的港筛选</strong>：支持多选 365 模式的目的港，聚焦特定目的港</li>
+                            <li><strong>搜索功能</strong>：所有筛选器都支持实时搜索，快速定位选项</li>
+                            <li><strong>筛选联动</strong>：筛选条件会自动联动，只显示符合所有条件的船期</li>
+                        </ul>
+
+                        <h3>3. 日历视图</h3>
+                        <ul>
+                            <li><strong>周视图</strong>：以周为单位展示船期，每列代表一天，显示日期、星期和周数（格式：MM/DD 周X | 第WW周）</li>
+                            <li><strong>船期卡片</strong>：每个船期以卡片形式展示，包含目的港、船公司、船名航次、运力等信息</li>
+                            <li><strong>高亮显示</strong>：点击船期卡片可高亮显示相同船名航次的所有记录</li>
+                            <li><strong>分页功能</strong>：每天最多显示 4 条船期记录，超过 4 条时可通过日期旁边的上下箭头（▲/▼）翻页查看其他记录</li>
+                            <li><strong>月度汇总</strong>：自动生成月度航线靠泊汇总表格，显示各航线的靠泊次数统计</li>
+                        </ul>
+
+                        <h3>4. AI 智能分析</h3>
+                        <p><strong>定位</strong>：DeepSeek × KIMI × 通义千问 三模型交叉验证，输出船期趋势分析和决策建议</p>
+                        <h4>主要能力</h4>
+                        <ul>
+                            <li>✅ <strong>多模型支持</strong>：支持 DeepSeek、KIMI（Moonshot）、通义千问三种 AI 模型</li>
+                            <li>✅ <strong>智能分析</strong>：基于当前筛选的船期数据，AI 提供趋势分析和决策建议</li>
+                            <li>✅ <strong>结果对比</strong>：可切换不同模型对比分析结果，交叉验证观点</li>
+                            <li>✅ <strong>三模型配置</strong>：
+                                <ul>
+                                    <li><strong>DeepSeek</strong>：<code>deepseek-chat</code>（默认）及 <code>deepseek-v3</code>、<code>deepseek-reasoner</code>、<code>deepseek-r1</code>、<code>deepseek-coder</code> 等模型</li>
+                                    <li><strong>KIMI (Moonshot)</strong>：<code>moonshot-v1-32k</code>（默认）及 <code>moonshot-v1-8k</code>、<code>moonshot-v1-128k</code>、<code>moonshot-v1-k2</code> 等模型</li>
+                                    <li><strong>通义千问 (Qwen)</strong>：<code>qwen-max</code>（默认，推荐）及 <code>qwen-turbo</code>、<code>qwen-plus</code>、<code>qwen-max-longcontext</code> 等模型</li>
+                                    <li>API Key、URL、模型选择都会保存在浏览器 <code>localStorage</code></li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h4>模型选择建议</h4>
+                        <ul>
+                            <li><strong>DeepSeek</strong>：推荐 <code>deepseek-chat</code>（基础）或 <code>deepseek-v3</code>（高性能）
+                                <br>申请 API Key：<a href="https://platform.deepseek.com" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.deepseek.com</a>
+                            </li>
+                            <li><strong>KIMI</strong>：推荐 <code>moonshot-v1-32k</code>（平衡），<code>moonshot-v1-k2</code>（K2新模型，需确认API可用）
+                                <br>申请 API Key：<a href="https://platform.moonshot.cn/console/api-keys" target="_blank" style="color: #667eea; text-decoration: underline;">https://platform.moonshot.cn/console/api-keys</a>
+                            </li>
+                            <li><strong>通义千问</strong>：推荐 <code>qwen-max</code>（最佳性能），<code>qwen-turbo</code>（经济型）
+                                <br>申请 API Key：<a href="https://dashscope.console.aliyun.com/apiKey" target="_blank" style="color: #667eea; text-decoration: underline;">https://dashscope.console.aliyun.com/apiKey</a>
+                            </li>
+                        </ul>
+
+                        <h4>API Key 使用说明</h4>
+                        <ul>
+                            <li>工具已集成临时 API Key（服务器配置），可直接使用，无需手动输入</li>
+                            <li><strong>使用临时 API Key 时会弹出提示</strong>：系统会提示您正在使用临时 API Key，并强烈建议自行申请自己的 API Key</li>
+                            <li><strong>强烈建议自行申请 API Key</strong>：临时 API Key 随时可能过期无法使用，且可能存在配额限制。自行申请可获得更好的使用体验和更高的调用额度</li>
+                            <li>如果用户自行填写 API Key，用户输入的 API Key 优先级高于配置文件中的临时 API Key</li>
+                            <li>配置会自动保存到浏览器本地存储，下次打开会自动加载</li>
+                            <li><strong>AI 输出长度</strong>：已设置为 8000 tokens，可支持更长的分析输出</li>
+                        </ul>
+
+                        <h4>触发条件</h4>
+                        <ol>
+                            <li>至少选择一个筛选条件（001 目的港、共舱船公司或 365 目的港）并加载出船期数据</li>
+                            <li>已配置有效 API Key</li>
+                            <li>点击"使用 DeepSeek 分析"、"使用 KIMI 分析"或"使用通义千问分析"</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>数据格式说明</h2>
+                        <h3>Excel（<code>schedule</code> 工作表）</h3>
+                        <p>001 模式和 365 模式使用相同的工作表名称，但字段要求略有不同：</p>
+                        <ul>
+                            <li><strong>001 模式</strong>：必需字段包括港口、航线、周别、运力、船名航次、开船日期等</li>
+                            <li><strong>365 模式</strong>：必需字段包括区域、子区域、国家/地区、港口、航线、周别、运力、船名航次、开船日期等</li>
+                            <li>日期格式支持：Excel 日期序列号、标准日期格式（YYYY/MM/DD）</li>
+                        </ul>
+
+                        <h3>Excel（<code>week</code> 工作表）</h3>
+                        <p>用于定义周别与日期范围的对应关系，需包含以下列：</p>
+                        <ul>
+                            <li><strong>日期范围列</strong>：日期范围字符串（A列或第0列，格式如 <code>2025/12/21~2025/12/27</code>）</li>
+                            <li><strong>周别文本列</strong>：周别代码或文本（D列或第3列，格式如 <code>202552</code> 或 <code>2025年第52周</code>）</li>
+                        </ul>
+                        <blockquote>
+                            <p>⚠️ 如果 Excel 文件中包含 <code>week</code> 工作表，工具会自动读取并使用其中的日期范围定义。如果没有，工具会使用默认的周别计算逻辑（ISO 标准，周从周日开始，第1周包含1月4日）。</p>
+                        </blockquote>
+
+                        <h3>周别规则</h3>
+                        <ul>
+                            <li>支持格式：<code>202547</code>、<code>2025年第47周</code>、<code>2025-47</code>、<code>2025/47</code></li>
+                            <li>周定义：周日 → 周六，例如 <code>2025/1/4 ~ 2025/1/10</code> 为第1周</li>
+                            <li><strong>week 工作表</strong>：Excel 文件需包含 <code>week</code> 工作表，用于定义周别与日期范围的对应关系。工具会自动读取该工作表，确保所有周别都是完整的 7 天周期，日历视图会显示准确的周数。</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>常见问题</h2>
+                        <h3>Q1: Excel 加载失败？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>确认文件中存在 <code>schedule</code> 工作表</li>
+                            <li>检查数据是否在"当周 + 未来三周"的时间范围内（共 4 周）</li>
+                            <li>浏览器 Console 是否有错误</li>
+                        </ul>
+
+                        <h3>Q2: 筛选控件没显示？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>Excel 解析失败或列名不匹配</li>
+                            <li>刷新页面重新载入</li>
+                        </ul>
+
+                        <h3>Q3: AI 分析失败？</h3>
+                        <p><strong>A</strong>：可能的原因：</p>
+                        <ul>
+                            <li>如果使用的是临时 API Key（服务器配置），可能已过期或配额不足，建议自行申请 API Key</li>
+                            <li>使用临时 API Key 时会弹出提示对话框，确认后即可继续使用</li>
+                            <li>如果已自行配置 API Key，请检查 API Key、URL 和模型 ID 是否正确</li>
+                            <li>确认网络可访问 DeepSeek / KIMI / 通义千问</li>
+                            <li>查看提示信息（如配额不足、接口错误）</li>
+                            <li>查看浏览器控制台是否有错误信息</li>
+                        </ul>
+
+                        <h3>Q4: 如何切换数据模式？</h3>
+                        <p><strong>A</strong>：点击页面顶部的"001"或"365"按钮即可切换模式。切换后需要重新载入对应格式的 Excel 文件。</p>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Monitor · 专业船期表使用声明</h2>
+                    <p class="usage-statement-text">资料整合自用户 Excel 数据，解析结果仅供内部研判，不构成对外报价或投资建议。</p>
+                    <p class="usage-statement-text">AI 服务由 DeepSeek / KIMI / 通义千问 API 驱动，所有调用费用与合规责任由使用者自担，涉及客户或敏感数据时请先完成脱敏处理。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        // 使用公共初始化函数
+        init001ToolPage('Market-Sailing-Schedule-README.html', 'market');
+    </script>
+</body>
+</html>
+

@@ -218,7 +218,18 @@
         } catch (error) {
             debugError('[Auth] 验证用户失败:', {
                 message: error.message,
-                url: url
+                url: url,
+                name: normalizedName,
+                phone: normalizedPhone ? '***' : 'missing',
+                email: normalizedEmail
+            });
+            console.error('[Auth] 验证用户失败详情:', {
+                error: error.message,
+                stack: error.stack,
+                url: url,
+                name: normalizedName,
+                phone: normalizedPhone ? '***' : 'missing',
+                email: normalizedEmail
             });
             return null;
         }
@@ -475,12 +486,13 @@
         if (!authData || userWhitelist.length === 0) return null;
         
         const normalizedName = (authData.name || '').trim().toLowerCase();
-        const normalizedPhone = (authData.phone || '').trim();
+        // 注意：index.html 中 phone 字段是从 password 复制的，所以优先使用 phone，如果没有则使用 password
+        const normalizedPhone = (authData.phone || authData.password || '').trim();
         const normalizedEmail = (authData.email || '').trim().toLowerCase();
 
         return userWhitelist.find(user => {
             // 精确匹配：name/phone/email 必须完全匹配
-            // 注意：user.name 在 loadWhitelist 中已经被转换为小写
+            // 注意：user.name 在 verifyUserInWhitelist 中已经被转换为小写
             const phoneMatch = user.phone === normalizedPhone;
             const emailMatch = user.email === normalizedEmail;
             // user.name 已经是小写，直接比较
@@ -886,15 +898,31 @@
             if (!isTestUser) {
                 // 先检查本地缓存
                 let user = getUserFromWhitelist(authData);
+                debugLog('[Auth] 本地缓存检查结果:', { 
+                    found: !!user, 
+                    cacheSize: userWhitelist.length,
+                    authData: { 
+                        name: authData.name, 
+                        phone: authData.phone || authData.password ? '***' : 'missing',
+                        email: authData.email 
+                    }
+                });
                 
                 // 如果缓存中没有，使用服务端验证
                 if (!user) {
                     debugLog('[Auth] 本地缓存中未找到用户，使用服务端验证');
+                    // 注意：index.html 中 phone 字段是从 password 复制的
+                    const phone = authData.phone || authData.password || '';
                     user = await verifyUserInWhitelist(
                         authData.name || '',
-                        authData.phone || '',
+                        phone,
                         authData.email || ''
                     );
+                    
+                    debugLog('[Auth] 服务端验证结果:', { 
+                        found: !!user, 
+                        userInfo: user ? { name: user.name, level: user.level } : null 
+                    });
                     
                     if (!user) {
                         debugWarn('[Auth] 用户不在白名单中，重定向到登录页面');
@@ -907,6 +935,12 @@
                             window.location.href = 'index.html';
                         }
                         return;
+                    }
+                    
+                    // 验证成功后，再次检查缓存（应该能找到）
+                    user = getUserFromWhitelist(authData);
+                    if (!user) {
+                        debugWarn('[Auth] 验证成功但缓存中仍未找到用户，可能存在数据不一致');
                     }
                 }
             }

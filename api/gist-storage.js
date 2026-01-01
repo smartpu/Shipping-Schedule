@@ -218,7 +218,9 @@ module.exports = async function handler(req, res) {
             const { type } = req.query;
 
             if (type === 'whitelist') {
-                // 读取用户白名单
+                // 验证用户是否在白名单中（不返回所有用户信息，只返回匹配结果）
+                const { name, phone, email } = req.query;
+                
                 if (!USER_WHITELIST_GIST_ID) {
                     res.status(500).json({ 
                         error: '用户白名单 Gist ID 未配置',
@@ -229,14 +231,57 @@ module.exports = async function handler(req, res) {
 
                 const gist = await getGist(USER_WHITELIST_GIST_ID);
                 if (!gist || !gist.content) {
-                    res.status(200).json([]);
+                    res.status(200).json({ 
+                        authorized: false,
+                        message: '白名单为空'
+                    });
                     return;
                 }
 
                 try {
                     const users = JSON.parse(gist.content);
-                    res.status(200).json(users);
-                    return;
+                    
+                    // 如果提供了用户信息，进行匹配验证
+                    if (name && phone && email) {
+                        const normalizedName = (name || '').trim().toLowerCase();
+                        const normalizedPhone = (phone || '').trim();
+                        const normalizedEmail = (email || '').trim().toLowerCase();
+                        
+                        const matchedUser = users.find(user => {
+                            const userPhone = (user.phone || '').trim();
+                            const userEmail = (user.email || '').trim().toLowerCase();
+                            const userName = (user.name || '').trim().toLowerCase();
+                            
+                            const phoneMatch = userPhone === normalizedPhone;
+                            const emailMatch = userEmail === normalizedEmail;
+                            const nameMatch = !userName || !normalizedName || userName === normalizedName;
+                            
+                            return phoneMatch && emailMatch && nameMatch;
+                        });
+                        
+                        if (matchedUser) {
+                            // 只返回匹配用户的基本信息和权限，不返回敏感信息
+                            res.status(200).json({
+                                authorized: true,
+                                user: {
+                                    name: matchedUser.name,
+                                    level: matchedUser.level || 'user',
+                                    groups: matchedUser.groups || []
+                                }
+                            });
+                            return;
+                        } else {
+                            res.status(200).json({
+                                authorized: false,
+                                message: '用户不在白名单中'
+                            });
+                            return;
+                        }
+                    } else {
+                        // 如果没有提供用户信息，返回空结果（保持向后兼容，但不返回所有用户）
+                        res.status(200).json([]);
+                        return;
+                    }
                 } catch (parseError) {
                     console.error('[Gist API] 解析白名单 JSON 失败:', parseError);
                     res.status(500).json({ 

@@ -115,18 +115,25 @@
     }
 
     /**
-     * 从 Gist 加载用户白名单
+     * 从 Gist 验证用户是否在白名单中（服务端验证，不返回所有用户信息）
+     * @param {string} name - 用户名
+     * @param {string} phone - 手机号/密码
+     * @param {string} email - 邮箱
+     * @returns {Promise<Object|null>} 匹配的用户信息，未匹配返回 null
      */
-    async function loadWhitelist() {
-        // 本地测试模式：跳过白名单加载
+    async function verifyUserInWhitelist(name, phone, email) {
+        // 本地测试模式：跳过验证
         if (isLocalTestMode) {
-            debugLog('[Auth] 本地测试模式：跳过白名单加载');
-            userWhitelist = [];
-            return [];
+            debugLog('[Auth] 本地测试模式：跳过白名单验证');
+            return null;
         }
         
-        const url = `${GIST_API_URL}?type=whitelist`;
-        debugLog(`[Auth] 加载白名单: ${url}`);
+        const normalizedName = (name || '').trim();
+        const normalizedPhone = (phone || '').trim();
+        const normalizedEmail = (email || '').trim();
+        
+        const url = `${GIST_API_URL}?type=whitelist&name=${encodeURIComponent(normalizedName)}&phone=${encodeURIComponent(normalizedPhone)}&email=${encodeURIComponent(normalizedEmail)}`;
+        debugLog(`[Auth] 验证用户是否在白名单中: ${normalizedName}`);
         
         try {
             const response = await fetchWithRetry(url, {
@@ -138,44 +145,107 @@
             
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`加载白名单失败: ${response.status} ${response.statusText} - ${errorText}`);
+                throw new Error(`验证失败: ${response.status} ${response.statusText} - ${errorText}`);
             }
             
             const data = await response.json();
             
-            if (!Array.isArray(data)) {
-                debugWarn('[Auth] 白名单数据格式错误，期望数组');
-                userWhitelist = [];
-                return [];
+            // 新格式：返回 { authorized: true, user: {...} } 或 { authorized: false }
+            if (data && typeof data === 'object' && 'authorized' in data) {
+                if (data.authorized && data.user) {
+                    // 将匹配的用户信息添加到白名单缓存中（用于后续权限检查）
+                    const userInfo = {
+                        name: normalizedName.toLowerCase(),
+                        phone: normalizedPhone,
+                        email: normalizedEmail.toLowerCase(),
+                        level: data.user.level || 'user',
+                        groups: data.user.groups || []
+                    };
+                    
+                    // 如果白名单中没有该用户，添加到缓存
+                    const existingIndex = userWhitelist.findIndex(u => 
+                        u.phone === normalizedPhone && u.email === normalizedEmail.toLowerCase()
+                    );
+                    if (existingIndex === -1) {
+                        userWhitelist.push(userInfo);
+                    } else {
+                        userWhitelist[existingIndex] = userInfo;
+                    }
+                    
+                    debugLog(`[Auth] 用户验证成功: ${normalizedName}`);
+                    return userInfo;
+                } else {
+                    debugWarn(`[Auth] 用户不在白名单中: ${normalizedName}`);
+                    return null;
+                }
             }
             
-            userWhitelist = data.map(user => ({
-                name: (user.name || '').trim().toLowerCase(),
-                phone: (user.phone || '').trim(),
-                email: (user.email || '').trim().toLowerCase(),
-                level: user.level || 'user',
-                groups: user.groups || [] // 用户组列表，支持 ['tools001', 'tools365', 'market', 'monitor', 'admin'] 或 ['*'] 表示全部权限
-            }));
-            
-            debugLog(`[Auth] 白名单加载成功，共 ${userWhitelist.length} 个用户`);
-            
-            // 触发白名单加载完成事件
-            if (typeof window !== 'undefined' && window.dispatchEvent) {
-                const event = new CustomEvent('whitelistLoaded', {
-                    detail: { userCount: userWhitelist.length }
+            // 旧格式兼容：返回数组（向后兼容）
+            if (Array.isArray(data)) {
+                const matchedUser = data.find(user => {
+                    const userPhone = (user.phone || '').trim();
+                    const userEmail = (user.email || '').trim().toLowerCase();
+                    const userName = (user.name || '').trim().toLowerCase();
+                    
+                    return userPhone === normalizedPhone && 
+                           userEmail === normalizedEmail.toLowerCase() && 
+                           (!userName || userName === normalizedName.toLowerCase());
                 });
-                window.dispatchEvent(event);
+                
+                if (matchedUser) {
+                    const userInfo = {
+                        name: normalizedName.toLowerCase(),
+                        phone: normalizedPhone,
+                        email: normalizedEmail.toLowerCase(),
+                        level: matchedUser.level || 'user',
+                        groups: matchedUser.groups || []
+                    };
+                    
+                    const existingIndex = userWhitelist.findIndex(u => 
+                        u.phone === normalizedPhone && u.email === normalizedEmail.toLowerCase()
+                    );
+                    if (existingIndex === -1) {
+                        userWhitelist.push(userInfo);
+                    } else {
+                        userWhitelist[existingIndex] = userInfo;
+                    }
+                    
+                    return userInfo;
+                }
             }
             
-            return userWhitelist;
+            return null;
         } catch (error) {
-            debugError('[Auth] 加载白名单失败:', {
+            debugError('[Auth] 验证用户失败:', {
                 message: error.message,
                 url: url
             });
+            return null;
+        }
+    }
+
+    /**
+     * 从 Gist 加载用户白名单（已废弃，改为使用 verifyUserInWhitelist）
+     * 保留此函数以保持向后兼容，但实际使用服务端验证
+     */
+    async function loadWhitelist() {
+        // 本地测试模式：跳过白名单加载
+        if (isLocalTestMode) {
+            debugLog('[Auth] 本地测试模式：跳过白名单加载');
             userWhitelist = [];
             return [];
         }
+        
+        // 不再加载所有用户，白名单验证改为按需验证
+        // 触发白名单加载完成事件（保持兼容性）
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+            const event = new CustomEvent('whitelistLoaded', {
+                detail: { userCount: userWhitelist.length }
+            });
+            window.dispatchEvent(event);
+        }
+        
+        return userWhitelist;
     }
 
     /**
@@ -811,18 +881,30 @@
             
             // 检查用户是否在白名单中（测试用户跳过）
             if (!isTestUser) {
-                const user = getUserFromWhitelist(authData);
+                // 先检查本地缓存
+                let user = getUserFromWhitelist(authData);
+                
+                // 如果缓存中没有，使用服务端验证
                 if (!user) {
-                    debugWarn('[Auth] 用户不在白名单中，重定向到登录页面');
-                    localStorage.removeItem(AUTH_STORAGE_KEY);
-                    const currentPath = window.location.pathname;
-                    const isIndexPage = currentPath.endsWith('index.html') || 
-                                       currentPath.endsWith('/') || 
-                                       currentPath === '';
-                    if (!isIndexPage) {
-                        window.location.href = 'index.html';
+                    debugLog('[Auth] 本地缓存中未找到用户，使用服务端验证');
+                    user = await verifyUserInWhitelist(
+                        authData.name || '',
+                        authData.phone || '',
+                        authData.email || ''
+                    );
+                    
+                    if (!user) {
+                        debugWarn('[Auth] 用户不在白名单中，重定向到登录页面');
+                        localStorage.removeItem(AUTH_STORAGE_KEY);
+                        const currentPath = window.location.pathname;
+                        const isIndexPage = currentPath.endsWith('index.html') || 
+                                           currentPath.endsWith('/') || 
+                                           currentPath === '';
+                        if (!isIndexPage) {
+                            window.location.href = 'index.html';
+                        }
+                        return;
                     }
-                    return;
                 }
             }
             
@@ -927,8 +1009,9 @@
                 if (emailError) emailError.classList.remove('show');
             }
 
-            // 检查是否在白名单中
-            if (!isUserInWhitelist(name, phone, email)) {
+            // 检查是否在白名单中（使用服务端验证）
+            const verifiedUser = await verifyUserInWhitelist(name, phone, email);
+            if (!verifiedUser) {
                 if (emailError) {
                     emailError.textContent = '您不在访问白名单中，请联系管理员';
                     emailError.classList.add('show');
@@ -1019,6 +1102,7 @@
     window.batchUpdateUserGroups = batchUpdateUserGroups;
     window.getToolGroupFromPage = getToolGroupFromPage;
     window.waitForWhitelist = waitForWhitelist;
+    window.verifyUserInWhitelist = verifyUserInWhitelist;
 
     // 自动初始化（带权限检查）
     async function autoInitWithAuth() {

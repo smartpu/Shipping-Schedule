@@ -49,7 +49,8 @@
             submenuId: 'submenuMonitor',
             items: [
                 { href: 'Monitor-Rate-Trends.html?from=monitor', icon: '💹', label: '运价趋势面板' },
-                { href: 'Monitor-Daily-Booking.html?from=monitor', icon: '📋', label: '日订舱监控' }
+                { href: 'Monitor-Daily-Booking.html?from=monitor', icon: '📋', label: '每日订舱监控' },
+                { href: 'Monitor-Booking-Summary.html?from=monitor', icon: '📊', label: '订舱汇总分析' }
             ]
         },
         admin: {

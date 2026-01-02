@@ -75,10 +75,22 @@
             font-size: 15px;
             line-height: 1.6;
         }
-        @media (max-width: 900px) {
+        /* iPad横屏：显示多列（类似桌面版） */
+        @media (min-width: 1024px) and (max-width: 1400px) and (orientation: landscape) {
+            .tools-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 24px; }
+        }
+        
+        /* 移动设备：工具卡片单列显示（修复手机竖屏显示3列的问题） */
+        /* iPad竖屏也会被这个规则覆盖，显示单列 */
+        @media (max-width: 1000px) {
             .tools-grid { grid-template-columns: 1fr !important; gap: 20px; }
             .dashboard-content { padding: 16px; }
             .section-intro { margin-bottom: 24px; }
+        }
+        
+        /* iPad竖屏：强制单列显示 */
+        @media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+            .tools-grid { grid-template-columns: 1fr !important; gap: 20px; }
         }
     </style>
     <!-- 预加载完整 CSS 文件 -->
@@ -365,7 +377,7 @@
             <div id="monitor" class="tab-content">
                 <div class="section-intro">
                     <h2>Monitor 系列工具</h2>
-                    <p>专业的监控与分析工具集，支持运价趋势监控和日订舱监控。提供 Excel 数据载入、多维度筛选、趋势图表展示等功能，便于进行数据监控和决策支持。</p>
+                    <p>专业的监控与分析工具集，支持运价趋势监控和每日订舱监控。提供 Excel 数据载入、多维度筛选、趋势图表展示等功能，便于进行数据监控和决策支持。</p>
                 </div>
                 
                 <div class="tools-grid" role="list" aria-label="Monitor系列工具列表">
@@ -386,20 +398,37 @@
                         </div>
                     </div>
                     
-                    <div class="tool-card" role="listitem" aria-label="日订舱监控">
+                    <div class="tool-card" role="listitem" aria-label="每日订舱监控">
                         <div class="tool-header">
                             <div class="tool-icon green" aria-hidden="true">📋</div>
                             <div class="tool-title">
-                                <h3>日订舱监控</h3>
+                                <h3>每日订舱监控</h3>
                                 <div class="tool-id">Monitor-Daily-Booking</div>
                             </div>
                         </div>
                         <div class="tool-description">
-                            日订舱记录监控与分析工具，支持按 Trade 维度和客户维度进行订舱情况分析。提供多维度筛选、数据统计、趋势图表、数据对比、排名分析等功能，帮助快速掌握订舱情况。
+                            每日订舱记录监控与分析工具，支持按 Trade 维度、Account 维度和 VSL/VOY 维度进行订舱情况分析。提供多维度筛选、数据统计、趋势图表、数据对比、排名分析等功能，帮助快速掌握订舱情况。
                         </div>
                         <div class="tool-actions">
-                            <a href="Monitor-Daily-Booking.html?from=monitor" class="tool-link" aria-label="打开日订舱监控工具">打开工具 →</a>
-                            <a href="Monitor-Daily-Booking-README.html" class="tool-link secondary" aria-label="查看日订舱监控工具使用说明">使用说明</a>
+                            <a href="Monitor-Daily-Booking.html?from=monitor" class="tool-link" aria-label="打开每日订舱监控工具">打开工具 →</a>
+                            <a href="Monitor-Daily-Booking-README.html" class="tool-link secondary" aria-label="查看每日订舱监控工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" role="listitem" aria-label="订舱汇总分析">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">📊</div>
+                            <div class="tool-title">
+                                <h3>订舱汇总分析</h3>
+                                <div class="tool-id">Monitor-Booking-Summary</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            订舱数据多维度分析工具，支持 Sales、Account、船名航次等8个维度的深度分析。提供按部门、周别、GPS、限额等不同维度的数据分析，支持详细BL资料查看和限额管理功能。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Monitor-Booking-Summary.html?from=monitor" class="tool-link" aria-label="打开订舱汇总分析工具">打开工具 →</a>
+                            <a href="Monitor-Booking-Summary-README.html" class="tool-link secondary" aria-label="查看订舱汇总分析工具使用说明">使用说明</a>
                         </div>
                     </div>
                     

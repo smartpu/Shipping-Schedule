@@ -4365,6 +4365,11 @@ button.file-btn:disabled {
     box-sizing: border-box;
 }
 
+/* 当明确需要三列时（001-04、365-04、Market-Sailing-Schedule），使用固定三列布局，平均分配宽度 */
+.filter-row:has(.filter-group:nth-child(3)):not(:has(.filter-group:nth-child(4))) {
+    grid-template-columns: 1fr 1fr 1fr; /* 三个筛选器平均分配宽度 */
+}
+
 /* 当明确需要四列时，使用固定四列布局 */
 .filter-row:has(.filter-group:nth-child(4)) {
     grid-template-columns: 1fr 1fr 1fr 1fr; /* 四个筛选器平均分配宽度 */

@@ -303,8 +303,15 @@
                         <div id="emptyChartMessage" class="empty-chart-message hidden">
                             请选择区域（或更细分的层级）以查看图表
                         </div>
-                        <div class="chart-wrapper hidden" id="chartWrapper">
-                            <canvas id="trendChart"></canvas>
+                        <div class="chart-wrapper hidden" id="chartWrapper" style="display: flex; flex-direction: column; gap: 30px;">
+                            <div style="position: relative; height: 400px;">
+                                <h4 style="margin-bottom: 15px; color: #1f2d3d; font-size: 16px; font-weight: 600;">运力趋势 (TEU)</h4>
+                                <canvas id="capacityChart"></canvas>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <h4 style="margin-bottom: 15px; color: #1f2d3d; font-size: 16px; font-weight: 600;">派船趋势</h4>
+                                <canvas id="dispatchChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2320,6 +2327,7 @@
         let currentView = 'all';
         let weekColumns = [];
         let capacityChart = null;
+        let dispatchChart = null;
         let routePathMap = {};
         let weekDefinitionMap = {};
 
@@ -3460,6 +3468,10 @@
                     capacityChart.destroy();
                     capacityChart = null;
                 }
+                if (dispatchChart) {
+                    dispatchChart.destroy();
+                    dispatchChart = null;
+                }
                 return;
             }
             
@@ -3532,7 +3544,9 @@
                 shipData.push(totalShips);
             });
             
-            datasets.push({
+            // 分离运力和派船数据
+            const capacityDatasets = datasets.filter(ds => ds.type === 'bar');
+            const dispatchDatasets = [{
                 label: '派船总数',
                 data: shipData,
                 type: 'line',
@@ -3545,33 +3559,30 @@
                 pointHoverRadius: 6,
                 pointBackgroundColor: '#FF8A00',
                 pointBorderColor: '#FFFFFF',
-                pointBorderWidth: 2,
-                yAxisID: 'y1',
-                order: 0
-            });
+                pointBorderWidth: 2
+            }];
             
+            // 销毁旧图表
             if (capacityChart) {
                 capacityChart.destroy();
+                capacityChart = null;
+            }
+            if (dispatchChart) {
+                dispatchChart.destroy();
+                dispatchChart = null;
             }
             
-            const ctx = document.getElementById('trendChart').getContext('2d');
-            capacityChart = new Chart(ctx, {
+            // 创建运力图表（堆叠柱状图）
+            const capacityCtx = document.getElementById('capacityChart').getContext('2d');
+            capacityChart = new Chart(capacityCtx, {
                 data: {
                     labels: weekLabels,
-                    datasets: datasets
+                    datasets: capacityDatasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '运力与派船趋势分析',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            }
-                        },
                         legend: {
                             display: true,
                             position: 'top'
@@ -3591,25 +3602,49 @@
                         },
                         y: {
                             stacked: true,
-                            position: 'left',
                             title: {
                                 display: true,
                                 text: '运力 (TEU)'
                             },
                             beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 创建派船图表（折线图）
+            const dispatchCtx = document.getElementById('dispatchChart').getContext('2d');
+            dispatchChart = new Chart(dispatchCtx, {
+                data: {
+                    labels: weekLabels,
+                    datasets: dispatchDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
                         },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '周别'
+                            }
+                        },
+                        y: {
                             title: {
                                 display: true,
                                 text: '派船数'
                             },
-                            beginAtZero: true,
-                            grid: {
-                                drawOnChartArea: false
-                            },
-                            stacked: false
+                            beginAtZero: true
                         }
                     }
                 }

@@ -1035,8 +1035,7 @@
             }
             
             // 更新移动端筛选框显示（移除加载状态，排除iPad横屏宽屏模式）
-            const isLandscape = window.innerWidth > window.innerHeight;
-            const isMobileFilter = window.innerWidth <= 1024 && !(window.innerWidth >= 1024 && isLandscape);
+            // 复用函数开头已声明的 isLandscape 和 isMobileFilter 变量
             if (isMobileFilter && typeof window.updateFilterDisplay === 'function') {
                 setTimeout(() => {
                     if (originPortSelect) window.updateFilterDisplay(originPortSelect, false);

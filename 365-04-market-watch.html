@@ -296,9 +296,12 @@
                         </table>
                     </div>
                     <div id="chartContainer" class="chart-container hidden">
-                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-                            <h3 style="color:#1f2d3d; font-size:20px; letter-spacing:0.5px;">运力与派船趋势图</h3>
-                            <span style="color:#6c757d; font-size:13px;">高度 ×1.5 展示，便于对比多航线</span>
+                        <div style="width: 100%; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 15px;">
+                                <h3 style="color:#1f2d3d; font-size:20px; letter-spacing:0.5px; margin: 0;">运力与派船趋势图</h3>
+                                <span style="color:#6c757d; font-size:13px;">高度 ×1.5 展示，便于对比多航线</span>
+                            </div>
+                            <h4 style="color:#1f2d3d; font-size:16px; font-weight:600; margin: 0; width: 100%;">运力与派船趋势分析</h4>
                         </div>
                         <div id="emptyChartMessage" class="empty-chart-message hidden">
                             请选择区域（或更细分的层级）以查看图表
@@ -3566,12 +3569,7 @@
                     maintainAspectRatio: false,
                     plugins: {
                         title: {
-                            display: true,
-                            text: '运力与派船趋势分析',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            }
+                            display: false
                         },
                         legend: {
                             display: true,

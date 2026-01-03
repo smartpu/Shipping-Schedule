@@ -55,6 +55,11 @@
                     <div class="pdf-viewer-content">
                         <div class="pdf-viewer-header">
                             <div class="pdf-viewer-title" id="pdfViewerTitle">PDF 查看器</div>
+                            <div class="pdf-viewer-nav">
+                                <button class="pdf-nav-btn" id="pdfNavPrev" title="上一页 (↑ 或 Page Up)">←</button>
+                                <span class="pdf-page-info" id="pdfPageInfo">1 / 1</span>
+                                <button class="pdf-nav-btn" id="pdfNavNext" title="下一页 (↓ 或 Page Down)">→</button>
+                            </div>
                             <button class="pdf-viewer-close" id="pdfViewerClose">关闭 (ESC)</button>
                         </div>
                         <div class="pdf-viewer-body" id="pdfViewerBody">
@@ -348,31 +353,69 @@
             }
 
             /**
-             * 判断是否为竖版PDF（航运周报）
+             * 加载 PDF 指定页面
              */
-            function isVerticalPdf(fileName) {
-                const name = fileName.toLowerCase();
-                
-                // Alphaliner Monthly Monitor 是横版月报，应该单页显示
-                if (name.includes('alphaliner') && (name.includes('monthly') || name.includes('monitor'))) {
-                    return false;
+            function loadPdfPage(pageNum) {
+                if (!pdfViewerState.currentPdfPath) return;
+                if (pageNum < 1) pageNum = 1;
+                if (pdfViewerState.totalPages > 0 && pageNum > pdfViewerState.totalPages) {
+                    pageNum = pdfViewerState.totalPages;
                 }
                 
-                // Alphaliner Newsletter 和 Linerlytica 是竖版周报，应该两页显示
-                if (name.includes('linerlytica') || 
-                    (name.includes('alphaliner') && name.includes('newsletter'))) {
-                    return true;
-                }
+                pdfViewerState.currentPage = pageNum;
                 
-                // 其他包含 weekly 和 report 的通常是竖版
-                if (name.includes('weekly') && name.includes('report')) {
-                    return true;
-                }
+                // 使用 FitV 视图模式，让 PDF 页面适应视口高度（类似 PPT 效果）
+                // toolbar=0 隐藏工具栏，navpanes=0 隐藏导航面板，zoom=page-fit 适应页面
+                const pdfUrl = `${pdfViewerState.currentPdfPath}#page=${pageNum}&view=FitV&toolbar=0&navpanes=0&zoom=page-fit`;
+                pdfViewerFrame.src = pdfUrl;
                 
-                // 默认横版（单页显示）
-                return false;
+                updatePageInfo();
             }
-
+            
+            /**
+             * 更新页码显示
+             */
+            function updatePageInfo() {
+                const pageInfo = document.getElementById('pdfPageInfo');
+                if (pageInfo) {
+                    if (pdfViewerState.totalPages > 0) {
+                        pageInfo.textContent = `${pdfViewerState.currentPage} / ${pdfViewerState.totalPages}`;
+                    } else {
+                        pageInfo.textContent = `${pdfViewerState.currentPage}`;
+                    }
+                }
+                
+                // 更新导航按钮状态
+                const prevBtn = document.getElementById('pdfNavPrev');
+                const nextBtn = document.getElementById('pdfNavNext');
+                if (prevBtn) {
+                    prevBtn.disabled = pdfViewerState.currentPage <= 1;
+                    prevBtn.style.opacity = pdfViewerState.currentPage <= 1 ? '0.5' : '1';
+                }
+                if (nextBtn) {
+                    nextBtn.disabled = pdfViewerState.totalPages > 0 && pdfViewerState.currentPage >= pdfViewerState.totalPages;
+                    nextBtn.style.opacity = (pdfViewerState.totalPages > 0 && pdfViewerState.currentPage >= pdfViewerState.totalPages) ? '0.5' : '1';
+                }
+            }
+            
+            /**
+             * 上一页
+             */
+            function goToPrevPage() {
+                if (pdfViewerState.currentPage > 1) {
+                    loadPdfPage(pdfViewerState.currentPage - 1);
+                }
+            }
+            
+            /**
+             * 下一页
+             */
+            function goToNextPage() {
+                if (pdfViewerState.totalPages === 0 || pdfViewerState.currentPage < pdfViewerState.totalPages) {
+                    loadPdfPage(pdfViewerState.currentPage + 1);
+                }
+            }
+            
             /**
              * 打开 PDF 查看器
              */
@@ -382,9 +425,6 @@
 
                 const pdf = allPdfFiles[index];
                 const fileName = pdf.fileName;
-
-                // 判断PDF类型
-                const isVertical = isVerticalPdf(fileName);
                 const pdfViewerBody = document.getElementById('pdfViewerBody');
 
                 // 设置标题
@@ -393,93 +433,43 @@
                 // 清除之前的模式
                 pdfViewer.classList.remove('fullscreen-mode', 'two-page-mode');
 
-                // 设置 PDF 路径
+                // 设置 PDF 路径和状态
                 const pdfPath = `pdf/${fileName}`;
+                pdfViewerState.currentPdfPath = pdfPath;
+                pdfViewerState.currentPdfFileName = fileName;
+                pdfViewerState.currentPage = 1;
+                pdfViewerState.totalPages = 0; // 初始化为 0，等待加载后更新
 
-                if (isVertical) {
-                    // 竖版PDF：左右两页显示
-                    pdfViewer.classList.add('two-page-mode', 'active');
-                    
-                    // 清空body内容
-                    pdfViewerBody.innerHTML = '';
-                    
-                    // 创建两个iframe，分别显示相邻的两页
-                    const leftFrame = document.createElement('iframe');
-                    leftFrame.id = 'pdfLeftFrame';
-                    leftFrame.src = pdfPath + '#view=FitH&page=1&toolbar=0&navpanes=0';
-                    leftFrame.style.width = '100%';
-                    leftFrame.style.height = '100%';
-                    leftFrame.style.border = 'none';
-                    leftFrame.style.background = 'white';
-                    leftFrame.setAttribute('allow', 'fullscreen');
-                    
-                    const rightFrame = document.createElement('iframe');
-                    rightFrame.id = 'pdfRightFrame';
-                    rightFrame.src = pdfPath + '#view=FitH&page=2&toolbar=0&navpanes=0';
-                    rightFrame.style.width = '100%';
-                    rightFrame.style.height = '100%';
-                    rightFrame.style.border = 'none';
-                    rightFrame.style.background = 'white';
-                    rightFrame.setAttribute('allow', 'fullscreen');
-                    
-                    // 为左右两页的 iframe 添加事件监听
-                    leftFrame.addEventListener('load', function() {
-                        try {
-                            const iframeDoc = leftFrame.contentDocument || leftFrame.contentWindow.document;
-                            if (iframeDoc) {
-                                iframeDoc.addEventListener('contextmenu', function(e) {
-                                    e.preventDefault();
-                                    return false;
-                                }, true);
-                            }
-                        } catch (e) {
-                            // 跨域限制
-                        }
-                    });
-                    
-                    rightFrame.addEventListener('load', function() {
-                        try {
-                            const iframeDoc = rightFrame.contentDocument || rightFrame.contentWindow.document;
-                            if (iframeDoc) {
-                                iframeDoc.addEventListener('contextmenu', function(e) {
-                                    e.preventDefault();
-                                    return false;
-                                }, true);
-                            }
-                        } catch (e) {
-                            // 跨域限制
-                        }
-                    });
-                    
-                    pdfViewerBody.appendChild(leftFrame);
-                    pdfViewerBody.appendChild(rightFrame);
-                } else {
-                    // 横版PDF：全屏显示
-                    pdfViewer.classList.add('fullscreen-mode', 'active');
-                    pdfViewerBody.innerHTML = '';
-                    // 添加参数隐藏工具栏，防止下载
-                    pdfViewerFrame.src = pdfPath + '#toolbar=0&navpanes=0';
-                    pdfViewerFrame.setAttribute('allow', 'fullscreen');
-                    pdfViewerBody.appendChild(pdfViewerFrame);
-                }
+                // 清空body内容，确保只有一个 iframe
+                pdfViewerBody.innerHTML = '';
+                pdfViewerBody.appendChild(pdfViewerFrame);
 
-                // 进入浏览器全屏
-                const element = pdfViewer;
-                if (element.requestFullscreen) {
-                    element.requestFullscreen().catch(err => {
-                        // 全屏请求失败（可能是用户拒绝或浏览器不支持）
-                    });
-                } else if (element.webkitRequestFullscreen) {
-                    element.webkitRequestFullscreen();
-                } else if (element.mozRequestFullScreen) {
-                    element.mozRequestFullScreen();
-                } else if (element.msRequestFullscreen) {
-                    element.msRequestFullscreen();
-                }
-
+                // 显示查看器（不使用浏览器全屏，而是占满视口）
+                pdfViewer.classList.add('active');
                 document.body.style.overflow = 'hidden';
 
-                // 如果浏览器不支持 iframe 显示 PDF，不提供下载链接
+                // 加载第一页
+                loadPdfPage(1);
+                
+                // 尝试获取 PDF 总页数（通过 iframe 加载完成后）
+                pdfViewerFrame.onload = function() {
+                    // 由于跨域限制，无法直接获取 PDF 页数
+                    // 这里可以尝试通过 URL 参数或者让用户手动输入总页数
+                    // 暂时不设置总页数，允许用户无限翻页
+                    
+                    // 尝试从 iframe 中获取页数（可能因跨域失败）
+                    try {
+                        const iframeDoc = pdfViewerFrame.contentDocument || pdfViewerFrame.contentWindow.document;
+                        if (iframeDoc) {
+                            // 尝试查找 PDF 页数信息
+                            // 注意：这取决于浏览器的 PDF 查看器实现
+                        }
+                    } catch (e) {
+                        // 跨域限制，无法访问
+                    }
+                };
+
+                // 错误处理
                 pdfViewerFrame.onerror = function() {
                     if (typeof window.Toast !== 'undefined') {
                         window.Toast.show('PDF 加载失败，请刷新页面重试', 'error');
@@ -493,22 +483,15 @@
             function closePdfViewer() {
                 if (!pdfViewer) return;
 
-                // 退出浏览器全屏
-                if (document.exitFullscreen) {
-                    document.exitFullscreen().catch(err => {
-                        // 退出全屏失败（通常可以忽略）
-                    });
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-
                 pdfViewer.classList.remove('active', 'fullscreen-mode', 'two-page-mode');
                 document.body.style.overflow = '';
                 pdfViewerFrame.src = '';
+                
+                // 重置状态
+                pdfViewerState.currentPage = 1;
+                pdfViewerState.totalPages = 0;
+                pdfViewerState.currentPdfPath = '';
+                pdfViewerState.currentPdfFileName = '';
                 
                 // 清空body内容
                 const pdfViewerBody = document.getElementById('pdfViewerBody');
@@ -518,9 +501,20 @@
                 }
             }
 
-            // 绑定关闭按钮事件
+            // 绑定按钮事件
             if (pdfViewerClose) {
                 pdfViewerClose.addEventListener('click', closePdfViewer);
+            }
+            
+            const pdfNavPrev = document.getElementById('pdfNavPrev');
+            const pdfNavNext = document.getElementById('pdfNavNext');
+            
+            if (pdfNavPrev) {
+                pdfNavPrev.addEventListener('click', goToPrevPage);
+            }
+            
+            if (pdfNavNext) {
+                pdfNavNext.addEventListener('click', goToNextPage);
             }
 
             // 点击背景关闭
@@ -581,12 +575,39 @@
                 });
             }
 
-            // ESC 键关闭，并禁用下载相关的快捷键
+            // 键盘事件处理：翻页和关闭
             document.addEventListener('keydown', function(e) {
                 if (pdfViewer && pdfViewer.classList.contains('active')) {
                     // ESC 键关闭
                     if (e.key === 'Escape') {
                         closePdfViewer();
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    // 翻页功能
+                    if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+                        goToPrevPage();
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+                        goToNextPage();
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    // Home 键：跳转到第一页
+                    if (e.key === 'Home') {
+                        loadPdfPage(1);
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    // End 键：跳转到最后一页（如果知道总页数）
+                    if (e.key === 'End' && pdfViewerState.totalPages > 0) {
+                        loadPdfPage(pdfViewerState.totalPages);
                         e.preventDefault();
                         return;
                     }
@@ -627,13 +648,6 @@
                     }
                 }
             }, true); // 使用捕获阶段，确保优先拦截
-
-            // 监听全屏状态变化
-            document.addEventListener('fullscreenchange', function() {
-                if (!document.fullscreenElement && pdfViewer && pdfViewer.classList.contains('active')) {
-                    closePdfViewer();
-                }
-            });
 
             document.addEventListener('webkitfullscreenchange', function() {
                 if (!document.webkitFullscreenElement && pdfViewer && pdfViewer.classList.contains('active')) {

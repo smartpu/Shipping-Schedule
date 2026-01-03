@@ -6607,6 +6607,7 @@ body[data-page="Market-Information.html"] .pdf-viewer-header {
     flex-shrink: 0;
     background: white;
     z-index: 10001;
+    gap: 20px;
 }
 
 body[data-page="Market-Information.html"] .pdf-viewer-container.two-page-mode .pdf-viewer-header {
@@ -6620,10 +6621,57 @@ body[data-page="Market-Information.html"] .pdf-viewer-title {
     color: #1d1d1f;
     flex: 1;
     margin-right: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 body[data-page="Market-Information.html"] .pdf-viewer-container.two-page-mode .pdf-viewer-title {
     color: white;
+}
+
+/* PDF 导航区域 */
+body[data-page="Market-Information.html"] .pdf-viewer-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+body[data-page="Market-Information.html"] .pdf-nav-btn {
+    background: #3E62AD;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 44px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body[data-page="Market-Information.html"] .pdf-nav-btn:hover:not(:disabled) {
+    background: #2D4A7D;
+    transform: scale(1.05);
+}
+
+body[data-page="Market-Information.html"] .pdf-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+body[data-page="Market-Information.html"] .pdf-page-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d1d1f;
+    min-width: 60px;
+    text-align: center;
+    padding: 0 8px;
 }
 
 body[data-page="Market-Information.html"] .pdf-viewer-close {
@@ -6663,6 +6711,8 @@ body[data-page="Market-Information.html"] .pdf-viewer-body iframe {
     -moz-user-select: none;
     -ms-user-select: none;
     pointer-events: auto;
+    /* 优化加载性能 */
+    loading: lazy;
 }
 
 /* 左右两页显示模式 */

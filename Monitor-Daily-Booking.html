@@ -387,6 +387,28 @@
         (function() {
             'use strict';
 
+            // 常量配置
+            const CONFIG = {
+                COLORS: {
+                    PRIMARY: '#3E62AD',
+                    PRIMARY_DARK: '#2D4A7D',
+                    HOVER: '#f0f7ff',
+                    BORDER: '#dee2e6',
+                    BORDER_WHITE: 'white',
+                    BACKGROUND_LIGHT: '#e9ecef'
+                },
+                STYLES: {
+                    TABLE_HEADER: 'padding: 12px; border: 1px solid white; font-weight: 600; color: white;',
+                    TABLE_CELL: 'padding: 12px; border: 1px solid #dee2e6;',
+                    TABLE_ROW_HOVER: 'cursor: pointer; transition: background-color 0.2s ease; border-bottom: 1px solid #dee2e6;',
+                    TABLE_CONTAINER: 'max-height: calc(90vh - 200px);'
+                },
+                RENDERING: {
+                    BATCH_SIZE: 100,  // 分批渲染每批的行数
+                    DEBOUNCE_DELAY: 100  // 防抖延迟（毫秒）
+                }
+            };
+
             // 状态管理
             const state = {
                 rawData: [],
@@ -882,11 +904,9 @@
 
             /**
              * 应用状态筛选（用于摘要卡片点击）
-             * 注意：此功能当前为占位实现，可以后续扩展添加状态筛选器
+             * 占位实现，待扩展
              */
             window.applyStatusFilter = function(statuses) {
-                // TODO: 实现状态筛选功能
-                // 可以添加状态筛选器来过滤数据，或显示状态筛选面板
                 if (typeof window.Toast !== 'undefined') {
                     window.Toast.show('状态筛选功能开发中', 'info');
                 }
@@ -1118,18 +1138,16 @@
                 }
                 
                 return `
-                    <th style="padding: 12px; border: 1px solid white; cursor: pointer; user-select: none; position: sticky; top: 0;
-                              background: #3E62AD !important; 
-                              color: white;
-                              font-weight: 600;
+                    <th style="${CONFIG.STYLES.TABLE_HEADER} cursor: pointer; user-select: none; position: sticky; top: 0;
+                              background: ${CONFIG.COLORS.PRIMARY} !important; 
                               transition: background-color 0.15s ease;" 
                         data-column="${columnKey}" 
                         data-mode="${mode}"
-                        onmouseover="this.style.background='#2D4A7D'"
-                        onmouseout="this.style.background='#3E62AD'"
+                        onmouseover="this.style.background='${CONFIG.COLORS.PRIMARY_DARK}'"
+                        onmouseout="this.style.background='${CONFIG.COLORS.PRIMARY}'"
                         onclick="handleSort('${columnKey}', ${mode})">
-                        <span style="display: inline-flex; align-items: center; width: 100%; color: white;">
-                            <span style="font-weight: 600; color: white; font-size: 14px;">
+                        <span style="display: inline-flex; align-items: center; width: 100%; color: ${CONFIG.COLORS.BORDER_WHITE};">
+                            <span style="font-weight: 600; color: ${CONFIG.COLORS.BORDER_WHITE}; font-size: 14px;">
                                 ${text}
                             </span>
                             ${arrowHtml}
@@ -1238,16 +1256,16 @@
                 header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;';
                 header.innerHTML = `
                     <h3 style="margin: 0; color: #333;">${escapeHtml(title)}</h3>
-                    <button id="closeDetailModalBtn" class="btn-sweep-blue" style="padding: 8px 16px; background: #3E62AD; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; position: relative; overflow: hidden;">关闭</button>
+                    <button id="closeDetailModalBtn" class="btn-sweep-blue" style="padding: 8px 16px; background: ${CONFIG.COLORS.PRIMARY}; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; position: relative; overflow: hidden;">关闭</button>
                 `;
                 
                 // 绑定关闭按钮
                 header.querySelector('#closeDetailModalBtn').addEventListener('click', closeModal);
                 header.querySelector('#closeDetailModalBtn').addEventListener('mouseover', function() {
-                    this.style.background = '#2D4A7D';
+                    this.style.background = CONFIG.COLORS.PRIMARY_DARK;
                 });
                 header.querySelector('#closeDetailModalBtn').addEventListener('mouseout', function() {
-                    this.style.background = '#3E62AD';
+                    this.style.background = CONFIG.COLORS.PRIMARY;
                 });
                 
                 // 生成表格HTML
@@ -1256,30 +1274,30 @@
                         <table style="width: 100%; border-collapse: collapse; background: white;">
                             <thead>
                                 ${isVslVoyMode ? `
-                                <tr style="background: #3E62AD; color: white; border-bottom: 2px solid white;">
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">订舱日期</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">BKG Party</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">合约号</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">POD</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">总量</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">A/C/F/L</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">A/C/F/L占比</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">N/P</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">N/P占比</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">X</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">X占比</th>
+                                <tr style="background: ${CONFIG.COLORS.PRIMARY}; color: ${CONFIG.COLORS.BORDER_WHITE}; border-bottom: 2px solid ${CONFIG.COLORS.BORDER_WHITE};">
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">订舱日期</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">BKG Party</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">合约号</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">POD</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">总量</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">A/C/F/L</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">A/C/F/L占比</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">N/P</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">N/P占比</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">X</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">X占比</th>
                                 </tr>
                                 ` : `
-                                <tr style="background: #3E62AD; color: white; border-bottom: 2px solid white;">
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">日期</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">状态</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">BKG Party</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">船名航次</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">合约号</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">POD</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">FTB</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">TEU</th>
-                                    <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">Trade</th>
+                                <tr style="background: ${CONFIG.COLORS.PRIMARY}; color: ${CONFIG.COLORS.BORDER_WHITE}; border-bottom: 2px solid ${CONFIG.COLORS.BORDER_WHITE};">
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">日期</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">状态</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">BKG Party</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">船名航次</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">合约号</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">POD</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">FTB</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">TEU</th>
+                                    <th style="${CONFIG.STYLES.TABLE_HEADER}">Trade</th>
                                 </tr>
                                 `}
                             </thead>
@@ -1322,18 +1340,18 @@
                                                     const isLastPod = podIdx === podStats.length - 1;
                                                     
                                                     rows += `
-                                                        <tr style="border-bottom: 1px solid #dee2e6; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''">
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; border-left: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(dateStr)}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(item.bkgParty)}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(item.contractNo || '-')}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(podItem.pod)}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.total.bl}<br>TEU: ${itemStats.total.teu.toFixed(2)}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.aclf.bl}<br>TEU: ${itemStats.aclf.teu.toFixed(2)}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.aclf.blPercent}%<br>TEU: ${itemStats.aclf.teuPercent}%</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.np.bl}<br>TEU: ${itemStats.np.teu.toFixed(2)}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.np.blPercent}%<br>TEU: ${itemStats.np.teuPercent}%</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.x.bl}<br>TEU: ${itemStats.x.teu.toFixed(2)}</td>
-                                                            <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; border-right: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.x.blPercent}%<br>TEU: ${itemStats.x.teuPercent}%</td>
+                                                        <tr style="border-bottom: 1px solid ${CONFIG.COLORS.BORDER}; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='${CONFIG.COLORS.HOVER}'" onmouseout="this.style.backgroundColor=''">
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; border-left: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(dateStr)}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(item.bkgParty)}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(item.contractNo || '-')}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">${escapeHtml(podItem.pod)}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.total.bl}<br>TEU: ${itemStats.total.teu.toFixed(2)}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.aclf.bl}<br>TEU: ${itemStats.aclf.teu.toFixed(2)}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.aclf.blPercent}%<br>TEU: ${itemStats.aclf.teuPercent}%</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.np.bl}<br>TEU: ${itemStats.np.teu.toFixed(2)}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.np.blPercent}%<br>TEU: ${itemStats.np.teuPercent}%</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.x.bl}<br>TEU: ${itemStats.x.teu.toFixed(2)}</td>
+                                                            <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; border-right: none; ${isLastItem && isLastPod ? 'border-bottom: none;' : ''}">BL: ${itemStats.x.blPercent}%<br>TEU: ${itemStats.x.teuPercent}%</td>
                                                         </tr>
                                                     `;
                                                 });
@@ -1374,16 +1392,16 @@
                                             const isLast = idx === data.length - 1;
                                             const vesselVoyage = `${escapeHtml(item.vesselName || '')} ${escapeHtml(item.voyage || '')}`.trim() || '-';
                                             return `
-                                                <tr style="border-bottom: 1px solid #dee2e6; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''">
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; border-left: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(dateStr)}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.status)}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.bkgParty)}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${vesselVoyage}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.contractNo || '-')}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.pod)}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.ftb)}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${item.teu ? item.teu.toFixed(2) : '0.00'}</td>
-                                                    <td style="padding: 12px; border: 1px solid #dee2e6; border-top: none; border-right: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.trade)}</td>
+                                                <tr style="border-bottom: 1px solid ${CONFIG.COLORS.BORDER}; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='${CONFIG.COLORS.HOVER}'" onmouseout="this.style.backgroundColor=''">
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; border-left: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(dateStr)}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.status)}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.bkgParty)}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${vesselVoyage}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.contractNo || '-')}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.pod)}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.ftb)}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; ${isLast ? 'border-bottom: none;' : ''}">${item.teu ? item.teu.toFixed(2) : '0.00'}</td>
+                                                    <td style="${CONFIG.STYLES.TABLE_CELL} border-top: none; border-right: none; ${isLast ? 'border-bottom: none;' : ''}">${escapeHtml(item.trade)}</td>
                                                 </tr>
                                             `;
                                         }).join('')}
@@ -1405,32 +1423,203 @@
             window.detailModalDataStore = {};
 
             /**
+             * 公共函数：按键分组数据
+             */
+            function groupByKey(data, keyFn, defaultValue = '未分类') {
+                const grouped = {};
+                data.forEach(item => {
+                    const key = keyFn(item) || defaultValue;
+                    if (!grouped[key]) {
+                        grouped[key] = [];
+                    }
+                    grouped[key].push(item);
+                });
+                return grouped;
+            }
+
+            /**
+             * 公共函数：按日期分组
+             */
+            function groupByDate(data, dateFn) {
+                const grouped = {};
+                data.forEach(item => {
+                    const date = dateFn(item);
+                    const dateKey = date ? formatDate(new Date(date)) : '';
+                    if (!grouped[dateKey]) {
+                        grouped[dateKey] = [];
+                    }
+                    grouped[dateKey].push(item);
+                });
+                return grouped;
+            }
+
+            /**
+             * 公共函数：应用排序
+             */
+            function applySorting(data, sortConfig, getValueFn) {
+                if (!sortConfig.column) return data;
+                
+                return [...data].sort((a, b) => {
+                    const aVal = getValueFn(a, sortConfig.column);
+                    const bVal = getValueFn(b, sortConfig.column);
+                    const result = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                    return sortConfig.direction === 'asc' ? result : -result;
+                });
+            }
+
+            /**
+             * 公共函数：应用ETD特殊排序（没有ETD的排在前面）
+             */
+            function applyEtdSorting(data, sortConfig) {
+                if (!sortConfig.column || sortConfig.column !== 'etd') {
+                    return applySorting(data, sortConfig, getStatsValue);
+                }
+                
+                return [...data].sort((a, b) => {
+                    // 没有ETD的排在前面
+                    if (!a.etd && b.etd) return sortConfig.direction === 'asc' ? -1 : 1;
+                    if (a.etd && !b.etd) return sortConfig.direction === 'asc' ? 1 : -1;
+                    if (!a.etd && !b.etd) {
+                        const vslCompare = (a.vslVoy || '').localeCompare(b.vslVoy || '');
+                        if (vslCompare !== 0) return sortConfig.direction === 'asc' ? vslCompare : -vslCompare;
+                        const tradeCompare = (a.trade || '').localeCompare(b.trade || '');
+                        return sortConfig.direction === 'asc' ? tradeCompare : -tradeCompare;
+                    }
+                    const aVal = new Date(a.etd).getTime();
+                    const bVal = new Date(b.etd).getTime();
+                    const result = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                    return sortConfig.direction === 'asc' ? result : -result;
+                });
+            }
+
+            /**
+             * 公共函数：应用排名排序
+             */
+            function applyRankingSort(data, rankingBy) {
+                return [...data].sort((a, b) => {
+                    let aVal, bVal;
+                    switch (rankingBy) {
+                        case 'total-bl':
+                            aVal = a.stats.total.bl;
+                            bVal = b.stats.total.bl;
+                            break;
+                        case 'total-teu':
+                            aVal = a.stats.total.teu;
+                            bVal = b.stats.total.teu;
+                            break;
+                        case 'aclf-bl':
+                            aVal = a.stats.aclf.bl;
+                            bVal = b.stats.aclf.bl;
+                            break;
+                        case 'aclf-teu':
+                            aVal = a.stats.aclf.teu;
+                            bVal = b.stats.aclf.teu;
+                            break;
+                        default:
+                            return 0;
+                    }
+                    return bVal - aVal; // 降序
+                });
+            }
+
+            /**
+             * 公共函数：获取统计值（用于排序）
+             */
+            function getStatsValue(item, columnKey) {
+                if (!item.stats) {
+                    // 对于没有stats的对象（如VSL/VOY模式），直接返回属性值
+                    switch (columnKey) {
+                        case 'etd': return item.etd ? new Date(item.etd).getTime() : 0;
+                        case 'expLine': return item.expLine || '';
+                        case 'vslVoy': return item.vslVoy || '';
+                        case 'trade': return item.trade || '';
+                        default: return 0;
+                    }
+                }
+                switch (columnKey) {
+                    case 'time': return item.time || '';
+                    case 'total-bl': return item.stats.total.bl;
+                    case 'total-teu': return item.stats.total.teu;
+                    case 'aclf-bl': return item.stats.aclf.bl;
+                    case 'aclf-teu': return item.stats.aclf.teu;
+                    case 'aclf-percent': return parseFloat(item.stats.aclf.blPercent);
+                    case 'np-bl': return item.stats.np.bl;
+                    case 'np-teu': return item.stats.np.teu;
+                    case 'np-percent': return parseFloat(item.stats.np.blPercent);
+                    case 'x-bl': return item.stats.x.bl;
+                    case 'x-teu': return item.stats.x.teu;
+                    case 'x-percent': return parseFloat(item.stats.x.blPercent);
+                    case 'etd': return item.etd ? new Date(item.etd).getTime() : 0;
+                    case 'expLine': return item.expLine || '';
+                    case 'vslVoy': return item.vslVoy || '';
+                    case 'trade': return item.trade || '';
+                    default: return 0;
+                }
+            }
+
+            /**
+             * 公共函数：分批渲染表格行（性能优化）
+             */
+            function renderTableRowsBatch(container, rowsHtml, batchSize = CONFIG.RENDERING.BATCH_SIZE) {
+                if (!rowsHtml || rowsHtml.trim().length === 0) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                // 先解析HTML为DOM元素（tr标签需要表格上下文）
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = `<table><tbody>${rowsHtml.trim()}</tbody></table>`;
+                
+                // 获取所有tr元素
+                const rows = Array.from(tempDiv.querySelectorAll('tr'));
+                
+                if (rows.length === 0) {
+                    // 如果没有tr元素，直接设置innerHTML
+                    container.innerHTML = rowsHtml;
+                    return;
+                }
+
+                // 如果数据量小，直接渲染
+                if (rows.length <= batchSize) {
+                    container.innerHTML = rowsHtml;
+                    return;
+                }
+
+                // 分批渲染tr元素
+                container.innerHTML = '';
+                let currentIndex = 0;
+                
+                function renderBatch() {
+                    const endIndex = Math.min(currentIndex + batchSize, rows.length);
+                    const fragment = document.createDocumentFragment();
+                    
+                    for (let i = currentIndex; i < endIndex; i++) {
+                        fragment.appendChild(rows[i].cloneNode(true));
+                    }
+                    
+                    container.appendChild(fragment);
+                    currentIndex = endIndex;
+                    
+                    if (currentIndex < rows.length) {
+                        requestAnimationFrame(renderBatch);
+                    }
+                }
+                
+                renderBatch();
+            }
+
+            /**
              * 更新模式1：Trade维度
              */
             function updateMode1() {
                 // 先按Trade分组
-                const tradeMap = {};
-                state.filteredData.forEach(item => {
-                    const trade = item.trade || '未分类';
-                    if (!tradeMap[trade]) {
-                        tradeMap[trade] = [];
-                    }
-                    tradeMap[trade].push(item);
-                });
+                const tradeMap = groupByKey(state.filteredData, item => item.trade);
 
                 // 按Trade分组，每个Trade下按时间分组
                 const tradeTimeGroups = [];
                 Object.entries(tradeMap).forEach(([trade, data]) => {
                     // 按时间分组
-                    const timeMap = {};
-                    data.forEach(item => {
-                        const date = new Date(item.date);
-                        const timeKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                        if (!timeMap[timeKey]) {
-                            timeMap[timeKey] = [];
-                        }
-                        timeMap[timeKey].push(item);
-                    });
+                    const timeMap = groupByDate(data, item => item.date);
 
                     // 转换为数组并排序
                     const timeArray = Object.entries(timeMap)
@@ -1453,7 +1642,7 @@
                     sortState.mode1.column = 'time';
                     sortState.mode1.direction = 'asc';
                 }
-                const flatData = [];
+                let flatData = [];
                 tradeTimeGroups.forEach(tradeGroup => {
                     tradeGroup.timeGroups.forEach(timeGroup => {
                         const stats = calculateStats(timeGroup.data);
@@ -1467,65 +1656,7 @@
                 });
 
                 // 应用排序
-                if (sortState.mode1.column) {
-                    flatData.sort((a, b) => {
-                        let aVal, bVal;
-                        switch (sortState.mode1.column) {
-                            case 'time':
-                                aVal = a.time;
-                                bVal = b.time;
-                                break;
-                            case 'total-bl':
-                                aVal = a.stats.total.bl;
-                                bVal = b.stats.total.bl;
-                                break;
-                            case 'total-teu':
-                                aVal = a.stats.total.teu;
-                                bVal = b.stats.total.teu;
-                                break;
-                            case 'aclf-bl':
-                                aVal = a.stats.aclf.bl;
-                                bVal = b.stats.aclf.bl;
-                                break;
-                            case 'aclf-teu':
-                                aVal = a.stats.aclf.teu;
-                                bVal = b.stats.aclf.teu;
-                                break;
-                            case 'aclf-percent':
-                                aVal = parseFloat(a.stats.aclf.blPercent);
-                                bVal = parseFloat(b.stats.aclf.blPercent);
-                                break;
-                            case 'np-bl':
-                                aVal = a.stats.np.bl;
-                                bVal = b.stats.np.bl;
-                                break;
-                            case 'np-teu':
-                                aVal = a.stats.np.teu;
-                                bVal = b.stats.np.teu;
-                                break;
-                            case 'np-percent':
-                                aVal = parseFloat(a.stats.np.blPercent);
-                                bVal = parseFloat(b.stats.np.blPercent);
-                                break;
-                            case 'x-bl':
-                                aVal = a.stats.x.bl;
-                                bVal = b.stats.x.bl;
-                                break;
-                            case 'x-teu':
-                                aVal = a.stats.x.teu;
-                                bVal = b.stats.x.teu;
-                                break;
-                            case 'x-percent':
-                                aVal = parseFloat(a.stats.x.blPercent);
-                                bVal = parseFloat(b.stats.x.blPercent);
-                                break;
-                            default:
-                                return 0;
-                        }
-                        const result = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                        return sortState.mode1.direction === 'asc' ? result : -result;
-                    });
-                }
+                flatData = applySorting(flatData, sortState.mode1, getStatsValue);
 
                 // 重新分组（保持Trade分组显示）
                 const groupedData = {};
@@ -1538,11 +1669,11 @@
 
                 // 生成表格
                 let tableHTML = `
-                    <div class="detail-table-container" style="max-height: calc(90vh - 200px);">
+                    <div class="detail-table-container" style="${CONFIG.STYLES.TABLE_CONTAINER}">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background: #3E62AD; color: white; border-bottom: 2px solid white;">
-                                <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">Trade</th>
+                            <tr style="background: ${CONFIG.COLORS.PRIMARY}; color: ${CONFIG.COLORS.BORDER_WHITE}; border-bottom: 2px solid ${CONFIG.COLORS.BORDER_WHITE};">
+                                <th style="${CONFIG.STYLES.TABLE_HEADER}">Trade</th>
                                 ${createSortableHeader('时间', 'time', 1)}
                                 ${createSortableHeader('总量', 'total-bl', 1)}
                                 ${createSortableHeader('A/C/F/L', 'aclf-bl', 1)}
@@ -1568,21 +1699,21 @@
                         window.detailModalDataStore[dataKey] = item.data;
                         
                         tableHTML += `
-                            <tr style="cursor: pointer; transition: background-color 0.2s ease; border-bottom: 1px solid #dee2e6;" 
-                                onmouseover="this.style.backgroundColor='#f0f7ff'" 
+                            <tr style="${CONFIG.STYLES.TABLE_ROW_HOVER}" 
+                                onmouseover="this.style.backgroundColor='${CONFIG.COLORS.HOVER}'" 
                                 onmouseout="this.style.backgroundColor=''"
                                 title="点击查看详细记录"
                                 data-detail-key="${dataKey}"
                                 onclick="window.showDetailModal('${trade.replace(/'/g, "\\'")} - ${item.time.replace(/'/g, "\\'")} 详细记录', '${dataKey}')">
-                                ${isFirst ? `<td rowspan="${rowspan}" style="padding: 12px; border: 1px solid #dee2e6; font-weight: 600; background-color: #e9ecef;">${trade}</td>` : ''}
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">${item.time}</td>
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.total.bl}<br>TEU: ${item.stats.total.teu.toFixed(2)}</td>
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.aclf.bl}<br>TEU: ${item.stats.aclf.teu.toFixed(2)}</td>
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.aclf.blPercent}%<br>TEU: ${item.stats.aclf.teuPercent}%</td>
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.np.bl}<br>TEU: ${item.stats.np.teu.toFixed(2)}</td>
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.np.blPercent}%<br>TEU: ${item.stats.np.teuPercent}%</td>
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.x.bl}<br>TEU: ${item.stats.x.teu.toFixed(2)}</td>
-                                <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.x.blPercent}%<br>TEU: ${item.stats.x.teuPercent}%</td>
+                                ${isFirst ? `<td rowspan="${rowspan}" style="${CONFIG.STYLES.TABLE_CELL} font-weight: 600; background-color: ${CONFIG.COLORS.BACKGROUND_LIGHT};">${trade}</td>` : ''}
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">${item.time}</td>
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.total.bl}<br>TEU: ${item.stats.total.teu.toFixed(2)}</td>
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.aclf.bl}<br>TEU: ${item.stats.aclf.teu.toFixed(2)}</td>
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.aclf.blPercent}%<br>TEU: ${item.stats.aclf.teuPercent}%</td>
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.np.bl}<br>TEU: ${item.stats.np.teu.toFixed(2)}</td>
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.np.blPercent}%<br>TEU: ${item.stats.np.teuPercent}%</td>
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.x.bl}<br>TEU: ${item.stats.x.teu.toFixed(2)}</td>
+                                <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.x.blPercent}%<br>TEU: ${item.stats.x.teuPercent}%</td>
                             </tr>
                         `;
                     });
@@ -1594,7 +1725,24 @@
                     </div>
                 `;
 
-                dom.mode1Table.innerHTML = tableHTML;
+                // 使用分批渲染优化（仅对tbody内容）
+                const tbodyStart = tableHTML.indexOf('<tbody>') + 7;
+                const tbodyEnd = tableHTML.indexOf('</tbody>');
+                if (tbodyStart > 6 && tbodyEnd > tbodyStart) {
+                    const headerHtml = tableHTML.substring(0, tbodyStart);
+                    const rowsHtml = tableHTML.substring(tbodyStart, tbodyEnd);
+                    const footerHtml = tableHTML.substring(tbodyEnd);
+                    
+                    dom.mode1Table.innerHTML = headerHtml + footerHtml;
+                    const tbody = dom.mode1Table.querySelector('tbody');
+                    if (tbody && rowsHtml) {
+                        renderTableRowsBatch(tbody, rowsHtml);
+                    } else {
+                        dom.mode1Table.innerHTML = tableHTML;
+                    }
+                } else {
+                    dom.mode1Table.innerHTML = tableHTML;
+                }
 
                 // 生成图表 - 按Trade展示汇总
                 const chartData = tradeTimeGroups.map(g => ({ 
@@ -1609,14 +1757,7 @@
              */
             function updateMode2() {
                 // 按BKG Party分组
-                const partyMap = {};
-                state.filteredData.forEach(item => {
-                    const party = item.bkgParty || '未分类';
-                    if (!partyMap[party]) {
-                        partyMap[party] = [];
-                    }
-                    partyMap[party].push(item);
-                });
+                const partyMap = groupByKey(state.filteredData, item => item.bkgParty);
 
                 // 转换为数组
                 let partyArray = Object.entries(partyMap)
@@ -1694,11 +1835,11 @@
 
                 // 生成表格
                 let tableHTML = `
-                    <div class="detail-table-container" style="max-height: calc(90vh - 200px);">
+                    <div class="detail-table-container" style="${CONFIG.STYLES.TABLE_CONTAINER}">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background: #3E62AD; color: white; border-bottom: 2px solid white;">
-                                <th style="padding: 12px; border: 1px solid white; font-weight: 600; color: white;">BKG Party</th>
+                            <tr style="background: ${CONFIG.COLORS.PRIMARY}; color: ${CONFIG.COLORS.BORDER_WHITE}; border-bottom: 2px solid ${CONFIG.COLORS.BORDER_WHITE};">
+                                <th style="${CONFIG.STYLES.TABLE_HEADER}">BKG Party</th>
                                 ${createSortableHeader('总量', 'total-bl', 2)}
                                 ${createSortableHeader('A/C/F/L', 'aclf-bl', 2)}
                                 ${createSortableHeader('A/C/F/L占比', 'aclf-percent', 2)}
@@ -1713,31 +1854,7 @@
 
                 // 应用排名筛选
                 if (rankingState.enabled) {
-                    // 按排名依据排序
-                    partyArray.sort((a, b) => {
-                        let aVal, bVal;
-                        switch (rankingState.by) {
-                            case 'total-bl':
-                                aVal = a.stats.total.bl;
-                                bVal = b.stats.total.bl;
-                                break;
-                            case 'total-teu':
-                                aVal = a.stats.total.teu;
-                                bVal = b.stats.total.teu;
-                                break;
-                            case 'aclf-bl':
-                                aVal = a.stats.aclf.bl;
-                                bVal = b.stats.aclf.bl;
-                                break;
-                            case 'aclf-teu':
-                                aVal = a.stats.aclf.teu;
-                                bVal = b.stats.aclf.teu;
-                                break;
-                            default:
-                                return 0;
-                        }
-                        return bVal - aVal; // 降序
-                    });
+                    partyArray = applyRankingSort(partyArray, rankingState.by);
                     // 如果count为0（全部），则不限制数量；否则只保留Top N
                     if (rankingState.count > 0) {
                         partyArray = partyArray.slice(0, rankingState.count);
@@ -1754,20 +1871,20 @@
                     window.detailModalDataStore[dataKey] = item.data;
                     
                     tableHTML += `
-                        <tr style="cursor: pointer; transition: background-color 0.2s ease; border-bottom: 1px solid #dee2e6;" 
-                            onmouseover="this.style.backgroundColor='#f0f7ff'" 
+                        <tr style="${CONFIG.STYLES.TABLE_ROW_HOVER}" 
+                            onmouseover="this.style.backgroundColor='${CONFIG.COLORS.HOVER}'" 
                             onmouseout="this.style.backgroundColor=''"
                             title="点击查看详细记录"
                             data-detail-key="${dataKey}"
                             onclick="window.showDetailModal('${String(item.party).replace(/'/g, "\\'").replace(/"/g, '&quot;')} 详细记录', '${dataKey}')">
-                            <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: 600;">${rankBadge}${item.party}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.total.bl}<br>TEU: ${item.stats.total.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.aclf.bl}<br>TEU: ${item.stats.aclf.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.aclf.blPercent}%<br>TEU: ${item.stats.aclf.teuPercent}%</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.np.bl}<br>TEU: ${item.stats.np.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.np.blPercent}%<br>TEU: ${item.stats.np.teuPercent}%</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.x.bl}<br>TEU: ${item.stats.x.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.x.blPercent}%<br>TEU: ${item.stats.x.teuPercent}%</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL} font-weight: 600;">${rankBadge}${item.party}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.total.bl}<br>TEU: ${item.stats.total.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.aclf.bl}<br>TEU: ${item.stats.aclf.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.aclf.blPercent}%<br>TEU: ${item.stats.aclf.teuPercent}%</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.np.bl}<br>TEU: ${item.stats.np.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.np.blPercent}%<br>TEU: ${item.stats.np.teuPercent}%</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.x.bl}<br>TEU: ${item.stats.x.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.x.blPercent}%<br>TEU: ${item.stats.x.teuPercent}%</td>
                         </tr>
                     `;
                 });
@@ -1778,7 +1895,24 @@
                     </div>
                 `;
 
-                dom.mode2Table.innerHTML = tableHTML;
+                // 使用分批渲染优化
+                const tbodyStart = tableHTML.indexOf('<tbody>') + 7;
+                const tbodyEnd = tableHTML.indexOf('</tbody>');
+                if (tbodyStart > 6 && tbodyEnd > tbodyStart) {
+                    const headerHtml = tableHTML.substring(0, tbodyStart);
+                    const rowsHtml = tableHTML.substring(tbodyStart, tbodyEnd);
+                    const footerHtml = tableHTML.substring(tbodyEnd);
+                    
+                    dom.mode2Table.innerHTML = headerHtml + footerHtml;
+                    const tbody = dom.mode2Table.querySelector('tbody');
+                    if (tbody && rowsHtml) {
+                        renderTableRowsBatch(tbody, rowsHtml);
+                    } else {
+                        dom.mode2Table.innerHTML = tableHTML;
+                    }
+                } else {
+                    dom.mode2Table.innerHTML = tableHTML;
+                }
 
                 // 生成图表 - 按客户展示
                 const chartData = partyArray.map(item => ({
@@ -1793,14 +1927,7 @@
              */
             function updateMode3() {
                 // 按VSL/VOY分组（船名+航次）
-                const vslVoyMap = {};
-                state.filteredData.forEach(item => {
-                    const vslVoy = `${item.vesselName || ''} ${item.voyage || ''}`.trim() || '未分类';
-                    if (!vslVoyMap[vslVoy]) {
-                        vslVoyMap[vslVoy] = [];
-                    }
-                    vslVoyMap[vslVoy].push(item);
-                });
+                const vslVoyMap = groupByKey(state.filteredData, item => `${item.vesselName || ''} ${item.voyage || ''}`.trim());
 
                 // 转换为数组，每个元素包含VSL/VOY、ETD、EXP LINE、Trade等信息
                 let vslVoyArray = [];
@@ -1847,110 +1974,33 @@
                     sortState.mode3.direction = 'asc';
                 }
 
-                // 应用排序
+                // 应用排序（ETD特殊处理）
                 if (sortState.mode3.column) {
-                    vslVoyArray.sort((a, b) => {
-                        let aVal, bVal;
-                        switch (sortState.mode3.column) {
-                            case 'etd':
-                                // 没有ETD的排在前面
-                                if (!a.etd && b.etd) return sortState.mode3.direction === 'asc' ? -1 : 1;
-                                if (a.etd && !b.etd) return sortState.mode3.direction === 'asc' ? 1 : -1;
-                                if (!a.etd && !b.etd) {
-                                    const vslCompare = a.vslVoy.localeCompare(b.vslVoy);
-                                    if (vslCompare !== 0) return sortState.mode3.direction === 'asc' ? vslCompare : -vslCompare;
-                                    const tradeCompare = a.trade.localeCompare(b.trade);
-                                    return sortState.mode3.direction === 'asc' ? tradeCompare : -tradeCompare;
-                                }
-                                aVal = new Date(a.etd).getTime();
-                                bVal = new Date(b.etd).getTime();
-                                break;
-                            case 'expLine':
-                                aVal = a.expLine || '';
-                                bVal = b.expLine || '';
-                                break;
-                            case 'vslVoy':
-                                aVal = a.vslVoy;
-                                bVal = b.vslVoy;
-                                break;
-                            case 'trade':
-                                aVal = a.trade || '';
-                                bVal = b.trade || '';
-                                break;
-                            case 'total-bl':
-                                aVal = a.stats.total.bl;
-                                bVal = b.stats.total.bl;
-                                break;
-                            case 'total-teu':
-                                aVal = a.stats.total.teu;
-                                bVal = b.stats.total.teu;
-                                break;
-                            case 'aclf-bl':
-                                aVal = a.stats.aclf.bl;
-                                bVal = b.stats.aclf.bl;
-                                break;
-                            case 'aclf-teu':
-                                aVal = a.stats.aclf.teu;
-                                bVal = b.stats.aclf.teu;
-                                break;
-                            case 'aclf-percent':
-                                aVal = parseFloat(a.stats.aclf.blPercent);
-                                bVal = parseFloat(b.stats.aclf.blPercent);
-                                break;
-                            case 'np-bl':
-                                aVal = a.stats.np.bl;
-                                bVal = b.stats.np.bl;
-                                break;
-                            case 'np-teu':
-                                aVal = a.stats.np.teu;
-                                bVal = b.stats.np.teu;
-                                break;
-                            case 'np-percent':
-                                aVal = parseFloat(a.stats.np.blPercent);
-                                bVal = parseFloat(b.stats.np.blPercent);
-                                break;
-                            case 'x-bl':
-                                aVal = a.stats.x.bl;
-                                bVal = b.stats.x.bl;
-                                break;
-                            case 'x-teu':
-                                aVal = a.stats.x.teu;
-                                bVal = b.stats.x.teu;
-                                break;
-                            case 'x-percent':
-                                aVal = parseFloat(a.stats.x.blPercent);
-                                bVal = parseFloat(b.stats.x.blPercent);
-                                break;
-                            default:
-                                return 0;
-                        }
-                        const result = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                        return sortState.mode3.direction === 'asc' ? result : -result;
-                    });
+                    vslVoyArray = applyEtdSorting(vslVoyArray, sortState.mode3);
                 } else {
                     // 默认排序：没有ETD的放在最上面，有ETD的按ETD升序
                     vslVoyArray.sort((a, b) => {
                         if (!a.etd && b.etd) return -1;
                         if (a.etd && !b.etd) return 1;
                         if (!a.etd && !b.etd) {
-                            const vslCompare = a.vslVoy.localeCompare(b.vslVoy);
+                            const vslCompare = (a.vslVoy || '').localeCompare(b.vslVoy || '');
                             if (vslCompare !== 0) return vslCompare;
-                            return a.trade.localeCompare(b.trade);
+                            return (a.trade || '').localeCompare(b.trade || '');
                         }
                         const etdCompare = new Date(a.etd) - new Date(b.etd);
                         if (etdCompare !== 0) return etdCompare;
-                        const vslCompare = a.vslVoy.localeCompare(b.vslVoy);
+                        const vslCompare = (a.vslVoy || '').localeCompare(b.vslVoy || '');
                         if (vslCompare !== 0) return vslCompare;
-                        return a.trade.localeCompare(b.trade);
+                        return (a.trade || '').localeCompare(b.trade || '');
                     });
                 }
 
                 // 生成表格
                 let tableHTML = `
-                    <div class="detail-table-container" style="max-height: calc(90vh - 200px);">
+                    <div class="detail-table-container" style="${CONFIG.STYLES.TABLE_CONTAINER}">
                     <table class="data-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background: #3E62AD; color: white; border-bottom: 2px solid white;">
+                            <tr style="background: ${CONFIG.COLORS.PRIMARY}; color: ${CONFIG.COLORS.BORDER_WHITE}; border-bottom: 2px solid ${CONFIG.COLORS.BORDER_WHITE};">
                                 ${createSortableHeader('ETD', 'etd', 3)}
                                 ${createSortableHeader('EXP LINE', 'expLine', 3)}
                                 ${createSortableHeader('VSL/VOY', 'vslVoy', 3)}
@@ -1977,23 +2027,23 @@
                     window.detailModalDataStore[dataKey] = item.data;
                     
                     tableHTML += `
-                        <tr style="cursor: pointer; transition: background-color 0.2s ease; border-bottom: 1px solid #dee2e6;" 
-                            onmouseover="this.style.backgroundColor='#f0f7ff'" 
+                        <tr style="${CONFIG.STYLES.TABLE_ROW_HOVER}" 
+                            onmouseover="this.style.backgroundColor='${CONFIG.COLORS.HOVER}'" 
                             onmouseout="this.style.backgroundColor=''"
                             title="点击查看详细记录"
                             data-detail-key="${dataKey}"
                             onclick="window.showDetailModal('${String(item.vslVoy).replace(/'/g, "\\'").replace(/"/g, '&quot;')} - ${etdDisplay.replace(/'/g, "\\'").replace(/"/g, '&quot;')} 详细记录', '${dataKey}')">
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">${etdDisplay}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">${item.expLine || '-'}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: 600;">${item.vslVoy}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">${item.trade || '-'}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.total.bl}<br>TEU: ${item.stats.total.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.aclf.bl}<br>TEU: ${item.stats.aclf.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.aclf.blPercent}%<br>TEU: ${item.stats.aclf.teuPercent}%</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.np.bl}<br>TEU: ${item.stats.np.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.np.blPercent}%<br>TEU: ${item.stats.np.teuPercent}%</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.x.bl}<br>TEU: ${item.stats.x.teu.toFixed(2)}</td>
-                            <td style="padding: 12px; border: 1px solid #dee2e6;">BL: ${item.stats.x.blPercent}%<br>TEU: ${item.stats.x.teuPercent}%</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">${etdDisplay}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">${item.expLine || '-'}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL} font-weight: 600;">${item.vslVoy}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">${item.trade || '-'}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.total.bl}<br>TEU: ${item.stats.total.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.aclf.bl}<br>TEU: ${item.stats.aclf.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.aclf.blPercent}%<br>TEU: ${item.stats.aclf.teuPercent}%</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.np.bl}<br>TEU: ${item.stats.np.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.np.blPercent}%<br>TEU: ${item.stats.np.teuPercent}%</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.x.bl}<br>TEU: ${item.stats.x.teu.toFixed(2)}</td>
+                            <td style="${CONFIG.STYLES.TABLE_CELL}">BL: ${item.stats.x.blPercent}%<br>TEU: ${item.stats.x.teuPercent}%</td>
                         </tr>
                     `;
                 });
@@ -2004,7 +2054,24 @@
                     </div>
                 `;
 
-                dom.mode3Table.innerHTML = tableHTML;
+                // 使用分批渲染优化
+                const tbodyStart = tableHTML.indexOf('<tbody>') + 7;
+                const tbodyEnd = tableHTML.indexOf('</tbody>');
+                if (tbodyStart > 6 && tbodyEnd > tbodyStart) {
+                    const headerHtml = tableHTML.substring(0, tbodyStart);
+                    const rowsHtml = tableHTML.substring(tbodyStart, tbodyEnd);
+                    const footerHtml = tableHTML.substring(tbodyEnd);
+                    
+                    dom.mode3Table.innerHTML = headerHtml + footerHtml;
+                    const tbody = dom.mode3Table.querySelector('tbody');
+                    if (tbody && rowsHtml) {
+                        renderTableRowsBatch(tbody, rowsHtml);
+                    } else {
+                        dom.mode3Table.innerHTML = tableHTML;
+                    }
+                } else {
+                    dom.mode3Table.innerHTML = tableHTML;
+                }
 
                 // 生成图表 - 按VSL/VOY展示
                 const chartData = vslVoyArray.map(item => ({
@@ -2725,44 +2792,6 @@
                 `;
             }
 
-            /**
-             * 异常数据检测
-             * 注意：此函数当前未使用，保留以备将来需要
-             */
-            function detectAnomalies() {
-                if (!state.filteredData || state.filteredData.length === 0) return [];
-
-                // 按日期分组
-                const dateMap = {};
-                state.filteredData.forEach(item => {
-                    const dateKey = formatDate(new Date(item.date));
-                    if (!dateMap[dateKey]) {
-                        dateMap[dateKey] = [];
-                    }
-                    dateMap[dateKey].push(item);
-                });
-
-                // 计算每日TEU
-                const dailyTEUs = Object.entries(dateMap).map(([date, items]) => ({
-                    date,
-                    teu: items.reduce((sum, item) => sum + item.teu, 0),
-                    bl: items.length
-                })).sort((a, b) => a.date.localeCompare(b.date));
-
-                if (dailyTEUs.length < 3) return [];
-
-                // 计算平均值和标准差
-                const teus = dailyTEUs.map(d => d.teu);
-                const mean = teus.reduce((a, b) => a + b, 0) / teus.length;
-                const variance = teus.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / teus.length;
-                const stdDev = Math.sqrt(variance);
-
-                // 检测异常（超过2个标准差）
-                const threshold = 2 * stdDev;
-                const anomalies = dailyTEUs.filter(d => Math.abs(d.teu - mean) > threshold);
-
-                return anomalies;
-            }
 
             /**
              * 应用排名功能

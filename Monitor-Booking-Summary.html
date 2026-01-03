@@ -3458,262 +3458,7 @@
         window.showVesselGpsDetail = showVesselGpsDetail;
         window.closeDetailModal = closeDetailModal;
 
-        /**
-         * 生成Sales维度分析（旧版本，保留备用）
-         */
-        function generateSalesAnalysis() {
-            // 按SalesID分组，辅以SQ/SC
-            const grouped = {};
-            
-            filteredData.forEach(row => {
-                const salesId = getColumnValue(row, COLUMN_MAP.SALES_ID) || '未指定';
-                const sqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '未指定';
-                const key = `${salesId}|${sqSc}`;
 
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        salesId,
-                        sqSc,
-                        count: 0,
-                        dry: 0,
-                        reefer: 0,
-                        special: 0
-                    };
-                }
-
-                grouped[key].count++;
-                const dry = Number(getColumnValue(row, COLUMN_MAP.DRY) || 0);
-                const reefer = Number(getColumnValue(row, COLUMN_MAP.REEFER) || 0);
-                const special = Number(getColumnValue(row, COLUMN_MAP.SPECIAL) || 0);
-                grouped[key].dry += dry;
-                grouped[key].reefer += reefer;
-                grouped[key].special += special;
-            });
-
-            // 生成表格
-            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;"><thead><tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">SalesID</th>';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">SQ/SC</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">记录数</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">DRY</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">REEFER</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">SPECIAL</th>';
-            html += '</tr></thead><tbody>';
-
-            const sortedKeys = Object.keys(grouped).sort((a, b) => {
-                const aSales = grouped[a].salesId;
-                const bSales = grouped[b].salesId;
-                return aSales.localeCompare(bSales);
-            });
-
-            sortedKeys.forEach(key => {
-                const item = grouped[key];
-                html += '<tr style="border-bottom: 1px solid #dee2e6;">';
-                html += `<td style="padding: 10px; border: 1px solid #dee2e6;">${escapeHtml(item.salesId)}</td>`;
-                html += `<td style="padding: 10px; border: 1px solid #dee2e6;">${escapeHtml(item.sqSc)}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.count}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.dry}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.reefer}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.special}</td>`;
-                html += '</tr>';
-            });
-
-            html += '</tbody></table>';
-            return html;
-        }
-
-        /**
-         * 生成Account维度分析
-         */
-        function generateAccountAnalysis() {
-            // 按SQ/SC Name分组，辅以SQ/SC
-            const grouped = {};
-            
-            filteredData.forEach(row => {
-                const sqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
-                const sqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '未指定';
-                const key = `${sqScName}|${sqSc}`;
-
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        sqScName,
-                        sqSc,
-                        count: 0,
-                        dry: 0,
-                        reefer: 0,
-                        special: 0
-                    };
-                }
-
-                grouped[key].count++;
-                const dry = Number(getColumnValue(row, COLUMN_MAP.DRY) || 0);
-                const reefer = Number(getColumnValue(row, COLUMN_MAP.REEFER) || 0);
-                const special = Number(getColumnValue(row, COLUMN_MAP.SPECIAL) || 0);
-                grouped[key].dry += dry;
-                grouped[key].reefer += reefer;
-                grouped[key].special += special;
-            });
-
-            // 生成表格
-            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;"><thead><tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">SQ/SC Name</th>';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">SQ/SC</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">记录数</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">DRY</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">REEFER</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">SPECIAL</th>';
-            html += '</tr></thead><tbody>';
-
-            const sortedKeys = Object.keys(grouped).sort((a, b) => {
-                const aName = grouped[a].sqScName;
-                const bName = grouped[b].sqScName;
-                return aName.localeCompare(bName);
-            });
-
-            sortedKeys.forEach(key => {
-                const item = grouped[key];
-                html += '<tr style="border-bottom: 1px solid #dee2e6;">';
-                html += `<td style="padding: 10px; border: 1px solid #dee2e6;">${escapeHtml(item.sqScName)}</td>`;
-                html += `<td style="padding: 10px; border: 1px solid #dee2e6;">${escapeHtml(item.sqSc)}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.count}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.dry}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.reefer}</td>`;
-                html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${item.special}</td>`;
-                html += '</tr>';
-            });
-
-            html += '</tbody></table>';
-            return html;
-        }
-
-        /**
-         * 生成船名航次维度分析
-         */
-        function generateVesselAnalysis() {
-            // 按船名+航次分组，以开船日期升序排序，以Dept+Trade汇总分类
-            const grouped = {};
-            
-            filteredData.forEach(row => {
-                const vessel = getColumnValue(row, COLUMN_MAP.VESSEL) || '未指定';
-                const voyage = getColumnValue(row, COLUMN_MAP.VOYAGE) || '未指定';
-                const dept = getColumnValue(row, COLUMN_MAP.DEPT) || '未指定';
-                const trade = getColumnValue(row, COLUMN_MAP.TRADE) || '未指定';
-                const sailDate = getColumnValue(row, COLUMN_MAP.SAIL_DATE);
-                
-                const key = `${vessel}|${voyage}`;
-                const deptTradeKey = `${dept}|${trade}`;
-
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        vessel,
-                        voyage,
-                        sailDate: sailDate ? (() => {
-                            const parseExcelDateFunc = (typeof window !== 'undefined' && typeof window.parseExcelDateSerial === 'function')
-                                ? window.parseExcelDateSerial
-                                : (typeof parseExcelDateSerial === 'function' ? parseExcelDateSerial : null);
-                            const parseStringDateFunc = (typeof window !== 'undefined' && typeof window.parseStringDate === 'function')
-                                ? window.parseStringDate
-                                : (typeof parseStringDate === 'function' ? parseStringDate : null);
-                            
-                            if (typeof sailDate === 'number' && parseExcelDateFunc) {
-                                return parseExcelDateFunc(sailDate);
-                            } else if (typeof sailDate === 'string' && parseStringDateFunc) {
-                                return parseStringDateFunc(sailDate);
-                            }
-                            return null;
-                        })() : null,
-                        deptTrade: {},
-                        count: 0,
-                        dry: 0,
-                        reefer: 0,
-                        special: 0
-                    };
-                }
-
-                if (!grouped[key].deptTrade[deptTradeKey]) {
-                    grouped[key].deptTrade[deptTradeKey] = {
-                        dept,
-                        trade,
-                        count: 0,
-                        dry: 0,
-                        reefer: 0,
-                        special: 0
-                    };
-                }
-
-                grouped[key].count++;
-                grouped[key].deptTrade[deptTradeKey].count++;
-                
-                const dry = Number(getColumnValue(row, COLUMN_MAP.DRY) || 0);
-                const reefer = Number(getColumnValue(row, COLUMN_MAP.REEFER) || 0);
-                const special = Number(getColumnValue(row, COLUMN_MAP.SPECIAL) || 0);
-                
-                grouped[key].dry += dry;
-                grouped[key].reefer += reefer;
-                grouped[key].special += special;
-                grouped[key].deptTrade[deptTradeKey].dry += dry;
-                grouped[key].deptTrade[deptTradeKey].reefer += reefer;
-                grouped[key].deptTrade[deptTradeKey].special += special;
-            });
-
-            // 按开船日期升序排序
-            const sortedKeys = Object.keys(grouped).sort((a, b) => {
-                const dateA = grouped[a].sailDate;
-                const dateB = grouped[b].sailDate;
-                
-                if (!dateA && !dateB) return 0;
-                if (!dateA) return 1;
-                if (!dateB) return -1;
-                
-                return dateA.getTime() - dateB.getTime();
-            });
-
-            // 生成表格
-            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;"><thead><tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">船名</th>';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">航次</th>';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">开船日期</th>';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Dept</th>';
-            html += '<th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Trade</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">记录数</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">DRY</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">REEFER</th>';
-            html += '<th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">SPECIAL</th>';
-            html += '</tr></thead><tbody>';
-
-            sortedKeys.forEach(key => {
-                const item = grouped[key];
-                const deptTradeKeys = Object.keys(item.deptTrade).sort();
-                
-                deptTradeKeys.forEach((deptTradeKey, index) => {
-                    const deptTrade = item.deptTrade[deptTradeKey];
-                    html += '<tr style="border-bottom: 1px solid #dee2e6;">';
-                    
-                    if (index === 0) {
-                        // 第一行显示船名航次和开船日期
-                        const sailDateStr = item.sailDate ? formatDate(item.sailDate) : '未指定';
-                        html += `<td style="padding: 10px; border: 1px solid #dee2e6;" rowspan="${deptTradeKeys.length}">${escapeHtml(item.vessel)}</td>`;
-                        html += `<td style="padding: 10px; border: 1px solid #dee2e6;" rowspan="${deptTradeKeys.length}">${escapeHtml(item.voyage)}</td>`;
-                        html += `<td style="padding: 10px; border: 1px solid #dee2e6;" rowspan="${deptTradeKeys.length}">${sailDateStr}</td>`;
-                    }
-                    
-                    html += `<td style="padding: 10px; border: 1px solid #dee2e6;">${escapeHtml(deptTrade.dept)}</td>`;
-                    html += `<td style="padding: 10px; border: 1px solid #dee2e6;">${escapeHtml(deptTrade.trade)}</td>`;
-                    html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${deptTrade.count}</td>`;
-                    html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${deptTrade.dry}</td>`;
-                    html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${deptTrade.reefer}</td>`;
-                    html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${deptTrade.special}</td>`;
-                    html += '</tr>';
-                });
-            });
-
-            html += '</tbody></table>';
-            return html;
-        }
-
-        /**
-         * 生成Sales+Week维度分析（简化版，待完善）
-         */
         /**
          * 根据日期获取周别代码（YYYYWW格式）
          */
@@ -4063,7 +3808,7 @@
         }
 
         /**
-         * 生成Account+Dept维度分析（简化版，待完善）
+         * 生成Account+Dept维度分析
          */
         /**
          * 生成Account+Dept维度分析
@@ -4510,7 +4255,7 @@
         }
 
         /**
-         * 生成船名航次+Dept维度分析（简化版，待完善）
+         * 生成船名航次+Dept维度分析
          */
         function generateVesselDeptAnalysis() {
             // 按ETD(AD列)、EXP LINE(AC列)、VSL/VOY(G+H列)分组，按Dept分类
@@ -5888,7 +5633,7 @@
         };
 
         /**
-         * 生成船名航次+Week维度分析（简化版，待完善）
+         * 生成船名航次+Week维度分析
          */
         function generateVesselWeekAnalysis() {
             // 从数据中收集所有实际存在的周别代码（从AE列）
@@ -6169,13 +5914,7 @@
             return div.innerHTML;
         }
 
-        /**
-         * ==================== 已删除的功能：数据导出、搜索、图表视图 ====================
-         * 为提升性能，已移除以下功能：
-         * - 导出Excel/CSV
-         * - 表格搜索
-         * - 图表视图（部分图表功能已删除，但GPS图表仍在使用）
-         */
+        // 已删除的功能：数据导出、搜索、图表视图（GPS图表仍在使用）
 
         /**
          * ==================== 第二阶段功能：数据统计面板 ====================
@@ -6398,35 +6137,8 @@
          * ==================== 第二阶段功能：图表可视化 ====================
          */
 
-        /**
-         * ==================== 已删除的功能：图表视图 ====================
-         * 为提升性能，已移除大部分图表视图相关功能
-         * 
-         * 注意：以下占位函数保留是为了防止其他代码中可能存在的引用错误。
-         * 如果确认代码中没有任何地方调用这些函数，可以安全删除。
-         * 
-         * 已删除的图表函数：
-         * - initViewTabs() - 视图标签初始化
-         * - updateCharts() - 更新图表
-         * - generateDeptCharts() - 部门维度图表
-         * - generateWeekCharts() - 周别维度图表
-         * - generateAdditionalCharts() - 附加图表
-         * - generateSqScTop10Chart() - SQ/SC Top10图表
-         * - generateTop10Chart() - Top10图表
-         * - generateTradeChart() - Trade图表
-         * - generateAreaChart() - 区域图表
-         * - generateCombinedChart() - 组合图表
-         * - generateStackedChart() - 堆叠图表
-         * - destroyCharts() - 销毁图表
-         * 
-         * 保留的图表功能：
-         * - GPS图表（在showVesselGpsDetail中使用）
-         */
-        
-        // 占位函数，防止引用错误（如果确认无引用，可删除）
-        function initViewTabs() {
-            // 图表视图功能已删除
-        }
+        // 占位函数：已删除的图表功能（保留以防止引用错误）
+        function initViewTabs() {}
         function updateCharts() {}
         function generateDeptCharts() {}
         function generateWeekCharts() {}

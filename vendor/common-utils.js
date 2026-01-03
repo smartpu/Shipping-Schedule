@@ -550,11 +550,19 @@ async function loadDefaultMarketReports(onFileLoaded) {
                 const indexData = await indexResponse.json();
                 // 优先读取 marketReports 字段（新格式）
                 if (Array.isArray(indexData.marketReports)) {
-                    pdfFileList = indexData.marketReports;
+                    // 只加载 Linerlytica 的周报（110-04 和 365-04 工具专用）
+                    pdfFileList = indexData.marketReports.filter(fileName => {
+                        const name = fileName.toLowerCase();
+                        return name.includes('linerlytica');
+                    });
                 } 
                 // 兼容旧格式：如果存在 files 字段，也支持（向后兼容）
                 else if (Array.isArray(indexData.files)) {
-                    pdfFileList = indexData.files;
+                    // 同样只加载 Linerlytica 文件
+                    pdfFileList = indexData.files.filter(fileName => {
+                        const name = fileName.toLowerCase();
+                        return name.includes('linerlytica');
+                    });
                 }
             }
         } catch (e) {

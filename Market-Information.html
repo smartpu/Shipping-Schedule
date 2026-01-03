@@ -145,7 +145,7 @@
                         category: 'oaDay',
                         categoryName: 'OA 推介会',
                         displayName: dayNumber ? `OA Day ${dayNumber} ${year}${part}` : `OA Day ${year}${part}`,
-                        description: `${year}年 OA Day 推介会资料${part}`
+                        description: dayNumber ? `${year}年 OA Day ${dayNumber} 推介会资料${part}` : `${year}年 OA Day 推介会资料${part}`
                     };
                 }
                 
@@ -425,13 +425,14 @@
                 const pdfUrl = `${pdfViewerState.currentPdfPath}#page=${pageNum}&view=FitV&toolbar=0&navpanes=0&zoom=page-fit`;
                 
                 // 模拟加载进度（因为无法直接获取真实的加载进度）
+                // 使用更慢的进度模拟，更接近真实的 PDF 加载时间
                 let progress = 0;
                 const progressInterval = setInterval(() => {
-                    progress += 10;
-                    if (progress <= 90) {
+                    progress += 5; // 每次增加 5%，更慢
+                    if (progress < 95) { // 最多到 95%，等待真实加载完成
                         showLoadingProgress(progress);
                     }
-                }, 100);
+                }, 150); // 每 150ms 更新一次，更慢
                 
                 // 设置 iframe src
                 pdfViewerFrame.src = pdfUrl;
@@ -439,10 +440,46 @@
                 // 监听 iframe 加载完成
                 const onLoad = function() {
                     clearInterval(progressInterval);
-                    showLoadingProgress(100);
-                    setTimeout(() => {
-                        hideLoadingProgress();
-                    }, 200);
+                    // iframe load 事件触发时，PDF 可能还在渲染
+                    // 先显示 95%，然后等待 PDF 真正渲染完成
+                    showLoadingProgress(95);
+                    
+                    // 延迟一段时间，等待 PDF 内容真正渲染完成
+                    // 使用多次检查，确保 PDF 内容已显示
+                    let checkCount = 0;
+                    const maxChecks = 20; // 最多检查 20 次（约 2 秒）
+                    const checkInterval = setInterval(() => {
+                        checkCount++;
+                        // 尝试检测 PDF 是否真正加载完成
+                        try {
+                            const iframeDoc = pdfViewerFrame.contentDocument || pdfViewerFrame.contentWindow.document;
+                            if (iframeDoc && iframeDoc.readyState === 'complete') {
+                                // 如果文档已完全加载，再等待一小段时间确保 PDF 渲染完成
+                                clearInterval(checkInterval);
+                                showLoadingProgress(100);
+                                setTimeout(() => {
+                                    hideLoadingProgress();
+                                }, 300);
+                                return;
+                            }
+                        } catch (e) {
+                            // 跨域限制，无法访问
+                        }
+                        
+                        // 如果检查次数达到上限，强制隐藏进度条
+                        if (checkCount >= maxChecks) {
+                            clearInterval(checkInterval);
+                            showLoadingProgress(100);
+                            setTimeout(() => {
+                                hideLoadingProgress();
+                            }, 300);
+                        } else {
+                            // 逐渐增加进度，从 95% 到 100%
+                            const currentProgress = 95 + (checkCount * 0.25); // 每次增加 0.25%
+                            showLoadingProgress(Math.min(currentProgress, 99));
+                        }
+                    }, 100); // 每 100ms 检查一次
+                    
                     // 确保页码显示正确
                     updatePageInfo();
                     // 移除事件监听器，避免重复绑定

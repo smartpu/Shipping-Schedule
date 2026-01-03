@@ -493,7 +493,8 @@
             return;
         }
         
-        // 用户已登录，等待白名单加载完成后再检查权限
+        // 用户已登录，先确保用户已通过API验证（checkPageAccess完成）
+        // 等待白名单加载完成，并确保用户信息已从API验证中获取
         // 默认值：权限检查失败时，只允许访问001系列、365系列、market系列
         let permissions = {
             tools001: true,
@@ -503,6 +504,57 @@
             admin: false
         };
         
+        // 先等待白名单加载完成
+        if (typeof window.waitForWhitelist === 'function') {
+            await window.waitForWhitelist();
+        }
+        
+        // 检查用户是否在白名单中（如果不在，说明API验证可能还未完成）
+        // 尝试从localStorage获取认证数据，并确保用户信息已添加到白名单
+        let authData = null;
+        try {
+            const authDataStr = localStorage.getItem('shipping_tools_auth');
+            if (authDataStr) {
+                authData = JSON.parse(authDataStr);
+            }
+        } catch (e) {
+            console.warn('[Sidebar] 无法解析认证数据:', e);
+        }
+        
+        // 如果用户不在白名单中，尝试通过API验证（确保API返回的groups被添加到白名单）
+        if (authData && typeof window.verifyUserInWhitelist === 'function') {
+            // 检查用户是否已在白名单中
+            let userInWhitelist = false;
+            if (typeof window.getUserFromWhitelist === 'function') {
+                userInWhitelist = !!window.getUserFromWhitelist(authData);
+            }
+            
+            // 如果用户不在白名单中，等待API验证完成（这会调用verifyUserInWhitelist，将groups添加到白名单）
+            if (!userInWhitelist) {
+                console.log('[Sidebar] 用户不在白名单缓存中，等待API验证完成...');
+                // 等待一小段时间，让checkPageAccess完成API验证
+                await new Promise(resolve => setTimeout(resolve, 500));
+                // 再次检查
+                if (typeof window.getUserFromWhitelist === 'function') {
+                    userInWhitelist = !!window.getUserFromWhitelist(authData);
+                }
+                // 如果仍然不在，主动调用verifyUserInWhitelist（但只在必要时）
+                if (!userInWhitelist && typeof window.verifyUserInWhitelist === 'function') {
+                    console.log('[Sidebar] 主动调用API验证用户...');
+                    try {
+                        await window.verifyUserInWhitelist(
+                            authData.name || '',
+                            authData.phone || authData.password || '',
+                            authData.email || ''
+                        );
+                    } catch (error) {
+                        console.warn('[Sidebar] API验证失败:', error);
+                    }
+                }
+            }
+        }
+        
+        // 再次等待白名单更新（确保API返回的groups已添加到白名单）
         if (typeof window.waitForWhitelist === 'function') {
             await window.waitForWhitelist();
         }

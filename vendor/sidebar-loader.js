@@ -110,11 +110,8 @@
         
         // 生成每个主菜单项
         Object.keys(NAV_CONFIG).forEach((sectionKey) => {
-            // 检查该系列的权限
+            // 检查该系列的权限（但始终生成主菜单项，以便用户能看到系列分类）
             const hasPermission = permissions[sectionKey] !== false; // 默认true，除非明确设置为false
-            if (!hasPermission) {
-                return; // 跳过没有权限的菜单
-            }
             
             const config = NAV_CONFIG[sectionKey];
             const isActive = currentSection === sectionKey;
@@ -122,7 +119,7 @@
             const shouldExpand = sectionKey === 'admin' 
                 ? (isActive || (isDashboard && permissions.admin))
                 : (isActive || (isDashboard && ['tools365', 'market', 'monitor'].includes(sectionKey)));
-            const isExpanded = shouldExpand;
+            const isExpanded = shouldExpand && hasPermission; // 只有有权限时才展开
             // 修正主菜单链接路径
             let mainHref = isDashboard ? '#' : `dashboard.html?tab=${sectionKey}`;
             const isInSubDir = currentPage.includes('/') && !currentPage.startsWith('/');
@@ -130,24 +127,27 @@
                 mainHref = '../' + mainHref;
             }
             
+            // 始终生成主菜单项，但根据权限决定是否可点击和展开
             html += `
-                        <a href="${mainHref}" class="nav-item ${isExpanded ? 'expanded' : ''} ${isActive ? 'active' : ''}" 
+                        <a href="${mainHref}" class="nav-item ${isExpanded ? 'expanded' : ''} ${isActive ? 'active' : ''} ${!hasPermission ? 'no-permission' : ''}" 
                            data-section="${sectionKey}" 
                            data-label="${config.label}" 
                            role="button" 
                            aria-expanded="${isExpanded}" 
                            aria-controls="${config.submenuId}" 
                            tabindex="0" 
-                           title="${config.label}">
+                           title="${config.label}${!hasPermission ? ' (无权限)' : ''}"
+                           ${!hasPermission ? 'style="opacity: 0.5; cursor: not-allowed;"' : ''}>
                             <span class="nav-item-icon" aria-hidden="true">${config.icon}</span>
                             <span>${config.label}</span>
                             <span class="nav-toggle-icon" aria-hidden="true">▶</span>
                         </a>
-                        <div class="nav-submenu ${isExpanded ? 'expanded' : ''}" id="${config.submenuId}" ${sectionKey === 'tools365' ? 'role="menu"' : ''}>
+                        <div class="nav-submenu ${isExpanded ? 'expanded' : ''}" id="${config.submenuId}" ${sectionKey === 'tools365' ? 'role="menu"' : ''} ${!hasPermission ? 'style="display: none;"' : ''}>
             `;
 
-            // 生成子菜单项
-            config.items.forEach((item) => {
+            // 只有有权限时才生成子菜单项
+            if (hasPermission) {
+                config.items.forEach((item) => {
                 // 修正路径：如果当前页面在子目录中（如 tests/），需要调整相对路径
                 let href = item.href;
                 const isInSubDir = currentPage.includes('/') && !currentPage.startsWith('/');
@@ -191,7 +191,8 @@
                                 <span class="nav-submenu-icon" ${ariaHidden}>${item.icon}</span>${item.label}
                             </a>
                 `;
-            });
+                });
+            }
 
             html += `
                         </div>

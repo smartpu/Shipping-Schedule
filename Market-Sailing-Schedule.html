@@ -1810,8 +1810,9 @@
         // 按日期分组
         const dataByDate = groupDataByDate(filteredData);
 
-        // 检测是否为手机端（屏幕宽度 <= 768px）
-        const isMobile = window.innerWidth <= 768;
+        // 检测是否为手机端（排除iPad横屏宽屏模式，>= 1024px且横屏时使用桌面版）
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const isMobile = window.innerWidth <= 768 || (window.innerWidth < 1024 && !isLandscape);
         
         // 清空日历容器（会自动清理动态元素的事件监听器）
         dom.calendarBody.innerHTML = '';

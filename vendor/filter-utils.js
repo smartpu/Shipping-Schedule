@@ -288,8 +288,9 @@
      * @param {HTMLSelectElement} selectElement - 多选下拉框元素
      */
     function updateFilterDisplay(selectElement, isLoading = false) {
-        // iPad 横屏时也使用移动端筛选模式
-        if (!selectElement || (window.innerWidth > 1024 && !(window.innerWidth <= 1024 && window.innerHeight <= 768))) return;
+        // iPad 横屏宽屏模式（>= 1024px且横屏）使用桌面版显示，不使用移动端筛选模式
+        const isLandscape = window.innerWidth > window.innerHeight;
+        if (!selectElement || (window.innerWidth >= 1024 && isLandscape)) return;
         
         const selectedCount = Array.from(selectElement.selectedOptions).filter(opt => opt.value !== '').length;
         const totalCount = selectElement.options.length - 1; // 减去默认选项

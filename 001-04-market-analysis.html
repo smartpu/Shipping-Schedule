@@ -884,8 +884,10 @@
         let availableRoutes = [];
 
         async function updateFilterOptions(records) {
-            // 显示加载状态（移动端）
-            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+            // 显示加载状态（移动端，排除iPad横屏宽屏模式）
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isMobileFilter = window.innerWidth <= 1024 && !(window.innerWidth >= 1024 && isLandscape);
+            if (isMobileFilter && typeof window.updateFilterDisplay === 'function') {
                 const originPortSelect = document.getElementById('originPortSelect');
                 const destPortSelect = document.getElementById('destPortSelect');
                 const routeSelect = document.getElementById('routeSelect');
@@ -1032,8 +1034,10 @@
                 );
             }
             
-            // 更新移动端筛选框显示（移除加载状态）
-            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+            // 更新移动端筛选框显示（移除加载状态，排除iPad横屏宽屏模式）
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isMobileFilter = window.innerWidth <= 1024 && !(window.innerWidth >= 1024 && isLandscape);
+            if (isMobileFilter && typeof window.updateFilterDisplay === 'function') {
                 setTimeout(() => {
                     if (originPortSelect) window.updateFilterDisplay(originPortSelect, false);
                     if (destPortSelect) window.updateFilterDisplay(destPortSelect, false);
@@ -2271,8 +2275,9 @@
             chartWrapper.classList.remove('hidden');
             
             const weekCodes = weekColumns.map(week => week.code);
-            // 检测是否为移动端
-            const isMobile = window.innerWidth <= 900;
+            // 检测是否为移动端（排除iPad横屏宽屏模式，>= 1024px且横屏时使用桌面版）
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isMobile = window.innerWidth <= 900 || (window.innerWidth < 1024 && !isLandscape);
             const weekLabels = weekColumns.map(week => {
                 if (isMobile) {
                     // 移动端只显示周号，如：53, 1, 2, 3
@@ -2982,9 +2987,11 @@
                     (routeSelect && routeSelect.options.length <= 1)) {
                     if (processedRecords && processedRecords.length > 0) {
                         updateFilterOptions(processedRecords);
-                        // 选项加载完成后，更新移动端显示（移除加载状态）
+                        // 选项加载完成后，更新移动端显示（移除加载状态，排除iPad横屏宽屏模式）
                         setTimeout(() => {
-                            if (typeof window.updateFilterDisplay === 'function') {
+                            const isLandscape = window.innerWidth > window.innerHeight;
+                            const isMobileFilter = window.innerWidth <= 1024 && !(window.innerWidth >= 1024 && isLandscape);
+                            if (isMobileFilter && typeof window.updateFilterDisplay === 'function') {
                                 const originSelect = document.getElementById('originPortSelect');
                                 const destSelect = document.getElementById('destPortSelect');
                                 const routeSelect = document.getElementById('routeSelect');

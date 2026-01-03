@@ -1627,8 +1627,10 @@
          * 更新所有筛选器选项（级联筛选）
          */
         async function updateMarketFilterOptions() {
-            // 显示加载状态（移动端）
-            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+            // 显示加载状态（移动端，排除iPad横屏宽屏模式）
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isMobileFilter = window.innerWidth <= 1024 && !(window.innerWidth >= 1024 && isLandscape);
+            if (isMobileFilter && typeof window.updateFilterDisplay === 'function') {
                 const marketOriginSelect = document.getElementById('marketOriginPortSelect');
                 const marketRegionSelect = document.getElementById('marketRegionSelect');
                 const marketPortSelect = document.getElementById('marketPortSelect');
@@ -1651,8 +1653,8 @@
             updateRegionSelect(allRegions);
             await updatePortSelect(portMap);
             
-            // 更新移动端筛选框显示（移除加载状态）
-            if (window.innerWidth <= 1024 && typeof window.updateFilterDisplay === 'function') {
+            // 更新移动端筛选框显示（移除加载状态，排除iPad横屏宽屏模式）
+            if (isMobileFilter && typeof window.updateFilterDisplay === 'function') {
                 setTimeout(() => {
                     const marketOriginSelect = document.getElementById('marketOriginPortSelect');
                     const marketRegionSelect = document.getElementById('marketRegionSelect');
@@ -2463,8 +2465,10 @@
             populateSelectLocal(destPortSelect, filteredDestPortOptions, '全部目的港', destinationFilters.destPorts, false);
             populateSelectLocal(routeSelect, filteredRouteOptions, '全部共舱船公司', destinationFilters.routes, false);
             
-            // 更新移动端筛选框显示
-            if (window.innerWidth <= 768 && typeof window.updateFilterDisplay === 'function') {
+            // 更新移动端筛选框显示（排除iPad横屏宽屏模式）
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isMobileFilter = window.innerWidth <= 768 || (window.innerWidth < 1024 && !isLandscape);
+            if (isMobileFilter && typeof window.updateFilterDisplay === 'function') {
                 setTimeout(() => {
                     if (originPortSelect) window.updateFilterDisplay(originPortSelect);
                     if (destPortSelect) window.updateFilterDisplay(destPortSelect);
@@ -3463,8 +3467,9 @@
             chartWrapper.classList.remove('hidden');
             
             const weekCodes = weekColumns.map(week => week.code);
-            // 检测是否为移动端
-            const isMobile = window.innerWidth <= 900;
+            // 检测是否为移动端（排除iPad横屏宽屏模式，>= 1024px且横屏时使用桌面版）
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isMobile = window.innerWidth <= 900 || (window.innerWidth < 1024 && !isLandscape);
             const weekLabels = weekColumns.map(week => {
                 if (isMobile) {
                     // 移动端只显示周号，如：53, 1, 2, 3

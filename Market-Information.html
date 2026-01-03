@@ -58,7 +58,7 @@
                             <button class="pdf-viewer-close" id="pdfViewerClose">关闭 (ESC)</button>
                         </div>
                         <div class="pdf-viewer-body" id="pdfViewerBody">
-                            <iframe id="pdfViewerFrame" src="" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" allow="fullscreen"></iframe>
+                            <iframe id="pdfViewerFrame" src="" allow="fullscreen"></iframe>
                         </div>
                     </div>
                 </div>
@@ -135,12 +135,22 @@
                 
                 // Alphaliner
                 if (name.includes('alphaliner') || name.includes('alpha-liner')) {
-                    return {
-                        category: 'marketReport',
-                        categoryName: '市场周报',
-                        displayName: 'Alphaliner 市场周报',
-                        description: fileName.replace(/\.pdf$/i, '')
-                    };
+                    // 区分月报和周报
+                    if (name.includes('monthly') || name.includes('monitor')) {
+                        return {
+                            category: 'marketReport',
+                            categoryName: '市场月报',
+                            displayName: 'Alphaliner 市场月报',
+                            description: fileName.replace(/\.pdf$/i, '')
+                        };
+                    } else {
+                        return {
+                            category: 'marketReport',
+                            categoryName: '市场周报',
+                            displayName: 'Alphaliner 市场周报',
+                            description: fileName.replace(/\.pdf$/i, '')
+                        };
+                    }
                 }
                 
                 // 其他市场周报
@@ -342,11 +352,25 @@
              */
             function isVerticalPdf(fileName) {
                 const name = fileName.toLowerCase();
-                // Linerlytica、Alphaliner 等航运周报通常是竖版
-                return name.includes('linerlytica') || 
-                       name.includes('alphaliner') || 
-                       name.includes('alpha-liner') ||
-                       (name.includes('weekly') && name.includes('report'));
+                
+                // Alphaliner Monthly Monitor 是横版月报，应该单页显示
+                if (name.includes('alphaliner') && (name.includes('monthly') || name.includes('monitor'))) {
+                    return false;
+                }
+                
+                // Alphaliner Newsletter 和 Linerlytica 是竖版周报，应该两页显示
+                if (name.includes('linerlytica') || 
+                    (name.includes('alphaliner') && name.includes('newsletter'))) {
+                    return true;
+                }
+                
+                // 其他包含 weekly 和 report 的通常是竖版
+                if (name.includes('weekly') && name.includes('report')) {
+                    return true;
+                }
+                
+                // 默认横版（单页显示）
+                return false;
             }
 
             /**
@@ -387,8 +411,6 @@
                     leftFrame.style.height = '100%';
                     leftFrame.style.border = 'none';
                     leftFrame.style.background = 'white';
-                    // 防止下载：添加 sandbox 属性，但允许脚本和同源访问
-                    leftFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
                     leftFrame.setAttribute('allow', 'fullscreen');
                     
                     const rightFrame = document.createElement('iframe');
@@ -398,8 +420,6 @@
                     rightFrame.style.height = '100%';
                     rightFrame.style.border = 'none';
                     rightFrame.style.background = 'white';
-                    // 防止下载：添加 sandbox 属性
-                    rightFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
                     rightFrame.setAttribute('allow', 'fullscreen');
                     
                     // 为左右两页的 iframe 添加事件监听
@@ -439,8 +459,6 @@
                     pdfViewerBody.innerHTML = '';
                     // 添加参数隐藏工具栏，防止下载
                     pdfViewerFrame.src = pdfPath + '#toolbar=0&navpanes=0';
-                    // 防止下载：添加 sandbox 属性，但允许脚本和同源访问
-                    pdfViewerFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
                     pdfViewerFrame.setAttribute('allow', 'fullscreen');
                     pdfViewerBody.appendChild(pdfViewerFrame);
                 }

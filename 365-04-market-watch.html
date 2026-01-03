@@ -295,19 +295,19 @@
                             <tbody id="tableBody"></tbody>
                         </table>
                     </div>
-                    <div id="chartContainer" class="chart-container hidden">
-                        <div style="width: 100%; margin-bottom: 20px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 15px;">
-                                <h3 style="color:#1f2d3d; font-size:20px; letter-spacing:0.5px; margin: 0;">运力与派船趋势图</h3>
-                                <span style="color:#6c757d; font-size:13px;">高度 ×1.5 展示，便于对比多航线</span>
+                    <div id="chartContainer" class="chart-container hidden" style="width: 100%; box-sizing: border-box;">
+                        <div style="width: 100%; margin-bottom: 20px; box-sizing: border-box;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 15px; box-sizing: border-box;">
+                                <h3 style="color:#1f2d3d; font-size:20px; letter-spacing:0.5px; margin: 0; flex-shrink: 0;">运力与派船趋势图</h3>
+                                <span style="color:#6c757d; font-size:13px; flex-shrink: 0;">高度 ×1.5 展示，便于对比多航线</span>
                             </div>
-                            <h4 style="color:#1f2d3d; font-size:16px; font-weight:600; margin: 0; width: 100%;">运力与派船趋势分析</h4>
+                            <h4 style="color:#1f2d3d; font-size:16px; font-weight:600; margin: 0; width: 100%; box-sizing: border-box;">运力与派船趋势分析</h4>
                         </div>
                         <div id="emptyChartMessage" class="empty-chart-message hidden">
                             请选择区域（或更细分的层级）以查看图表
                         </div>
-                        <div class="chart-wrapper hidden" id="chartWrapper">
-                            <canvas id="trendChart"></canvas>
+                        <div class="chart-wrapper hidden" id="chartWrapper" style="width: 100%; box-sizing: border-box;">
+                            <canvas id="trendChart" style="width: 100% !important; height: 100% !important;"></canvas>
                         </div>
                     </div>
                 </div>

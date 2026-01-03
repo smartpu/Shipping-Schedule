@@ -134,7 +134,7 @@
         
         const url = `${GIST_API_URL}?type=whitelist&name=${encodeURIComponent(normalizedName)}&phone=${encodeURIComponent(normalizedPhone)}&email=${encodeURIComponent(normalizedEmail)}`;
         debugLog(`[Auth] 验证用户是否在白名单中: ${normalizedName}`);
-        console.log('[Auth] 开始验证用户:', {
+        debugLog('[Auth] 开始验证用户:', {
             name: normalizedName,
             phone: normalizedPhone ? '***' : 'missing',
             email: normalizedEmail,
@@ -149,7 +149,7 @@
                 }
             });
             
-            console.log('[Auth] API 响应状态:', response.status, response.statusText);
+            debugLog('[Auth] API 响应状态:', response.status, response.statusText);
             
             if (!response.ok) {
                 const errorText = await response.text();
@@ -157,7 +157,7 @@
             }
             
             const data = await response.json();
-            console.log('[Auth] API 返回数据:', data);
+            debugLog('[Auth] API 返回数据:', data);
             
             // 新格式：返回 { authorized: true, user: {...} } 或 { authorized: false }
             if (data && typeof data === 'object' && 'authorized' in data) {
@@ -182,7 +182,7 @@
                     }
                     
                     debugLog(`[Auth] 用户验证成功: ${normalizedName}`);
-                    console.log('[Auth] 用户验证成功:', {
+                    debugLog('[Auth] 用户验证成功:', {
                         name: data.user.name,
                         level: data.user.level,
                         groups: data.user.groups
@@ -191,7 +191,7 @@
                 } else {
                     const reason = data.message || '未知原因';
                     debugWarn(`[Auth] 用户不在白名单中: ${normalizedName}, 原因: ${reason}`);
-                    console.warn('[Auth] 用户不在白名单中:', {
+                    debugWarn('[Auth] 用户不在白名单中:', {
                         name: normalizedName,
                         reason: reason,
                         response: data
@@ -243,7 +243,7 @@
                 phone: normalizedPhone ? '***' : 'missing',
                 email: normalizedEmail
             });
-            console.error('[Auth] 验证用户失败详情:', {
+            debugError('[Auth] 验证用户失败详情:', {
                 error: error.message,
                 stack: error.stack,
                 url: url,
@@ -252,7 +252,7 @@
                 email: normalizedEmail
             });
             // 在控制台显示明显的错误提示
-            console.error('%c[Auth] 验证失败 - 请检查上述错误信息', 'color: red; font-size: 14px; font-weight: bold;');
+            debugError('%c[Auth] 验证失败 - 请检查上述错误信息', 'color: red; font-size: 14px; font-weight: bold;');
             return null;
         }
     }
@@ -371,7 +371,7 @@
         }
         
         debugLog('[Auth] 保存访问记录:', logEntry);
-        console.log('[Auth] 开始保存访问记录到 Gist:', {
+        debugLog('[Auth] 开始保存访问记录到 Gist:', {
             apiUrl: GIST_API_URL,
             logEntry: logEntry,
             timestamp: new Date().toISOString()
@@ -383,7 +383,7 @@
                 data: { logEntry }
             };
             
-            console.log('[Auth] 发送请求到 API:', {
+            debugLog('[Auth] 发送请求到 API:', {
                 url: GIST_API_URL,
                 method: 'POST',
                 body: requestBody
@@ -397,7 +397,7 @@
                 body: JSON.stringify(requestBody)
             });
 
-            console.log('[Auth] API 响应状态:', {
+            debugLog('[Auth] API 响应状态:', {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok
@@ -414,16 +414,16 @@
                     if (errorJson.message) {
                         errorMessage += ` (${errorJson.message})`;
                     }
-                    console.error('[Auth] API 返回错误:', errorJson);
+                    debugError('[Auth] API 返回错误:', errorJson);
                 } catch (e) {
                     errorMessage += ` - ${errorText.substring(0, 200)}`;
-                    console.error('[Auth] API 返回错误文本:', errorText.substring(0, 500));
+                    debugError('[Auth] API 返回错误文本:', errorText.substring(0, 500));
                 }
                 throw new Error(errorMessage);
             }
 
             const result = await response.json();
-            console.log('[Auth] 访问记录保存成功:', result);
+            debugLog('[Auth] 访问记录保存成功:', result);
             debugLog('[Auth] 访问记录保存成功:', result);
             return true;
         } catch (error) {
@@ -439,7 +439,7 @@
                 location: window.location.href
             };
             debugError('[Auth] 保存访问记录失败:', errorInfo);
-            console.error('[Auth] 访问记录保存失败详情:', errorInfo);
+            debugError('[Auth] 访问记录保存失败详情:', errorInfo);
             return false;
         }
     }
@@ -832,7 +832,7 @@
         
         // 检查用户是否在白名单中
         let user = getUserFromWhitelist(authData);
-        console.log('[Auth] checkPageAccess - 本地缓存检查结果:', { 
+        debugLog('[Auth] checkPageAccess - 本地缓存检查结果:', { 
             found: !!user, 
             cacheSize: userWhitelist.length,
             authData: { 
@@ -844,7 +844,7 @@
         
         // 如果缓存中没有，使用服务端验证
         if (!user) {
-            console.log('[Auth] checkPageAccess - 本地缓存中未找到用户，使用服务端验证');
+            debugLog('[Auth] checkPageAccess - 本地缓存中未找到用户，使用服务端验证');
             const phone = authData.phone || authData.password || '';
             user = await verifyUserInWhitelist(
                 authData.name || '',
@@ -852,7 +852,7 @@
                 authData.email || ''
             );
             
-            console.log('[Auth] checkPageAccess - 服务端验证结果:', { 
+            debugLog('[Auth] checkPageAccess - 服务端验证结果:', { 
                 found: !!user, 
                 userInfo: user ? { name: user.name, level: user.level } : null 
             });
@@ -863,7 +863,7 @@
                            `用户信息: name=${authData.name}, phone=${authData.phone || authData.password ? '***' : 'missing'}, email=${authData.email}\n` +
                            `请检查控制台日志获取更多信息`;
             debugWarn(errorMsg);
-            console.error('[Auth] checkPageAccess - 验证失败，即将重定向:', {
+            debugError('[Auth] checkPageAccess - 验证失败，即将重定向:', {
                 authData: {
                     name: authData.name,
                     phone: authData.phone || authData.password ? '***' : 'missing',
@@ -913,7 +913,7 @@
             // 异步保存，不阻塞页面加载
             saveLogToGist(logEntry).catch(error => {
                 debugError('[Auth] checkPageAccess - 访问记录保存失败（非阻塞）:', error);
-                console.error('[Auth] checkPageAccess - 访问记录保存异常:', {
+                debugError('[Auth] checkPageAccess - 访问记录保存异常:', {
                     error: error.message,
                     stack: error.stack,
                     apiUrl: GIST_API_URL,
@@ -1018,7 +1018,7 @@
                                        `用户信息: name=${authData.name}, phone=${authData.phone || authData.password ? '***' : 'missing'}, email=${authData.email}\n` +
                                        `请检查控制台日志获取更多信息`;
                         debugWarn(errorMsg);
-                        console.error('[Auth] 验证失败，即将重定向:', {
+                        debugError('[Auth] 验证失败，即将重定向:', {
                             authData: {
                                 name: authData.name,
                                 phone: authData.phone || authData.password ? '***' : 'missing',
@@ -1068,7 +1068,7 @@
                 (async () => {
                     try {
                         debugLog('[Auth] initGistAuth - 开始保存访问记录（已登录用户）:', logEntry);
-                        console.log('[Auth] initGistAuth - 开始保存访问记录:', {
+                        debugLog('[Auth] initGistAuth - 开始保存访问记录:', {
                             page: pageName,
                             name: authData.name,
                             timestamp: new Date().toISOString()
@@ -1076,18 +1076,18 @@
                         const result = await saveLogToGist(logEntry);
                         if (!result) {
                             debugWarn('[Auth] initGistAuth - 访问记录保存返回 false，可能保存失败');
-                            console.warn('[Auth] initGistAuth - 访问记录保存失败，请检查：', {
+                            debugWarn('[Auth] initGistAuth - 访问记录保存失败，请检查：', {
                                 apiUrl: GIST_API_URL,
                                 logEntry: logEntry,
                                 timestamp: new Date().toISOString()
                             });
                         } else {
                             debugLog('[Auth] initGistAuth - 访问记录保存成功（已登录用户）');
-                            console.log('[Auth] initGistAuth - 访问记录保存成功');
+                            debugLog('[Auth] initGistAuth - 访问记录保存成功');
                         }
                     } catch (error) {
                         debugError('[Auth] initGistAuth - 访问记录保存失败（非阻塞）:', error);
-                        console.error('[Auth] initGistAuth - 访问记录保存异常:', {
+                        debugError('[Auth] initGistAuth - 访问记录保存异常:', {
                             error: error.message,
                             stack: error.stack,
                             apiUrl: GIST_API_URL,
@@ -1189,7 +1189,7 @@
             debugLog('[Auth] 开始保存访问记录（新登录）:', logEntry);
             await saveLogToGist(logEntry).catch(error => {
                 debugError('[Auth] 登录时访问记录保存失败（非阻塞）:', error);
-                console.error('[Auth] 登录时访问记录保存异常:', {
+                debugError('[Auth] 登录时访问记录保存异常:', {
                     error: error.message,
                     stack: error.stack,
                     apiUrl: GIST_API_URL,

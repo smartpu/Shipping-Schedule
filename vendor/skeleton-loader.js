@@ -122,7 +122,9 @@
      */
     function showSkeletonLoader(container, type = 'table', options = {}) {
         if (!container) {
-            console.warn('[SkeletonLoader] 容器元素不存在');
+            if (typeof window.debugWarn === 'function') {
+                window.debugWarn('[SkeletonLoader] 容器元素不存在');
+            }
             return () => {};
         }
 

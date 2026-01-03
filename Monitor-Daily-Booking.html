@@ -785,7 +785,9 @@
                         updateAnalysis();
                     }
                 } catch (error) {
-                    console.error('解析文件失败:', error);
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('解析文件失败:', error);
+                    }
                     dom.statusValue.textContent = '解析失败: ' + (error.message || String(error));
                     if (typeof showError === 'function' && typeof ErrorType !== 'undefined') {
                         showError(ErrorType.FILE_PARSE, 'PARSE_FAILED', { message: error.message || String(error) }, error);
@@ -929,7 +931,9 @@
                     };
                     localStorage.setItem('monitor-daily-booking-filters', JSON.stringify(filters));
                 } catch (e) {
-                    console.warn('保存筛选条件失败:', e);
+                    if (typeof window.debugWarn === 'function') {
+                        window.debugWarn('保存筛选条件失败:', e);
+                    }
                 }
             }
 
@@ -960,7 +964,9 @@
                     // 恢复筛选器（需要在数据加载后）
                     return filters;
                 } catch (e) {
-                    console.warn('加载筛选条件失败:', e);
+                    if (typeof window.debugWarn === 'function') {
+                        window.debugWarn('加载筛选条件失败:', e);
+                    }
                     return false;
                 }
             }
@@ -1179,7 +1185,9 @@
                 // 从全局存储中获取数据
                 const data = window.detailModalDataStore && window.detailModalDataStore[dataKey];
                 if (!data) {
-                    console.error('详细数据未找到:', dataKey);
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('详细数据未找到:', dataKey);
+                    }
                     alert('无法加载详细数据，请刷新页面重试');
                     return;
                 }
@@ -2600,7 +2608,9 @@
                     const fileName = `订舱监控_${modeNames[state.currentMode]}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.xlsx`;
                     XLSX.writeFile(workbook, fileName);
                 } catch (error) {
-                    console.error('导出Excel失败:', error);
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('导出Excel失败:', error);
+                    }
                     alert('导出Excel失败: ' + (error.message || String(error)));
                 }
             }
@@ -2651,7 +2661,9 @@
                         alert('PDF 导出功能所需的工具函数未找到，请刷新页面重试');
                     }
                 } catch (error) {
-                    console.error('导出PDF失败:', error);
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('导出PDF失败:', error);
+                    }
                     alert('导出PDF失败: ' + (error.message || String(error)));
                 }
             }
@@ -2798,7 +2810,9 @@
              */
             function applyRanking() {
                 if (!dom.rankingCount || !dom.rankingBy) {
-                    console.error('排名设置元素未找到');
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('排名设置元素未找到');
+                    }
                     return;
                 }
                 rankingState.enabled = true;
@@ -2862,19 +2876,25 @@
             if (dom.applyRankingBtn) {
                 dom.applyRankingBtn.addEventListener('click', () => {
                     if (!dom.rankingCount || !dom.rankingBy) {
-                        console.error('排名设置输入框未找到');
+                        if (typeof window.debugError === 'function') {
+                            window.debugError('排名设置输入框未找到');
+                        }
                         alert('排名设置元素未找到，请刷新页面重试');
                         return;
                     }
                     applyRanking();
                 });
             } else {
-                console.warn('applyRankingBtn 未找到，按钮可能尚未加载');
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('applyRankingBtn 未找到，按钮可能尚未加载');
+                }
             }
 
             // 如果按钮未找到，尝试延迟绑定
             if (!dom.toggleCompareBtn || !dom.toggleRankingBtn) {
-                console.warn('部分按钮未找到，将在DOM加载后重试');
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('部分按钮未找到，将在DOM加载后重试');
+                }
                 setTimeout(() => {
                     // 重新获取DOM元素
                     dom.toggleCompareBtn = document.getElementById('toggleCompareBtn');
@@ -2963,7 +2983,9 @@
                     const presets = localStorage.getItem('monitor-daily-booking-presets');
                     return presets ? JSON.parse(presets) : [];
                 } catch (e) {
-                    console.warn('读取预设失败:', e);
+                    if (typeof window.debugWarn === 'function') {
+                        window.debugWarn('读取预设失败:', e);
+                    }
                     return [];
                 }
             }
@@ -3138,7 +3160,9 @@
                     const snapshots = localStorage.getItem('monitor-daily-booking-snapshots');
                     return snapshots ? JSON.parse(snapshots) : [];
                 } catch (e) {
-                    console.warn('读取快照失败:', e);
+                    if (typeof window.debugWarn === 'function') {
+                        window.debugWarn('读取快照失败:', e);
+                    }
                     return [];
                 }
             }

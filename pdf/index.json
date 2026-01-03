@@ -1,0 +1,23 @@
+{
+  "marketReports": [
+    "Alphaliner_Monthly_Monitor_2025_12.pdf",
+    "Alphaliner_Newsletter_no_52_-_2025_full.pdf",
+    "Linerlytica-25MP52.pdf"
+  ],
+  "introductions": [
+    "202110-Introduction-CN.pdf",
+    "202505-Introduction-CN.pdf",
+    "202505-Introduction-EN.pdf"
+  ],
+  "oaDay": [
+    "2019-OA-Day3-IAS-part1.pdf",
+    "2019-OA-Day3-IAS-part2.pdf",
+    "2020-OA-Day4-IAS.pdf",
+    "2021-OA-Day5-IAS.pdf",
+    "2022-OA-Day6-IAS.pdf",
+    "2023-OA-Day7-IAS.pdf",
+    "2024-OA-Day8-IAS.pdf",
+    "2025-OA-Day9-IAS.pdf"
+  ],
+  "description": "PDF 文件索引。marketReports 用于市场分析工具自动加载周报，introductions 和 oaDay 用于企业宣传资料查看工具。添加新文件时，只需在对应数组中添加文件名即可。"
+}

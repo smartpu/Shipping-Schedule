@@ -40,8 +40,8 @@ Data/**
 !Data/Monitor-Daily-Booking.xlsx
 !Data/Admin-access-logs.json
 
-# linerlytica 目录：允许所有文件上传到 GitHub
-# 先取消忽略 linerlytica 目录
-!linerlytica/
+# pdf 目录：允许所有文件上传到 GitHub
+# 先取消忽略 pdf 目录
+!pdf/
 # 然后允许目录下的所有内容
-!linerlytica/**
+!pdf/**

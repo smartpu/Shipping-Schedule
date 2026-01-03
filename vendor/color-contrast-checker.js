@@ -181,12 +181,16 @@
 
         // 在开发模式下自动检查
         if (window.location.search.includes('check-contrast')) {
-            console.log('=== 颜色对比度检查 ===');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('=== 颜色对比度检查 ===');
+            }
             const checks = checkAllColorCombinations();
             checks.forEach(check => {
                 const { result } = check;
                 const status = result.passes ? '✓' : '✗';
-                console.log(`${status} ${check.name}: ${result.ratio}:1 (要求: ≥${result.minRequired}:1) - ${result.level}`);
+                if (typeof window.debugLog === 'function') {
+                    window.debugLog(`${status} ${check.name}: ${result.ratio}:1 (要求: ≥${result.minRequired}:1) - ${result.level}`);
+                }
             });
         }
     }

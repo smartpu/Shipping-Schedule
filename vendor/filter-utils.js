@@ -474,7 +474,9 @@
                     setTimeout(() => {
                         selects.forEach(select => {
                             if (select.options.length <= 1) {
-                                console.warn(`[Filter] 筛选框 ${select.id} 选项未加载，可能需要手动触发选项更新`);
+                                if (typeof window.debugWarn === 'function') {
+                                    window.debugWarn(`[Filter] 筛选框 ${select.id} 选项未加载，可能需要手动触发选项更新`);
+                                }
                             } else {
                                 // 选项已加载，初始化移动端显示
                                 if (select.dataset.mobileInitialized !== 'true') {

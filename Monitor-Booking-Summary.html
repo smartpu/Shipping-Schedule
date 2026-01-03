@@ -391,7 +391,9 @@
                     debugLog('[Allocation持久化] localStorage中没有保存的用户修改数据');
                 }
             } catch (error) {
-                console.warn('[Allocation持久化] 加载用户修改数据失败:', error);
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('[Allocation持久化] 加载用户修改数据失败:', error);
+                }
                 userAllocationData = {};
             }
         }
@@ -404,7 +406,9 @@
                 localStorage.setItem(STORAGE_KEY_USER_ALLOCATION, JSON.stringify(userAllocationData));
                 debugLog(`[Allocation持久化] 保存 ${Object.keys(userAllocationData).length} 条用户修改的数据到localStorage`);
             } catch (error) {
-                console.warn('[Allocation持久化] 保存用户修改数据失败:', error);
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('[Allocation持久化] 保存用户修改数据失败:', error);
+                }
             }
         }
 
@@ -790,12 +794,16 @@
                                 }
                             });
                         } else {
-                            console.warn('[Allocation导入] 未找到年份工作表（2025/2026/2027等），所有Sheet名称:', workbook.SheetNames);
+                            if (typeof window.debugWarn === 'function') {
+                                window.debugWarn('[Allocation导入] 未找到年份工作表（2025/2026/2027等），所有Sheet名称:', workbook.SheetNames);
+                            }
                             // 如果没找到年份表，保留现有的allocationData和userAllocationData
                             debugLog('[Allocation导入] 保留现有Allocation数据');
                         }
                     } catch (error) {
-                        console.error('读取sheet10 Allocation数据失败:', error);
+                        if (typeof window.debugError === 'function') {
+                            window.debugError('读取sheet10 Allocation数据失败:', error);
+                        }
                         allocationData = {};
                     }
 
@@ -2895,13 +2903,17 @@
             // 解析key：ETD|EXP_LINE|VSL/VOY|Trade|POD
             debugLog('showVesselGpsDetail called with key:', key);
             if (!key) {
-                console.error('showVesselGpsDetail: key is empty');
+                if (typeof window.debugError === 'function') {
+                    window.debugError('showVesselGpsDetail: key is empty');
+                }
                 alert('数据格式错误：key为空');
                 return;
             }
             const parts = key.split('|');
             if (parts.length < 5) {
-                console.error('showVesselGpsDetail: Invalid key format, parts:', parts, 'length:', parts.length);
+                if (typeof window.debugError === 'function') {
+                    window.debugError('showVesselGpsDetail: Invalid key format, parts:', parts, 'length:', parts.length);
+                }
                 alert('数据格式错误：key格式不正确，parts数量：' + parts.length);
                 return;
             }
@@ -6255,7 +6267,9 @@
                     window.Toast.show('Excel导出成功', 'success');
                 }
             } catch (error) {
-                console.error('导出Excel失败:', error);
+                if (typeof window.debugError === 'function') {
+                    window.debugError('导出Excel失败:', error);
+                }
                 alert('导出Excel失败: ' + (error.message || String(error)));
             }
         }
@@ -6317,7 +6331,9 @@
                     alert('PDF 导出功能所需的工具函数未找到，请刷新页面重试');
                 }
             } catch (error) {
-                console.error('导出PDF失败:', error);
+                if (typeof window.debugError === 'function') {
+                    window.debugError('导出PDF失败:', error);
+                }
                 alert('导出PDF失败: ' + (error.message || String(error)));
             }
         }

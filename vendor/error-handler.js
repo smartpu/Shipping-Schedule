@@ -90,9 +90,13 @@
             } else if (typeof console !== 'undefined') {
                 // 降级到 console（当 debug-utils.js 未加载时）
                 if (type === 'error') {
-                    console.error(message, data);
+                    if (typeof window.debugError === 'function') {
+                        window.debugError(message, data);
+                    }
                 } else {
-                    console.log(message, data);
+                    if (typeof window.debugLog === 'function') {
+                        window.debugLog(message, data);
+                    }
                 }
             }
         }

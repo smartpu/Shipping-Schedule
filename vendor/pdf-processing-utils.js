@@ -403,10 +403,14 @@
                 }
                 return null;
             }
-            console.log('[SCFI] 找到 SCFI 关键词，开始解析...');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('[SCFI] 找到 SCFI 关键词，开始解析...');
+            }
             return parseScfiTableFromText(scfiDirectMatch[0]);
         }
-        console.log('[SCFI] 找到 "Freight Rates Watch"，开始解析...');
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('[SCFI] 找到 "Freight Rates Watch"，开始解析...');
+        }
         
         // 尝试查找包含航线名称的区域（如 Europe, USWC, India 等）
         // 如果提取的文本不包含航线名称，尝试从更大范围提取
@@ -417,12 +421,16 @@
         const hasRouteKeywords = routeKeywords.some(keyword => tableText.includes(keyword));
         
         if (!hasRouteKeywords) {
-            console.warn('[SCFI] 提取的文本不包含航线关键词，尝试从更大范围提取...');
+            if (typeof window.debugWarn === 'function') {
+                window.debugWarn('[SCFI] 提取的文本不包含航线关键词，尝试从更大范围提取...');
+            }
             // 尝试从 "Freight Rates Watch" 后面提取更多内容
             const extendedMatch = text.match(/Freight Rates Watch[\s\S]{0,50000}/i);
             if (extendedMatch) {
                 tableText = extendedMatch[0];
-                console.log('[SCFI] 使用扩展范围提取，长度:', tableText.length);
+                if (typeof window.debugLog === 'function') {
+                    window.debugLog('[SCFI] 使用扩展范围提取，长度:', tableText.length);
+                }
             }
         }
         
@@ -436,17 +444,25 @@
      */
     function parseScfiTableFromText(tableText) {
         if (!tableText) {
-            console.warn('[SCFI] parseScfiTableFromText: 表格文本为空');
+            if (typeof window.debugWarn === 'function') {
+                window.debugWarn('[SCFI] parseScfiTableFromText: 表格文本为空');
+            }
             return null;
         }
         
-        console.log('[SCFI] parseScfiTableFromText: 开始解析表格文本，长度:', tableText.length);
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('[SCFI] parseScfiTableFromText: 开始解析表格文本，长度:', tableText.length);
+        }
         
         // 输出完整文本用于调试（限制长度避免控制台过载）
         if (tableText.length > 0) {
-            console.log('[SCFI] 完整提取文本（前1000字符）:', tableText.substring(0, 1000));
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('[SCFI] 完整提取文本（前1000字符）:', tableText.substring(0, 1000));
+            }
             if (tableText.length > 1000) {
-                console.log('[SCFI] 完整提取文本（后500字符）:', tableText.substring(tableText.length - 500));
+                if (typeof window.debugLog === 'function') {
+                    window.debugLog('[SCFI] 完整提取文本（后500字符）:', tableText.substring(tableText.length - 500));
+                }
             }
         }
         
@@ -476,7 +492,9 @@
                 // SCFI 指数通常在 500-10000 之间
                 if (value >= 500 && value <= 10000) {
                     scfiData.index = value;
-                    console.log('[SCFI] 找到 SCFI 指数:', value);
+                    if (typeof window.debugLog === 'function') {
+                        window.debugLog('[SCFI] 找到 SCFI 指数:', value);
+                    }
                     
                     // 提取SCFI指数的历史数据
                     const scfiIndex = match.index + match[0].indexOf(match[1]);
@@ -582,20 +600,22 @@
                     }
                     
                     // 调试输出
-                    console.log('[SCFI] 提取的历史数据:', {
-                        current: scfiData.index,
-                        week1: scfiData.indexWeek1,
-                        week1Change: scfiData.indexWeek1Change,
-                        month1: scfiData.indexMonth1,
-                        month1Change: scfiData.indexMonth1Change,
-                        quarter3: scfiData.indexQuarter3,
-                        quarter3Change: scfiData.indexQuarter3Change,
-                        year1: scfiData.indexYear1,
-                        year1Change: scfiData.indexYear1Change,
-                        allNumbers: allNumbers.map(n => ({ index: n.index, value: n.value })),
-                        allPercentages: allPercentages.map(p => ({ index: p.index, value: p.value })),
-                        beforeScfiPreview: beforeScfi.substring(Math.max(0, beforeScfi.length - 200))
-                    });
+                    if (typeof window.debugLog === 'function') {
+                        window.debugLog('[SCFI] 提取的历史数据:', {
+                            current: scfiData.index,
+                            week1: scfiData.indexWeek1,
+                            week1Change: scfiData.indexWeek1Change,
+                            month1: scfiData.indexMonth1,
+                            month1Change: scfiData.indexMonth1Change,
+                            quarter3: scfiData.indexQuarter3,
+                            quarter3Change: scfiData.indexQuarter3Change,
+                            year1: scfiData.indexYear1,
+                            year1Change: scfiData.indexYear1Change,
+                            allNumbers: allNumbers.map(n => ({ index: n.index, value: n.value })),
+                            allPercentages: allPercentages.map(p => ({ index: p.index, value: p.value })),
+                            beforeScfiPreview: beforeScfi.substring(Math.max(0, beforeScfi.length - 200))
+                        });
+                    }
                     
                     break;
                 }
@@ -615,7 +635,9 @@
                     const value = parseFloat(numMatch[1].replace(/,/g, ''));
                     if (value >= 500 && value <= 10000) {
                         scfiData.index = value;
-                        console.log('[SCFI] 从SCFI前找到指数:', value);
+                        if (typeof window.debugLog === 'function') {
+                            window.debugLog('[SCFI] 从SCFI前找到指数:', value);
+                        }
                         
                         // 提取SCFI指数的历史数据（格式与航线相同）
                         const allNumbers = [];
@@ -695,20 +717,22 @@
                         }
                         
                         // 调试输出
-                        console.log('[SCFI] 备用方法提取的历史数据:', {
-                            current: scfiData.index,
-                            week1: scfiData.indexWeek1,
-                            week1Change: scfiData.indexWeek1Change,
-                            month1: scfiData.indexMonth1,
-                            month1Change: scfiData.indexMonth1Change,
-                            quarter3: scfiData.indexQuarter3,
-                            quarter3Change: scfiData.indexQuarter3Change,
-                            year1: scfiData.indexYear1,
-                            year1Change: scfiData.indexYear1Change,
-                            allNumbers: allNumbers.map(n => ({ index: n.index, value: n.value })),
-                            allPercentages: allPercentages.map(p => ({ index: p.index, value: p.value })),
-                            beforeScfiPreview: beforeScfi.substring(Math.max(0, beforeScfi.length - 200))
-                        });
+                        if (typeof window.debugLog === 'function') {
+                            window.debugLog('[SCFI] 备用方法提取的历史数据:', {
+                                current: scfiData.index,
+                                week1: scfiData.indexWeek1,
+                                week1Change: scfiData.indexWeek1Change,
+                                month1: scfiData.indexMonth1,
+                                month1Change: scfiData.indexMonth1Change,
+                                quarter3: scfiData.indexQuarter3,
+                                quarter3Change: scfiData.indexQuarter3Change,
+                                year1: scfiData.indexYear1,
+                                year1Change: scfiData.indexYear1Change,
+                                allNumbers: allNumbers.map(n => ({ index: n.index, value: n.value })),
+                                allPercentages: allPercentages.map(p => ({ index: p.index, value: p.value })),
+                                beforeScfiPreview: beforeScfi.substring(Math.max(0, beforeScfi.length - 200))
+                            });
+                        }
                     }
                 }
             }
@@ -722,8 +746,10 @@
         }
         // 规整多余空白为单个空格
         tableArea = tableArea.replace(/\s+/g, ' ').trim();
-        console.log('[SCFI] 规整后的表格长度:', tableArea.length);
-        console.log('[SCFI] 规整后预览:', tableArea.substring(0, 300));
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('[SCFI] 规整后的表格长度:', tableArea.length);
+            window.debugLog('[SCFI] 规整后预览:', tableArea.substring(0, 300));
+        }
         
         // 辅助：在名称前找到当前价格和历史数据（表格列顺序是反的：价格在名称前）
         // 格式：1年变化% 1年价格 3个月变化% 3个月价格 1个月变化% 1个月价格 1周变化% 1周价格 当前价格 单位 航线名称
@@ -944,8 +970,10 @@
                         // 对于India/East Africa/Central America，year1Price和year1Change保持为null，渲染时会显示"—"
                         
                         scfiData.routes.push(routeData);
-                        console.log(`[SCFI] ✓ 成功添加航线 ${pattern.name}: ${result.price} ${unit}`, 
-                            result.week1Price ? `(1周: ${result.week1Price}, 1月: ${result.month1Price}, 3月: ${result.quarter3Price}, 1年: ${result.year1Price})` : '');
+                        if (typeof window.debugLog === 'function') {
+                            window.debugLog(`[SCFI] ✓ 成功添加航线 ${pattern.name}: ${result.price} ${unit}`, 
+                                result.week1Price ? `(1周: ${result.week1Price}, 1月: ${result.month1Price}, 3月: ${result.quarter3Price}, 1年: ${result.year1Price})` : '');
+                        }
                         found = true;
                         break;
                     }
@@ -954,7 +982,9 @@
             if (!found) {
                 // 如果所有模式都失败，输出最后一个模式的调试信息
                 const lastResult = findPriceBeforeName(tableArea, pattern.patterns[pattern.patterns.length - 1]);
-                console.warn(`[SCFI] 航线 ${pattern.name} ${lastResult.reason}`, lastResult.context ? `上下文: ${lastResult.context.substring(0, 100)}` : '');
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn(`[SCFI] 航线 ${pattern.name} ${lastResult.reason}`, lastResult.context ? `上下文: ${lastResult.context.substring(0, 100)}` : '');
+                }
             }
         });
         
@@ -962,7 +992,9 @@
         if (scfiData.routes.length === 0) {
             // 将文本按行分割
             const lines = tableArea.split(/\s+/).filter(line => line.length > 0);
-            console.log('[SCFI] 尝试宽松解析，文本片段数:', lines.length);
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('[SCFI] 尝试宽松解析，文本片段数:', lines.length);
+            }
             
             // 查找包含航线关键词和数字的行
             lines.forEach((line, index) => {
@@ -991,11 +1023,15 @@
         }
         
         const result = scfiData.routes.length > 0 || scfiData.index ? scfiData : null;
-        console.log('[SCFI] parseScfiTableFromText 最终结果:', result);
-        if (result) {
-            console.log(`[SCFI] 解析成功: SCFI指数=${result.index}, 航线数=${result.routes.length}`);
-        } else {
-            console.warn('[SCFI] 解析失败: 未找到有效的 SCFI 数据');
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('[SCFI] parseScfiTableFromText 最终结果:', result);
+            if (result) {
+                window.debugLog(`[SCFI] 解析成功: SCFI指数=${result.index}, 航线数=${result.routes.length}`);
+            } else {
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('[SCFI] 解析失败: 未找到有效的 SCFI 数据');
+                }
+            }
         }
         return result;
     }

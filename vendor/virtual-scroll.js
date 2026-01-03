@@ -38,7 +38,9 @@
          */
         init() {
             if (!this.container) {
-                console.warn('[VirtualScroll] 容器元素不存在');
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('[VirtualScroll] 容器元素不存在');
+                }
                 return;
             }
 

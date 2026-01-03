@@ -205,7 +205,9 @@
                     return sorted;
                 }
             } catch (error) {
-                console.warn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('portSortUtils.sortPortNames 失败，使用降级方案:', error);
+                }
             }
         }
         

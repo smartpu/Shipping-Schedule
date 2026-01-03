@@ -40,7 +40,8 @@
             items: [
                 { href: 'Market-SCFI-Trends.html?from=market', icon: '📈', label: 'SCFI 历史趋势' },
                 { href: 'Market-Sailing-Schedule.html?from=market', icon: '📅', label: '专业船期表' },
-                { href: 'Market-Geo-Trades-Service.html?from=market', icon: '🌐', label: '地理贸易航线' }
+                { href: 'Market-Geo-Trades-Service.html?from=market', icon: '🌐', label: '地理贸易航线' },
+                { href: 'Market-Information.html?from=market', icon: '📚', label: '企业宣传资料' }
             ]
         },
         monitor: {
@@ -230,7 +231,9 @@
         const sidebarToggle = document.getElementById('sidebarToggle');
 
         if (!sidebar || !sidebarToggle) {
-            console.warn('导航栏元素未找到');
+            if (typeof window.debugWarn === 'function') {
+                window.debugWarn('导航栏元素未找到');
+            }
             return;
         }
 
@@ -391,7 +394,9 @@
                 sidebarUserLevel.setAttribute('data-label', `等级：${level}`);
             }
         } catch (error) {
-            console.error('加载用户信息失败:', error);
+            if (typeof window.debugError === 'function') {
+                window.debugError('加载用户信息失败:', error);
+            }
             if (sidebarUserName) {
                 sidebarUserName.querySelector('.user-brief-text').textContent = '用户：未登录';
                 sidebarUserName.setAttribute('data-label', '用户：未登录');
@@ -442,7 +447,9 @@
         const containerEl = typeof container === 'string' ? document.querySelector(container) : container;
         
         if (!containerEl) {
-            console.error('导航栏容器未找到:', container);
+            if (typeof window.debugError === 'function') {
+                window.debugError('导航栏容器未找到:', container);
+            }
             return;
         }
 
@@ -485,7 +492,9 @@
         
         // 如果用户未登录，直接跳转到登录页面
         if (!hasAuthData) {
-            console.log('[Sidebar] 用户未登录，跳转到登录页面');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('[Sidebar] 用户未登录，跳转到登录页面');
+            }
             // 跳转到index.html
             if (window.location.pathname !== '/index.html' && !window.location.pathname.endsWith('index.html')) {
                 window.location.href = 'index.html';
@@ -518,7 +527,9 @@
                 authData = JSON.parse(authDataStr);
             }
         } catch (e) {
-            console.warn('[Sidebar] 无法解析认证数据:', e);
+            if (typeof window.debugWarn === 'function') {
+                window.debugWarn('[Sidebar] 无法解析认证数据:', e);
+            }
         }
         
         // 如果用户不在白名单中，尝试通过API验证（确保API返回的groups被添加到白名单）
@@ -531,7 +542,9 @@
             
             // 如果用户不在白名单中，等待API验证完成（这会调用verifyUserInWhitelist，将groups添加到白名单）
             if (!userInWhitelist) {
-                console.log('[Sidebar] 用户不在白名单缓存中，等待API验证完成...');
+                if (typeof window.debugLog === 'function') {
+                    window.debugLog('[Sidebar] 用户不在白名单缓存中，等待API验证完成...');
+                }
                 // 等待一小段时间，让checkPageAccess完成API验证
                 await new Promise(resolve => setTimeout(resolve, 500));
                 // 再次检查
@@ -540,7 +553,9 @@
                 }
                 // 如果仍然不在，主动调用verifyUserInWhitelist（但只在必要时）
                 if (!userInWhitelist && typeof window.verifyUserInWhitelist === 'function') {
-                    console.log('[Sidebar] 主动调用API验证用户...');
+                    if (typeof window.debugLog === 'function') {
+                        window.debugLog('[Sidebar] 主动调用API验证用户...');
+                    }
                     try {
                         await window.verifyUserInWhitelist(
                             authData.name || '',
@@ -548,7 +563,9 @@
                             authData.email || ''
                         );
                     } catch (error) {
-                        console.warn('[Sidebar] API验证失败:', error);
+                        if (typeof window.debugWarn === 'function') {
+                            window.debugWarn('[Sidebar] API验证失败:', error);
+                        }
                     }
                 }
             }
@@ -572,28 +589,40 @@
                 };
                 
                 // 调试信息：输出权限检查结果
-                console.log('[Sidebar] 权限检查结果:', checkedPermissions);
+                if (typeof window.debugLog === 'function') {
+                    window.debugLog('[Sidebar] 权限检查结果:', checkedPermissions);
+                }
                 
                 // 只有当权限检查成功时才更新permissions
                 // 如果所有权限都是false，可能是权限检查失败，使用默认值（只允许001、365、market）
                 const allFalse = Object.values(checkedPermissions).every(v => v === false);
                 if (!allFalse) {
                     permissions = checkedPermissions;
-                    console.log('[Sidebar] 使用检查后的权限:', permissions);
+                    if (typeof window.debugLog === 'function') {
+                        window.debugLog('[Sidebar] 使用检查后的权限:', permissions);
+                    }
                 } else {
                     // 如果所有权限都是false，可能是权限检查失败，使用默认值（只允许001、365、market）
-                    console.warn('[Sidebar] 所有权限检查返回false，可能是权限检查失败，使用默认权限（只允许001、365、market系列）');
+                    if (typeof window.debugWarn === 'function') {
+                        window.debugWarn('[Sidebar] 所有权限检查返回false，可能是权限检查失败，使用默认权限（只允许001、365、market系列）');
+                    }
                     // 保持默认的permissions（只允许001、365、market）
                 }
             } catch (error) {
                 // 如果权限检查出错，使用默认值（只允许001、365、market）
-                console.warn('[Sidebar] 权限检查失败，使用默认权限（只允许001、365、market系列）:', error);
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('[Sidebar] 权限检查失败，使用默认权限（只允许001、365、market系列）:', error);
+                }
             }
         } else {
-            console.log('[Sidebar] hasPermission函数不可用，使用默认权限（只允许001、365、market系列）');
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('[Sidebar] hasPermission函数不可用，使用默认权限（只允许001、365、market系列）');
+            }
         }
         
-        console.log('[Sidebar] 最终使用的权限:', permissions);
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('[Sidebar] 最终使用的权限:', permissions);
+        }
 
         // 生成并插入HTML
         const sidebarHTML = generateSidebarHTML({
@@ -625,7 +654,9 @@
             
             // 如果所有权限都是false，可能是权限检查失败，不隐藏任何导航项
             if (allFalse) {
-                console.warn('[Sidebar] 所有权限检查返回false，可能是权限检查失败，显示所有导航项');
+                if (typeof window.debugWarn === 'function') {
+                    window.debugWarn('[Sidebar] 所有权限检查返回false，可能是权限检查失败，显示所有导航项');
+                }
                 // 确保所有导航项都显示
                 Object.keys(permissions).forEach(sectionKey => {
                     const navItem = document.querySelector(`.nav-item[data-section="${sectionKey}"]`);

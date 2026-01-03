@@ -429,7 +429,9 @@ async function loadDefaultExcelFile(configKey, onFileLoaded) {
                 window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
             }
         } else {
-            console.log('自动加载 Excel 文件失败，等待用户手动选择:', error);
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('自动加载 Excel 文件失败，等待用户手动选择:', error);
+            }
         }
     }
 }
@@ -465,12 +467,16 @@ async function loadDefaultExcelFiles(configKey, onFileLoaded) {
             }
         }
     } catch (e) {
-        console.log('无法读取配置文件，请手动选择文件');
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('无法读取配置文件，请手动选择文件');
+        }
         return;
     }
 
     if (!file001Name || !file365Name) {
-        console.log('配置文件中未找到文件路径，请手动选择文件');
+        if (typeof window.debugLog === 'function') {
+            window.debugLog('配置文件中未找到文件路径，请手动选择文件');
+        }
         return;
     }
 
@@ -491,7 +497,9 @@ async function loadDefaultExcelFiles(configKey, onFileLoaded) {
                 window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
             }
         } else {
-            console.log('自动加载 001 文件失败:', error);
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('自动加载 001 文件失败:', error);
+            }
         }
     }
 
@@ -512,13 +520,15 @@ async function loadDefaultExcelFiles(configKey, onFileLoaded) {
                 window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
             }
         } else {
-            console.log('自动加载 365 文件失败:', error);
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('自动加载 365 文件失败:', error);
+            }
         }
     }
 }
 
 /**
- * 从 linerlytica/index.json 自动加载市场周报 PDF 文件
+ * 从 pdf/index.json 自动加载市场周报 PDF 文件
  * @param {Function} onFileLoaded - 文件加载成功后的回调函数，接收 File 对象作为参数
  * @returns {Promise<void>}
  */
@@ -535,10 +545,15 @@ async function loadDefaultMarketReports(onFileLoaded) {
         // 首先尝试加载索引文件（如果存在）
         let pdfFileList = [];
         try {
-            const indexResponse = await fetch('linerlytica/index.json');
+            const indexResponse = await fetch('pdf/index.json');
             if (indexResponse.ok) {
                 const indexData = await indexResponse.json();
-                if (Array.isArray(indexData.files)) {
+                // 优先读取 marketReports 字段（新格式）
+                if (Array.isArray(indexData.marketReports)) {
+                    pdfFileList = indexData.marketReports;
+                } 
+                // 兼容旧格式：如果存在 files 字段，也支持（向后兼容）
+                else if (Array.isArray(indexData.files)) {
                     pdfFileList = indexData.files;
                 }
             }
@@ -579,7 +594,7 @@ async function loadDefaultMarketReports(onFileLoaded) {
             // 尝试加载这些文件
             for (const fileName of commonPatterns) {
                 try {
-                    const response = await fetch(`linerlytica/${fileName}`);
+                    const response = await fetch(`pdf/${fileName}`);
                     if (response.ok) {
                         pdfFileList.push(fileName);
                         // 找到第一个就停止（因为通常只有最新的一个文件）
@@ -595,7 +610,7 @@ async function loadDefaultMarketReports(onFileLoaded) {
         if (pdfFileList.length > 0 && typeof onFileLoaded === 'function') {
             for (const fileName of pdfFileList) {
                 try {
-                    const response = await fetch(`linerlytica/${fileName}`);
+                    const response = await fetch(`pdf/${fileName}`);
                     if (response.ok) {
                         const blob = await response.blob();
                         const file = new File([blob], fileName, { type: 'application/pdf' });
@@ -621,7 +636,9 @@ async function loadDefaultMarketReports(onFileLoaded) {
                 window.debugLog('本地文件系统环境，无法自动加载，请手动选择文件');
             }
         } else {
-            console.log('自动加载市场周报失败:', error);
+            if (typeof window.debugLog === 'function') {
+                window.debugLog('自动加载市场周报失败:', error);
+            }
         }
     }
 }
@@ -735,7 +752,9 @@ class EventListenerManager {
      */
     add(element, event, handler, options = false) {
         if (!element) {
-            console.warn('[EventListenerManager] 元素不存在，无法添加事件监听器');
+            if (typeof window.debugWarn === 'function') {
+                window.debugWarn('[EventListenerManager] 元素不存在，无法添加事件监听器');
+            }
             return null;
         }
 

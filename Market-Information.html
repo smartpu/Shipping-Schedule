@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Information · 企业宣传资料</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/lib-loader.js"></script>
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/toast.js"></script>
+    <!-- 引入访问日志记录 -->
+    <script src="vendor/auth-gist.js"></script>
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/sidebar-loader.js"></script>
+</head>
+    <body data-page="Market-Information.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Market Information · 企业宣传资料</h2>
+                            <p>查看企业宣传介绍、OA Day 活动资料、市场周报等相关 PDF 文档。支持全屏查看，航运周报采用左右两页显示，企业介绍和OA资料采用全屏显示。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=market" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Market-Information-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PDF 列表区域 -->
+                <section class="feature-section">
+                    <div class="card-white module-card mt-20">
+                        <div id="pdfListContainer">
+                            <div class="empty-state">
+                                <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="40" cy="40" r="35" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M25 40L35 50L55 30" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p>正在加载 PDF 文件列表...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PDF 查看器 -->
+                <div id="pdfViewer" class="pdf-viewer-container">
+                    <div class="pdf-viewer-content">
+                        <div class="pdf-viewer-header">
+                            <div class="pdf-viewer-title" id="pdfViewerTitle">PDF 查看器</div>
+                            <button class="pdf-viewer-close" id="pdfViewerClose">关闭 (ESC)</button>
+                        </div>
+                        <div class="pdf-viewer-body" id="pdfViewerBody">
+                            <iframe id="pdfViewerFrame" src="" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" allow="fullscreen"></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Market Information · 企业宣传资料使用声明</h2>
+                    <p class="usage-statement-text">所有 PDF 文档仅供内部使用，请勿外传。</p>
+                    <p class="usage-statement-text">文档查看在本地浏览器进行，不会上传至任何服务器，请放心使用。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        init001ToolPage('Market-Information.html', 'market');
+    </script>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const pdfListContainer = document.getElementById('pdfListContainer');
+            const pdfViewer = document.getElementById('pdfViewer');
+            const pdfViewerFrame = document.getElementById('pdfViewerFrame');
+            const pdfViewerTitle = document.getElementById('pdfViewerTitle');
+            const pdfViewerClose = document.getElementById('pdfViewerClose');
+
+            let allPdfFiles = [];
+
+            /**
+             * 根据文件名自动分类
+             */
+            function categorizeFile(fileName) {
+                const name = fileName.toLowerCase();
+                
+                // 企业介绍
+                if (name.includes('introduction')) {
+                    return {
+                        category: 'introduction',
+                        categoryName: '企业介绍',
+                        displayName: name.includes('cn') || name.includes('chinese') || name.includes('中文') 
+                            ? '企业介绍（中文）' 
+                            : name.includes('en') || name.includes('english') || name.includes('英文')
+                            ? '企业介绍（英文）'
+                            : '企业介绍',
+                        description: fileName
+                    };
+                }
+                
+                // OA Day
+                if (name.includes('oa-day') || name.includes('oa_day') || name.includes('oaday')) {
+                    const yearMatch = fileName.match(/(\d{4})/);
+                    const year = yearMatch ? yearMatch[1] : '';
+                    const partMatch = fileName.match(/part(\d+)/i);
+                    const part = partMatch ? `（第${partMatch[1]}部分）` : '';
+                    return {
+                        category: 'oaDay',
+                        categoryName: 'OA Day 活动资料',
+                        displayName: `OA Day ${year}${part}`,
+                        description: `${year}年 OA Day 活动资料${part}`
+                    };
+                }
+                
+                // Linerlytica
+                if (name.includes('linerlytica')) {
+                    return {
+                        category: 'marketReport',
+                        categoryName: '市场周报',
+                        displayName: 'Linerlytica 市场周报',
+                        description: fileName.replace(/\.pdf$/i, '')
+                    };
+                }
+                
+                // Alphaliner
+                if (name.includes('alphaliner') || name.includes('alpha-liner')) {
+                    return {
+                        category: 'marketReport',
+                        categoryName: '市场周报',
+                        displayName: 'Alphaliner 市场周报',
+                        description: fileName.replace(/\.pdf$/i, '')
+                    };
+                }
+                
+                // 其他市场周报
+                if (name.includes('weekly') || name.includes('report') || name.includes('周报')) {
+                    return {
+                        category: 'marketReport',
+                        categoryName: '市场周报',
+                        displayName: fileName.replace(/\.pdf$/i, ''),
+                        description: '市场周报'
+                    };
+                }
+                
+                // 默认分类
+                return {
+                    category: 'other',
+                    categoryName: '其他资料',
+                    displayName: fileName.replace(/\.pdf$/i, ''),
+                    description: 'PDF 文档'
+                };
+            }
+
+            /**
+             * 从 index.json 加载 PDF 文件列表
+             */
+            async function loadPdfFiles() {
+                try {
+                    // 检查是否在本地文件系统
+                    if (window.location.protocol === 'file:') {
+                        pdfListContainer.innerHTML = `
+                            <div class="empty-state">
+                                <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="40" cy="40" r="35" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M25 40L35 50L55 30" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p>本地文件系统环境，请通过服务器访问以自动加载 PDF 文件列表</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // 从 index.json 读取文件列表
+                    const indexResponse = await fetch('pdf/index.json');
+                    if (!indexResponse.ok) {
+                        throw new Error('无法加载 index.json');
+                    }
+
+                    const indexData = await indexResponse.json();
+                    
+                    // 合并所有类型的文件
+                    const allFiles = [];
+                    if (Array.isArray(indexData.marketReports)) {
+                        allFiles.push(...indexData.marketReports);
+                    }
+                    if (Array.isArray(indexData.introductions)) {
+                        allFiles.push(...indexData.introductions);
+                    }
+                    if (Array.isArray(indexData.oaDay)) {
+                        allFiles.push(...indexData.oaDay);
+                    }
+                    // 兼容旧格式
+                    if (Array.isArray(indexData.files)) {
+                        allFiles.push(...indexData.files);
+                    }
+                    
+                    if (allFiles.length === 0) {
+                        pdfListContainer.innerHTML = `
+                            <div class="empty-state">
+                                <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="40" cy="40" r="35" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M25 40L35 50L55 30" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p>index.json 中暂无 PDF 文件</p>
+                                <p style="font-size: 12px; margin-top: 10px; color: #999;">请在 pdf/index.json 的对应数组中添加 PDF 文件名</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // 分类文件
+                    const categorized = {};
+                    allPdfFiles = allFiles.map(fileName => {
+                        const info = categorizeFile(fileName);
+                        if (!categorized[info.category]) {
+                            categorized[info.category] = [];
+                        }
+                        categorized[info.category].push({
+                            fileName,
+                            ...info
+                        });
+                        return { fileName, ...info };
+                    });
+
+                    // 渲染列表
+                    renderPdfList(categorized);
+                } catch (error) {
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('加载 PDF 文件列表失败:', error);
+                    }
+                    pdfListContainer.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="40" cy="40" r="35" stroke="currentColor" stroke-width="2"/>
+                                <path d="M25 40L35 50L55 30" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p>加载失败: ${error.message}</p>
+                            <p style="font-size: 12px; margin-top: 10px; color: #999;">请检查 pdf/index.json 文件是否存在且格式正确</p>
+                        </div>
+                    `;
+                }
+            }
+
+            /**
+             * 渲染 PDF 列表
+             */
+            function renderPdfList(categorized) {
+                if (!pdfListContainer) return;
+
+                const categoryOrder = [
+                    { key: 'introduction', title: '企业介绍' },
+                    { key: 'oaDay', title: 'OA Day 活动资料' },
+                    { key: 'marketReport', title: '市场周报' },
+                    { key: 'other', title: '其他资料' }
+                ];
+
+                let html = '';
+
+                categoryOrder.forEach(({ key, title }) => {
+                    const files = categorized[key];
+                    if (!files || files.length === 0) return;
+
+                    html += `
+                        <div class="category-section">
+                            <h3 class="category-title">${title}</h3>
+                            <div class="pdf-list-container">
+                    `;
+
+                    // 按文件名排序（OA Day 按年份倒序，其他按名称）
+                    const sortedFiles = [...files].sort((a, b) => {
+                        if (key === 'oaDay') {
+                            const yearA = a.fileName.match(/(\d{4})/)?.[1] || '';
+                            const yearB = b.fileName.match(/(\d{4})/)?.[1] || '';
+                            return yearB.localeCompare(yearA);
+                        }
+                        return a.fileName.localeCompare(b.fileName);
+                    });
+
+                    sortedFiles.forEach((pdf, index) => {
+                        const globalIndex = allPdfFiles.findIndex(f => f.fileName === pdf.fileName);
+                        html += `
+                            <div class="pdf-card" onclick="openPdfViewer(${globalIndex}, '${pdf.displayName.replace(/'/g, "\\'")}')">
+                                <div class="pdf-card-icon">
+                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill="white"/>
+                                        <path d="M14 2V8H20" stroke="white" stroke-width="1.5" fill="none"/>
+                                        <path d="M16 13H8" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                                        <path d="M16 17H8" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                                        <path d="M10 9H8" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <div class="pdf-card-title">${escapeHtml(pdf.displayName)}</div>
+                                <div class="pdf-card-meta">${escapeHtml(pdf.description || '')}</div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if (html === '') {
+                    html = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="40" cy="40" r="35" stroke="currentColor" stroke-width="2"/>
+                                <path d="M25 40L35 50L55 30" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p>暂无 PDF 文件</p>
+                        </div>
+                    `;
+                }
+
+                pdfListContainer.innerHTML = html;
+            }
+
+            /**
+             * 转义 HTML 特殊字符
+             */
+            function escapeHtml(text) {
+                if (text === null || text === undefined) return '';
+                const div = document.createElement('div');
+                div.textContent = String(text);
+                return div.innerHTML;
+            }
+
+            /**
+             * 判断是否为竖版PDF（航运周报）
+             */
+            function isVerticalPdf(fileName) {
+                const name = fileName.toLowerCase();
+                // Linerlytica、Alphaliner 等航运周报通常是竖版
+                return name.includes('linerlytica') || 
+                       name.includes('alphaliner') || 
+                       name.includes('alpha-liner') ||
+                       (name.includes('weekly') && name.includes('report'));
+            }
+
+            /**
+             * 打开 PDF 查看器
+             */
+            window.openPdfViewer = function(index, title) {
+                if (!pdfViewer || !pdfViewerFrame || !pdfViewerTitle) return;
+                if (index < 0 || index >= allPdfFiles.length) return;
+
+                const pdf = allPdfFiles[index];
+                const fileName = pdf.fileName;
+
+                // 判断PDF类型
+                const isVertical = isVerticalPdf(fileName);
+                const pdfViewerBody = document.getElementById('pdfViewerBody');
+
+                // 设置标题
+                pdfViewerTitle.textContent = title || pdf.displayName || fileName;
+
+                // 清除之前的模式
+                pdfViewer.classList.remove('fullscreen-mode', 'two-page-mode');
+
+                // 设置 PDF 路径
+                const pdfPath = `pdf/${fileName}`;
+
+                if (isVertical) {
+                    // 竖版PDF：左右两页显示
+                    pdfViewer.classList.add('two-page-mode', 'active');
+                    
+                    // 清空body内容
+                    pdfViewerBody.innerHTML = '';
+                    
+                    // 创建两个iframe，分别显示相邻的两页
+                    const leftFrame = document.createElement('iframe');
+                    leftFrame.id = 'pdfLeftFrame';
+                    leftFrame.src = pdfPath + '#view=FitH&page=1&toolbar=0&navpanes=0';
+                    leftFrame.style.width = '100%';
+                    leftFrame.style.height = '100%';
+                    leftFrame.style.border = 'none';
+                    leftFrame.style.background = 'white';
+                    // 防止下载：添加 sandbox 属性，但允许脚本和同源访问
+                    leftFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
+                    leftFrame.setAttribute('allow', 'fullscreen');
+                    
+                    const rightFrame = document.createElement('iframe');
+                    rightFrame.id = 'pdfRightFrame';
+                    rightFrame.src = pdfPath + '#view=FitH&page=2&toolbar=0&navpanes=0';
+                    rightFrame.style.width = '100%';
+                    rightFrame.style.height = '100%';
+                    rightFrame.style.border = 'none';
+                    rightFrame.style.background = 'white';
+                    // 防止下载：添加 sandbox 属性
+                    rightFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
+                    rightFrame.setAttribute('allow', 'fullscreen');
+                    
+                    // 为左右两页的 iframe 添加事件监听
+                    leftFrame.addEventListener('load', function() {
+                        try {
+                            const iframeDoc = leftFrame.contentDocument || leftFrame.contentWindow.document;
+                            if (iframeDoc) {
+                                iframeDoc.addEventListener('contextmenu', function(e) {
+                                    e.preventDefault();
+                                    return false;
+                                }, true);
+                            }
+                        } catch (e) {
+                            // 跨域限制
+                        }
+                    });
+                    
+                    rightFrame.addEventListener('load', function() {
+                        try {
+                            const iframeDoc = rightFrame.contentDocument || rightFrame.contentWindow.document;
+                            if (iframeDoc) {
+                                iframeDoc.addEventListener('contextmenu', function(e) {
+                                    e.preventDefault();
+                                    return false;
+                                }, true);
+                            }
+                        } catch (e) {
+                            // 跨域限制
+                        }
+                    });
+                    
+                    pdfViewerBody.appendChild(leftFrame);
+                    pdfViewerBody.appendChild(rightFrame);
+                } else {
+                    // 横版PDF：全屏显示
+                    pdfViewer.classList.add('fullscreen-mode', 'active');
+                    pdfViewerBody.innerHTML = '';
+                    // 添加参数隐藏工具栏，防止下载
+                    pdfViewerFrame.src = pdfPath + '#toolbar=0&navpanes=0';
+                    // 防止下载：添加 sandbox 属性，但允许脚本和同源访问
+                    pdfViewerFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
+                    pdfViewerFrame.setAttribute('allow', 'fullscreen');
+                    pdfViewerBody.appendChild(pdfViewerFrame);
+                }
+
+                // 进入浏览器全屏
+                const element = pdfViewer;
+                if (element.requestFullscreen) {
+                    element.requestFullscreen().catch(err => {
+                        // 全屏请求失败（可能是用户拒绝或浏览器不支持）
+                    });
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen();
+                } else if (element.mozRequestFullScreen) {
+                    element.mozRequestFullScreen();
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen();
+                }
+
+                document.body.style.overflow = 'hidden';
+
+                // 如果浏览器不支持 iframe 显示 PDF，不提供下载链接
+                pdfViewerFrame.onerror = function() {
+                    if (typeof window.Toast !== 'undefined') {
+                        window.Toast.show('PDF 加载失败，请刷新页面重试', 'error');
+                    }
+                };
+            };
+
+            /**
+             * 关闭 PDF 查看器
+             */
+            function closePdfViewer() {
+                if (!pdfViewer) return;
+
+                // 退出浏览器全屏
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => {
+                        // 退出全屏失败（通常可以忽略）
+                    });
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+
+                pdfViewer.classList.remove('active', 'fullscreen-mode', 'two-page-mode');
+                document.body.style.overflow = '';
+                pdfViewerFrame.src = '';
+                
+                // 清空body内容
+                const pdfViewerBody = document.getElementById('pdfViewerBody');
+                if (pdfViewerBody) {
+                    pdfViewerBody.innerHTML = '';
+                    pdfViewerBody.appendChild(pdfViewerFrame);
+                }
+            }
+
+            // 绑定关闭按钮事件
+            if (pdfViewerClose) {
+                pdfViewerClose.addEventListener('click', closePdfViewer);
+            }
+
+            // 点击背景关闭
+            if (pdfViewer) {
+                pdfViewer.addEventListener('click', function(e) {
+                    if (e.target === pdfViewer) {
+                        closePdfViewer();
+                    }
+                });
+                
+                // 禁用右键菜单
+                pdfViewer.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof window.Toast !== 'undefined') {
+                        window.Toast.show('PDF 仅供在线查看，不支持下载', 'info');
+                    }
+                    return false;
+                }, true);
+                
+                // 禁用拖拽
+                pdfViewer.addEventListener('dragstart', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                pdfViewer.addEventListener('selectstart', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+            }
+            
+            // 拦截 iframe 内的下载事件
+            if (pdfViewerFrame) {
+                pdfViewerFrame.addEventListener('load', function() {
+                    try {
+                        const iframeDoc = pdfViewerFrame.contentDocument || pdfViewerFrame.contentWindow.document;
+                        if (iframeDoc) {
+                            // 禁用右键菜单
+                            iframeDoc.addEventListener('contextmenu', function(e) {
+                                e.preventDefault();
+                                return false;
+                            }, true);
+                            
+                            // 拦截下载链接
+                            const links = iframeDoc.querySelectorAll('a[href*=".pdf"], a[download]');
+                            links.forEach(link => {
+                                link.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    return false;
+                                }, true);
+                            });
+                        }
+                    } catch (e) {
+                        // 跨域限制，无法访问 iframe 内容
+                    }
+                });
+            }
+
+            // ESC 键关闭，并禁用下载相关的快捷键
+            document.addEventListener('keydown', function(e) {
+                if (pdfViewer && pdfViewer.classList.contains('active')) {
+                    // ESC 键关闭
+                    if (e.key === 'Escape') {
+                        closePdfViewer();
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    // 禁用下载相关的快捷键
+                    if (e.ctrlKey || e.metaKey) {
+                        // Ctrl+S / Cmd+S (保存)
+                        if (e.key === 's' || e.key === 'S') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (typeof window.Toast !== 'undefined') {
+                                window.Toast.show('PDF 仅供在线查看，不支持下载', 'info');
+                            }
+                            return false;
+                        }
+                        // Ctrl+P / Cmd+P (打印)
+                        if (e.key === 'p' || e.key === 'P') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (typeof window.Toast !== 'undefined') {
+                                window.Toast.show('PDF 仅供在线查看，不支持打印', 'info');
+                            }
+                            return false;
+                        }
+                        // Ctrl+A / Cmd+A (全选)
+                        if (e.key === 'a' || e.key === 'A') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return false;
+                        }
+                        // Ctrl+C / Cmd+C (复制) - 允许复制，不阻止
+                    }
+                    
+                    // F12 (开发者工具)
+                    if (e.key === 'F12') {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }, true); // 使用捕获阶段，确保优先拦截
+
+            // 监听全屏状态变化
+            document.addEventListener('fullscreenchange', function() {
+                if (!document.fullscreenElement && pdfViewer && pdfViewer.classList.contains('active')) {
+                    closePdfViewer();
+                }
+            });
+
+            document.addEventListener('webkitfullscreenchange', function() {
+                if (!document.webkitFullscreenElement && pdfViewer && pdfViewer.classList.contains('active')) {
+                    closePdfViewer();
+                }
+            });
+
+            // 初始化：加载 PDF 文件列表
+            loadPdfFiles();
+        })();
+    </script>
+</body>
+</html>
+

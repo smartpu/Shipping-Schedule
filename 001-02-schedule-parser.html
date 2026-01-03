@@ -1876,11 +1876,6 @@
     }
 
     /**
-     * 生成数据质量检查报告
-     * @param {Array<Array>} merged - 合并后的数据（包含表头）
-     * @returns {Object} 质量报告对象
-     */
-    /**
      * 规范化字符串（去除空格，转大写，用于比较）
      * @param {string} str - 原始字符串
      * @returns {string} 规范化后的字符串
@@ -1890,6 +1885,11 @@
         return clean(str).replace(/\s+/g, '').toUpperCase();
     }
 
+    /**
+     * 生成数据质量检查报告
+     * @param {Array<Array>} merged - 合并后的数据（包含表头）
+     * @returns {Object} 质量报告对象
+     */
     function generateQualityReport(merged) {
         const report = {
             hasIssues: false,

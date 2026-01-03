@@ -5855,8 +5855,56 @@ thead th.table-header > div {
     padding: 30px;
     margin-top: 30px;
     box-shadow: 0 10px 30px rgba(21, 31, 64, 0.12);
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box;
+}
+
+/* 确保001-04和365-04的图表容器占满整屏宽度 */
+body[data-page="001-04-market-analysis.html"] #chartContainer,
+body[data-page="365-04-market-watch.html"] #chartContainer {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 30px !important;
+    padding-right: 30px !important;
+}
+
+/* 确保父容器不限制图表宽度 */
+body[data-page="001-04-market-analysis.html"] .module-card[data-module="capacity"],
+body[data-page="365-04-market-watch.html"] .module-card[data-module="capacity"],
+body[data-page="001-04-market-analysis.html"] .card-white.module-card,
+body[data-page="365-04-market-watch.html"] .card-white.module-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+}
+
+/* 确保容器类不限制宽度 */
+body[data-page="001-04-market-analysis.html"] .container,
+body[data-page="001-04-market-analysis.html"] .container,
+body[data-page="365-04-market-watch.html"] .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+body[data-page="001-04-market-analysis.html"] #chartContainer .chart-wrapper,
+body[data-page="365-04-market-watch.html"] #chartContainer .chart-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+body[data-page="001-04-market-analysis.html"] #chartContainer canvas,
+body[data-page="365-04-market-watch.html"] #chartContainer canvas {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
 }
 
 .chart-wrapper {

@@ -8540,9 +8540,17 @@ body[data-page="Monitor-Rate-Trends.html"] details[open] summary {
 
 /* 图表容器样式 */
 #chartContainer {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 20px;
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* 确保001-04和365-04的图表容器不使用grid布局 */
+body[data-page="001-04-market-analysis.html"] #chartContainer,
+body[data-page="365-04-market-watch.html"] #chartContainer {
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
 }
 
 @media (max-width: 768px) {
@@ -8569,6 +8577,7 @@ body[data-page="Monitor-Rate-Trends.html"] details[open] summary {
     }
     
     #chartContainer {
-        grid-template-columns: 1fr;
+        display: block !important;
+        grid-template-columns: none !important;
     }
 }

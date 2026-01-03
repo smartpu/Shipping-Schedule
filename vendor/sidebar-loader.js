@@ -472,12 +472,33 @@
         // 判断是否为dashboard页面（优先使用传入的options）
         const isDashboard = options.isDashboard !== undefined ? options.isDashboard : (currentPage === 'dashboard.html' || currentPage === 'index.html' || !currentPage);
 
-        // 等待白名单加载完成后再检查权限
+        // 检查用户是否已登录（通过检查localStorage中的认证数据）
+        let hasAuthData = false;
+        try {
+            const authDataStr = localStorage.getItem('shipping_tools_auth');
+            hasAuthData = authDataStr !== null && authDataStr !== undefined;
+        } catch (e) {
+            // localStorage不可用，假设用户未登录
+            hasAuthData = false;
+        }
+        
+        // 如果用户未登录，直接跳转到登录页面
+        if (!hasAuthData) {
+            console.log('[Sidebar] 用户未登录，跳转到登录页面');
+            // 跳转到index.html
+            if (window.location.pathname !== '/index.html' && !window.location.pathname.endsWith('index.html')) {
+                window.location.href = 'index.html';
+            }
+            return;
+        }
+        
+        // 用户已登录，等待白名单加载完成后再检查权限
+        // 默认值：权限检查失败时，只允许访问001系列、365系列、market系列
         let permissions = {
             tools001: true,
             tools365: true,
             market: true,
-            monitor: true,
+            monitor: false,
             admin: false
         };
         
@@ -487,14 +508,39 @@
         
         if (typeof window.hasPermission === 'function') {
             // 检查所有系列的权限
-            permissions = {
-                tools001: await window.hasPermission('tools001', true),
-                tools365: await window.hasPermission('tools365', true),
-                market: await window.hasPermission('market', true),
-                monitor: await window.hasPermission('monitor', true),
-                admin: await window.hasPermission('admin', true)
-            };
+            // 如果权限检查失败（白名单未加载），使用默认值（允许访问）
+            try {
+                const checkedPermissions = {
+                    tools001: await window.hasPermission('tools001', true),
+                    tools365: await window.hasPermission('tools365', true),
+                    market: await window.hasPermission('market', true),
+                    monitor: await window.hasPermission('monitor', true),
+                    admin: await window.hasPermission('admin', true)
+                };
+                
+                // 调试信息：输出权限检查结果
+                console.log('[Sidebar] 权限检查结果:', checkedPermissions);
+                
+                // 只有当权限检查成功时才更新permissions
+                // 如果所有权限都是false，可能是权限检查失败，使用默认值（只允许001、365、market）
+                const allFalse = Object.values(checkedPermissions).every(v => v === false);
+                if (!allFalse) {
+                    permissions = checkedPermissions;
+                    console.log('[Sidebar] 使用检查后的权限:', permissions);
+                } else {
+                    // 如果所有权限都是false，可能是权限检查失败，使用默认值（只允许001、365、market）
+                    console.warn('[Sidebar] 所有权限检查返回false，可能是权限检查失败，使用默认权限（只允许001、365、market系列）');
+                    // 保持默认的permissions（只允许001、365、market）
+                }
+            } catch (error) {
+                // 如果权限检查出错，使用默认值（只允许001、365、market）
+                console.warn('[Sidebar] 权限检查失败，使用默认权限（只允许001、365、market系列）:', error);
+            }
+        } else {
+            console.log('[Sidebar] hasPermission函数不可用，使用默认权限（只允许001、365、market系列）');
         }
+        
+        console.log('[Sidebar] 最终使用的权限:', permissions);
 
         // 生成并插入HTML
         const sidebarHTML = generateSidebarHTML({
@@ -518,27 +564,49 @@
         controlRestrictedTools();
         
         // 根据权限动态隐藏/显示导航项（在导航栏加载后）
+        // 只有在权限检查成功且明确返回false时才隐藏导航项
+        // 如果权限检查失败（白名单未加载），默认显示所有导航项
         if (typeof window.hasPermission === 'function') {
-            Object.keys(permissions).forEach(sectionKey => {
-                const navItem = document.querySelector(`.nav-item[data-section="${sectionKey}"]`);
-                if (navItem) {
-                    if (!permissions[sectionKey]) {
-                        // 隐藏没有权限的导航项及其子菜单
-                        navItem.style.display = 'none';
-                        const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
-                        if (submenu) {
-                            submenu.style.display = 'none';
-                        }
-                    } else {
-                        // 确保有权限的导航项显示
+            // 检查是否所有权限都是false（可能是权限检查失败）
+            const allFalse = Object.values(permissions).every(v => v === false);
+            
+            // 如果所有权限都是false，可能是权限检查失败，不隐藏任何导航项
+            if (allFalse) {
+                console.warn('[Sidebar] 所有权限检查返回false，可能是权限检查失败，显示所有导航项');
+                // 确保所有导航项都显示
+                Object.keys(permissions).forEach(sectionKey => {
+                    const navItem = document.querySelector(`.nav-item[data-section="${sectionKey}"]`);
+                    if (navItem) {
                         navItem.style.display = '';
                         const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
                         if (submenu) {
                             submenu.style.display = '';
                         }
                     }
-                }
-            });
+                });
+            } else {
+                // 只有部分权限为false时，才隐藏对应的导航项
+                Object.keys(permissions).forEach(sectionKey => {
+                    const navItem = document.querySelector(`.nav-item[data-section="${sectionKey}"]`);
+                    if (navItem) {
+                        if (!permissions[sectionKey]) {
+                            // 隐藏没有权限的导航项及其子菜单
+                            navItem.style.display = 'none';
+                            const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
+                            if (submenu) {
+                                submenu.style.display = 'none';
+                            }
+                        } else {
+                            // 确保有权限的导航项显示
+                            navItem.style.display = '';
+                            const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
+                            if (submenu) {
+                                submenu.style.display = '';
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         // 监听存储变化

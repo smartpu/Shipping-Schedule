@@ -60,9 +60,19 @@
                                 <span class="pdf-page-info" id="pdfPageInfo">1 / 1</span>
                                 <button class="pdf-nav-btn" id="pdfNavNext" title="下一页 (↓ 或 Page Down)">→</button>
                             </div>
-                            <button class="pdf-viewer-close" id="pdfViewerClose">关闭 (ESC)</button>
+                            <button class="pdf-viewer-close" id="pdfViewerClose">关闭</button>
                         </div>
                         <div class="pdf-viewer-body" id="pdfViewerBody">
+                            <div id="pdfLoadingOverlay" class="pdf-loading-overlay" style="display: none;">
+                                <div class="pdf-loading-content">
+                                    <div class="pdf-loading-spinner"></div>
+                                    <div class="pdf-loading-text">加载中...</div>
+                                    <div class="pdf-loading-progress">
+                                        <div class="pdf-loading-progress-bar" id="pdfLoadingProgressBar"></div>
+                                    </div>
+                                    <div class="pdf-loading-percent" id="pdfLoadingPercent">0%</div>
+                                </div>
+                            </div>
                             <iframe id="pdfViewerFrame" src="" allow="fullscreen"></iframe>
                         </div>
                     </div>
@@ -135,7 +145,7 @@
                         category: 'oaDay',
                         categoryName: 'OA 推介会',
                         displayName: dayNumber ? `OA Day ${dayNumber} ${year}${part}` : `OA Day ${year}${part}`,
-                        description: `${year}年 OA Day 活动资料${part}`
+                        description: `${year}年 OA Day 推介会资料${part}`
                     };
                 }
                 
@@ -364,6 +374,35 @@
             }
 
             /**
+             * 显示加载进度
+             */
+            function showLoadingProgress(percent) {
+                const overlay = document.getElementById('pdfLoadingOverlay');
+                const progressBar = document.getElementById('pdfLoadingProgressBar');
+                const percentText = document.getElementById('pdfLoadingPercent');
+                
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                }
+                if (progressBar) {
+                    progressBar.style.width = percent + '%';
+                }
+                if (percentText) {
+                    percentText.textContent = percent + '%';
+                }
+            }
+            
+            /**
+             * 隐藏加载进度
+             */
+            function hideLoadingProgress() {
+                const overlay = document.getElementById('pdfLoadingOverlay');
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+            }
+            
+            /**
              * 加载 PDF 指定页面
              */
             function loadPdfPage(pageNum) {
@@ -375,12 +414,42 @@
                 
                 pdfViewerState.currentPage = pageNum;
                 
+                // 更新页码显示（立即更新，不等待加载完成）
+                updatePageInfo();
+                
+                // 显示加载进度
+                showLoadingProgress(0);
+                
                 // 使用 FitV 视图模式，让 PDF 页面适应视口高度（类似 PPT 效果）
                 // toolbar=0 隐藏工具栏，navpanes=0 隐藏导航面板，zoom=page-fit 适应页面
                 const pdfUrl = `${pdfViewerState.currentPdfPath}#page=${pageNum}&view=FitV&toolbar=0&navpanes=0&zoom=page-fit`;
+                
+                // 模拟加载进度（因为无法直接获取真实的加载进度）
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        showLoadingProgress(progress);
+                    }
+                }, 100);
+                
+                // 设置 iframe src
                 pdfViewerFrame.src = pdfUrl;
                 
-                updatePageInfo();
+                // 监听 iframe 加载完成
+                const onLoad = function() {
+                    clearInterval(progressInterval);
+                    showLoadingProgress(100);
+                    setTimeout(() => {
+                        hideLoadingProgress();
+                    }, 200);
+                    // 确保页码显示正确
+                    updatePageInfo();
+                    // 移除事件监听器，避免重复绑定
+                    pdfViewerFrame.removeEventListener('load', onLoad);
+                };
+                
+                pdfViewerFrame.addEventListener('load', onLoad);
             }
             
             /**
@@ -451,8 +520,19 @@
                 pdfViewerState.currentPage = 1;
                 pdfViewerState.totalPages = 0; // 初始化为 0，等待加载后更新
 
-                // 清空body内容，确保只有一个 iframe
-                pdfViewerBody.innerHTML = '';
+                // 清空body内容，确保只有一个 iframe 和加载覆盖层
+                pdfViewerBody.innerHTML = `
+                    <div id="pdfLoadingOverlay" class="pdf-loading-overlay" style="display: none;">
+                        <div class="pdf-loading-content">
+                            <div class="pdf-loading-spinner"></div>
+                            <div class="pdf-loading-text">加载中...</div>
+                            <div class="pdf-loading-progress">
+                                <div class="pdf-loading-progress-bar" id="pdfLoadingProgressBar"></div>
+                            </div>
+                            <div class="pdf-loading-percent" id="pdfLoadingPercent">0%</div>
+                        </div>
+                    </div>
+                `;
                 pdfViewerBody.appendChild(pdfViewerFrame);
 
                 // 显示查看器（不使用浏览器全屏，而是占满视口）
@@ -461,27 +541,10 @@
 
                 // 加载第一页
                 loadPdfPage(1);
-                
-                // 尝试获取 PDF 总页数（通过 iframe 加载完成后）
-                pdfViewerFrame.onload = function() {
-                    // 由于跨域限制，无法直接获取 PDF 页数
-                    // 这里可以尝试通过 URL 参数或者让用户手动输入总页数
-                    // 暂时不设置总页数，允许用户无限翻页
-                    
-                    // 尝试从 iframe 中获取页数（可能因跨域失败）
-                    try {
-                        const iframeDoc = pdfViewerFrame.contentDocument || pdfViewerFrame.contentWindow.document;
-                        if (iframeDoc) {
-                            // 尝试查找 PDF 页数信息
-                            // 注意：这取决于浏览器的 PDF 查看器实现
-                        }
-                    } catch (e) {
-                        // 跨域限制，无法访问
-                    }
-                };
 
                 // 错误处理
                 pdfViewerFrame.onerror = function() {
+                    hideLoadingProgress();
                     if (typeof window.Toast !== 'undefined') {
                         window.Toast.show('PDF 加载失败，请刷新页面重试', 'error');
                     }

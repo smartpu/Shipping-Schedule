@@ -19,6 +19,11 @@
     <script src="vendor/xlsx.full.min.js"></script>
     <!-- Chart.js库 -->
     <script src="vendor/chart.umd.min.js"></script>
+    <!-- PDF导出库 -->
+    <script src="vendor/html2canvas.min.js"></script>
+    <script src="vendor/jspdf.umd.min.js"></script>
+    <!-- PDF导出工具函数 -->
+    <script src="vendor/pdf-utils.js"></script>
     <!-- 引入访问日志记录 -->
     <script src="vendor/auth-gist.js"></script>
     <!-- 引入导航栏公共组件 -->
@@ -40,6 +45,8 @@
                             <p>基于订舱汇总数据，提供 Sales、Account、船名航次等多个维度的数据分析</p>
                         </div>
                         <div class="section-intro-actions">
+                            <button type="button" class="tool-link" id="exportExcelBtn" aria-label="导出Excel" style="display: none;">导出Excel</button>
+                            <button type="button" class="tool-link" id="exportPdfBtn" aria-label="导出PDF" style="display: none;">导出PDF</button>
                             <a href="dashboard.html?tab=monitor" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
                             <a href="Monitor-Booking-Summary-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
                         </div>
@@ -456,6 +463,9 @@
                 CacheManager.clearOldCache();
             }
 
+            // 初始化导出按钮
+            initExportButtons();
+
             // 初始化文件上传
             initFileUpload();
 
@@ -811,6 +821,8 @@
                         <span>已载入 ${count.toLocaleString()} 条记录</span>
                         <span style="color: #6c757d;">筛选后：${filteredCount.toLocaleString()} 条</span>
                     `;
+                    // 显示导出按钮
+                    showExportButtons();
                 } else {
                     statusEl.textContent = '尚未载入数据';
                 }
@@ -1489,6 +1501,8 @@
             // 更新统计面板
             updateStatsPanel();
             
+            // 显示导出按钮
+            showExportButtons();
         }
 
         /**
@@ -6154,6 +6168,187 @@
         /**
          * ==================== 第二阶段功能：数据统计面板 ====================
          */
+
+        /**
+         * ==================== 导出功能 ====================
+         */
+
+        /**
+         * 导出Excel
+         */
+        async function exportToExcel() {
+            if (!filteredData || filteredData.length === 0) {
+                alert('没有可导出的数据');
+                return;
+            }
+
+            if (typeof XLSX === 'undefined') {
+                alert('XLSX 库未加载，请刷新页面重试');
+                return;
+            }
+
+            try {
+                const workbook = XLSX.utils.book_new();
+                
+                // 获取当前表格的HTML内容
+                const analysisTable = document.getElementById('analysisTable');
+                if (!analysisTable) {
+                    alert('未找到数据表格');
+                    return;
+                }
+
+                // 从表格HTML中提取数据
+                const table = analysisTable.querySelector('table');
+                if (!table) {
+                    alert('未找到表格数据');
+                    return;
+                }
+
+                // 对于 VSL/VOY + Limit 模式，需要特殊处理 Allocation 列（input 元素）
+                // 创建一个表格的克隆，在克隆中替换 input 为文本，避免影响原始页面
+                let tableToExport = table;
+                if (currentDimension === 'vessel-limit') {
+                    // 克隆表格
+                    const clonedTable = table.cloneNode(true);
+                    
+                    // 在克隆中找到所有 Allocation 列的 input 元素，将其值提取为文本
+                    const allocationInputs = clonedTable.querySelectorAll('input[type="number"][id^="allocation-"]');
+                    
+                    allocationInputs.forEach(input => {
+                        const value = input.value || input.getAttribute('value') || '0';
+                        // 创建文本节点替换 input
+                        const textNode = document.createTextNode(value);
+                        input.parentNode.replaceChild(textNode, input);
+                    });
+                    
+                    // 使用克隆的表格进行导出
+                    tableToExport = clonedTable;
+                }
+                
+                // 将HTML表格转换为工作表
+                const ws = XLSX.utils.table_to_sheet(tableToExport);
+                
+                // 生成工作表名称（根据当前维度）
+                const dimensionNames = {
+                    'sales-dept': 'Sales_Dept维度',
+                    'sales-week': 'Sales_Week维度',
+                    'account-dept': 'Account_Dept维度',
+                    'account-week': 'Account_Week维度',
+                    'vessel-dept': 'VSL_VOY_Dept维度',
+                    'vessel-week': 'VSL_VOY_Week维度',
+                    'vessel-gps': 'VSL_VOY_GPS维度',
+                    'vessel-limit': 'VSL_VOY_Limit维度'
+                };
+                
+                const sheetName = dimensionNames[currentDimension] || '数据汇总';
+                // Excel工作表名称不能包含特殊字符，限制长度为31
+                const safeSheetName = sheetName.replace(/[:\\\/?*\[\]]/g, '_').substring(0, 31);
+                
+                XLSX.utils.book_append_sheet(workbook, ws, safeSheetName);
+
+                // 导出文件
+                const now = new Date();
+                const fileName = `订舱汇总分析_${safeSheetName}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.xlsx`;
+                XLSX.writeFile(workbook, fileName);
+                
+                if (typeof window.Toast !== 'undefined') {
+                    window.Toast.show('Excel导出成功', 'success');
+                }
+            } catch (error) {
+                console.error('导出Excel失败:', error);
+                alert('导出Excel失败: ' + (error.message || String(error)));
+            }
+        }
+
+        /**
+         * 导出PDF
+         */
+        async function exportToPdf() {
+            if (!filteredData || filteredData.length === 0) {
+                alert('没有可导出的数据');
+                return;
+            }
+
+            try {
+                // 等待渲染完成
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const resultContainer = document.getElementById('resultContainer');
+                if (!resultContainer) {
+                    alert('未找到数据容器');
+                    return;
+                }
+
+                if (typeof window.exportToPdfCommon === 'function') {
+                    const now = new Date();
+                    const dimensionNames = {
+                        'sales-dept': 'Sales_Dept维度',
+                        'sales-week': 'Sales_Week维度',
+                        'account-dept': 'Account_Dept维度',
+                        'account-week': 'Account_Week维度',
+                        'vessel-dept': 'VSL_VOY_Dept维度',
+                        'vessel-week': 'VSL_VOY_Week维度',
+                        'vessel-gps': 'VSL_VOY_GPS维度',
+                        'vessel-limit': 'VSL_VOY_Limit维度'
+                    };
+                    const dimensionName = dimensionNames[currentDimension] || '数据汇总';
+                    const fileName = `订舱汇总分析_${dimensionName}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+                    
+                    await window.exportToPdfCommon({
+                        fileName,
+                        elements: resultContainer
+                    });
+                } else if (typeof window.exportToPdf === 'function') {
+                    const now = new Date();
+                    const dimensionNames = {
+                        'sales-dept': 'Sales_Dept维度',
+                        'sales-week': 'Sales_Week维度',
+                        'account-dept': 'Account_Dept维度',
+                        'account-week': 'Account_Week维度',
+                        'vessel-dept': 'VSL_VOY_Dept维度',
+                        'vessel-week': 'VSL_VOY_Week维度',
+                        'vessel-gps': 'VSL_VOY_GPS维度',
+                        'vessel-limit': 'VSL_VOY_Limit维度'
+                    };
+                    const dimensionName = dimensionNames[currentDimension] || '数据汇总';
+                    const fileName = `订舱汇总分析_${dimensionName}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+                    await window.exportToPdf(resultContainer, { fileName });
+                } else {
+                    alert('PDF 导出功能所需的工具函数未找到，请刷新页面重试');
+                }
+            } catch (error) {
+                console.error('导出PDF失败:', error);
+                alert('导出PDF失败: ' + (error.message || String(error)));
+            }
+        }
+
+        // 绑定导出按钮事件
+        function initExportButtons() {
+            const exportExcelBtn = document.getElementById('exportExcelBtn');
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+            
+            if (exportExcelBtn) {
+                exportExcelBtn.addEventListener('click', exportToExcel);
+            }
+            
+            if (exportPdfBtn) {
+                exportPdfBtn.addEventListener('click', exportToPdf);
+            }
+        }
+
+        // 显示导出按钮（当数据加载后）
+        function showExportButtons() {
+            const exportExcelBtn = document.getElementById('exportExcelBtn');
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+            
+            if (exportExcelBtn && filteredData && filteredData.length > 0) {
+                exportExcelBtn.style.display = 'inline-block';
+            }
+            
+            if (exportPdfBtn && filteredData && filteredData.length > 0) {
+                exportPdfBtn.style.display = 'inline-block';
+            }
+        }
 
         // 页面加载完成后初始化
         if (document.readyState === 'loading') {

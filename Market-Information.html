@@ -26,7 +26,7 @@
                     <div class="section-intro-header">
                         <div class="section-intro-content">
                             <h2>Market Information · 企业宣传资料</h2>
-                            <p>查看企业宣传介绍、OA Day 活动资料、市场周报等相关 PDF 文档。支持全屏查看，航运周报采用左右两页显示，企业介绍和OA资料采用全屏显示。</p>
+                            <p>查看企业宣传介绍、OA 推介会、市场报告等相关 PDF 文档。支持一页一屏查看，使用键盘上下箭头或 Page Up/Down 翻页。</p>
                         </div>
                         <div class="section-intro-actions">
                             <a href="dashboard.html?tab=market" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
@@ -93,6 +93,14 @@
             const pdfViewerClose = document.getElementById('pdfViewerClose');
 
             let allPdfFiles = [];
+            
+            // PDF 查看器状态管理
+            const pdfViewerState = {
+                currentPage: 1,
+                totalPages: 0,
+                currentPdfPath: '',
+                currentPdfFileName: ''
+            };
 
             /**
              * 根据文件名自动分类
@@ -118,12 +126,15 @@
                 if (name.includes('oa-day') || name.includes('oa_day') || name.includes('oaday')) {
                     const yearMatch = fileName.match(/(\d{4})/);
                     const year = yearMatch ? yearMatch[1] : '';
+                    // 提取 Day 后面的数字，例如：2025-OA-Day9-IAS.pdf -> Day 9
+                    const dayMatch = fileName.match(/day(\d+)/i);
+                    const dayNumber = dayMatch ? dayMatch[1] : '';
                     const partMatch = fileName.match(/part(\d+)/i);
                     const part = partMatch ? `（第${partMatch[1]}部分）` : '';
                     return {
                         category: 'oaDay',
-                        categoryName: 'OA Day 活动资料',
-                        displayName: `OA Day ${year}${part}`,
+                        categoryName: 'OA 推介会',
+                        displayName: dayNumber ? `OA Day ${dayNumber} ${year}${part}` : `OA Day ${year}${part}`,
                         description: `${year}年 OA Day 活动资料${part}`
                     };
                 }
@@ -132,7 +143,7 @@
                 if (name.includes('linerlytica')) {
                     return {
                         category: 'marketReport',
-                        categoryName: '市场周报',
+                        categoryName: '市场报告',
                         displayName: 'Linerlytica 市场周报',
                         description: fileName.replace(/\.pdf$/i, '')
                     };
@@ -144,27 +155,27 @@
                     if (name.includes('monthly') || name.includes('monitor')) {
                         return {
                             category: 'marketReport',
-                            categoryName: '市场月报',
+                            categoryName: '市场报告',
                             displayName: 'Alphaliner 市场月报',
                             description: fileName.replace(/\.pdf$/i, '')
                         };
                     } else {
                         return {
                             category: 'marketReport',
-                            categoryName: '市场周报',
+                            categoryName: '市场报告',
                             displayName: 'Alphaliner 市场周报',
                             description: fileName.replace(/\.pdf$/i, '')
                         };
                     }
                 }
                 
-                // 其他市场周报
+                // 其他市场报告
                 if (name.includes('weekly') || name.includes('report') || name.includes('周报')) {
                     return {
                         category: 'marketReport',
-                        categoryName: '市场周报',
+                        categoryName: '市场报告',
                         displayName: fileName.replace(/\.pdf$/i, ''),
-                        description: '市场周报'
+                        description: '市场报告'
                     };
                 }
                 
@@ -275,8 +286,8 @@
 
                 const categoryOrder = [
                     { key: 'introduction', title: '企业介绍' },
-                    { key: 'oaDay', title: 'OA Day 活动资料' },
-                    { key: 'marketReport', title: '市场周报' },
+                    { key: 'oaDay', title: 'OA 推介会' },
+                    { key: 'marketReport', title: '市场报告' },
                     { key: 'other', title: '其他资料' }
                 ];
 

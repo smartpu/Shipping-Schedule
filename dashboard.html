@@ -88,6 +88,18 @@
             .section-intro { margin-bottom: 24px; }
         }
         
+        /* 手机竖屏：强制单列显示（确保手机竖屏正确显示） */
+        @media (max-width: 900px) and (orientation: portrait) {
+            .tools-grid { grid-template-columns: 1fr !important; gap: 20px; }
+            .dashboard-content { padding: 16px; }
+            .section-intro { margin-bottom: 24px; }
+        }
+        
+        /* 手机小屏幕：强制单列显示（确保所有手机都显示单列） */
+        @media (max-width: 768px) {
+            .tools-grid { grid-template-columns: 1fr !important; gap: 20px; }
+        }
+        
         /* iPad竖屏：强制单列显示 */
         @media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
             .tools-grid { grid-template-columns: 1fr !important; gap: 20px; }
@@ -362,7 +374,7 @@
                             </div>
                         </div>
                         <div class="tool-description">
-                            地理贸易航线监控工具，支持载入 Excel 文件，通过多维度筛选（Trade、Service、Service Branding、Port Rotation）快速查找和分析服务信息。提供悬停查看详细信息功能，自动统计船舶数量。
+                            地理贸易航线监控工具，支持载入 Excel 文件，通过多维度筛选，快速查找和分析服务信息。提供悬停查看详细信息功能，自动统计船舶数量。
                         </div>
                         <div class="tool-actions">
                             <a href="Market-Geo-Trades-Service.html?from=market" class="tool-link" aria-label="打开地理贸易航线工具">打开工具 →</a>

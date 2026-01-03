@@ -1146,8 +1146,9 @@ input:disabled {
     }
 }
 
-/* iPad横屏：显示2列 */
+/* iPad横屏：显示2列（优先级高于上面的规则） */
 /* iPad横屏宽度通常在1024px-1366px之间，横屏时显示2列 */
+/* 这个规则必须在@max-width: 1200px之后，以确保覆盖 */
 @media (min-width: 1024px) and (max-width: 1400px) and (orientation: landscape) {
     .tools-grid {
         grid-template-columns: repeat(2, 1fr) !important;
@@ -1727,8 +1728,71 @@ input:disabled {
 }
 
 /* Dashboard 响应式设计 */
-/* 注意：不覆盖移动端的单列显示规则，移动端单列显示由上面的规则处理 */
-@media (max-width: 1024px) and (min-width: 1001px) {
+/* 注意：移动端规则优先级最高，放在最前面，确保覆盖所有其他规则 */
+
+/* 所有移动端：强制单列显示（最高优先级，放在最前面） */
+@media (max-width: 1000px) {
+    .tools-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+    
+    .tools-grid.grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* 手机竖屏：强制单列显示（确保手机竖屏正确显示） */
+@media (max-width: 900px) and (orientation: portrait) {
+    .tools-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+    
+    .tools-grid.grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* 手机小屏幕：强制单列显示（确保所有手机都显示单列） */
+@media (max-width: 768px) {
+    .tools-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+    
+    .tools-grid.grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* iPad竖屏：强制单列显示（优先级最高，确保覆盖其他规则） */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+    .tools-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+    
+    .tools-grid.grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* iPad横屏：强制2列显示（优先级最高，确保覆盖其他规则） */
+@media (min-width: 1024px) and (max-width: 1400px) and (orientation: landscape) {
+    .tools-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 24px;
+    }
+    
+    .tools-grid.grid-3 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* Dashboard 响应式设计 - 小屏幕桌面/平板（不覆盖iPad） */
+/* 只适用于非iPad的设备，宽度在1001px-1024px之间 */
+@media (max-width: 1024px) and (min-width: 1001px) and (min-height: 600px) {
     .tools-grid {
         grid-template-columns: repeat(3, 1fr) !important;
     }
@@ -1750,43 +1814,6 @@ input:disabled {
     }
     .tool-card {
         padding: 20px;
-    }
-}
-
-/* 确保移动端单列显示优先级最高（在1731行规则之后，确保覆盖） */
-/* iPad竖屏：强制单列显示 */
-@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
-    .tools-grid {
-        grid-template-columns: 1fr !important;
-        gap: 20px;
-    }
-    
-    .tools-grid.grid-3 {
-        grid-template-columns: 1fr !important;
-    }
-}
-
-/* 手机竖屏：强制单列显示 */
-@media (max-width: 900px) and (orientation: portrait) {
-    .tools-grid {
-        grid-template-columns: 1fr !important;
-        gap: 20px;
-    }
-    
-    .tools-grid.grid-3 {
-        grid-template-columns: 1fr !important;
-    }
-}
-
-/* 所有移动端：强制单列显示 */
-@media (max-width: 1000px) {
-    .tools-grid {
-        grid-template-columns: 1fr !important;
-        gap: 20px;
-    }
-    
-    .tools-grid.grid-3 {
-        grid-template-columns: 1fr !important;
     }
 }
 

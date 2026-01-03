@@ -591,7 +591,9 @@
         }
         
         // 检查是否为本地测试用户（即使不在白名单中，也允许访问）
+        // 注意：smartpu作为本地测试用户，应该有所有权限，包括admin
         if (isLocalTestUser(authData)) {
+            // smartpu应该有所有权限，包括admin
             return waitForLoad ? Promise.resolve(true) : true;
         }
         

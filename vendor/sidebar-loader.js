@@ -74,7 +74,7 @@
      * @returns {string} 导航栏HTML字符串
      */
     function generateSidebarHTML(options = {}) {
-        const { currentPage = '', currentSection = '', isDashboard = false, hasAdminPermission: providedPermission = false } = options;
+        const { currentPage = '', currentSection = '', isDashboard = false, hasAdminPermission: providedPermission = false, permissions: providedPermissions = null } = options;
         
         let html = `
         <aside class="dashboard-sidebar" id="sidebar">
@@ -90,24 +90,37 @@
                         <div class="nav-section-title">工具导航</div>
         `;
 
-        // 检查用户是否有admin权限（如果未提供，则同步检查）
-        let hasAdminPermission = providedPermission;
-        if (!providedPermission && typeof window.hasPermission === 'function') {
-            hasAdminPermission = window.hasPermission('admin');
+        // 获取权限信息
+        let permissions = providedPermissions;
+        if (!permissions) {
+            // 如果没有提供权限信息，使用默认值或检查
+            permissions = {
+                tools001: true,
+                tools365: true,
+                market: true,
+                monitor: true,
+                admin: providedPermission
+            };
+            
+            // 如果权限检查函数可用，尝试同步检查（但可能不准确，因为白名单可能未加载）
+            if (typeof window.hasPermission === 'function') {
+                permissions.admin = window.hasPermission('admin');
+            }
         }
         
         // 生成每个主菜单项
         Object.keys(NAV_CONFIG).forEach((sectionKey) => {
-            // 如果是admin菜单，检查权限
-            if (sectionKey === 'admin' && !hasAdminPermission) {
-                return; // 跳过admin菜单
+            // 检查该系列的权限
+            const hasPermission = permissions[sectionKey] !== false; // 默认true，除非明确设置为false
+            if (!hasPermission) {
+                return; // 跳过没有权限的菜单
             }
             
             const config = NAV_CONFIG[sectionKey];
             const isActive = currentSection === sectionKey;
             // admin菜单需要权限检查，其他菜单在dashboard中默认展开
             const shouldExpand = sectionKey === 'admin' 
-                ? (isActive || (isDashboard && hasAdminPermission))
+                ? (isActive || (isDashboard && permissions.admin))
                 : (isActive || (isDashboard && ['tools365', 'market', 'monitor'].includes(sectionKey)));
             const isExpanded = shouldExpand;
             // 修正主菜单链接路径
@@ -258,11 +271,26 @@
         }
 
         // 侧边栏折叠/展开（桌面端）
+        // 确保默认展开（不折叠），让用户能看到系列标题
+        if (!isMobile) {
+            sidebar.classList.remove('collapsed');
+        }
+        
         sidebarToggle.addEventListener('click', () => {
             if (!isMobile) {
                 sidebar.classList.toggle('collapsed');
+                // 保存折叠状态到localStorage
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
             }
         });
+        
+        // 恢复之前的折叠状态（但默认展开）
+        if (!isMobile) {
+            const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+            if (savedCollapsed === 'true') {
+                sidebar.classList.add('collapsed');
+            }
+        }
         
         // 监听窗口大小变化
         let resizeTimer;
@@ -445,12 +473,27 @@
         const isDashboard = options.isDashboard !== undefined ? options.isDashboard : (currentPage === 'dashboard.html' || currentPage === 'index.html' || !currentPage);
 
         // 等待白名单加载完成后再检查权限
-        let hasAdminPermission = false;
+        let permissions = {
+            tools001: true,
+            tools365: true,
+            market: true,
+            monitor: true,
+            admin: false
+        };
+        
         if (typeof window.waitForWhitelist === 'function') {
             await window.waitForWhitelist();
         }
+        
         if (typeof window.hasPermission === 'function') {
-            hasAdminPermission = await window.hasPermission('admin', true);
+            // 检查所有系列的权限
+            permissions = {
+                tools001: await window.hasPermission('tools001', true),
+                tools365: await window.hasPermission('tools365', true),
+                market: await window.hasPermission('market', true),
+                monitor: await window.hasPermission('monitor', true),
+                admin: await window.hasPermission('admin', true)
+            };
         }
 
         // 生成并插入HTML
@@ -458,7 +501,8 @@
             currentPage,
             currentSection,
             isDashboard,
-            hasAdminPermission,
+            hasAdminPermission: permissions.admin,
+            permissions: permissions,
             ...options
         });
 
@@ -472,12 +516,66 @@
         initSidebar();
         loadUserInfo();
         controlRestrictedTools();
+        
+        // 根据权限动态隐藏/显示导航项（在导航栏加载后）
+        if (typeof window.hasPermission === 'function') {
+            Object.keys(permissions).forEach(sectionKey => {
+                const navItem = document.querySelector(`.nav-item[data-section="${sectionKey}"]`);
+                if (navItem) {
+                    if (!permissions[sectionKey]) {
+                        // 隐藏没有权限的导航项及其子菜单
+                        navItem.style.display = 'none';
+                        const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
+                        if (submenu) {
+                            submenu.style.display = 'none';
+                        }
+                    } else {
+                        // 确保有权限的导航项显示
+                        navItem.style.display = '';
+                        const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
+                        if (submenu) {
+                            submenu.style.display = '';
+                        }
+                    }
+                }
+            });
+        }
 
         // 监听存储变化
         window.addEventListener('storage', (e) => {
             if (e.key === 'shipping_tools_auth') {
                 controlRestrictedTools();
                 loadUserInfo();
+                // 重新检查权限并更新导航栏
+                if (typeof window.hasPermission === 'function' && typeof window.waitForWhitelist === 'function') {
+                    window.waitForWhitelist().then(async () => {
+                        const newPermissions = {
+                            tools001: await window.hasPermission('tools001', true),
+                            tools365: await window.hasPermission('tools365', true),
+                            market: await window.hasPermission('market', true),
+                            monitor: await window.hasPermission('monitor', true),
+                            admin: await window.hasPermission('admin', true)
+                        };
+                        Object.keys(newPermissions).forEach(sectionKey => {
+                            const navItem = document.querySelector(`.nav-item[data-section="${sectionKey}"]`);
+                            if (navItem) {
+                                if (!newPermissions[sectionKey]) {
+                                    navItem.style.display = 'none';
+                                    const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
+                                    if (submenu) {
+                                        submenu.style.display = 'none';
+                                    }
+                                } else {
+                                    navItem.style.display = '';
+                                    const submenu = document.getElementById(NAV_CONFIG[sectionKey]?.submenuId);
+                                    if (submenu) {
+                                        submenu.style.display = '';
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
             }
         });
 

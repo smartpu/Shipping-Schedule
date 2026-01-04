@@ -116,6 +116,35 @@
                     </div>
                 </section>
 
+                <!-- 最近访问记录 -->
+                <section class="feature-section">
+                    <div class="module-header">
+                        <span class="module-badge">最近访问</span>
+                        <div>
+                            <h2 class="section-title">最近访问记录 <span>RECENT ACCESS</span></h2>
+                            <p class="module-desc">显示最近20条访问记录，按时间倒序排列</p>
+                        </div>
+                    </div>
+                    <div class="card-white module-card hidden mt-20" id="recentAccessSection">
+                        <div class="table-container">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th class="rank">序号</th>
+                                        <th>用户</th>
+                                        <th>手机号</th>
+                                        <th>邮箱</th>
+                                        <th>访问页面</th>
+                                        <th>访问时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentAccessBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- 用户访问排名 -->
                 <section class="feature-section">
                     <div class="module-header">
@@ -232,9 +261,11 @@
         const fileInput = document.getElementById('fileInput');
         const statusInfo = document.getElementById('statusInfo');
         const statsSection = document.getElementById('statsSection');
+        const recentAccessSection = document.getElementById('recentAccessSection');
         const userRankingSection = document.getElementById('userRankingSection');
         const pageRankingSection = document.getElementById('pageRankingSection');
         const timeAnalysisSection = document.getElementById('timeAnalysisSection');
+        const recentAccessBody = document.getElementById('recentAccessBody');
         const userRankingBody = document.getElementById('userRankingBody');
         const pageRankingBody = document.getElementById('pageRankingBody');
         const timeFilterBtns = document.querySelectorAll('.time-filter-btn');
@@ -278,7 +309,7 @@
         }
 
         /**
-         * 自动加载访问日志（优先从 Gist 加载，失败则尝试本地文件）
+         * 自动加载访问日志（仅从 Gist 加载）
          */
         async function autoLoadJsonFile() {
             // 检查是否在本地文件系统（file://协议），如果是则跳过自动加载
@@ -287,55 +318,8 @@
                 return;
             }
 
-            // 优先从 Gist 加载
-            try {
-                await loadFromGist();
-                return; // 成功加载，直接返回
-            } catch (gistError) {
-                debugWarn('[Access-Log] 从 Gist 加载失败，尝试本地文件:', gistError);
-            }
-
-            // 如果 Gist 加载失败，尝试从本地 Data 目录加载
-            try {
-                // 从 index.json 读取文件路径配置
-                let jsonFileName = null;
-                try {
-                    const configResponse = await fetch('Data/index.json');
-                    if (configResponse.ok) {
-                        const config = await configResponse.json();
-                        if (config.files && config.files['Admin-Access-Log']) {
-                            jsonFileName = config.files['Admin-Access-Log'];
-                        }
-                    }
-                } catch (e) {
-                    debugWarn('[Access-Log] 无法读取配置文件');
-                    return;
-                }
-
-                if (!jsonFileName) {
-                    debugWarn('[Access-Log] 配置文件中未找到文件路径');
-                    return;
-                }
-
-                const response = await fetch(`Data/${jsonFileName}`);
-                if (!response.ok) {
-                    debugWarn('[Access-Log] 默认 JSON 文件不存在');
-                    return;
-                }
-                const blob = await response.blob();
-                const file = new File([blob], jsonFileName, { type: 'application/json' });
-                
-                // 模拟文件选择事件，触发文件处理
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-                
-                // 触发 change 事件
-                const changeEvent = new Event('change', { bubbles: true });
-                fileInput.dispatchEvent(changeEvent);
-            } catch (error) {
-                debugWarn('[Access-Log] 自动加载 JSON 文件失败:', error);
-            }
+            // 从 Gist 加载
+            await loadFromGist();
         }
 
         /**
@@ -380,6 +364,7 @@
             if (!filteredLogs.length) {
                 // 如果没有过滤后的数据，隐藏所有统计区域
                 statsSection.classList.add('hidden');
+                recentAccessSection.classList.add('hidden');
                 userRankingSection.classList.add('hidden');
                 pageRankingSection.classList.add('hidden');
                 timeAnalysisSection.classList.add('hidden');
@@ -388,6 +373,7 @@
 
             // 显示所有统计区域
             statsSection.classList.remove('hidden');
+            recentAccessSection.classList.remove('hidden');
             userRankingSection.classList.remove('hidden');
             pageRankingSection.classList.remove('hidden');
             timeAnalysisSection.classList.remove('hidden');
@@ -402,6 +388,9 @@
 
             // 更新统计概览
             updateStatsOverview();
+
+            // 更新最近访问记录
+            updateRecentAccess();
 
             // 更新用户排名
             updateUserRanking();
@@ -424,6 +413,48 @@
             document.getElementById('uniqueUsers').textContent = uniqueUsers.toLocaleString();
             document.getElementById('uniquePages').textContent = uniquePages.toLocaleString();
             document.getElementById('avgVisits').textContent = avgVisits;
+        }
+
+        // 更新最近访问记录
+        function updateRecentAccess() {
+            // 按时间戳倒序排序，取前20条
+            const recentLogs = [...filteredLogs]
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+                .slice(0, 20);
+
+            // 渲染表格
+            recentAccessBody.innerHTML = '';
+            recentLogs.forEach((log, index) => {
+                const row = document.createElement('tr');
+                const visitDate = new Date(log.timestamp);
+                const visitStr = visitDate.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                row.innerHTML = `
+                    <td class="rank">${index + 1}</td>
+                    <td>${escapeHtml(log.name || '—')}</td>
+                    <td>${escapeHtml(log.phone || '—')}</td>
+                    <td>${escapeHtml(log.email || '—')}</td>
+                    <td>${escapeHtml(log.page || '—')}</td>
+                    <td>${visitStr}</td>
+                `;
+                
+                recentAccessBody.appendChild(row);
+            });
+        }
+
+        // HTML 转义函数
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '—';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
         }
 
         // 更新用户排名

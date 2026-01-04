@@ -254,9 +254,9 @@
         const GIST_ID = 'b5b83749aa1561bf295c5ea2861848e5';
         const GIST_USER = 'smartpu';
         const GIST_FILE_NAME = 'access-logs.json';
-        const GIST_COMMIT_HASH = 'd904a141849245da405dfe4bb5ffca58cb24ba0b';
-        // Gist raw URL 格式：https://gist.githubusercontent.com/{user}/{gist_id}/raw/{commit_hash}/{filename}
-        const GIST_RAW_URL = `https://gist.githubusercontent.com/${GIST_USER}/${GIST_ID}/raw/${GIST_COMMIT_HASH}/${GIST_FILE_NAME}`;
+        // 使用不带 commit hash 的 URL 格式，自动获取最新版本
+        // Gist raw URL 格式：https://gist.githubusercontent.com/{user}/{gist_id}/raw/{filename}
+        const GIST_RAW_URL = `https://gist.githubusercontent.com/${GIST_USER}/${GIST_ID}/raw/${GIST_FILE_NAME}`;
 
         const fileInput = document.getElementById('fileInput');
         const statusInfo = document.getElementById('statusInfo');

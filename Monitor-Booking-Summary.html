@@ -440,7 +440,7 @@
             REEFER: 'AH', // AH列 REEFER
             SPECIAL: 'AI', // AI列 SPECIAL
             AREA: 'AK', // AK列 AREA
-            COMMODITY: null // 品名列（需要从其他地方获取，暂时设为null）
+            COMMODITY: 'M' // M列 COMMODITY
         };
 
         /**
@@ -5217,12 +5217,15 @@
                             sqScName: rowSqScName,
                             sqSc: rowSqSc,
                             salesId: rowSalesId,
-                            teu: 0
+                            teu: 0,
+                            tons: 0
                         };
                     }
                     
                     const teu = Number(getColumnValue(row, COLUMN_MAP.X) || 0);
+                    const tons = Number(getColumnValue(row, COLUMN_MAP.Y) || 0) / 1000;
                     grouped[detailKey].teu += teu;
+                    grouped[detailKey].tons += tons;
                 });
                 
                 // 计算每个item的Over值，用于排序
@@ -5239,20 +5242,26 @@
                         limit = 0;
                     }
                     
-                    // 计算Over（TEU - Limit）
-                    const over = item.teu - limit;
+                    // 计算Over TEU（TEU - Limit）
+                    const overTeu = item.teu - limit;
+                    // 计算Limit TONS（Limit TEU x14）
+                    const limitTons = limit * 14;
+                    // 计算Over TONS（TONS合计 - Limit TONS）
+                    const overTons = item.tons - limitTons;
                     
                     return {
                         key: detailKey,
                         item: item,
                         limit: limit,
-                        over: over
+                        limitTons: limitTons,
+                        overTeu: overTeu,
+                        overTons: overTons
                     };
                 });
                 
-                // 按Over降序排序
+                // 按Over TEU降序排序
                 itemsWithOver.sort((a, b) => {
-                    return b.over - a.over; // 降序：大的在前
+                    return b.overTeu - a.overTeu; // 降序：大的在前
                 });
                 
                 // 生成表格HTML
@@ -5268,14 +5277,17 @@
                 htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: left;">SQ/SC</th>');
                 htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: left;">SalesID</th>');
                 htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">TEU合计</th>');
-                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Limit</th>');
-                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Over</th>');
+                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">TONS合计</th>');
+                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Limit TEU</th>');
+                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Limit TONS</th>');
+                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Over TEU</th>');
+                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Over TONS</th>');
                 htmlParts.push('</tr>');
                 htmlParts.push('</thead>');
                 htmlParts.push('<tbody>');
                 
-                itemsWithOver.forEach(({ key, item, limit, over }) => {
-                    const overBgColor = over > 15 ? '#ff9800' : 'transparent'; // 超过15则橙色背景
+                itemsWithOver.forEach(({ key, item, limit, limitTons, overTeu, overTons }) => {
+                    const overBgColor = overTeu > 15 ? '#ff9800' : 'transparent'; // 超过15则橙色背景
                     
                     // 为onclick准备key，需要转义单引号、反斜杠，但保留|字符用于split
                     const blDetailKey = `${item.expLine}|${item.vslVoy}|${item.trade}|${item.sqScName}|${item.sqSc}|${item.salesId}`;
@@ -5289,8 +5301,11 @@
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.sqSc)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.salesId)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600;">${item.teu.toFixed(0)}</td>`);
+                    htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600;">${item.tons.toFixed(2)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${limit.toFixed(0)}</td>`);
-                    htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600; background-color: ${overBgColor};">${over.toFixed(0)}</td>`);
+                    htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${limitTons.toFixed(2)}</td>`);
+                    htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600; background-color: ${overBgColor};">${overTeu.toFixed(0)}</td>`);
+                    htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600; background-color: ${overBgColor};">${overTons.toFixed(2)}</td>`);
                     htmlParts.push('</tr>');
                 });
                 
@@ -5580,7 +5595,7 @@
             const blHeader = document.createElement('div');
             blHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;';
             blHeader.innerHTML = `
-                <h3 style="margin: 0; color: #333;">超舱客户详细BL资料 (${blDetailData.length} 条记录)</h3>
+                <h3 style="margin: 0; color: #333;">超舱客户详细BL资料 - ${escapeHtml(sqScName)} (${blDetailData.length} 条记录)</h3>
                 <button class="btn-sweep-blue" onclick="this.closest('#vesselLimitBlDetailModal').remove()" style="padding: 8px 16px; background: #3E62AD; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; position: relative; overflow: hidden;">关闭</button>
             `;
             
@@ -5594,7 +5609,7 @@
                     <th style="padding: 12px; border: 1px solid white; width: 200px;">POL/POD</th>
                     <th style="padding: 12px; border: 1px solid white; width: auto;">SalesID</th>
                     <th style="padding: 12px; border: 1px solid white; width: auto;">SQ/SC</th>
-                    <th style="padding: 12px; border: 1px solid white; width: auto;">SQ/SC NAME</th>
+                    <th style="padding: 12px; border: 1px solid white; width: auto;">COMMODITY</th>
                     <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">2SD</th>
                     <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">2RS</th>
                     <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">4SD</th>
@@ -5606,6 +5621,7 @@
                     <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">4FO</th>
                     <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">4FC</th>
                     <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">TTL TEU</th>
+                    <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">TONS</th>
                     <th style="padding: 12px; text-align: right; border: 1px solid white; width: auto;">GPS</th>
                 </tr>
                 </thead>
@@ -5619,8 +5635,9 @@
                 const polPod = [colI, colL].filter(v => v).join(' / '); // POL/POD：I列和L列组合
                 const rowSalesId = getColumnValue(row, COLUMN_MAP.SALES_ID) || '未指定';
                 const rowSqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '未指定';
-                const rowSqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
+                const commodity = getColumnValue(row, COLUMN_MAP.COMMODITY) || '未指定';
                 const gps = Number(getColumnValue(row, COLUMN_MAP.Z) || 0);
+                const tons = Number(getColumnValue(row, COLUMN_MAP.Y) || 0) / 1000; // TONS (Y列/1000)
                 
                 let totalTeu = 0;
                 const containerTeus = {};
@@ -5637,7 +5654,7 @@
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; white-space: normal; word-wrap: break-word;">${escapeHtml(polPod)}</td>`;
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(rowSalesId)}</td>`;
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(rowSqSc)}</td>`;
-                blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(rowSqScName)}">${escapeHtml(rowSqScName)}</td>`;
+                blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(commodity)}">${escapeHtml(commodity)}</td>`;
                 
                 containerTypes.forEach(col => {
                     const typeName = containerTypeMap[col];
@@ -5646,6 +5663,7 @@
                 });
                 
                 blHtml += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600;">${totalTeu.toFixed(0)}</td>`;
+                blHtml += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600;">${tons.toFixed(2)}</td>`;
                 blHtml += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600;">${gps.toFixed(2)}</td>`;
                 blHtml += '</tr>';
             });

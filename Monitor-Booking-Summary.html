@@ -3628,16 +3628,29 @@
                         }
                     } else if (currentWeek <= 3) {
                         // 当前是年初周（1, 2, 3）
-                        if (week <= 3) {
-                            // 输入的也是年初周，使用当前年份
-                            return `${currentYear}${String(week).padStart(2, '0')}`;
-                        } else {
+                        if (week >= 52) {
                             // 输入的是年末周（52, 53），使用上一年
                             return `${currentYear - 1}${String(week).padStart(2, '0')}`;
+                        } else {
+                            // 输入的周数（1-51，除了52、53），都使用当前年份
+                            // 因为年初时，4、5、6等周数应该是当年的周数，而不是上一年的
+                            return `${currentYear}${String(week).padStart(2, '0')}`;
                         }
                     } else {
-                        // 当前是年中周，输入的周数应该和当前年份相同
-                        return `${currentYear}${String(week).padStart(2, '0')}`;
+                        // 当前是年中周（4-51）
+                        // 如果输入的周数接近当前周（相差不超过26周），使用当前年份
+                        // 如果输入的周数远大于当前周（可能是跨年），需要判断
+                        const weekDiff = week - currentWeek;
+                        if (weekDiff > 26) {
+                            // 输入的周数远大于当前周，可能是上一年的年末周
+                            return `${currentYear - 1}${String(week).padStart(2, '0')}`;
+                        } else if (weekDiff < -26) {
+                            // 输入的周数远小于当前周，可能是下一年的年初周
+                            return `${currentYear + 1}${String(week).padStart(2, '0')}`;
+                        } else {
+                            // 输入的周数接近当前周，使用当前年份
+                            return `${currentYear}${String(week).padStart(2, '0')}`;
+                        }
                     }
                 }
             }
@@ -6204,7 +6217,64 @@
          */
 
         /**
-         * 导出Excel
+         * 尝试加载 ExcelJS 库以支持样式
+         */
+        async function loadExcelJSIfNeeded() {
+            // 检查是否已经加载了 ExcelJS
+            if (typeof ExcelJS !== 'undefined') {
+                return true;
+            }
+            
+            // 检查是否已经尝试加载
+            if (window._excelJSLoading) {
+                return window._excelJSLoading;
+            }
+            
+            // 使用 lib-loader.js 中的 ensureExcelJS 函数（优先从本地加载）
+            window._excelJSLoading = new Promise(async (resolve) => {
+                try {
+                    if (typeof window.ensureExcelJS === 'function') {
+                        // 使用 lib-loader.js 的加载函数
+                        const loaded = await window.ensureExcelJS();
+                        resolve(loaded && typeof ExcelJS !== 'undefined');
+                    } else {
+                        // 如果 lib-loader.js 未加载，直接尝试加载本地文件
+                        const script = document.createElement('script');
+                        script.src = 'vendor/exceljs.min.js';
+                        script.onload = () => {
+                            setTimeout(() => {
+                                resolve(typeof ExcelJS !== 'undefined');
+                            }, 100);
+                        };
+                        script.onerror = () => {
+                            // 本地加载失败，尝试 CDN
+                            const cdnScript = document.createElement('script');
+                            cdnScript.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+                            cdnScript.onload = () => {
+                                setTimeout(() => {
+                                    resolve(typeof ExcelJS !== 'undefined');
+                                }, 100);
+                            };
+                            cdnScript.onerror = () => {
+                                resolve(false);
+                            };
+                            document.head.appendChild(cdnScript);
+                        };
+                        document.head.appendChild(script);
+                    }
+                } catch (error) {
+                    if (typeof window.debugError === 'function') {
+                        window.debugError('加载 ExcelJS 失败:', error);
+                    }
+                    resolve(false);
+                }
+            });
+            
+            return window._excelJSLoading;
+        }
+
+        /**
+         * 导出Excel（带样式支持，使用 ExcelJS）
          */
         async function exportToExcel() {
             if (!filteredData || filteredData.length === 0) {
@@ -6212,13 +6282,9 @@
                 return;
             }
 
-            if (typeof XLSX === 'undefined') {
-                alert('XLSX 库未加载，请刷新页面重试');
-                return;
-            }
-
             try {
-                const workbook = XLSX.utils.book_new();
+                // 尝试加载 ExcelJS 库（支持样式）
+                const excelJSAvailable = await loadExcelJSIfNeeded().catch(() => false);
                 
                 // 获取当前表格的HTML内容
                 const analysisTable = document.getElementById('analysisTable');
@@ -6235,30 +6301,19 @@
                 }
 
                 // 对于 VSL/VOY + Limit 模式，需要特殊处理 Allocation 列（input 元素）
-                // 创建一个表格的克隆，在克隆中替换 input 为文本，避免影响原始页面
                 let tableToExport = table;
                 if (currentDimension === 'vessel-limit') {
-                    // 克隆表格
                     const clonedTable = table.cloneNode(true);
-                    
-                    // 在克隆中找到所有 Allocation 列的 input 元素，将其值提取为文本
                     const allocationInputs = clonedTable.querySelectorAll('input[type="number"][id^="allocation-"]');
-                    
                     allocationInputs.forEach(input => {
                         const value = input.value || input.getAttribute('value') || '0';
-                        // 创建文本节点替换 input
                         const textNode = document.createTextNode(value);
                         input.parentNode.replaceChild(textNode, input);
                     });
-                    
-                    // 使用克隆的表格进行导出
                     tableToExport = clonedTable;
                 }
-                
-                // 将HTML表格转换为工作表
-                const ws = XLSX.utils.table_to_sheet(tableToExport);
-                
-                // 生成工作表名称（根据当前维度）
+
+                // 生成工作表名称
                 const dimensionNames = {
                     'sales-dept': 'Sales_Dept维度',
                     'sales-week': 'Sales_Week维度',
@@ -6269,17 +6324,20 @@
                     'vessel-gps': 'VSL_VOY_GPS维度',
                     'vessel-limit': 'VSL_VOY_Limit维度'
                 };
-                
                 const sheetName = dimensionNames[currentDimension] || '数据汇总';
-                // Excel工作表名称不能包含特殊字符，限制长度为31
                 const safeSheetName = sheetName.replace(/[:\\\/?*\[\]]/g, '_').substring(0, 31);
-                
-                XLSX.utils.book_append_sheet(workbook, ws, safeSheetName);
 
-                // 导出文件
-                const now = new Date();
-                const fileName = `订舱汇总分析_${safeSheetName}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.xlsx`;
-                XLSX.writeFile(workbook, fileName);
+                // 如果 ExcelJS 可用，使用它导出（支持完整样式）
+                if (excelJSAvailable && typeof ExcelJS !== 'undefined') {
+                    await exportWithExcelJS(tableToExport, safeSheetName);
+                } else {
+                    // 回退到标准 XLSX（无样式）
+                    if (typeof XLSX === 'undefined') {
+                        alert('XLSX 库未加载，请刷新页面重试');
+                        return;
+                    }
+                    await exportWithXLSX(tableToExport, safeSheetName);
+                }
                 
                 if (typeof window.Toast !== 'undefined') {
                     window.Toast.show('Excel导出成功', 'success');
@@ -6291,6 +6349,327 @@
                 alert('导出Excel失败: ' + (error.message || String(error)));
             }
         }
+
+        /**
+         * 使用 ExcelJS 导出（支持完整样式）
+         */
+        async function exportWithExcelJS(table, sheetName) {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet(sheetName);
+
+            // 获取表格的所有行
+            const rows = Array.from(table.querySelectorAll('tr'));
+            const headerRows = Array.from(table.querySelectorAll('thead tr'));
+            
+            // 定义样式
+            const headerStyle = {
+                fill: {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF3E62AD' } // 蓝色背景 #3E62AD
+                },
+                font: {
+                    color: { argb: 'FFFFFFFF' }, // 白色字体
+                    bold: true,
+                    size: 11
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'middle',
+                    wrapText: true
+                },
+                border: {
+                    top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+                }
+            };
+
+            const dataStyle = {
+                border: {
+                    top: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
+                },
+                alignment: {
+                    vertical: 'middle'
+                }
+            };
+
+            // 收集表头信息，用于识别列类型
+            const headerInfo = [];
+            headerRows.forEach((headerRow, headerRowIndex) => {
+                const headerCells = headerRow.querySelectorAll('th, td');
+                headerInfo[headerRowIndex] = [];
+                headerCells.forEach(cell => {
+                    const text = (cell.textContent || '').trim();
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    headerInfo[headerRowIndex].push({ text, colspan });
+                });
+            });
+
+            // 建立列类型映射（列索引 -> 列类型）
+            // 通过遍历表头行，直接建立列索引到列类型的映射
+            const columnTypeMap = {}; // key: 列索引(从0开始), value: 'date' | 'percentage' | 'number' | 'text'
+            
+            // 遍历所有表头行，建立完整的列类型映射
+            headerRows.forEach((headerRow, rowIndex) => {
+                const cells = headerRow.querySelectorAll('th, td');
+                let colIndex = 0;
+                
+                cells.forEach((cell) => {
+                    const headerText = (cell.textContent || '').trim();
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    
+                    // 第一行表头：识别ETD列
+                    if (rowIndex === 0 && colIndex === 0 && (headerText === 'ETD' || headerText.includes('ETD'))) {
+                        columnTypeMap[colIndex] = 'date';
+                    }
+                    // 最后一行表头（子表头）：识别占比、数字列
+                    else if (rowIndex === headerRows.length - 1 && headerText) {
+                        if (headerText === '占比' || headerText.includes('占比')) {
+                            for (let i = 0; i < colspan; i++) {
+                                columnTypeMap[colIndex + i] = 'percentage';
+                            }
+                        } else if (headerText === 'TEU' || headerText === 'TONS' || 
+                                   headerText === 'AVG GPS' || headerText === 'TONS/TEU') {
+                            for (let i = 0; i < colspan; i++) {
+                                columnTypeMap[colIndex + i] = 'number';
+                            }
+                        } else if (headerText && !columnTypeMap[colIndex]) {
+                            // 其他有文本的列，如果还没有设置类型，设为文本
+                            for (let i = 0; i < colspan; i++) {
+                                if (!columnTypeMap[colIndex + i]) {
+                                    columnTypeMap[colIndex + i] = 'text';
+                                }
+                            }
+                        }
+                    }
+                    
+                    colIndex += colspan;
+                });
+            });
+            
+            // 确保第一列是日期类型（如果表头中有ETD）
+            if (headerRows.length > 0) {
+                const firstRow = headerRows[0];
+                const firstCell = firstRow.querySelector('th, td');
+                if (firstCell && (firstCell.textContent || '').trim().includes('ETD')) {
+                    columnTypeMap[0] = 'date';
+                }
+            }
+
+            // 处理每一行
+            let currentColIndex = 0;
+            rows.forEach((row, rowIndex) => {
+                const cells = row.querySelectorAll('th, td');
+                const excelRow = worksheet.addRow([]);
+                currentColIndex = 0;
+                
+                cells.forEach((cell, cellIndex) => {
+                    const cellText = (cell.textContent || '').trim();
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    const rowspan = parseInt(cell.getAttribute('rowspan') || '1', 10);
+                    
+                    // 跳过被合并的单元格位置
+                    while (excelRow.getCell(currentColIndex + 1).value !== undefined && 
+                           excelRow.getCell(currentColIndex + 1).value !== null &&
+                           excelRow.getCell(currentColIndex + 1).value !== '') {
+                        currentColIndex++;
+                    }
+                    
+                    const cellValue = excelRow.getCell(currentColIndex + 1);
+                    
+                    // 判断是否为表头行
+                    const isHeader = rowIndex < headerRows.length;
+                    
+                    // 获取列类型（从映射中获取）
+                    const columnType = columnTypeMap[currentColIndex] || 'text';
+                    
+                    // 设置单元格值（根据列类型）
+                    if (columnType === 'date' && !isHeader) {
+                        // 日期列：转换为Date对象并设置格式
+                        const dateMatch = cellText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                        if (dateMatch) {
+                            const year = parseInt(dateMatch[1], 10);
+                            const month = parseInt(dateMatch[2], 10) - 1; // JavaScript月份从0开始
+                            const day = parseInt(dateMatch[3], 10);
+                            const dateObj = new Date(year, month, day);
+                            // 验证日期对象有效性
+                            if (!isNaN(dateObj.getTime())) {
+                                cellValue.value = dateObj;
+                                cellValue.numFmt = 'yyyy-mm-dd';
+                            } else {
+                                cellValue.value = cellText;
+                            }
+                        } else {
+                            cellValue.value = cellText;
+                        }
+                    } else if (columnType === 'percentage' && !isHeader) {
+                        // 占比列：按百分比处理
+                        if (cellText.includes('%')) {
+                            // 有%符号，直接转换
+                            const percentValue = parseFloat(cellText.replace(/%/g, '').replace(/,/g, ''));
+                            if (!isNaN(percentValue)) {
+                                cellValue.value = percentValue / 100;
+                                cellValue.numFmt = '0.00%';
+                                cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                            } else {
+                                cellValue.value = cellText;
+                            }
+                        } else {
+                            // 没有%符号，尝试解析为百分比
+                            const numValue = parseFloat(cellText.replace(/,/g, ''));
+                            if (!isNaN(numValue) && cellText.trim() !== '' && cellText !== '-') {
+                                // 占比列通常显示0-100之间的数值，需要除以100
+                                if (numValue >= 0 && numValue <= 100) {
+                                    cellValue.value = numValue / 100;
+                                } else if (numValue > 0 && numValue <= 1) {
+                                    // 如果数值在0-1之间，已经是小数形式，直接使用
+                                    cellValue.value = numValue;
+                                } else {
+                                    // 其他情况，按百分比处理（除以100）
+                                    cellValue.value = numValue / 100;
+                                }
+                                cellValue.numFmt = '0.00%';
+                                cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                            } else {
+                                cellValue.value = cellText;
+                            }
+                        }
+                    } else if (columnType === 'number' && !isHeader) {
+                        // 数字列：确保不会被误识别为日期
+                        const numValue = parseFloat(cellText.replace(/,/g, ''));
+                        if (!isNaN(numValue) && cellText.trim() !== '' && cellText !== '-') {
+                            // 显式设置为数字，避免Excel自动转换
+                            cellValue.value = numValue;
+                            // 设置数字格式
+                            if (cellText.includes('.')) {
+                                const decimalPlaces = cellText.split('.')[1].length;
+                                if (decimalPlaces <= 2) {
+                                    cellValue.numFmt = '#,##0.00';
+                                } else if (decimalPlaces <= 4) {
+                                    cellValue.numFmt = '#,##0.0000';
+                                } else {
+                                    cellValue.numFmt = '#,##0.00';
+                                }
+                            } else {
+                                cellValue.numFmt = '#,##0';
+                            }
+                            cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        } else {
+                            // 不是数字，按文本处理
+                            cellValue.value = cellText;
+                        }
+                    } else {
+                        // 文本列或其他
+                        cellValue.value = cellText;
+                    }
+
+                    // 应用样式
+                    if (isHeader) {
+                        // 检查是否为蓝色表头
+                        const bgColor = cell.style.backgroundColor || 
+                                       (window.getComputedStyle ? window.getComputedStyle(cell).backgroundColor : '');
+                        const isBlueHeader = bgColor === '#3E62AD' || 
+                                          bgColor === 'rgb(62, 98, 173)' || 
+                                          bgColor.includes('3E62AD') ||
+                                          bgColor.includes('62, 98, 173');
+                        if (isBlueHeader) {
+                            cellValue.style = headerStyle;
+                        } else {
+                            cellValue.style = { ...dataStyle, font: { bold: true } };
+                        }
+                    } else {
+                        cellValue.style = dataStyle;
+                        // 数字列右对齐（如果还没有设置对齐方式）
+                        if (typeof cellValue.value === 'number' && !cellValue.alignment) {
+                            cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        }
+                    }
+                    
+                    // 处理合并单元格
+                    if (colspan > 1 || rowspan > 1) {
+                        const startRow = rowIndex + 1;
+                        const endRow = startRow + rowspan - 1;
+                        const startCol = currentColIndex + 1;
+                        const endCol = startCol + colspan - 1;
+                        worksheet.mergeCells(startRow, startCol, endRow, endCol);
+                    }
+                    
+                    currentColIndex += colspan;
+                });
+            });
+
+            // 设置列宽
+            if (rows.length > 0) {
+                const firstRow = rows[0];
+                const cells = firstRow.querySelectorAll('th, td');
+                let colIndex = 1;
+                cells.forEach((cell) => {
+                    const cellText = cell.textContent || '';
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    const estimatedWidth = Math.max(8, Math.min(30, cellText.length * 1.5));
+                    // 为合并的列设置相同的宽度
+                    for (let i = 0; i < colspan; i++) {
+                        worksheet.getColumn(colIndex + i).width = estimatedWidth / colspan;
+                    }
+                    colIndex += colspan;
+                });
+            }
+
+            // 导出文件
+            const now = new Date();
+            const fileName = `订舱汇总分析_${sheetName}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.xlsx`;
+            
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        /**
+         * 使用标准 XLSX 导出（无样式，作为回退方案）
+         */
+        async function exportWithXLSX(table, sheetName) {
+            if (typeof XLSX === 'undefined') {
+                throw new Error('XLSX 库未加载');
+            }
+
+            const workbook = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(table);
+            
+            // 设置列宽
+            if (!ws['!cols']) {
+                ws['!cols'] = [];
+            }
+            const rows = Array.from(table.querySelectorAll('tr'));
+            if (rows.length > 0) {
+                const firstRow = rows[0];
+                const cells = firstRow.querySelectorAll('th, td');
+                cells.forEach((cell, index) => {
+                    if (!ws['!cols'][index]) {
+                        ws['!cols'][index] = {};
+                    }
+                    const cellText = cell.textContent || '';
+                    const estimatedWidth = Math.max(8, Math.min(30, cellText.length * 1.5));
+                    ws['!cols'][index].wch = estimatedWidth;
+                });
+            }
+
+            XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+
+            const now = new Date();
+            const fileName = `订舱汇总分析_${sheetName}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+        }
+
 
         /**
          * 导出PDF

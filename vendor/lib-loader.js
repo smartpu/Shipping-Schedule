@@ -131,8 +131,31 @@
         return loadLibrary('Chart', localSources, remoteSources, 'Chart.js');
     }
 
+    /**
+     * 加载 ExcelJS 库（支持样式的 Excel 导出库）
+     * 优先使用本地文件，失败时回退到CDN
+     * ExcelJS 是一个独立的库，完全支持样式、颜色、字体等
+     */
+    function ensureExcelJS() {
+        // 如果已经加载了 ExcelJS
+        if (typeof ExcelJS !== 'undefined') {
+            return Promise.resolve(true);
+        }
+        
+        const localSources = [
+            'vendor/exceljs.min.js'
+        ];
+        const remoteSources = [
+            'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js',
+            'https://unpkg.com/exceljs@4.4.0/dist/exceljs.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'
+        ];
+        return loadLibrary('ExcelJS', localSources, remoteSources, 'ExcelJS');
+    }
+
     // 导出到全局
     window.ensureXlsx = ensureXlsx;
     window.ensureChartJs = ensureChartJs;
+    window.ensureExcelJS = ensureExcelJS;
 })();
 

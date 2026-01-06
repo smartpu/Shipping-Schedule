@@ -211,11 +211,11 @@
                   <tr>
                     <th>港口</th>
                     <th id="trend-h-prev2">上上周 2SD/4SH</th>
-                    <th>对比上上上周</th>
+                    <th id="trend-h-compare-prev2">对比上上上周</th>
                     <th id="trend-h-prev1">上周 2SD/4SH</th>
-                    <th>对比上上周</th>
+                    <th id="trend-h-compare-prev1">对比上上周</th>
                     <th id="trend-h-current">本周 2SD/4SH</th>
-                    <th>对比上周</th>
+                    <th id="trend-h-compare-current">对比上周</th>
                   </tr>
                 </thead>
                 <tbody id="trend-table-body">
@@ -327,6 +327,9 @@
           prev2: document.getElementById("trend-h-prev2"),
           prev1: document.getElementById("trend-h-prev1"),
           current: document.getElementById("trend-h-current"),
+          comparePrev2: document.getElementById("trend-h-compare-prev2"),
+          comparePrev1: document.getElementById("trend-h-compare-prev1"),
+          compareCurrent: document.getElementById("trend-h-compare-current"),
         },
         tableBody: document.getElementById("data-body"),
       };
@@ -1221,24 +1224,65 @@
         const rangeOr = (key) =>
           typeof key === "number" ? info.get(key)?.range || "" : "";
         return [
-          { key: order[2], compare: order[3], label: labelOr(order[2], "上上周"), range: rangeOr(order[2]) },
-          { key: order[1], compare: order[2], label: labelOr(order[1], "上周"), range: rangeOr(order[1]) },
-          { key: order[0], compare: order[1], label: labelOr(order[0], "本周"), range: rangeOr(order[0]) },
+          { key: order[2], compare: order[3], label: labelOr(order[2], "上上周"), range: rangeOr(order[2]), compareLabel: labelOr(order[3], "") },
+          { key: order[1], compare: order[2], label: labelOr(order[1], "上周"), range: rangeOr(order[1]), compareLabel: labelOr(order[2], "") },
+          { key: order[0], compare: order[1], label: labelOr(order[0], "本周"), range: rangeOr(order[0]), compareLabel: labelOr(order[1], "") },
         ];
       }
 
       function updateTrendHeaders(columns) {
         if (!dom.trendHeaders) return;
         const defaults = ["上上周", "上周", "本周"];
+        const compareKeys = ["comparePrev2", "comparePrev1", "compareCurrent"];
         ["prev2", "prev1", "current"].forEach((key, index) => {
           const header = dom.trendHeaders[key];
           if (!header) return;
           const col = columns[index];
-          const label = col && col.label ? col.label : defaults[index];
+          let label = col && col.label ? col.label : defaults[index];
           const range = col && col.range ? col.range : "";
+          
+          // 提取周代码并添加WK前缀
+          if (label && label !== defaults[index]) {
+            const weekMatch = label.match(/(?:WK)?(\d+)/i);
+            if (weekMatch) {
+              const weekNum = weekMatch[1];
+              label = `WK${weekNum}`;
+            } else if (!label.match(/^WK/i)) {
+              // 如果label是纯数字，添加WK前缀
+              const numMatch = label.match(/^(\d+)$/);
+              if (numMatch) {
+                label = `WK${numMatch[1]}`;
+              }
+            }
+          }
+          
+          // 添加"2SD/4SH"后缀
+          const suffix = " 2SD/4SH";
           header.innerHTML = range
-            ? `<div>${label}</div><small>${range}</small>`
-            : `${label}`;
+            ? `<div>${label}${suffix}</div><small>${range}</small>`
+            : `${label}${suffix}`;
+          
+          // 更新对比列的描述
+          const compareHeader = dom.trendHeaders[compareKeys[index]];
+          if (compareHeader && col && col.compareLabel) {
+            // 如果周代码存在，显示"对比WK{周代码}"格式，否则显示默认描述
+            const weekCode = col.compareLabel.trim();
+            if (weekCode) {
+              // 提取周代码（可能是"WK52"、"52"等格式）
+              const weekMatch = weekCode.match(/(?:WK)?(\d+)/i);
+              if (weekMatch) {
+                const weekNum = weekMatch[1];
+                compareHeader.textContent = `对比WK${weekNum}`;
+              } else {
+                // 如果无法提取数字，直接使用原周代码
+                compareHeader.textContent = `对比${weekCode}`;
+              }
+            } else {
+              // 如果没有周代码，使用默认描述
+              const defaultCompare = ["对比上上上周", "对比上上周", "对比上周"];
+              compareHeader.textContent = defaultCompare[index];
+            }
+          }
         });
       }
 

@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>维运网 网页标准化工具</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
+</head>
+<body data-page="001-01-standard-html.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>维运网 网页标准化工具</h2>
+                            <p>将维运网下载的HTML文件转换为易读的标准格式，提取并格式化JSON数据，便于查看和调试。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools001" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="001-01-standard-html-README.html" class="tool-link secondary" aria-label="查看使用说明文档">使用说明 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 工具主区域 -->
+                <div class="card-white mt-20">
+                    <div class="controls">
+                        <label class="file-btn" aria-label="选择view-full文件夹">
+                            选择 view-full 文件夹
+                            <input id="folderPicker" type="file" webkitdirectory multiple accept=".html,.htm" aria-label="选择文件夹">
+                        </label>
+                        <button id="processBtn" class="btn btn-sweep-blue" disabled aria-label="开始批量标准化">开始批量标准化</button>
+                        <button id="saveBtn" class="btn btn-sweep-blue" disabled aria-label="保存到standard文件夹">保存到 standard 文件夹</button>
+                    </div>
+
+                    <!-- 统计信息 -->
+                    <div id="stats" class="stats hidden">
+                        <div class="stat-item">
+                            <div class="stat-label">处理文件数</div>
+                            <div class="stat-value" id="fileCount">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">成功</div>
+                            <div class="stat-value" id="successCount">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">失败</div>
+                            <div class="stat-value" id="failCount">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">总JSON数据块</div>
+                            <div class="stat-value" id="totalJsonBlocks">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">处理耗时</div>
+                            <div class="stat-value" id="processTime">-</div>
+                        </div>
+                    </div>
+
+                    <!-- 日志输出 -->
+                    <div id="log" class="log" aria-live="polite" role="log" aria-label="处理日志"></div>
+
+                    <!-- 进度条 -->
+                    <div id="progressSection" class="hidden progress-section-container">
+                        <div class="progress-header">
+                            <span id="progressText">处理中...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="progressBar" class="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">维运网 网页标准化工具使用声明</h2>
+                    <p class="usage-statement-text">本工具用于将维运网（weiyun001.com）下载的HTML文件转换为易读的标准格式，提取并格式化JSON数据，便于查看和调试。</p>
+                    <p class="usage-statement-text">所有数据来源于维运网公开信息，标准化结果仅供内部使用，请遵守维运网的使用条款和版权规定。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        init001ToolPage('001-01-standard-html.html', 'tools001');
+    </script>
+    <script>
+(function(){
+    'use strict';
+
+    // 检查 File System Access API 支持（必须在最前面声明）
+    const supportsFileSystemAccess = 'showDirectoryPicker' in window && 'showSaveFilePicker' in window;
+    
+    if (!supportsFileSystemAccess) {
+        console.warn('当前浏览器不支持 File System Access API，将使用备用下载方案');
+    }
+
+    // DOM 元素
+    const folderPicker = document.getElementById('folderPicker');
+    const processBtn = document.getElementById('processBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const log = document.getElementById('log');
+    const stats = document.getElementById('stats');
+    const progressSection = document.getElementById('progressSection');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressPercent = document.getElementById('progressPercent');
+
+    // 状态变量
+    let selectedFiles = [];
+    let processedFiles = new Map(); // key: 文件名, value: { html, dataBlocks, fileName }
+
+    /**
+     * 日志输出函数
+     */
+    function logMessage(message, type = 'info') {
+        const colors = {
+            success: '#0a7d33',
+            error: '#d32f2f',
+            warn: '#b36b00',
+            info: '#1976d2'
+        };
+        const className = `log-${type}`;
+        const timestamp = new Date().toLocaleTimeString();
+        const logItem = document.createElement('div');
+        logItem.className = `log-item ${className}`;
+        logItem.textContent = `[${timestamp}] ${message}`;
+        log.appendChild(logItem);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    /**
+     * 格式化JSON字符串
+     */
+    function formatJSON(jsonString) {
+        try {
+            const obj = JSON.parse(jsonString);
+            return JSON.stringify(obj, null, 2);
+        } catch (error) {
+            // 如果不是有效的JSON，尝试部分格式化
+            return jsonString;
+        }
+    }
+
+    /**
+     * 解析Next.js标签引用格式，构建标签索引
+     * 格式：label:object 或 label:array（每行一个定义）
+     * @param {string} content - 解码后的内容
+     * @returns {Object} {objects: Map, arrays: Map}
+     */
+    function buildLabelIndex(content) {
+        const objects = new Map();
+        const arrays = new Map();
+        
+        // 按行处理，每行格式：label:value
+        const lines = content.split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            
+            // 匹配 label:value 格式
+            const match = trimmed.match(/^([A-Za-z0-9_]+)\s*:\s*(.+)$/);
+            if (!match) continue;
+            
+            const label = match[1];
+            const valueStr = match[2].trim();
+            
+            // 判断是对象还是数组
+            if (valueStr.startsWith('{')) {
+                // 对象：需要找到匹配的右括号
+                let braceCount = 0;
+                let objEnd = -1;
+                for (let i = 0; i < valueStr.length; i++) {
+                    if (valueStr[i] === '{') braceCount++;
+                    else if (valueStr[i] === '}') {
+                        braceCount--;
+                        if (braceCount === 0) {
+                            objEnd = i + 1;
+                            break;
+                        }
+                    }
+                }
+                
+                if (objEnd > 0) {
+                    const objStr = valueStr.substring(0, objEnd);
+                    try {
+                        const parsed = JSON.parse(objStr);
+                        objects.set(label, parsed);
+                    } catch (error) {
+                        // 解析失败，跳过
+                    }
+                }
+            } else if (valueStr.startsWith('[')) {
+                // 数组：需要找到匹配的右方括号
+                let bracketCount = 0;
+                let arrEnd = -1;
+                for (let i = 0; i < valueStr.length; i++) {
+                    if (valueStr[i] === '[') bracketCount++;
+                    else if (valueStr[i] === ']') {
+                        bracketCount--;
+                        if (bracketCount === 0) {
+                            arrEnd = i + 1;
+                            break;
+                        }
+                    }
+                }
+                
+                if (arrEnd > 0) {
+                    const arrStr = valueStr.substring(0, arrEnd);
+                    try {
+                        const parsed = JSON.parse(arrStr);
+                        arrays.set(label, parsed);
+                    } catch (error) {
+                        // 解析失败，跳过
+                    }
+                }
+            }
+        }
+        
+        return { objects, arrays };
+    }
+
+    /**
+     * 解析引用并替换为实际对象
+     * @param {any} value - 要解析的值（可能是对象、数组、字符串等）
+     * @param {Object} labelIndex - 标签索引
+     * @param {Set} visited - 已访问的标签（防止循环引用）
+     * @returns {any} 解析后的值
+     */
+    function resolveReferences(value, labelIndex, visited = new Set()) {
+        if (typeof value === 'string') {
+            // 检查是否是引用格式 "$label"
+            const refMatch = value.match(/^\$([A-Za-z0-9_]+)$/);
+            if (refMatch) {
+                const label = refMatch[1];
+                if (visited.has(label)) {
+                    // 循环引用，返回引用字符串以避免无限递归
+                    return value;
+                }
+                visited.add(label);
+                
+                // 从objects中查找
+                if (labelIndex.objects.has(label)) {
+                    const obj = labelIndex.objects.get(label);
+                    const resolved = resolveReferences(obj, labelIndex, visited);
+                    visited.delete(label); // 允许在其他路径中再次访问
+                    return resolved;
+                }
+                
+                // 从arrays中查找
+                if (labelIndex.arrays.has(label)) {
+                    const arr = labelIndex.arrays.get(label);
+                    const resolved = resolveReferences(arr, labelIndex, visited);
+                    visited.delete(label); // 允许在其他路径中再次访问
+                    return resolved;
+                }
+                
+                // 未找到，返回原值
+                visited.delete(label);
+                return value;
+            }
+            return value;
+        } else if (Array.isArray(value)) {
+            return value.map(item => {
+                // 为每个数组项创建新的visited集合，但共享已解析的引用
+                return resolveReferences(item, labelIndex, new Set(visited));
+            });
+        } else if (value && typeof value === 'object') {
+            const resolved = {};
+            for (const [key, val] of Object.entries(value)) {
+                // 为每个对象属性创建新的visited集合
+                resolved[key] = resolveReferences(val, labelIndex, new Set(visited));
+            }
+            return resolved;
+        }
+        return value;
+    }
+
+    /**
+     * 展开并解析标签引用，生成完整的JSON结构
+     * @param {string} content - 原始内容（包含标签定义和引用）
+     * @returns {Object} 解析后的完整JSON对象
+     */
+    function expandLabelReferences(content) {
+        // 构建标签索引
+        const labelIndex = buildLabelIndex(content);
+        
+        // 查找所有包含船期相关数据的对象（通过fleetId, vslName等字段识别）
+        const expandedObjects = [];
+        const processedLabels = new Set();
+        
+        // 第一步：找到所有fleet对象（包含fleetId的对象，或包含key的对象，或carrier对象但有fleetId）
+        const fleetObjects = [];
+        for (const [label, obj] of labelIndex.objects.entries()) {
+            if (obj && typeof obj === 'object') {
+                // 识别fleet对象的多种情况：
+                // 1. 有fleetId的对象
+                // 2. 有key的对象（如"3_188_CNTAO"）
+                // 3. carrier对象但有fleetId和motherVesselPolCode（如青岛到济州的情况）
+                const hasFleetId = obj.fleetId !== undefined;
+                const hasKey = obj.key !== undefined;
+                const isCarrierWithFleetId = (obj.carrierCode !== undefined || obj.carrierShortName !== undefined) && 
+                                             obj.fleetId !== undefined && 
+                                             obj.motherVesselPolCode !== undefined;
+                
+                if (hasFleetId || hasKey || isCarrierWithFleetId) {
+                    fleetObjects.push({ label, obj });
+                }
+            }
+        }
+        
+        // 第二步：展开所有fleet对象及其所有引用
+        for (const { label, obj } of fleetObjects) {
+            if (!processedLabels.has(label)) {
+                processedLabels.add(label);
+                // 解析引用，确保所有嵌套引用都被展开
+                const resolved = resolveReferences(obj, labelIndex);
+                
+                // 特别处理planSchedule和sharedCabinCarriers中的引用
+                if (resolved.planSchedule && Array.isArray(resolved.planSchedule)) {
+                    resolved.planSchedule = resolved.planSchedule.map(item => {
+                        if (typeof item === 'string' && item.startsWith('$')) {
+                            // 这是一个引用，需要展开
+                            return resolveReferences(item, labelIndex);
+                        }
+                        // 已经是对象，但可能包含嵌套引用，继续展开
+                        return resolveReferences(item, labelIndex);
+                    }).filter(item => item && typeof item === 'object'); // 过滤掉未展开的引用字符串
+                }
+                
+                if (resolved.sharedCabinCarriers && Array.isArray(resolved.sharedCabinCarriers)) {
+                    resolved.sharedCabinCarriers = resolved.sharedCabinCarriers.map(item => {
+                        if (typeof item === 'string' && item.startsWith('$')) {
+                            return resolveReferences(item, labelIndex);
+                        }
+                        return resolveReferences(item, labelIndex);
+                    }).filter(item => item && typeof item === 'object');
+                }
+                
+                // 展开scheduleNotices中的引用，并标记直达/转船
+                if (resolved.scheduleNotices && Array.isArray(resolved.scheduleNotices)) {
+                    resolved.scheduleNotices = resolved.scheduleNotices.map(item => {
+                        if (typeof item === 'string' && item.startsWith('$')) {
+                            // 这是一个引用，需要展开
+                            const expanded = resolveReferences(item, labelIndex);
+                            // 如果是数组，展开数组中的每个元素
+                            if (Array.isArray(expanded)) {
+                                return expanded.map(v => {
+                                    if (v && typeof v === 'object') {
+                                        // 判断所属fleet是直达还是转船
+                                        const resolvedStr = JSON.stringify(resolved);
+                                        const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                                        const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
+                                        const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
+                                                                (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
+                                        const isTransitType = resolved.transType !== undefined && 
+                                                             resolved.transType !== null && 
+                                                             resolved.transType !== 1;
+                                        const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                                        v._isDirect = !isTransit;
+                                    }
+                                    return v;
+                                });
+                            }
+                            return expanded;
+                        }
+                        // 已经是对象，但可能包含嵌套引用，继续展开
+                        const expanded = resolveReferences(item, labelIndex);
+                        if (expanded && typeof expanded === 'object' && !Array.isArray(expanded)) {
+                            // 判断所属fleet是直达还是转船
+                            const resolvedStr = JSON.stringify(resolved);
+                            const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                            const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
+                            const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
+                                                    (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
+                            const isTransitType = resolved.transType !== undefined && resolved.transType !== 1 && resolved.transType !== null;
+                            const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                            expanded._isDirect = !isTransit;
+                        }
+                        return expanded;
+                    }).filter(item => {
+                        // 过滤掉引用字符串和无效对象
+                        if (typeof item === 'string' && item.startsWith('$')) return false;
+                        if (Array.isArray(item)) return item.length > 0;
+                        return item && typeof item === 'object';
+                    });
+                }
+                
+                // 展开scheduleNoticeShare.notices中的引用
+                if (resolved.scheduleNoticeShare && typeof resolved.scheduleNoticeShare === 'object') {
+                    if (typeof resolved.scheduleNoticeShare === 'string' && resolved.scheduleNoticeShare.startsWith('$')) {
+                        // 这是一个引用，需要展开
+                        resolved.scheduleNoticeShare = resolveReferences(resolved.scheduleNoticeShare, labelIndex);
+                    }
+                    if (resolved.scheduleNoticeShare && typeof resolved.scheduleNoticeShare === 'object' && 
+                        resolved.scheduleNoticeShare.notices && Array.isArray(resolved.scheduleNoticeShare.notices)) {
+                        resolved.scheduleNoticeShare.notices = resolved.scheduleNoticeShare.notices.map(item => {
+                            if (typeof item === 'string' && item.startsWith('$')) {
+                                return resolveReferences(item, labelIndex);
+                            }
+                            const expanded = resolveReferences(item, labelIndex);
+                            if (expanded && typeof expanded === 'object' && !Array.isArray(expanded)) {
+                                // 判断所属fleet是直达还是转船
+                                const resolvedStr = JSON.stringify(resolved);
+                                const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                                const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
+                                const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
+                                                        (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
+                                const isTransitType = resolved.transType !== undefined && resolved.transType !== 1 && resolved.transType !== null;
+                                const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                                expanded._isDirect = !isTransit;
+                            }
+                            return expanded;
+                        }).filter(item => item && typeof item === 'object');
+                    }
+                }
+                
+                expandedObjects.push({
+                    label: label,
+                    original: obj,
+                    resolved: resolved
+                });
+            }
+        }
+        
+        // 第三步：查找其他船期相关对象（vessel、carrier等）
+        for (const [label, obj] of labelIndex.objects.entries()) {
+            if (processedLabels.has(label)) continue;
+            
+            const objStr = JSON.stringify(obj);
+            // 检查是否包含船期相关字段
+            if (objStr.includes('"vslName"') || 
+                objStr.includes('"vesselName"') ||
+                objStr.includes('"voyNo"') ||
+                objStr.includes('"carrierCode"') ||
+                objStr.includes('"etdFormatter"') ||
+                objStr.includes('"etaFormatter"')) {
+                
+                processedLabels.add(label);
+                const resolved = resolveReferences(obj, labelIndex);
+                expandedObjects.push({
+                    label: label,
+                    original: obj,
+                    resolved: resolved
+                });
+            }
+        }
+        
+        return {
+            labelIndex: labelIndex,
+            expandedObjects: expandedObjects
+        };
+    }
+
+    /**
+     * 提取并格式化 __next_f.push 数据
+     * 增强：解析Next.js标签引用格式，展开为完整JSON
+     */
+    function extractNextFPush(html) {
+        const output = [];
+        const pushPattern = /self\.__next_f\.push\(\[\d+\s*,\s*(["'])([\s\S]*?)\1\]\)/g;
+        let match;
+        let count = 0;
+        let allDecodedContent = ''; // 收集所有解码后的内容
+
+        // 第一步：解码所有push数据
+        while ((match = pushPattern.exec(html)) !== null) {
+            count++;
+            try {
+                const escapedString = match[2].replace(/\\"/g, '\\"');
+                const decoded = JSON.parse('"' + escapedString + '"');
+                allDecodedContent += decoded + '\n';
+            } catch (error) {
+                const decoded = match[2]
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\t/g, '\t')
+                    .replace(/\\"/g, '"');
+                allDecodedContent += decoded + '\n';
+            }
+        }
+
+        // 第二步：解析标签引用并展开
+        if (allDecodedContent.trim()) {
+            try {
+                const expanded = expandLabelReferences(allDecodedContent);
+                
+                // 将所有展开的对象组织成一个结构化的JSON
+                if (expanded.expandedObjects.length > 0) {
+                    // 按类型分组：fleet对象（区分直达和中转）、vessel对象、carrier对象等
+                    const organized = {
+                        directFleets: [],  // 直达航线
+                        transitFleets: [], // 中转航线
+                        vessels: [],
+                        carriers: [],
+                        schedules: [],
+                        others: []
+                    };
+                    
+                    // 辅助函数：判断fleet对象是直达还是转船
+                    function isTransitFleet(fleetObj) {
+                        if (!fleetObj || typeof fleetObj !== 'object') return false;
+                        const resolvedStr = JSON.stringify(fleetObj);
+                        const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                        const hasTransitPorts = fleetObj.transitPorts && Array.isArray(fleetObj.transitPorts) && fleetObj.transitPorts.length > 0;
+                        const hasTransitNames = (fleetObj.transit1CnName !== null && fleetObj.transit1CnName !== undefined) ||
+                                                (fleetObj.transit2CnName !== null && fleetObj.transit2CnName !== undefined);
+                        // 更严格的判断：只有当transType明确不等于1时才认为是转船（null和undefined不算转船）
+                        const isTransitType = fleetObj.transType !== undefined && 
+                                             fleetObj.transType !== null && 
+                                             fleetObj.transType !== 1;
+                        return hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                    }
+                    
+                    expanded.expandedObjects.forEach((item) => {
+                        const resolved = item.resolved;
+                        const resolvedStr = JSON.stringify(resolved);
+                        
+                        // 分类对象
+                        // 改进：识别所有fleet对象（包括没有key但有fleetId的carrier对象）
+                        const isFleetObject = resolved.fleetId !== undefined || 
+                                             resolved.key !== undefined ||
+                                             (resolved.carrierCode !== undefined && resolved.fleetId !== undefined) ||
+                                             (resolved.motherVesselPolCode !== undefined && resolved.fleetId !== undefined);
+                        
+                        if (isFleetObject) {
+                            // 判断是直达还是中转
+                            const isTransit = isTransitFleet(resolved);
+                            
+                            // 给fleet对象添加标记
+                            resolved._isDirect = !isTransit;
+                            
+                            // 确保scheduleNotices中的每个vessel对象都有标记
+                            if (resolved.scheduleNotices && Array.isArray(resolved.scheduleNotices)) {
+                                resolved.scheduleNotices = resolved.scheduleNotices.map(notice => {
+                                    if (notice && typeof notice === 'object') {
+                                        if (Array.isArray(notice)) {
+                                            return notice.map(v => {
+                                                if (v && typeof v === 'object') {
+                                                    v._isDirect = !isTransit;
+                                                }
+                                                return v;
+                                            });
+                                        } else {
+                                            notice._isDirect = !isTransit;
+                                        }
+                                    }
+                                    return notice;
+                                });
+                            }
+                            
+                            // 确保planSchedule中的每个vessel对象都有标记
+                            if (resolved.planSchedule && Array.isArray(resolved.planSchedule)) {
+                                resolved.planSchedule = resolved.planSchedule.map(notice => {
+                                    if (notice && typeof notice === 'object') {
+                                        notice._isDirect = !isTransit;
+                                    }
+                                    return notice;
+                                });
+                            }
+                            
+                            // 确保scheduleNoticeShare.notices中的每个vessel对象都有标记
+                            if (resolved.scheduleNoticeShare && typeof resolved.scheduleNoticeShare === 'object' &&
+                                resolved.scheduleNoticeShare.notices && Array.isArray(resolved.scheduleNoticeShare.notices)) {
+                                resolved.scheduleNoticeShare.notices = resolved.scheduleNoticeShare.notices.map(notice => {
+                                    if (notice && typeof notice === 'object') {
+                                        notice._isDirect = !isTransit;
+                                    }
+                                    return notice;
+                                });
+                            }
+                            
+                            if (isTransit) {
+                                organized.transitFleets.push(resolved);
+                            } else {
+                                organized.directFleets.push(resolved);
+                            }
+                        } else if (resolved.vslName !== undefined || resolved.vesselName !== undefined || resolved.voyNo !== undefined) {
+                            organized.vessels.push(resolved);
+                        } else if (resolved.carrierCode !== undefined || resolved.carrierShortName !== undefined) {
+                            organized.carriers.push(resolved);
+                        } else if (resolved.etdFormatter !== undefined || resolved.etaFormatter !== undefined || resolved.planSchedule !== undefined) {
+                            organized.schedules.push(resolved);
+                        } else {
+                            organized.others.push(resolved);
+                        }
+                    });
+                    
+                    // 输出组织后的完整JSON结构
+                    // 添加一个合并的fleets数组，包含所有fleet对象（直达+转船），方便解析工具筛选
+                    organized.fleets = [...organized.directFleets, ...organized.transitFleets];
+                    
+                    output.push({
+                        type: '__next_f.push (展开的完整JSON)',
+                        index: 1,
+                        data: organized,
+                        formatted: JSON.stringify(organized, null, 2)
+                    });
+                } else {
+                    // 如果没有找到展开的对象，尝试输出所有标签定义（至少能看到原始结构）
+                    if (expanded.labelIndex.objects.size > 0 || expanded.labelIndex.arrays.size > 0) {
+                        const allLabels = {
+                            objects: Object.fromEntries(expanded.labelIndex.objects),
+                            arrays: Object.fromEntries(expanded.labelIndex.arrays)
+                        };
+                        output.push({
+                            type: '__next_f.push (原始标签定义)',
+                            index: 1,
+                            data: allLabels,
+                            formatted: JSON.stringify(allLabels, null, 2)
+                        });
+                    } else {
+                        // 最后兜底：输出原始内容
+                        output.push({
+                            type: '__next_f.push',
+                            index: 1,
+                            data: allDecodedContent,
+                            formatted: allDecodedContent
+                        });
+                    }
+                }
+            } catch (error) {
+                // 解析失败，输出原始内容
+                output.push({
+                    type: '__next_f.push',
+                    index: 1,
+                    data: allDecodedContent,
+                    formatted: allDecodedContent
+                });
+            }
+        }
+
+        return output;
+    }
+
+    /**
+     * 提取并格式化 __next_data__ 数据
+     */
+    function extractNextData(html) {
+        const output = [];
+        const nextDataPattern = /<script[^>]*id=["']__next_data__["'][^>]*>([\s\S]*?)<\/script>/gi;
+        let match;
+        let count = 0;
+
+        while ((match = nextDataPattern.exec(html)) !== null) {
+            count++;
+            try {
+                const jsonData = JSON.parse(match[1]);
+                output.push({
+                    type: '__next_data__',
+                    index: count,
+                    data: jsonData,
+                    formatted: JSON.stringify(jsonData, null, 2)
+                });
+            } catch (error) {
+                output.push({
+                    type: '__next_data__',
+                    index: count,
+                    data: match[1],
+                    formatted: match[1]
+                });
+            }
+        }
+
+        return output;
+    }
+
+    /**
+     * 提取并格式化 application/json 脚本标签
+     */
+    function extractApplicationJson(html) {
+        const output = [];
+        const jsonPattern = /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi;
+        let match;
+        let count = 0;
+
+        while ((match = jsonPattern.exec(html)) !== null) {
+            count++;
+            try {
+                const jsonData = JSON.parse(match[1]);
+                const jsonStr = JSON.stringify(jsonData);
+                // 只提取包含船期相关数据的JSON
+                if (jsonStr.includes('fleetId') || jsonStr.includes('vslName') || jsonStr.includes('vesselName')) {
+                    output.push({
+                        type: 'application/json',
+                        index: count,
+                        data: jsonData,
+                        formatted: JSON.stringify(jsonData, null, 2)
+                    });
+                }
+            } catch (error) {
+                // 忽略解析错误
+            }
+        }
+
+        return output;
+    }
+
+    /**
+     * 提取并格式化直接嵌入的JSON片段
+     */
+    function extractEmbeddedJson(html) {
+        const output = [];
+        // 查找包含 fleetId 的JSON对象片段
+        const fleetDataPattern = /"fleetId"\s*:\s*\d+[\s\S]{0,50000}/g;
+        const fleetMatches = html.match(fleetDataPattern);
+        
+        if (fleetMatches && fleetMatches.length > 0) {
+            const processed = new Set();
+            for (const fleetMatch of fleetMatches.slice(0, 10)) {
+                const matchIndex = html.indexOf(fleetMatch);
+                if (matchIndex >= 0 && !processed.has(matchIndex)) {
+                    processed.add(matchIndex);
+                    const start = Math.max(0, matchIndex - 2000);
+                    const end = Math.min(html.length, matchIndex + fleetMatch.length + 2000);
+                    const context = html.substring(start, end);
+                    const jsonObjMatch = context.match(/\{[\s\S]{0,10000}?"fleetId"[\s\S]{0,10000}?\}/);
+                    if (jsonObjMatch) {
+                        try {
+                            const jsonData = JSON.parse(jsonObjMatch[0]);
+                            output.push({
+                                type: 'embedded_json',
+                                index: output.length + 1,
+                                data: jsonData,
+                                formatted: JSON.stringify(jsonData, null, 2)
+                            });
+                        } catch (error) {
+                            // 忽略解析错误
+                        }
+                    }
+                }
+            }
+        }
+
+        return output;
+    }
+
+    /**
+     * 标准化HTML文件
+     * @param {string} html - 原始HTML内容
+     * @param {string} fileName - 原始文件名
+     * @returns {Object} 标准化结果
+     */
+    function standardizeHtml(html, fileName) {
+        const startTime = performance.now();
+
+        // 提取所有JSON数据块
+        const nextFPushData = extractNextFPush(html);
+        const nextDataData = extractNextData(html);
+        const appJsonData = extractApplicationJson(html);
+        const embeddedJsonData = extractEmbeddedJson(html);
+
+        const allDataBlocks = [
+            ...nextFPushData,
+            ...nextDataData,
+            ...appJsonData,
+            ...embeddedJsonData
+        ];
+
+        // 构建标准化HTML
+        let standardized = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标准化HTML - ${fileName}</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .data-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .data-section h3 {
+            margin-top: 0;
+            color: #1976d2;
+            border-bottom: 2px solid #1976d2;
+            padding-bottom: 10px;
+        }
+        .data-section pre {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .metadata {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>标准化HTML文件</h1>
+    <div class="metadata">
+        <p><strong>原始文件:</strong> ${fileName}</p>
+        <p><strong>处理时间:</strong> ${new Date().toLocaleString()}</p>
+        <p><strong>提取的数据块数量:</strong> ${allDataBlocks.length}</p>
+    </div>
+
+`;
+
+        // 添加每个数据块
+        allDataBlocks.forEach((block, index) => {
+            const labelInfo = block.label ? `<p><strong>标签:</strong> ${block.label}</p>` : '';
+            standardized += `
+    <div class="data-section">
+        <h3>数据块 #${index + 1} - ${block.type}</h3>
+        <div class="metadata">
+            <p><strong>类型:</strong> ${block.type}</p>
+            <p><strong>索引:</strong> ${block.index}</p>
+            ${labelInfo}
+        </div>
+        <pre>${escapeHtml(block.formatted)}</pre>
+    </div>
+`;
+        });
+
+        // 添加原始HTML（可选，如果数据块很少）
+        if (allDataBlocks.length === 0) {
+            standardized += `
+    <div class="data-section">
+        <h3>原始HTML内容</h3>
+        <p style="color: #d32f2f;">警告：未能提取到任何JSON数据块，显示原始HTML内容。</p>
+        <pre>${escapeHtml(html.substring(0, 10000))}${html.length > 10000 ? '\n\n... (内容过长，已截断) ...' : ''}</pre>
+    </div>
+`;
+        }
+
+        standardized += `
+</body>
+</html>`;
+
+        const endTime = performance.now();
+        const processTime = ((endTime - startTime) / 1000).toFixed(2);
+
+        return {
+            html: standardized,
+            dataBlocks: allDataBlocks.length,
+            processTime: parseFloat(processTime)
+        };
+    }
+
+    /**
+     * HTML转义
+     */
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * 格式化文件大小
+     */
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    /**
+     * 文件夹选择事件
+     */
+    folderPicker.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files)
+            .filter(file => /\.html?$/i.test(file.name))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        
+        if (files.length === 0) {
+            logMessage('未选择到 HTML 文件，请重新选择 view-full 文件夹', 'warn');
+            processBtn.disabled = true;
+            return;
+        }
+
+        selectedFiles = files;
+        processBtn.disabled = false;
+        saveBtn.disabled = true;
+        processedFiles.clear();
+        log.innerHTML = ''; // 清空日志
+        stats.classList.add('hidden');
+        progressSection.classList.add('hidden');
+        logMessage(`已选择 ${files.length} 个 HTML 文件`, 'success');
+    });
+
+    /**
+     * 处理按钮点击事件 - 批量处理
+     */
+    processBtn.addEventListener('click', async () => {
+        if (selectedFiles.length === 0) {
+            logMessage('请先选择文件夹', 'error');
+            return;
+        }
+
+        processBtn.disabled = true;
+        saveBtn.disabled = true;
+        processedFiles.clear();
+        log.innerHTML = '';
+        stats.classList.add('hidden');
+        progressSection.classList.remove('hidden');
+
+        const startTime = performance.now();
+        let successCount = 0;
+        let failCount = 0;
+        let totalJsonBlocks = 0;
+
+        logMessage(`开始批量处理 ${selectedFiles.length} 个文件...`, 'info');
+
+        // 批量处理文件
+        for (let i = 0; i < selectedFiles.length; i++) {
+            const file = selectedFiles[i];
+            const progress = ((i + 1) / selectedFiles.length * 100).toFixed(1);
+            
+            progressBar.style.width = progress + '%';
+            progressPercent.textContent = progress + '%';
+            progressText.textContent = `正在处理: ${file.name} (${i + 1}/${selectedFiles.length})`;
+
+            try {
+                const html = await file.text();
+                const result = standardizeHtml(html, file.name);
+                const standardizedFileName = file.name.replace(/\.(html|htm)$/i, '_standardized.html');
+                
+                processedFiles.set(file.name, {
+                    html: result.html,
+                    dataBlocks: result.dataBlocks,
+                    fileName: standardizedFileName
+                });
+
+                successCount++;
+                totalJsonBlocks += result.dataBlocks;
+                logMessage(`[成功] ${file.name} -> ${result.dataBlocks} 个数据块`, 'success');
+            } catch (error) {
+                failCount++;
+                logMessage(`[失败] ${file.name}: ${error.message}`, 'error');
+                console.error(`处理 ${file.name} 时出错:`, error);
+            }
+        }
+
+        const endTime = performance.now();
+        const totalTime = ((endTime - startTime) / 1000).toFixed(2);
+
+        // 更新统计信息
+        document.getElementById('fileCount').textContent = selectedFiles.length;
+        document.getElementById('successCount').textContent = successCount;
+        document.getElementById('failCount').textContent = failCount;
+        document.getElementById('totalJsonBlocks').textContent = totalJsonBlocks;
+        document.getElementById('processTime').textContent = totalTime + ' 秒';
+        stats.classList.remove('hidden');
+
+        progressBar.style.width = '100%';
+        progressPercent.textContent = '100%';
+        progressText.textContent = `处理完成: ${successCount} 成功, ${failCount} 失败`;
+
+        if (successCount > 0) {
+            saveBtn.disabled = false;
+            logMessage(`批量处理完成！成功: ${successCount}, 失败: ${failCount}`, 'success');
+        } else {
+            logMessage('所有文件处理失败，无法保存', 'error');
+        }
+
+        processBtn.disabled = false;
+    });
+
+    /**
+     * 保存按钮点击事件 - 直接保存到指定目录
+     */
+    saveBtn.addEventListener('click', async () => {
+        if (processedFiles.size === 0) {
+            logMessage('没有可保存的内容', 'error');
+            return;
+        }
+
+        saveBtn.disabled = true;
+        logMessage('请选择 standard 文件夹...', 'info');
+
+        try {
+            let targetDirectoryHandle;
+
+            if (supportsFileSystemAccess) {
+                // 使用 File System Access API
+                targetDirectoryHandle = await window.showDirectoryPicker({
+                    mode: 'readwrite',
+                    startIn: 'documents'
+                });
+            } else {
+                // 备用方案：逐个下载文件
+                logMessage('当前浏览器不支持直接保存到文件夹，将逐个下载文件', 'warn');
+                logMessage('请手动将下载的文件移动到 data/001-standard 文件夹', 'info');
+                
+                for (const [originalName, fileData] of processedFiles) {
+                    const blob = new Blob([fileData.html], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileData.fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    // 添加小延迟，避免浏览器阻止多个下载
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                logMessage(`已下载 ${processedFiles.size} 个文件，请手动移动到 data/001-standard 文件夹`, 'success');
+                saveBtn.disabled = false;
+                return;
+            }
+
+            // 保存所有文件到选择的目录
+            logMessage(`正在保存 ${processedFiles.size} 个文件到目标文件夹...`, 'info');
+            let savedCount = 0;
+            let failedCount = 0;
+
+            for (const [originalName, fileData] of processedFiles) {
+                try {
+                    const fileHandle = await targetDirectoryHandle.getFileHandle(fileData.fileName, {
+                        create: true
+                    });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(fileData.html);
+                    await writable.close();
+                    savedCount++;
+                    logMessage(`[已保存] ${fileData.fileName}`, 'success');
+                } catch (error) {
+                    failedCount++;
+                    logMessage(`[保存失败] ${fileData.fileName}: ${error.message}`, 'error');
+                    console.error(`保存 ${fileData.fileName} 时出错:`, error);
+                }
+            }
+
+            if (savedCount > 0) {
+                logMessage(`保存完成！成功: ${savedCount}, 失败: ${failedCount}`, 'success');
+            } else {
+                logMessage('所有文件保存失败', 'error');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                logMessage('用户取消了文件夹选择', 'warn');
+            } else {
+                logMessage(`保存失败: ${error.message}`, 'error');
+                console.error(error);
+            }
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+})();
+    </script>
+</body>
+</html>
+

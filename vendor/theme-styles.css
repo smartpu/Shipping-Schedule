@@ -3656,12 +3656,163 @@ input:disabled {
     border: 1px solid var(--color-border);
     border-radius: 8px;
     padding: 15px;
-    max-height: 300px;
-    overflow: auto;
+    max-height: 400px;
+    overflow-y: auto;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.6;
     color: var(--color-text-primary);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* 日志项样式 */
+.log-item {
+    margin: 5px 0;
+}
+
+.log-success { 
+    color: #0a7d33; 
+}
+
+.log-error { 
+    color: #d32f2f; 
+}
+
+.log-warn { 
+    color: #b36b00; 
+}
+
+.log-info { 
+    color: #1976d2; 
+}
+
+/* 预览区域 */
+.preview-section {
+    margin-top: 20px;
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background: #fafafa;
+}
+
+.preview-section pre {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* 统计信息容器 */
+.stats {
+    display: flex;
+    gap: 24px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    flex: 1;
+    min-width: 160px;
+    padding: 24px 20px;
+    background: var(--color-brand-orange);
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(255, 138, 0, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+    color: #ffffff;
+}
+
+/* 光扫效果 - 只在悬停时触发 */
+.stat-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+
+.stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 138, 0, 0.4);
+}
+
+.stat-item:hover::before {
+    opacity: 1;
+    animation: sweep 1.5s ease-in-out;
+}
+
+@keyframes sweep {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 28px;
+    line-height: 1.2;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 进度条样式 */
+.progress-section-container {
+    margin: 15px 0;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    color: var(--color-text-primary);
+    font-size: 14px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 20px;
+    background: #e3f2fd;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #1976d2, #42a5f5);
+    transition: width 0.3s ease;
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
 }
 
 /* 摘要信息 */

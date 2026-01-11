@@ -45,7 +45,7 @@
     const LOCAL_TEST_USER = {
         name: 'smartpu',
         email: 'smartpu@evergreen-shipping.cn',
-        phone: '18653202580',
+        phone: 'Qx18653202580',
         password: '18653202580'
     };
     
@@ -61,7 +61,8 @@
         const emailMatch = (authData.email || '').trim().toLowerCase() === LOCAL_TEST_USER.email.toLowerCase();
         // 支持 phone 或 password 字段（index.html 使用 password 作为 phone）
         const phoneOrPassword = (authData.phone || authData.password || '').trim();
-        const phoneMatch = phoneOrPassword === LOCAL_TEST_USER.phone;
+        // 同时检查 phone 和 password（因为用户可能输入的是密码）
+        const phoneMatch = phoneOrPassword === LOCAL_TEST_USER.phone || phoneOrPassword === LOCAL_TEST_USER.password;
         
         return nameMatch && emailMatch && phoneMatch;
     }
@@ -122,15 +123,43 @@
      * @returns {Promise<Object|null>} 匹配的用户信息，未匹配返回 null
      */
     async function verifyUserInWhitelist(name, phone, email) {
+        const normalizedName = (name || '').trim();
+        const normalizedPhone = (phone || '').trim();
+        const normalizedEmail = (email || '').trim();
+        
+        // 优先检查是否为本地测试用户（无论是否为本地测试模式）
+        const testUserAuthData = {
+            name: normalizedName,
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            password: normalizedPhone
+        };
+        if (isLocalTestUser(testUserAuthData)) {
+            debugLog('[Auth] 检测到本地测试用户，允许访问');
+            const userInfo = {
+                name: normalizedName.toLowerCase(),
+                phone: normalizedPhone,
+                email: normalizedEmail.toLowerCase(),
+                level: 'admin',
+                groups: ['*'] // 所有权限
+            };
+            // 添加到白名单缓存
+            const existingIndex = userWhitelist.findIndex(u => 
+                u.phone === normalizedPhone && u.email === normalizedEmail.toLowerCase()
+            );
+            if (existingIndex === -1) {
+                userWhitelist.push(userInfo);
+            } else {
+                userWhitelist[existingIndex] = userInfo;
+            }
+            return userInfo;
+        }
+        
         // 本地测试模式：跳过验证
         if (isLocalTestMode) {
             debugLog('[Auth] 本地测试模式：跳过白名单验证');
             return null;
         }
-        
-        const normalizedName = (name || '').trim();
-        const normalizedPhone = (phone || '').trim();
-        const normalizedEmail = (email || '').trim();
         
         const url = `${GIST_API_URL}?type=whitelist&name=${encodeURIComponent(normalizedName)}&phone=${encodeURIComponent(normalizedPhone)}&email=${encodeURIComponent(normalizedEmail)}`;
         debugLog(`[Auth] 验证用户是否在白名单中: ${normalizedName}`);
@@ -1252,6 +1281,7 @@
     window.getToolGroupFromPage = getToolGroupFromPage;
     window.waitForWhitelist = waitForWhitelist;
     window.verifyUserInWhitelist = verifyUserInWhitelist;
+    window.isLocalTestUser = isLocalTestUser;
 
     // 自动初始化（带权限检查）
     async function autoInitWithAuth() {

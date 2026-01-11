@@ -14,6 +14,7 @@
             submenuId: 'submenu001',
             items: [
                 { href: '001-01-manual-download.html?from=tools001', icon: '⬇️', label: '船期网页下载工具' },
+                { href: '001-01-standard-html.html?from=tools001', icon: '🔄', label: '网页标准化工具' },
                 { href: '001-02-schedule-parser.html?from=tools001', icon: '🔍', label: '船期解析工具' },
                 { href: '001-03-port-standardizer.html?from=tools001', icon: '🔧', label: '港口标准化工具' },
                 { href: '001-04-market-analysis.html?from=tools001', icon: '📊', label: '市场分析工具' }

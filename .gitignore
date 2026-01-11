@@ -36,9 +36,6 @@ Data/**
 !Data/365-03-market-watch.xlsx
 !Data/Market-Geo-Trades-Service.xlsx
 !Data/Market-SCFI-Trends.xlsx
-!Data/Monitor-Rate-Trends.xlsx
-!Data/Monitor-Daily-Booking.xlsx
-!Data/Admin-access-logs.json
 
 # pdf 目录：允许所有文件上传到 GitHub
 # 先取消忽略 pdf 目录

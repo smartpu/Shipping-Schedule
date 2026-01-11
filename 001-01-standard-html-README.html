@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>维运网 网页标准化工具使用说明</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
+</head>
+<body data-page="001-01-standard-html-README.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片，沿用 dashboard 风格 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>维运网 网页标准化工具使用说明</h2>
+                            <p>将维运网下载的HTML文件转换为易读的标准格式，提取并格式化JSON数据，便于查看和调试。</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=tools001" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="001-01-standard-html.html?from=tools001" class="tool-link secondary" aria-label="打开工具">打开工具 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容区域 -->
+                <div class="card-white mt-20">
+                    <div class="readme-content">
+                        <h2>工具简介</h2>
+                        <p>本工具用于将维运网（weiyun001.com）下载的HTML文件转换为易读的标准格式。工具会自动提取并格式化HTML中嵌入的JSON数据，包括压缩的Next.js数据、脚本标签中的JSON数据等，使数据结构更清晰易读，便于后续的数据解析和调试。</p>
+
+                        <hr>
+
+                        <h2>使用步骤</h2>
+                        <ol>
+                            <li><strong>选择文件夹</strong>：点击"选择 view-full 文件夹"按钮，选择包含所有HTML文件的 <code>001-view-full</code> 文件夹</li>
+                            <li><strong>开始批量标准化</strong>：选择文件夹后，点击"开始批量标准化"按钮，工具会自动处理所有HTML文件</li>
+                            <li><strong>查看处理结果</strong>：处理过程中会显示实时进度和日志，处理完成后会显示统计信息（处理文件数、成功/失败数量、总JSON数据块数、处理耗时）</li>
+                            <li><strong>保存到目标文件夹</strong>：处理完成后，点击"保存到 001-standard 文件夹"按钮，在弹出的文件夹选择对话框中选择 <code>001-standard</code> 文件夹，工具会直接将所有标准化后的文件保存到该目录</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>核心功能</h2>
+                        <ul>
+                            <li>✅ <strong>批量处理</strong>：自动处理文件夹中的所有HTML文件，支持一次性处理多个文件</li>
+                            <li>✅ <strong>多种数据格式支持</strong>：
+                                <ul>
+                                    <li>提取并格式化 <code>self.__next_f.push([1,"..."])</code> 中的压缩数据</li>
+                                    <li>提取并格式化 <code>&lt;script id="__next_data__"&gt;</code> 标签中的JSON数据</li>
+                                    <li>提取并格式化 <code>&lt;script type="application/json"&gt;</code> 标签中的JSON数据</li>
+                                    <li>提取并格式化HTML中直接嵌入的JSON片段（包含 <code>fleetId</code> 的对象）</li>
+                                </ul>
+                            </li>
+                            <li>✅ <strong>JSON格式化</strong>：自动将提取的JSON数据格式化为易读的格式（缩进、换行）</li>
+                            <li>✅ <strong>数据分类展示</strong>：每个数据块独立显示，包含类型和索引信息，便于查找和调试</li>
+                            <li>✅ <strong>实时进度显示</strong>：处理过程中显示进度条和实时日志，方便了解处理状态</li>
+                            <li>✅ <strong>统计信息</strong>：处理完成后显示详细的统计信息，包括处理文件数、成功/失败数量、总JSON数据块数、处理耗时</li>
+                            <li>✅ <strong>直接保存</strong>：使用 File System Access API 直接将标准化后的文件保存到指定目录，无需手动解压</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>输出文件格式</h2>
+                        <p>标准化后的HTML文件命名格式：<code>原文件名_standardized.html</code></p>
+                        <p>例如：<code>青岛到巴尔博亚供应商_船期查询_供应商查询_海运费查询_维运网.html</code> 会转换为 <code>青岛到巴尔博亚供应商_船期查询_供应商查询_海运费查询_维运网_standardized.html</code></p>
+
+                        <p>标准化后的HTML文件包含：</p>
+                        <ul>
+                            <li><strong>文件元数据</strong>：原始文件名、处理时间、提取的数据块数量</li>
+                            <li><strong>数据块列表</strong>：每个提取的JSON数据块独立显示，包含：
+                                <ul>
+                                    <li>数据块类型（如 <code>__next_f.push</code>、<code>__next_data__</code>、<code>application/json</code>、<code>embedded_json</code>）</li>
+                                    <li>数据块索引</li>
+                                    <li>格式化后的JSON内容</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>浏览器兼容性</h2>
+                        <p><strong>File System Access API 支持</strong>：</p>
+                        <ul>
+                            <li>✅ Chrome/Edge 86+</li>
+                            <li>✅ Firefox 111+</li>
+                            <li>❌ Safari（暂不支持，将使用备用下载方案）</li>
+                        </ul>
+                        <p>如果浏览器不支持 File System Access API，工具会自动回退到逐个下载的方式，您需要手动将下载的文件移动到 <code>001-standard</code> 文件夹。</p>
+
+                        <hr>
+
+                        <h2>使用场景</h2>
+                        <ul>
+                            <li><strong>数据调试</strong>：当船期解析工具无法正确提取数据时，可以使用本工具查看HTML中的实际数据结构</li>
+                            <li><strong>数据结构分析</strong>：了解维运网HTML文件中JSON数据的实际结构和字段名称</li>
+                            <li><strong>数据格式验证</strong>：验证提取的JSON数据是否正确，检查数据完整性</li>
+                            <li><strong>解析逻辑优化</strong>：为解析工具的改进提供参考，了解数据在HTML中的实际存储方式</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>注意事项</h2>
+                        <ul>
+                            <li>标准化后的文件可能比原始文件大很多（因为JSON数据被格式化），这是正常现象</li>
+                            <li>如果某个HTML文件中没有找到任何JSON数据块，标准化后的文件会显示原始HTML内容（前10000字符）</li>
+                            <li>处理大量文件时，请耐心等待，不要关闭页面</li>
+                            <li>建议在处理前备份原始HTML文件</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>常见问题</h2>
+                        <p><strong>Q: 为什么有些文件提取不到数据？</strong></p>
+                        <p>A: 可能是HTML文件格式已改变，或者数据存储方式不同。请检查原始HTML文件，确认是否包含 <code>__next_f.push</code>、<code>__next_data__</code> 或 <code>application/json</code> 脚本标签。</p>
+
+                        <p><strong>Q: 保存文件时提示权限错误？</strong></p>
+                        <p>A: 请确保浏览器有权限访问文件系统。在Chrome/Edge中，首次使用时需要授予文件夹访问权限。</p>
+
+                        <p><strong>Q: 处理速度很慢？</strong></p>
+                        <p>A: 处理速度取决于文件数量和文件大小。大文件（>1MB）可能需要几秒钟时间。请耐心等待，不要关闭页面。</p>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">维运网 网页标准化工具使用声明</h2>
+                    <p class="usage-statement-text">本工具用于将维运网（weiyun001.com）下载的HTML文件转换为易读的标准格式，提取并格式化JSON数据，便于查看和调试。</p>
+                    <p class="usage-statement-text">所有数据来源于维运网公开信息，标准化结果仅供内部使用，请遵守维运网的使用条款和版权规定。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        init001ToolPage('001-01-standard-html-README.html', 'tools001');
+    </script>
+</body>
+</html>
+

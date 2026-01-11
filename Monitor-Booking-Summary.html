@@ -117,7 +117,7 @@
                     <div class="card-white module-card hidden mt-20" id="filtersContainer">
                         <!-- 时间范围选择 -->
                         <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
-                            <label style="display: block; margin-bottom: 15px; font-weight: 600; color: #495057;">时间范围选择（基于开船日期 AD列）</label>
+                            <label style="display: block; margin-bottom: 15px; font-weight: 600; color: #495057;">时间范围选择</label>
                             <div style="display: flex; gap: 20px; align-items: center;">
                                 <div style="flex: 1; display: flex; gap: 20px; align-items: center;">
                                     <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
@@ -4678,7 +4678,7 @@
             htmlParts.push('<tr style="background: #3E62AD; color: white; border-bottom: 2px solid white;">');
             htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">ETD</th>');
             htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">航线</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 8%;">船名航次</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 12%;">船名航次</th>');
             htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">Trade</th>');
             htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">POD</th>');
             htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">2SD</th>');
@@ -4782,7 +4782,7 @@
                 rowParts.push(`<tr class="vessel-gps-row" data-key="${escapedKeyForAttr}" style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" onclick="window.showVesselGpsDetail('${escapedKeyForOnclick}')">`);
                 rowParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; width: 5%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(etdDisplay)}">${escapeHtml(etdDisplay)}</td>`);
                 rowParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; width: 5%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.expLine)}">${escapeHtml(item.expLine)}</td>`);
-                rowParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; font-weight: 600; width: 8%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.vslVoy)}">${escapeHtml(item.vslVoy)}</td>`);
+                rowParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; font-weight: 600; width: 12%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.vslVoy)}">${escapeHtml(item.vslVoy)}</td>`);
                 rowParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; width: 5%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.trade)}">${escapeHtml(item.trade)}</td>`);
                 rowParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; width: 5%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.pod)}">${escapeHtml(item.pod)}</td>`);
                 
@@ -4934,35 +4934,35 @@
             // 生成表格HTML - 两行表头结构（参考VSL/VOY + GPS）
             const htmlParts = [];
             htmlParts.push('<table style="width: 100%; border-collapse: collapse; background: white; table-layout: fixed;"><thead>');
-            // 第一行表头
+            // 第一行表头 - 使用主题蓝色，白色字体和白色框线（参考VSL/VOY+GPS）
             htmlParts.push('<tr style="background: #3E62AD; color: white; border-bottom: 2px solid white;">');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">Week</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">ETD</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">EXP LINE</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 8%;">VSL/VOY</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; width: 5%;">Trade</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">TEU</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">占比</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">AVG GPS</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">TONS</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">TONS/TEU</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">Allocation</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; width: 4%;">L/F</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 5%;">Week</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 5%;">ETD</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 5%;">EXP LINE</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 8%;">VSL/VOY</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 5%;">Trade</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 4%;">TEU</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 4%;">占比</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 4%;">AVG GPS</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 4%;">TONS</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 4%;">TONS/TEU</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 4%;">Allocation</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; width: 4%;">L/F</th>');
             htmlParts.push('</tr>');
-            // 第二行表头 - 蓝色整行遮挡，确保高度和其他维度一致
+            // 第二行表头 - 蓝色整行遮挡，确保高度和其他维度一致（参考VSL/VOY+GPS）
             htmlParts.push('<tr style="background: #3E62AD; border-bottom: 2px solid white;">');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
-            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: left; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
+            htmlParts.push('<th style="padding: 12px; text-align: right; border: 1px solid white; font-weight: 600; color: white; background: #3E62AD; height: 40px;">&nbsp;</th>');
             htmlParts.push('</tr></thead><tbody>');
             
             sortedKeys.forEach(key => {
@@ -6392,10 +6392,8 @@
                     bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } },
                     left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
                     right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
-                },
-                alignment: {
-                    vertical: 'middle'
                 }
+                // 注意：不在 dataStyle 中设置 alignment，避免覆盖单元格的 alignment 属性
             };
 
             // 收集表头信息，用于识别列类型
@@ -6433,10 +6431,15 @@
                             for (let i = 0; i < colspan; i++) {
                                 columnTypeMap[colIndex + i] = 'percentage';
                             }
-                        } else if (headerText === 'TEU' || headerText === 'TONS' || 
-                                   headerText === 'AVG GPS' || headerText === 'TONS/TEU') {
+                        } else if (headerText === 'TEU') {
+                            // TEU列：整数格式
                             for (let i = 0; i < colspan; i++) {
-                                columnTypeMap[colIndex + i] = 'number';
+                                columnTypeMap[colIndex + i] = 'teu';
+                            }
+                        } else if (headerText === 'AVG GPS' || headerText === 'TONS' || headerText === 'TONS/TEU') {
+                            // AVG GPS, TONS, TONS/TEU：两位小数格式
+                            for (let i = 0; i < colspan; i++) {
+                                columnTypeMap[colIndex + i] = 'decimal';
                             }
                         } else if (headerText && !columnTypeMap[colIndex]) {
                             // 其他有文本的列，如果还没有设置类型，设为文本
@@ -6459,6 +6462,43 @@
                 if (firstCell && (firstCell.textContent || '').trim().includes('ETD')) {
                     columnTypeMap[0] = 'date';
                 }
+            }
+            
+            // 对于VSL/VOY维度，明确设置B列（EXP LINE）和C列（VSL/VOY）为文本类型
+            if (headerRows.length > 0) {
+                const firstRow = headerRows[0];
+                const firstRowCells = firstRow.querySelectorAll('th, td');
+                let colIndex = 0;
+                firstRowCells.forEach((cell) => {
+                    const headerText = (cell.textContent || '').trim();
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    
+                    // 识别EXP LINE和VSL/VOY列
+                    if (headerText === 'EXP LINE' || headerText.includes('EXP LINE')) {
+                        columnTypeMap[colIndex] = 'text';
+                    } else if (headerText === 'VSL/VOY' || headerText.includes('VSL/VOY')) {
+                        columnTypeMap[colIndex] = 'text';
+                    }
+                    
+                    colIndex += colspan;
+                });
+            }
+            
+            // 对于所有维度，确保占比列被正确识别为百分比
+            if (headerRows.length >= 2) {
+                const lastHeaderRow = headerRows[headerRows.length - 1];
+                const lastHeaderCells = lastHeaderRow.querySelectorAll('th, td');
+                let colIndex = 0;
+                lastHeaderCells.forEach((cell) => {
+                    const headerText = (cell.textContent || '').trim();
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    if (headerText === '占比' || headerText.includes('占比')) {
+                        for (let i = 0; i < colspan; i++) {
+                            columnTypeMap[colIndex + i] = 'percentage';
+                        }
+                    }
+                    colIndex += colspan;
+                });
             }
 
             // 处理每一行
@@ -6508,10 +6548,10 @@
                             cellValue.value = cellText;
                         }
                     } else if (columnType === 'percentage' && !isHeader) {
-                        // 占比列：按百分比处理
+                        // 占比列：强制按百分比处理
                         if (cellText.includes('%')) {
-                            // 有%符号，直接转换
-                            const percentValue = parseFloat(cellText.replace(/%/g, '').replace(/,/g, ''));
+                            // 有%符号，提取数值并转换
+                            const percentValue = parseFloat(cellText.replace(/%/g, '').replace(/,/g, '').trim());
                             if (!isNaN(percentValue)) {
                                 cellValue.value = percentValue / 100;
                                 cellValue.numFmt = '0.00%';
@@ -6520,32 +6560,69 @@
                                 cellValue.value = cellText;
                             }
                         } else {
-                            // 没有%符号，尝试解析为百分比
-                            const numValue = parseFloat(cellText.replace(/,/g, ''));
+                            // 没有%符号，尝试解析为数值
+                            const numValue = parseFloat(cellText.replace(/,/g, '').trim());
                             if (!isNaN(numValue) && cellText.trim() !== '' && cellText !== '-') {
-                                // 占比列通常显示0-100之间的数值，需要除以100
-                                if (numValue >= 0 && numValue <= 100) {
-                                    cellValue.value = numValue / 100;
-                                } else if (numValue > 0 && numValue <= 1) {
-                                    // 如果数值在0-1之间，已经是小数形式，直接使用
+                                // 占比列：统一处理为百分比格式
+                                // 如果数值在0-100之间，认为是百分比数值，需要除以100
+                                // 如果数值在0-1之间，认为已经是小数形式，直接使用
+                                // 如果数值大于100，也除以100（可能是输入错误，但按百分比处理）
+                                if (numValue === 0) {
+                                    // 0值：直接设置为0，格式为百分比
+                                    cellValue.value = 0;
+                                } else if (numValue > 0 && numValue < 1) {
+                                    // 已经是小数形式（0-1之间），直接使用
                                     cellValue.value = numValue;
+                                } else if (numValue >= 1 && numValue <= 100) {
+                                    // 百分比数值（1-100），除以100
+                                    cellValue.value = numValue / 100;
+                                } else if (numValue > 100 && numValue <= 1000) {
+                                    // 可能是百分比数值但大于100，除以100
+                                    cellValue.value = numValue / 100;
                                 } else {
-                                    // 其他情况，按百分比处理（除以100）
+                                    // 其他情况，尝试除以100
                                     cellValue.value = numValue / 100;
                                 }
+                                // 强制设置为百分比格式
+                                cellValue.numFmt = '0.00%';
+                                cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                            } else if (cellText === '0' || cellText === '0.0000' || cellText === '0.00') {
+                                // 特殊情况：0值的字符串形式，直接设置为0并应用百分比格式
+                                cellValue.value = 0;
                                 cellValue.numFmt = '0.00%';
                                 cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
                             } else {
+                                // 无法解析为数字，按文本处理
                                 cellValue.value = cellText;
                             }
                         }
-                    } else if (columnType === 'number' && !isHeader) {
-                        // 数字列：确保不会被误识别为日期
+                    } else if (columnType === 'teu' && !isHeader) {
+                        // TEU列：整数格式
                         const numValue = parseFloat(cellText.replace(/,/g, ''));
                         if (!isNaN(numValue) && cellText.trim() !== '' && cellText !== '-') {
-                            // 显式设置为数字，避免Excel自动转换
                             cellValue.value = numValue;
-                            // 设置数字格式
+                            cellValue.numFmt = '#,##0'; // 整数格式
+                            cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        } else {
+                            cellValue.value = cellText;
+                            cellValue.numFmt = '@';
+                        }
+                    } else if (columnType === 'decimal' && !isHeader) {
+                        // AVG GPS, TONS, TONS/TEU：两位小数格式
+                        const numValue = parseFloat(cellText.replace(/,/g, ''));
+                        if (!isNaN(numValue) && cellText.trim() !== '' && cellText !== '-') {
+                            cellValue.value = numValue;
+                            cellValue.numFmt = '#,##0.00'; // 两位小数格式
+                            cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        } else {
+                            cellValue.value = cellText;
+                            cellValue.numFmt = '@';
+                        }
+                    } else if (columnType === 'number' && !isHeader) {
+                        // 其他数字列：根据内容判断格式
+                        const numValue = parseFloat(cellText.replace(/,/g, ''));
+                        if (!isNaN(numValue) && cellText.trim() !== '' && cellText !== '-') {
+                            cellValue.value = numValue;
                             if (cellText.includes('.')) {
                                 const decimalPlaces = cellText.split('.')[1].length;
                                 if (decimalPlaces <= 2) {
@@ -6560,12 +6637,38 @@
                             }
                             cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
                         } else {
-                            // 不是数字，按文本处理
                             cellValue.value = cellText;
+                            cellValue.numFmt = '@';
                         }
-                    } else {
-                        // 文本列或其他
+                    } else if (columnType === 'text' && !isHeader) {
+                        // 文本列：明确设置为文本格式，避免被识别为日期
                         cellValue.value = cellText;
+                        cellValue.numFmt = '@';
+                    } else {
+                        // 其他情况（包括未识别的列）：默认使用常规格式
+                        cellValue.value = cellText;
+                        // 如果看起来像数字但不是日期列，尝试解析为数字
+                        if (columnType !== 'date' && !isHeader) {
+                            const numValue = parseFloat(cellText.replace(/,/g, '').replace(/%/g, ''));
+                            if (!isNaN(numValue) && cellText.trim() !== '' && cellText !== '-' && 
+                                !cellText.includes('%') && !cellText.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                // 是数字但不是日期格式，设置为数字
+                                cellValue.value = numValue;
+                                if (cellText.includes('.')) {
+                                    const decimalPlaces = cellText.split('.')[1].length;
+                                    if (decimalPlaces <= 2) {
+                                        cellValue.numFmt = '#,##0.00';
+                                    } else {
+                                        cellValue.numFmt = '#,##0.0000';
+                                    }
+                                } else {
+                                    cellValue.numFmt = '#,##0';
+                                }
+                            } else {
+                                // 不是数字，设置为文本格式
+                                cellValue.numFmt = '@';
+                            }
+                        }
                     }
 
                     // 应用样式
@@ -6583,10 +6686,98 @@
                             cellValue.style = { ...dataStyle, font: { bold: true } };
                         }
                     } else {
+                        // 数据行：从第三行（索引2，即rowIndex >= headerRows.length）开始，偶数行添加浅色背景
+                        const dataRowIndex = rowIndex - headerRows.length;
+                        const isEvenRow = dataRowIndex % 2 === 0; // 偶数行（第1行数据、第3行数据...）添加背景色
+                        
+                        // 保存格式和对齐方式（在设置样式之前）
+                        const savedNumFmt = cellValue.numFmt;
+                        const savedValue = cellValue.value;
+                        const savedAlignment = cellValue.alignment;
+                        
+                        // 先应用基础样式（不包含背景色）
                         cellValue.style = dataStyle;
-                        // 数字列右对齐（如果还没有设置对齐方式）
-                        if (typeof cellValue.value === 'number' && !cellValue.alignment) {
+                        
+                        // 如果是交替行，添加背景色（只设置 fill，不影响其他属性）
+                        if (isEvenRow && dataRowIndex >= 0) {
+                            // 浅灰色背景，用于交替行
+                            // 注意：只设置 fill 属性，避免覆盖其他样式
+                            cellValue.style.fill = {
+                                type: 'pattern',
+                                pattern: 'solid',
+                                fgColor: { argb: 'FFF5F5F5' } // 浅灰色 #F5F5F5
+                            };
+                        }
+                        
+                        // 强制重新应用值和格式（确保不被样式覆盖）
+                        // 先恢复值
+                        if (savedValue !== undefined && savedValue !== null) {
+                            cellValue.value = savedValue;
+                        }
+                        
+                        // 再强制重新应用格式（根据列类型强制设置）
+                        if (columnType === 'date') {
+                            // 日期列：强制设置为日期格式
+                            cellValue.numFmt = 'yyyy-mm-dd';
+                            cellValue.alignment = { vertical: 'middle' };
+                        } else if (columnType === 'percentage') {
+                            // 占比列：强制设置为百分比格式
+                            cellValue.numFmt = '0.00%';
+                            
+                            // 确保值是正确的小数形式（0-1之间）
+                            if (typeof savedValue === 'number') {
+                                if (savedValue > 1 && savedValue <= 100) {
+                                    cellValue.value = savedValue / 100;
+                                } else if (savedValue > 100) {
+                                    cellValue.value = savedValue / 100;
+                                } else if (savedValue === 0) {
+                                    cellValue.value = 0;
+                                } else {
+                                    cellValue.value = savedValue;
+                                }
+                            } else if (savedValue === 0 || savedValue === '0' || savedValue === '0.0000' || savedValue === '0.00') {
+                                cellValue.value = 0;
+                            }
+                            
                             cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        } else if (columnType === 'teu') {
+                            // TEU列：强制设置为整数格式
+                            cellValue.numFmt = '#,##0';
+                            cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        } else if (columnType === 'decimal') {
+                            // AVG GPS, TONS, TONS/TEU：强制设置为两位小数格式
+                            cellValue.numFmt = '#,##0.00';
+                            cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        } else if (columnType === 'number') {
+                            // 其他数字列：恢复保存的格式
+                            if (savedNumFmt) {
+                                cellValue.numFmt = savedNumFmt;
+                            } else {
+                                cellValue.numFmt = '#,##0';
+                            }
+                            cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                        } else if (columnType === 'text') {
+                            // 文本列：强制设置为文本格式
+                            cellValue.numFmt = '@';
+                            cellValue.alignment = { vertical: 'middle' };
+                        } else {
+                            // 其他列：恢复保存的格式
+                            if (savedNumFmt) {
+                                cellValue.numFmt = savedNumFmt;
+                            } else {
+                                cellValue.numFmt = '@';
+                            }
+                            
+                            if (savedAlignment) {
+                                cellValue.alignment = {
+                                    ...savedAlignment,
+                                    vertical: savedAlignment.vertical || 'middle'
+                                };
+                            } else if (typeof savedValue === 'number') {
+                                cellValue.alignment = { horizontal: 'right', vertical: 'middle' };
+                            } else {
+                                cellValue.alignment = { vertical: 'middle' };
+                            }
                         }
                     }
                     
@@ -6608,13 +6799,129 @@
                 const firstRow = rows[0];
                 const cells = firstRow.querySelectorAll('th, td');
                 let colIndex = 1;
+                
+                // 检测维度类型
+                const firstHeaderRowText = headerRows.length > 0 ? headerRows[0].textContent : '';
+                const secondHeaderRowText = headerRows.length > 1 ? headerRows[1].textContent : '';
+                
+                // 检测是否为需要统一列宽的维度
+                const isSalesDeptDimension = headerRows.length >= 2 && 
+                    firstHeaderRowText.includes('SalesID') && 
+                    (firstHeaderRowText.includes('AMS') || firstHeaderRowText.includes('EMS') || 
+                     firstHeaderRowText.includes('IAS') || firstHeaderRowText.includes('TOTAL'));
+                
+                const isSalesWeekDimension = headerRows.length >= 2 && 
+                    firstHeaderRowText.includes('SalesID') && 
+                    (secondHeaderRowText.includes('TEU') || secondHeaderRowText.includes('占比'));
+                
+                const isAccountDeptDimension = headerRows.length >= 2 && 
+                    (firstHeaderRowText.includes('SQ/SC') || firstHeaderRowText.includes('SQ/SC NAME')) && 
+                    (firstHeaderRowText.includes('AMS') || firstHeaderRowText.includes('EMS') || 
+                     firstHeaderRowText.includes('IAS') || firstHeaderRowText.includes('TOTAL'));
+                
+                const isAccountWeekDimension = headerRows.length >= 2 && 
+                    (firstHeaderRowText.includes('SQ/SC') || firstHeaderRowText.includes('SQ/SC NAME')) && 
+                    (secondHeaderRowText.includes('TEU') || secondHeaderRowText.includes('占比'));
+                
+                const isVesselDeptDimension = headerRows.length >= 2 && 
+                    firstHeaderRowText.includes('ETD') && 
+                    firstHeaderRowText.includes('EXP LINE') && 
+                    firstHeaderRowText.includes('VSL/VOY') &&
+                    (firstHeaderRowText.includes('AMS') || firstHeaderRowText.includes('EMS') || 
+                     firstHeaderRowText.includes('IAS') || firstHeaderRowText.includes('TOTAL'));
+                
+                const isVesselWeekDimension = headerRows.length >= 2 && 
+                    firstHeaderRowText.includes('ETD') && 
+                    firstHeaderRowText.includes('EXP LINE') && 
+                    firstHeaderRowText.includes('VSL/VOY') &&
+                    (secondHeaderRowText.includes('TEU') || secondHeaderRowText.includes('占比'));
+                
+                // 检测 VSL/VOY+GPS 维度（只有一行表头，包含船名航次）
+                const isVesselGpsDimension = headerRows.length >= 1 && 
+                    firstHeaderRowText.includes('ETD') && 
+                    firstHeaderRowText.includes('航线') && 
+                    firstHeaderRowText.includes('船名航次');
+                
+                // 判断是否需要统一列宽
+                const needsUniformWidth = isSalesDeptDimension || isSalesWeekDimension || 
+                                         isAccountDeptDimension || isAccountWeekDimension ||
+                                         isVesselDeptDimension || isVesselWeekDimension;
+                
+                // 对于VSL/VOY维度，需要从D列（第4列）开始统一宽度
+                const isVesselDimension = isVesselDeptDimension || isVesselWeekDimension;
+                
+                // 如果需要统一列宽，先计算基准列的宽度
+                let baseColumnWidth = 12; // 默认宽度
+                if (needsUniformWidth && cells.length > 0) {
+                    if (isVesselDimension) {
+                        // VSL/VOY维度：使用A列（ETD）作为基准，但A/B/C列保持原样，从D列开始统一
+                        const firstCellText = cells[0].textContent || '';
+                        baseColumnWidth = Math.max(12, Math.min(20, firstCellText.length * 1.2));
+                        // 设置A/B/C列的宽度（保持原样）
+                        worksheet.getColumn(1).width = baseColumnWidth; // A列
+                        if (cells.length > 1) {
+                            const secondCellText = cells[1].textContent || '';
+                            worksheet.getColumn(2).width = Math.max(10, Math.min(18, secondCellText.length * 1.2)); // B列
+                        }
+                        if (cells.length > 2) {
+                            // C列（VSL/VOY）需要更宽，因为内容通常较长
+                            const thirdCellText = cells[2].textContent || '';
+                            worksheet.getColumn(3).width = Math.max(16, Math.min(25, Math.max(thirdCellText.length * 1.3, 16))); // C列，至少16，最多25
+                        }
+                    } else {
+                        // 其他维度：使用第一列作为基准
+                        const firstCellText = cells[0].textContent || '';
+                        baseColumnWidth = Math.max(12, Math.min(20, firstCellText.length * 1.2));
+                        // 设置第一列（A列）宽度
+                        worksheet.getColumn(1).width = baseColumnWidth;
+                    }
+                }
+                
+                // 计算总列数（用于限制统一列宽的范围）
+                let totalColumns = 0;
                 cells.forEach((cell) => {
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    totalColumns += colspan;
+                });
+                
+                cells.forEach((cell, cellIndex) => {
                     const cellText = cell.textContent || '';
                     const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
-                    const estimatedWidth = Math.max(8, Math.min(30, cellText.length * 1.5));
-                    // 为合并的列设置相同的宽度
-                    for (let i = 0; i < colspan; i++) {
-                        worksheet.getColumn(colIndex + i).width = estimatedWidth / colspan;
+                    
+                    // 对于VSL/VOY维度，从D列（第4列，cellIndex >= 3）开始统一宽度
+                    if (isVesselDimension) {
+                        if (cellIndex >= 3) {
+                            // D列及以后，使用基准宽度
+                            for (let i = 0; i < colspan; i++) {
+                                if (colIndex + i <= totalColumns) {
+                                    worksheet.getColumn(colIndex + i).width = baseColumnWidth;
+                                }
+                            }
+                        } else {
+                            // A/B/C列已经设置过，跳过
+                        }
+                    } else if (needsUniformWidth && cellIndex > 0) {
+                        // 其他需要统一列宽的维度：从第二列开始统一宽度
+                        for (let i = 0; i < colspan; i++) {
+                            if (colIndex + i <= totalColumns) {
+                                worksheet.getColumn(colIndex + i).width = baseColumnWidth;
+                            }
+                        }
+                    } else {
+                        // 其他维度：根据内容动态计算宽度
+                        // 对于 VSL/VOY+GPS 维度，C列（船名航次）需要更宽
+                        if (isVesselGpsDimension && cellIndex === 2) {
+                            // C列（船名航次），设置为更宽的宽度
+                            const estimatedWidth = Math.max(16, Math.min(25, Math.max(cellText.length * 1.3, 16)));
+                            for (let i = 0; i < colspan; i++) {
+                                worksheet.getColumn(colIndex + i).width = estimatedWidth;
+                            }
+                        } else {
+                            const estimatedWidth = Math.max(8, Math.min(30, cellText.length * 1.5));
+                            for (let i = 0; i < colspan; i++) {
+                                worksheet.getColumn(colIndex + i).width = estimatedWidth / colspan;
+                            }
+                        }
                     }
                     colIndex += colspan;
                 });

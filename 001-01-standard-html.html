@@ -399,32 +399,131 @@
                 }
                 
                 // 展开scheduleNoticeShare.notices中的引用
-                if (resolved.scheduleNoticeShare && typeof resolved.scheduleNoticeShare === 'object') {
+                if (resolved.scheduleNoticeShare) {
+                    // 如果scheduleNoticeShare是字符串（如"$a8"），先展开
                     if (typeof resolved.scheduleNoticeShare === 'string' && resolved.scheduleNoticeShare.startsWith('$')) {
                         // 这是一个引用，需要展开
                         resolved.scheduleNoticeShare = resolveReferences(resolved.scheduleNoticeShare, labelIndex);
                     }
+                    // 如果展开后是对象，展开其中的notices数组
                     if (resolved.scheduleNoticeShare && typeof resolved.scheduleNoticeShare === 'object' && 
                         resolved.scheduleNoticeShare.notices && Array.isArray(resolved.scheduleNoticeShare.notices)) {
-                        resolved.scheduleNoticeShare.notices = resolved.scheduleNoticeShare.notices.map(item => {
+                        const expandedNotices = [];
+                        for (const item of resolved.scheduleNoticeShare.notices) {
                             if (typeof item === 'string' && item.startsWith('$')) {
-                                return resolveReferences(item, labelIndex);
+                                // 这是一个引用，需要展开
+                                const expanded = resolveReferences(item, labelIndex);
+                                // 如果展开后是数组，展开数组中的每个元素
+                                if (Array.isArray(expanded)) {
+                                    for (const notice of expanded) {
+                                        if (notice && typeof notice === 'object') {
+                                            // 判断所属fleet是直达还是转船
+                                            const resolvedStr = JSON.stringify(resolved);
+                                            const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                                            const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
+                                            const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
+                                                                    (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
+                                            const isTransitType = resolved.transType !== undefined && resolved.transType !== 1 && resolved.transType !== null;
+                                            const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                                            notice._isDirect = !isTransit;
+                                            expandedNotices.push(notice);
+                                        }
+                                    }
+                                } else if (expanded && typeof expanded === 'object') {
+                                    // 判断所属fleet是直达还是转船
+                                    const resolvedStr = JSON.stringify(resolved);
+                                    const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                                    const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
+                                    const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
+                                                            (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
+                                    const isTransitType = resolved.transType !== undefined && resolved.transType !== 1 && resolved.transType !== null;
+                                    const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                                    expanded._isDirect = !isTransit;
+                                    expandedNotices.push(expanded);
+                                }
+                            } else {
+                                // 已经是对象，但可能包含嵌套引用，继续展开
+                                const expanded = resolveReferences(item, labelIndex);
+                                if (expanded && typeof expanded === 'object' && !Array.isArray(expanded)) {
+                                    // 判断所属fleet是直达还是转船
+                                    const resolvedStr = JSON.stringify(resolved);
+                                    const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                                    const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
+                                    const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
+                                                            (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
+                                    const isTransitType = resolved.transType !== undefined && resolved.transType !== 1 && resolved.transType !== null;
+                                    const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                                    expanded._isDirect = !isTransit;
+                                    expandedNotices.push(expanded);
+                                } else if (Array.isArray(expanded)) {
+                                    // 如果展开后是数组，展开数组中的每个元素
+                                    for (const notice of expanded) {
+                                        if (notice && typeof notice === 'object') {
+                                            // 判断所属fleet是直达还是转船
+                                            const resolvedStr = JSON.stringify(resolved);
+                                            const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
+                                            const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
+                                            const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
+                                                                    (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
+                                            const isTransitType = resolved.transType !== undefined && resolved.transType !== 1 && resolved.transType !== null;
+                                            const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                                            notice._isDirect = !isTransit;
+                                            expandedNotices.push(notice);
+                                        }
+                                    }
+                                }
                             }
+                        }
+                        resolved.scheduleNoticeShare.notices = expandedNotices;
+                    }
+                }
+                
+                // 展开directScheduleList中的引用（重要：确保所有carrier对象都被展开）
+                if (resolved.directScheduleList && Array.isArray(resolved.directScheduleList)) {
+                    resolved.directScheduleList = resolved.directScheduleList.map(item => {
+                        if (typeof item === 'string' && item.startsWith('$')) {
+                            // 这是一个引用，需要展开
                             const expanded = resolveReferences(item, labelIndex);
-                            if (expanded && typeof expanded === 'object' && !Array.isArray(expanded)) {
-                                // 判断所属fleet是直达还是转船
-                                const resolvedStr = JSON.stringify(resolved);
-                                const hasLineTypeTransit = /"lineTypeShowName"\s*:\s*"(接二程|接三程|转)"/.test(resolvedStr);
-                                const hasTransitPorts = resolved.transitPorts && Array.isArray(resolved.transitPorts) && resolved.transitPorts.length > 0;
-                                const hasTransitNames = (resolved.transit1CnName !== null && resolved.transit1CnName !== undefined) ||
-                                                        (resolved.transit2CnName !== null && resolved.transit2CnName !== undefined);
-                                const isTransitType = resolved.transType !== undefined && resolved.transType !== 1 && resolved.transType !== null;
-                                const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
-                                expanded._isDirect = !isTransit;
+                            // 如果展开后是数组，展开数组中的每个元素
+                            if (Array.isArray(expanded)) {
+                                return expanded.map(carrier => {
+                                    if (carrier && typeof carrier === 'object') {
+                                        // 递归展开carrier对象中的scheduleNotices和scheduleNoticeShare
+                                        if (carrier.scheduleNotices && Array.isArray(carrier.scheduleNotices)) {
+                                            carrier.scheduleNotices = carrier.scheduleNotices.map(notice => {
+                                                if (typeof notice === 'string' && notice.startsWith('$')) {
+                                                    return resolveReferences(notice, labelIndex);
+                                                }
+                                                return resolveReferences(notice, labelIndex);
+                                            }).filter(notice => notice && typeof notice === 'object');
+                                        }
+                                        if (carrier.scheduleNoticeShare && typeof carrier.scheduleNoticeShare === 'string' && carrier.scheduleNoticeShare.startsWith('$')) {
+                                            carrier.scheduleNoticeShare = resolveReferences(carrier.scheduleNoticeShare, labelIndex);
+                                        }
+                                    }
+                                    return carrier;
+                                });
                             }
                             return expanded;
-                        }).filter(item => item && typeof item === 'object');
-                    }
+                        }
+                        // 已经是对象，但可能包含嵌套引用，继续展开
+                        const expanded = resolveReferences(item, labelIndex);
+                        if (expanded && typeof expanded === 'object' && !Array.isArray(expanded)) {
+                            // 递归展开carrier对象中的scheduleNotices和scheduleNoticeShare
+                            if (expanded.scheduleNotices && Array.isArray(expanded.scheduleNotices)) {
+                                expanded.scheduleNotices = expanded.scheduleNotices.map(notice => {
+                                    if (typeof notice === 'string' && notice.startsWith('$')) {
+                                        return resolveReferences(notice, labelIndex);
+                                    }
+                                    return resolveReferences(notice, labelIndex);
+                                }).filter(notice => notice && typeof notice === 'object');
+                            }
+                            if (expanded.scheduleNoticeShare && typeof expanded.scheduleNoticeShare === 'string' && expanded.scheduleNoticeShare.startsWith('$')) {
+                                expanded.scheduleNoticeShare = resolveReferences(expanded.scheduleNoticeShare, labelIndex);
+                            }
+                        }
+                        return expanded;
+                    }).filter(item => item && typeof item === 'object'); // 过滤掉未展开的引用字符串
                 }
                 
                 expandedObjects.push({
@@ -528,11 +627,21 @@
                         const resolvedStr = JSON.stringify(resolved);
                         
                         // 分类对象
-                        // 改进：识别所有fleet对象（包括没有key但有fleetId的carrier对象）
-                        const isFleetObject = resolved.fleetId !== undefined || 
-                                             resolved.key !== undefined ||
-                                             (resolved.carrierCode !== undefined && resolved.fleetId !== undefined) ||
-                                             (resolved.motherVesselPolCode !== undefined && resolved.fleetId !== undefined);
+                        // 改进：识别fleet对象（优先识别有key的完整fleet对象，避免将carrier对象当作fleet）
+                        // fleet对象的特征：有key字段，或者有fleetId但没有carrierCode（carrier对象通常有carrierCode）
+                        const hasKey = resolved.key !== undefined;
+                        const hasFleetId = resolved.fleetId !== undefined;
+                        const isCarrierObject = resolved.carrierCode !== undefined || resolved.carrierShortName !== undefined;
+                        // 判断是否是fleet对象：
+                        // 1. 有key字段（完整的fleet对象）
+                        // 2. 有fleetId但没有carrierCode（可能是没有key的fleet对象，如青岛到济州的情况）
+                        // 3. 有fleetId和motherVesselPolCode，且有船期数据（scheduleNotices、planSchedule等），但不是carrier对象
+                        const hasScheduleData = (resolved.scheduleNotices && Array.isArray(resolved.scheduleNotices) && resolved.scheduleNotices.length > 0) ||
+                                               (resolved.planSchedule && Array.isArray(resolved.planSchedule) && resolved.planSchedule.length > 0) ||
+                                               (resolved.directScheduleList && Array.isArray(resolved.directScheduleList) && resolved.directScheduleList.length > 0);
+                        const isFleetObject = hasKey || 
+                                             (hasFleetId && !isCarrierObject) ||
+                                             (hasFleetId && resolved.motherVesselPolCode && hasScheduleData && !isCarrierObject);
                         
                         if (isFleetObject) {
                             // 判断是直达还是中转

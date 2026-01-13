@@ -996,6 +996,32 @@
      * @param {Map} visibleData - 可见数据Map（用于验证）
      * @returns {Array} fleet 对象数组
      */
+    /**
+     * 解析工具中的resolveReferences函数（用于展开引用）
+     * @param {string|Object} ref - 引用字符串（如"$a8"）或对象
+     * @param {Object} labelIndex - 标签索引对象
+     * @returns {Object|Array|null} 展开后的对象或数组
+     */
+    function resolveReferences(ref, labelIndex) {
+        if (!ref) return null;
+        if (typeof ref === 'string' && ref.startsWith('$')) {
+            const key = ref.replace(/^\$/, '');
+            // 尝试从objects中获取
+            const obj = labelIndex.objects.get(key);
+            if (obj) return obj;
+            // 尝试从arrays中获取
+            const arr = labelIndex.arrays.get(key);
+            if (arr) return arr;
+            // 尝试查找所有以该标签开头的对象
+            for (const [objKey, objValue] of labelIndex.objects.entries()) {
+                if (objKey === key || objKey.startsWith(key)) {
+                    return objValue;
+                }
+            }
+        }
+        return ref;
+    }
+
     function extractFleetAndVessels(html, labelIndex, visibleData = new Map()) {
         const fleets = [];
         const processedStandardizedKeys = new Set(); // 用于去重
@@ -1010,6 +1036,61 @@
                 // 尝试解析为完整的JSON对象
                 const jsonData = JSON.parse(jsonContent);
                 
+                // 构建从标准化HTML JSON结构中提取的引用映射（用于resolveReferences）
+                // 遍历整个JSON结构，收集所有scheduleNoticeShare对象和vessel对象
+                // 由于标准化HTML中可能没有引用标签的定义，我们需要收集所有可能的对象
+                const allScheduleNoticeShareObjects = []; // 所有scheduleNoticeShare对象
+                const allVesselObjects = []; // 所有vessel对象
+                
+                function collectObjects(obj) {
+                    if (!obj || typeof obj !== 'object') return;
+                    if (Array.isArray(obj)) {
+                        obj.forEach(item => collectObjects(item));
+                    } else {
+                        // 检查是否是scheduleNoticeShare对象（有notices数组）
+                        if (obj.notices && Array.isArray(obj.notices) && obj.startPortEnName) {
+                            allScheduleNoticeShareObjects.push(obj);
+                        }
+                        // 检查是否是vessel对象（有vslName或voyNo）
+                        if ((obj.vslName || obj.voyNo || obj.vesselName || obj.voyageNo) && 
+                            obj.vslName !== 'BLANK SAILING' && obj.voyNo !== 'BLANK SAILING') {
+                            allVesselObjects.push(obj);
+                        }
+                        // 递归处理所有属性
+                        for (const value of Object.values(obj)) {
+                            collectObjects(value);
+                        }
+                    }
+                }
+                collectObjects(jsonData);
+                
+                // 改进resolveReferences函数，使其能够从标准化HTML的JSON结构中查找对象
+                // 在extractFleetAndVessels函数内部，创建一个局部的resolveReferences函数
+                // 它会覆盖全局的resolveReferences函数，使其能够从标准化HTML的JSON结构中查找对象
+                const originalResolveReferences = resolveReferences;
+                resolveReferences = (ref, labelIndex) => {
+                    if (!ref) return null;
+                    if (typeof ref === 'string' && ref.startsWith('$')) {
+                        const key = ref.replace(/^\$/, '').toLowerCase();
+                        // 首先尝试从labelIndex中查找（原始HTML的引用结构）
+                        const obj = labelIndex.objects.get(key);
+                        if (obj) return obj;
+                        const arr = labelIndex.arrays.get(key);
+                        if (arr) return arr;
+                        // 然后尝试模糊匹配labelIndex
+                        for (const [objKey, objValue] of labelIndex.objects.entries()) {
+                            if (objKey.toLowerCase() === key || objKey.toLowerCase().startsWith(key)) {
+                                return objValue;
+                            }
+                        }
+                        // 如果labelIndex中没有找到，尝试从标准化HTML的JSON结构中查找
+                        // 注意：由于标准化HTML中可能没有引用标签的定义，我们无法直接通过标签查找
+                        // 这里我们返回null，让调用者处理未展开的引用
+                        // 实际上，如果标准化工具没有展开引用，说明这些引用可能指向的对象不在标准化HTML中
+                    }
+                    return ref;
+                };
+                
                 // 优先处理directFleets数组（直达航线）
                 // 如果没有directFleets，尝试从fleets中筛选直达航线（兼容旧数据或分类错误的情况）
                 let directFleets = jsonData.directFleets;
@@ -1018,7 +1099,11 @@
                     const allFleets = jsonData.fleets || [];
                     if (allFleets.length > 0) {
                         directFleets = allFleets.filter(f => {
-                            // 检查是否有转船标识
+                            // 优先使用标准化工具标记的_isDirect
+                            if (f._isDirect !== undefined) {
+                                return f._isDirect === true; // 只保留明确标记为直达的
+                            }
+                            // 如果没有标记，使用与标准化工具一致的判断逻辑
                             const hasLineTypeTransit = f.lineTypeShowName && /(接二程|接三程|转)/.test(f.lineTypeShowName);
                             const hasTransitPorts = f.transitPorts && Array.isArray(f.transitPorts) && f.transitPorts.length > 0;
                             const hasTransitNames = (f.transit1CnName !== null && f.transit1CnName !== undefined) ||
@@ -1027,50 +1112,79 @@
                             const isTransitType = f.transType !== undefined && 
                                                  f.transType !== null && 
                                                  f.transType !== 1;
+                            // 与标准化工具一致：使用OR逻辑（任何一个条件满足就是转船）
                             const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
-                            // 如果没有明确的转船标识，且没有_isDirect标记或_isDirect为true，认为是直达
-                            if (f._isDirect !== undefined) {
-                                return f._isDirect === true;
-                            }
-                            return !isTransit;
+                            return !isTransit; // 没有转船标识，才认为是直达
                         });
                     }
                 }
                 
-                // 如果还是没有直达航线，返回空数组
+                // 如果还是没有直达航线，尝试从fleets中筛选直达航线（使用与标准化工具一致的逻辑）
                 if (!directFleets || !Array.isArray(directFleets) || directFleets.length === 0) {
-                    return [];
+                    const allFleets = jsonData.fleets || [];
+                    if (allFleets.length > 0) {
+                        // 使用与标准化工具一致的判断逻辑
+                        directFleets = allFleets.filter(f => {
+                            // 优先使用标准化工具标记的_isDirect
+                            if (f._isDirect !== undefined) {
+                                return f._isDirect === true; // 只保留明确标记为直达的
+                            }
+                            // 如果没有标记，使用与标准化工具一致的判断逻辑
+                            const hasLineTypeTransit = f.lineTypeShowName && /(接二程|接三程|转)/.test(f.lineTypeShowName);
+                            const hasTransitPorts = f.transitPorts && Array.isArray(f.transitPorts) && f.transitPorts.length > 0;
+                            const hasTransitNames = (f.transit1CnName !== null && f.transit1CnName !== undefined) ||
+                                                    (f.transit2CnName !== null && f.transit2CnName !== undefined);
+                            const isTransitType = f.transType !== undefined && 
+                                                 f.transType !== null && 
+                                                 f.transType !== 1;
+                            // 与标准化工具一致：使用OR逻辑（任何一个条件满足就是转船）
+                            const isTransit = hasLineTypeTransit || hasTransitPorts || hasTransitNames || isTransitType;
+                            return !isTransit; // 没有转船标识，才认为是直达
+                        });
+                    }
+                    // 如果还是没有，返回空数组
+                    if (!directFleets || !Array.isArray(directFleets) || directFleets.length === 0) {
+                        return [];
+                    }
                 }
                 
                 // 获取carriers数组（可能包含更多carrier对象）
                 const allCarriers = jsonData.carriers || [];
                 
-                // 第一步：找到所有主fleet对象（放宽条件，只要有可能包含船期数据的都保留）
+                // 第一步：找到所有主fleet对象（收紧条件，确保只处理完整的fleet对象，避免将carrier对象当作fleet）
                 const mainFleets = directFleets.filter(f => {
-                    // 有key字段且格式正确
+                    // 优先：有key字段且格式正确（这是完整的fleet对象）
                     if (f.key && /^\d+_\d+_[^_]+$/.test(f.key)) {
                         return true;
                     }
-                    // 或者有fleetId和motherVesselPolCode，但没有key（如青岛到济州的情况）
+                    // 或者有fleetId和motherVesselPolCode，且有船期数据（如青岛到济州的情况）
+                    // 注意：carrier对象通常只有fleetId和motherVesselPolCode，但没有weekday、shipDays等字段
+                    // 因此需要确保有船期数据（scheduleNotices、planSchedule或directScheduleList）
                     if (f.fleetId && f.motherVesselPolCode && !f.key) {
-                        return true;
+                        // 必须有船期数据，且最好有weekday或shipDays（表明是完整的fleet对象）
+                        const hasScheduleData = (f.scheduleNotices && Array.isArray(f.scheduleNotices) && f.scheduleNotices.length > 0) ||
+                                               (f.planSchedule && Array.isArray(f.planSchedule) && f.planSchedule.length > 0) ||
+                                               (f.directScheduleList && Array.isArray(f.directScheduleList) && f.directScheduleList.length > 0);
+                        const hasFleetInfo = f.weekday !== undefined || f.shipDays !== undefined || f.wharfName !== undefined;
+                        // 必须有船期数据，且最好有fleet信息（weekday、shipDays或wharfName）
+                        return hasScheduleData && hasFleetInfo;
                     }
-                    // 或者有directScheduleList（即使没有key，也可能包含船期信息）
+                    // 或者有directScheduleList且格式完整（即使没有key，也可能包含船期信息）
                     if (f.directScheduleList && Array.isArray(f.directScheduleList) && f.directScheduleList.length > 0) {
-                        return true;
+                        // 确保有fleetId和motherVesselPolCode
+                        return f.fleetId && f.motherVesselPolCode;
                     }
-                    // 或者有scheduleNotices（即使没有key，也可能包含船期信息）
+                    // 或者有scheduleNotices且格式完整（即使没有key，也可能包含船期信息）
                     if (f.scheduleNotices && Array.isArray(f.scheduleNotices) && f.scheduleNotices.length > 0) {
-                        return true;
+                        // 确保有fleetId和motherVesselPolCode
+                        return f.fleetId && f.motherVesselPolCode;
                     }
-                    // 或者有planSchedule（即使没有key，也可能包含船期信息）
+                    // 或者有planSchedule且格式完整（即使没有key，也可能包含船期信息）
                     if (f.planSchedule && Array.isArray(f.planSchedule) && f.planSchedule.length > 0) {
-                        return true;
+                        // 确保有fleetId和motherVesselPolCode
+                        return f.fleetId && f.motherVesselPolCode;
                     }
-                    // 或者有fleetId（即使没有其他标识，也可能包含船期信息）
-                    if (f.fleetId !== undefined && f.fleetId !== null) {
-                        return true;
-                    }
+                    // 其他情况不处理（避免将carrier对象当作fleet对象）
                     return false;
                 });
                 
@@ -1126,7 +1240,7 @@
                             const firstPart = keyMatch[1]; // 第一个数字（如"3"）
                             fleetId = keyMatch[2]; // 第二个数字是fleetId（如"188"）
                             motherVesselPolCode = keyMatch[3]; // 最后一部分是港口代码（如"CNTAO"）
-                            lineId = `${firstPart}_${fleetId}`; // 航线ID是"3_188"（前两部分）
+                            lineId = fleetId; // 航线ID是"188"（中间部分）
                             portId = motherVesselPolCode; // 港口ID是"CNTAO"（最后一部分）
                         }
                     } else if (fleet.fleetId && fleet.motherVesselPolCode) {
@@ -1158,36 +1272,62 @@
                         continue;
                     }
                     
+                    // 检查是否已经处理过相同的fleet（基于fleetId和motherVesselPolCode）
+                    // 如果已经处理过，合并数据而不是跳过（因为可能有不同的数据源）
                     const fleetKey = `${fleetId}_${portId}_${motherVesselPolCode}`;
+                    let existingFleetIndex = -1;
                     if (processedStandardizedKeys.has(fleetKey)) {
-                        continue;
+                        // 找到已存在的fleet对象，准备合并数据
+                        for (let i = 0; i < fleets.length; i++) {
+                            if (fleets[i].fleetId === String(fleetId) && 
+                                fleets[i].motherVesselPolCode === String(motherVesselPolCode)) {
+                                existingFleetIndex = i;
+                                break;
+                            }
+                        }
+                    } else {
+                        processedStandardizedKeys.add(fleetKey);
                     }
-                    processedStandardizedKeys.add(fleetKey);
                     
                     // 提取开航日：从weekday字段，如果没有则从directScheduleList的第一个carrier对象中提取
                     let weekday = fleet.weekday || fleet.weekdayOfETDFormatter || '';
                     if (!weekday && fleet.directScheduleList && Array.isArray(fleet.directScheduleList) && fleet.directScheduleList.length > 0) {
-                        const firstCarrier = fleet.directScheduleList[0];
-                        if (firstCarrier && typeof firstCarrier === 'object') {
-                            weekday = firstCarrier.weekday || firstCarrier.weekdayOfETDFormatter || '';
+                        // 遍历所有carrier对象，找到第一个有weekday的
+                        for (const carrierItem of fleet.directScheduleList) {
+                            if (carrierItem && typeof carrierItem === 'object' && 
+                                String(carrierItem.fleetId) === String(fleetId) &&
+                                carrierItem.motherVesselPolCode === motherVesselPolCode) {
+                                weekday = carrierItem.weekday || carrierItem.weekdayOfETDFormatter || '';
+                                if (weekday) break;
+                            }
                         }
                     }
                     
                     // 提取航程：从shipDays字段（注意：标准化HTML中是shipDays，不是shipdays），如果没有则从directScheduleList的第一个carrier对象中提取
                     let shipDays = fleet.shipDays || fleet.shipdays || 0;
                     if (!shipDays && fleet.directScheduleList && Array.isArray(fleet.directScheduleList) && fleet.directScheduleList.length > 0) {
-                        const firstCarrier = fleet.directScheduleList[0];
-                        if (firstCarrier && typeof firstCarrier === 'object') {
-                            shipDays = firstCarrier.shipDays || firstCarrier.shipdays || 0;
+                        // 遍历所有carrier对象，找到第一个有shipDays的
+                        for (const carrierItem of fleet.directScheduleList) {
+                            if (carrierItem && typeof carrierItem === 'object' && 
+                                String(carrierItem.fleetId) === String(fleetId) &&
+                                carrierItem.motherVesselPolCode === motherVesselPolCode) {
+                                shipDays = carrierItem.shipDays || carrierItem.shipdays || 0;
+                                if (shipDays) break;
+                            }
                         }
                     }
                     
                     // 提取启运港码头：从wharfName字段，如果没有则从directScheduleList的第一个carrier对象中提取
                     let wharfName = fleet.wharfName || '';
                     if (!wharfName && fleet.directScheduleList && Array.isArray(fleet.directScheduleList) && fleet.directScheduleList.length > 0) {
-                        const firstCarrier = fleet.directScheduleList[0];
-                        if (firstCarrier && typeof firstCarrier === 'object') {
-                            wharfName = firstCarrier.wharfName || '';
+                        // 遍历所有carrier对象，找到第一个有wharfName的
+                        for (const carrierItem of fleet.directScheduleList) {
+                            if (carrierItem && typeof carrierItem === 'object' && 
+                                String(carrierItem.fleetId) === String(fleetId) &&
+                                carrierItem.motherVesselPolCode === motherVesselPolCode) {
+                                wharfName = carrierItem.wharfName || '';
+                                if (wharfName) break;
+                            }
                         }
                     }
                     
@@ -1237,15 +1377,18 @@
                                            item.vslName !== 'BLANK SAILING' &&
                                            item.voyNo !== 'BLANK SAILING';
                             if (!isValid) return false;
-                            if (item._isDirect !== undefined) {
-                                return item._isDirect === true;
+                            // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                            // 只有在明确标记为转船（_isDirect === false）时才过滤
+                            if (item._isDirect === false) {
+                                return false; // 明确标记为转船，过滤
                             }
+                            // 其他情况都保留（包括_isDirect为true、undefined）
                             return true;
                         });
                         const expandedNotices = filteredNotices.flatMap(item => {
                             if (Array.isArray(item)) {
                                 return item.filter(n => n && typeof n === 'object' && 
-                                                  (n._isDirect === undefined || n._isDirect === true));
+                                                  n._isDirect !== false); // 只过滤明确标记为转船的
                             }
                             return [item];
                         });
@@ -1267,6 +1410,21 @@
                         const mainFleetId = String(fleetId || '');
                         if (carrierFleetId === mainFleetId && 
                             carrierObj.motherVesselPolCode === motherVesselPolCode) {
+                            
+                            // 补充开航日：如果fleet对象没有，从carrier对象中提取
+                            if (!weekday && (carrierObj.weekday || carrierObj.weekdayOfETDFormatter)) {
+                                weekday = carrierObj.weekday || carrierObj.weekdayOfETDFormatter || '';
+                            }
+                            
+                            // 补充航程：如果fleet对象没有，从carrier对象中提取
+                            if (!shipDays && (carrierObj.shipDays || carrierObj.shipdays)) {
+                                shipDays = carrierObj.shipDays || carrierObj.shipdays || 0;
+                            }
+                            
+                            // 补充启运港码头：如果fleet对象没有，从carrier对象中提取
+                            if (!wharfName && carrierObj.wharfName) {
+                                wharfName = carrierObj.wharfName || '';
+                            }
                             
                             // 提取共舱船公司：从carrier对象中提取carrierShortName和svcCode
                             if (carrierObj.carrierShortName || carrierObj.carrierCode) {
@@ -1305,11 +1463,12 @@
                                                    item.vslName !== 'BLANK SAILING' &&
                                                    item.voyNo !== 'BLANK SAILING';
                                     if (!isValid) return false;
-                                    // 如果标准化工具添加了_isDirect标记，只保留直达的
-                                    if (item._isDirect !== undefined) {
-                                        return item._isDirect === true;
+                                    // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                                    // 只有在明确标记为转船（_isDirect === false）时才过滤
+                                    if (item._isDirect === false) {
+                                        return false; // 明确标记为转船，过滤
                                     }
-                                    // 如果没有标记，默认保留（兼容旧数据）
+                                    // 其他情况都保留（包括_isDirect为true、undefined）
                                     return true;
                                 });
                                 // 合并到总数组中（避免重复，基于vslName和voyNo）
@@ -1322,7 +1481,8 @@
                                                 const exists = scheduleNotices.some(not => 
                                                     `${not.vslName || ''}_${not.voyNo || ''}` === key
                                                 );
-                                                if (!exists && (n._isDirect === undefined || n._isDirect === true)) {
+                                                // 放宽条件：只过滤明确标记为转船的
+                                                if (!exists && n._isDirect !== false) {
                                                     scheduleNotices.push(n);
                                                 }
                                             }
@@ -1340,9 +1500,34 @@
                             }
                             
                             // 从carrier对象的scheduleNoticeShare.notices中提取（补充更多船期）
-                            if (carrierObj.scheduleNoticeShare && typeof carrierObj.scheduleNoticeShare === 'object' &&
-                                carrierObj.scheduleNoticeShare.notices && Array.isArray(carrierObj.scheduleNoticeShare.notices)) {
-                                const filteredNotices = carrierObj.scheduleNoticeShare.notices.filter(item => {
+                            // 注意：scheduleNoticeShare可能是字符串（如"$a8"），需要先展开
+                            let carrierScheduleNoticeShareObj = carrierObj.scheduleNoticeShare;
+                            if (carrierScheduleNoticeShareObj && typeof carrierScheduleNoticeShareObj === 'string' && carrierScheduleNoticeShareObj.startsWith('$')) {
+                                // 这是一个引用，尝试从labelIndex中展开（如果标准化工具没有展开）
+                                const expanded = resolveReferences(carrierScheduleNoticeShareObj, labelIndex);
+                                if (expanded && typeof expanded === 'object') {
+                                    carrierScheduleNoticeShareObj = expanded;
+                                }
+                            }
+                            if (carrierScheduleNoticeShareObj && typeof carrierScheduleNoticeShareObj === 'object' &&
+                                carrierScheduleNoticeShareObj.notices && Array.isArray(carrierScheduleNoticeShareObj.notices)) {
+                                // 展开notices数组中的引用（如"$131"）
+                                const expandedNotices = [];
+                                for (const item of carrierScheduleNoticeShareObj.notices) {
+                                    if (typeof item === 'string' && item.startsWith('$')) {
+                                        // 这是一个引用，尝试展开
+                                        const expanded = resolveReferences(item, labelIndex);
+                                        if (Array.isArray(expanded)) {
+                                            expandedNotices.push(...expanded);
+                                        } else if (expanded && typeof expanded === 'object') {
+                                            expandedNotices.push(expanded);
+                                        }
+                                    } else {
+                                        expandedNotices.push(item);
+                                    }
+                                }
+                                // 过滤有效的船期对象
+                                const filteredNotices = expandedNotices.filter(item => {
                                     if (typeof item === 'string' && item.startsWith('$')) {
                                         return false;
                                     }
@@ -1353,9 +1538,12 @@
                                                    item.vslName !== 'BLANK SAILING' &&
                                                    item.voyNo !== 'BLANK SAILING';
                                     if (!isValid) return false;
-                                    if (item._isDirect !== undefined) {
-                                        return item._isDirect === true;
+                                    // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                                    // 只有在明确标记为转船（_isDirect === false）时才过滤
+                                    if (item._isDirect === false) {
+                                        return false; // 明确标记为转船，过滤
                                     }
+                                    // 其他情况都保留（包括_isDirect为true、undefined）
                                     return true;
                                 });
                                 // 合并到scheduleNotices（避免重复）
@@ -1385,9 +1573,12 @@
                                            item.vslName !== 'BLANK SAILING' &&
                                            item.voyNo !== 'BLANK SAILING';
                             if (!isValid) return false;
-                            if (item._isDirect !== undefined) {
-                                return item._isDirect === true;
+                            // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                            // 只有在明确标记为转船（_isDirect === false）时才过滤
+                            if (item._isDirect === false) {
+                                return false; // 明确标记为转船，过滤
                             }
+                            // 其他情况都保留（包括_isDirect为true、undefined）
                             return true;
                         });
                         // 合并planSchedule中的船期到scheduleNotices（避免重复）
@@ -1420,9 +1611,36 @@
                     }
                     
                     // 第三步：从scheduleNoticeShare.notices中提取（补充更多船期）
-                    if (fleet.scheduleNoticeShare && typeof fleet.scheduleNoticeShare === 'object' &&
-                        fleet.scheduleNoticeShare.notices && Array.isArray(fleet.scheduleNoticeShare.notices)) {
-                        const filteredNotices = fleet.scheduleNoticeShare.notices.filter(item => {
+                    // 注意：scheduleNoticeShare可能是字符串（如"$a8"），需要先展开
+                    let scheduleNoticeShareObj = fleet.scheduleNoticeShare;
+                    if (scheduleNoticeShareObj && typeof scheduleNoticeShareObj === 'string' && scheduleNoticeShareObj.startsWith('$')) {
+                        // 这是一个引用，尝试从labelIndex中展开（如果标准化工具没有展开）
+                        // 注意：如果标准化工具已经展开，这里应该是对象
+                        // 如果还是字符串，说明标准化工具没有展开，这里尝试展开
+                        const expanded = resolveReferences(scheduleNoticeShareObj, labelIndex);
+                        if (expanded && typeof expanded === 'object') {
+                            scheduleNoticeShareObj = expanded;
+                        }
+                    }
+                    if (scheduleNoticeShareObj && typeof scheduleNoticeShareObj === 'object' &&
+                        scheduleNoticeShareObj.notices && Array.isArray(scheduleNoticeShareObj.notices)) {
+                        // 展开notices数组中的引用（如"$131"）
+                        const expandedNotices = [];
+                        for (const item of scheduleNoticeShareObj.notices) {
+                            if (typeof item === 'string' && item.startsWith('$')) {
+                                // 这是一个引用，尝试展开
+                                const expanded = resolveReferences(item, labelIndex);
+                                if (Array.isArray(expanded)) {
+                                    expandedNotices.push(...expanded);
+                                } else if (expanded && typeof expanded === 'object') {
+                                    expandedNotices.push(expanded);
+                                }
+                            } else {
+                                expandedNotices.push(item);
+                            }
+                        }
+                        // 过滤有效的船期对象
+                        const filteredNotices = expandedNotices.filter(item => {
                             if (typeof item === 'string' && item.startsWith('$')) {
                                 return false;
                             }
@@ -1433,9 +1651,12 @@
                                            item.vslName !== 'BLANK SAILING' &&
                                            item.voyNo !== 'BLANK SAILING';
                             if (!isValid) return false;
-                            if (item._isDirect !== undefined) {
-                                return item._isDirect === true;
+                            // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                            // 只有在明确标记为转船（_isDirect === false）时才过滤
+                            if (item._isDirect === false) {
+                                return false; // 明确标记为转船，过滤
                             }
+                            // 其他情况都保留（包括_isDirect为true、undefined）
                             return true;
                         });
                         // 合并到scheduleNotices（避免重复）
@@ -1480,18 +1701,19 @@
                                                        item.vslName !== 'BLANK SAILING' &&
                                                        item.voyNo !== 'BLANK SAILING';
                                         if (!isValid) return false;
-                                        // 如果标准化工具添加了_isDirect标记，只保留直达的
-                                        if (item._isDirect !== undefined) {
-                                            return item._isDirect === true;
+                                        // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                                        // 只有在明确标记为转船（_isDirect === false）时才过滤
+                                        if (item._isDirect === false) {
+                                            return false; // 明确标记为转船，过滤
                                         }
-                                        // 如果没有标记，默认保留（兼容旧数据）
+                                        // 其他情况都保留（包括_isDirect为true、undefined）
                                         return true;
                                     });
                                     // 展开数组中的元素
                                     const expandedNotices = filteredNotices.flatMap(item => {
                                         if (Array.isArray(item)) {
                                             return item.filter(n => n && typeof n === 'object' && 
-                                                              (n._isDirect === undefined || n._isDirect === true));
+                                                              n._isDirect !== false); // 只过滤明确标记为转船的
                                         }
                                         return [item];
                                     });
@@ -1508,9 +1730,36 @@
                                 }
                                 
                                 // 从carrierItem的scheduleNoticeShare.notices中提取（补充更多船期）
-                                if (carrierItem.scheduleNoticeShare && typeof carrierItem.scheduleNoticeShare === 'object' &&
-                                    carrierItem.scheduleNoticeShare.notices && Array.isArray(carrierItem.scheduleNoticeShare.notices)) {
-                                    const filteredNotices = carrierItem.scheduleNoticeShare.notices.filter(item => {
+                                // 注意：scheduleNoticeShare可能是字符串（如"$a8"），需要先展开
+                                let scheduleNoticeShareObj = carrierItem.scheduleNoticeShare;
+                                if (scheduleNoticeShareObj && typeof scheduleNoticeShareObj === 'string' && scheduleNoticeShareObj.startsWith('$')) {
+                                    // 这是一个引用，尝试从labelIndex中展开（如果标准化工具没有展开）
+                                    // 注意：如果标准化工具已经展开，这里应该是对象
+                                    // 如果还是字符串，说明标准化工具没有展开，这里尝试展开
+                                    const expanded = resolveReferences(scheduleNoticeShareObj, labelIndex);
+                                    if (expanded && typeof expanded === 'object') {
+                                        scheduleNoticeShareObj = expanded;
+                                    }
+                                }
+                                if (scheduleNoticeShareObj && typeof scheduleNoticeShareObj === 'object' &&
+                                    scheduleNoticeShareObj.notices && Array.isArray(scheduleNoticeShareObj.notices)) {
+                                    // 展开notices数组中的引用（如"$131"）
+                                    const expandedNotices = [];
+                                    for (const item of scheduleNoticeShareObj.notices) {
+                                        if (typeof item === 'string' && item.startsWith('$')) {
+                                            // 这是一个引用，尝试展开
+                                            const expanded = resolveReferences(item, labelIndex);
+                                            if (Array.isArray(expanded)) {
+                                                expandedNotices.push(...expanded);
+                                            } else if (expanded && typeof expanded === 'object') {
+                                                expandedNotices.push(expanded);
+                                            }
+                                        } else {
+                                            expandedNotices.push(item);
+                                        }
+                                    }
+                                    // 过滤有效的船期对象
+                                    const filteredNotices = expandedNotices.filter(item => {
                                         if (typeof item === 'string' && item.startsWith('$')) {
                                             return false;
                                         }
@@ -1521,9 +1770,12 @@
                                                        item.vslName !== 'BLANK SAILING' &&
                                                        item.voyNo !== 'BLANK SAILING';
                                         if (!isValid) return false;
-                                        if (item._isDirect !== undefined) {
-                                            return item._isDirect === true;
+                                        // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                                        // 只有在明确标记为转船（_isDirect === false）时才过滤
+                                        if (item._isDirect === false) {
+                                            return false; // 明确标记为转船，过滤
                                         }
+                                        // 其他情况都保留（包括_isDirect为true、undefined）
                                         return true;
                                     });
                                     // 合并到scheduleNotices（避免重复）
@@ -1567,8 +1819,12 @@
                         }
                     }
                     
-                    // 将Set转换为字符串（共舱船公司）
-                    carriersStr = Array.from(carrierPartsSet).join('|');
+                    // 将Set转换为字符串（共舱船公司），格式：carrier1(svc1) | carrier2(svc2) | carrier3(svc3) fleetShowName
+                    carriersStr = Array.from(carrierPartsSet).join(' | ');
+                    // 添加fleetShowName（如果有）
+                    if (fleet.fleetShowName) {
+                        carriersStr = carriersStr ? `${carriersStr} ${fleet.fleetShowName}` : fleet.fleetShowName;
+                    }
                     
                     // 只处理有scheduleNotices的fleet（确保有船期数据）
                     // 注意：scheduleNotices可能从多个来源提取（fleet.scheduleNotices, fleet.planSchedule, carrier对象等）
@@ -1581,28 +1837,439 @@
                                           (fleet.directScheduleList && Array.isArray(fleet.directScheduleList) && fleet.directScheduleList.length > 0);
                     
                     if (hasScheduleData) {
-                        // 确保所有字段都被正确设置
-                        const fleetObj = {
-                            fleetId: String(fleetId), // 确保是字符串类型
-                            fleetIdPort: String(portId), // 港口ID：CNTAO
-                            lineId: String(lineId), // 航线ID：3_188（前两部分）
-                            motherVesselPolCode: String(motherVesselPolCode), // 港口代码：CNTAO
-                            podCode: fleet.podCode || '',
-                            weekday: String(weekday || ''), // 开航日（从主fleet对象的weekday字段提取）
-                            shipDays: String(shipDays || ''), // 航程（从主fleet对象的shipDays字段提取）
-                            wharfName: String(wharfName || ''), // 启运港码头（从主fleet对象的wharfName字段提取）
-                            fleetShowName: fleet.fleetShowName || '',
-                            sharedCabinCarriers: String(carriersStr || ''), // 共舱船公司（已格式化，从sharedCabinCarriers和carrier对象中提取）
-                            scheduleNotices: scheduleNotices, // 船期信息（从scheduleNotices提取）
-                            destPortWharfEnShortName: String(destPortWharfShort || ''), // 目的港码头简写
-                            destPortWharfEnFullName: String(destPortWharfFull || ''), // 目的港码头全称
-                            // 保存完整的fleet对象，以便后续处理
-                            _rawFleet: fleet,
-                            // 确保origin和dest字段也被设置（用于processVesselData）
-                            origin: '',
-                            dest: ''
-                        };
-                        fleets.push(fleetObj);
+                        // 如果已经存在相同的fleet对象，合并数据而不是创建新的
+                        if (existingFleetIndex >= 0) {
+                            const existingFleet = fleets[existingFleetIndex];
+                            // 合并scheduleNotices（避免重复）
+                            for (const notice of scheduleNotices) {
+                                const key = `${notice.vslName || ''}_${notice.voyNo || ''}`;
+                                const exists = existingFleet.scheduleNotices.some(n => 
+                                    `${n.vslName || ''}_${n.voyNo || ''}` === key
+                                );
+                                if (!exists) {
+                                    existingFleet.scheduleNotices.push(notice);
+                                }
+                            }
+                            // 合并共舱船公司（使用Set避免重复）
+                            if (carriersStr) {
+                                const existingCarriers = existingFleet.sharedCabinCarriers || '';
+                                const existingParts = existingCarriers.split(' | ').filter(p => p);
+                                const newParts = carriersStr.split(' | ').filter(p => p);
+                                const allParts = [...new Set([...existingParts, ...newParts])];
+                                existingFleet.sharedCabinCarriers = allParts.join(' | ');
+                            }
+                            // 补充缺失的字段（如果现有fleet对象没有）
+                            if (!existingFleet.weekday && weekday) existingFleet.weekday = String(weekday);
+                            if (!existingFleet.shipDays && shipDays) existingFleet.shipDays = String(shipDays);
+                            if (!existingFleet.wharfName && wharfName) existingFleet.wharfName = String(wharfName);
+                            if (!existingFleet.destPortWharfEnShortName && destPortWharfShort) {
+                                existingFleet.destPortWharfEnShortName = String(destPortWharfShort);
+                            }
+                            if (!existingFleet.destPortWharfEnFullName && destPortWharfFull) {
+                                existingFleet.destPortWharfEnFullName = String(destPortWharfFull);
+                            }
+                            // 合并_rawFleet数据（保留更完整的数据）
+                            if (fleet.directScheduleList && Array.isArray(fleet.directScheduleList) && fleet.directScheduleList.length > 0) {
+                                if (!existingFleet._rawFleet.directScheduleList || existingFleet._rawFleet.directScheduleList.length === 0) {
+                                    existingFleet._rawFleet.directScheduleList = fleet.directScheduleList;
+                                } else {
+                                    // 合并directScheduleList（避免重复）
+                                    for (const carrierItem of fleet.directScheduleList) {
+                                        if (carrierItem && typeof carrierItem === 'object') {
+                                            const carrierKey = `${carrierItem.fleetId}_${carrierItem.motherVesselPolCode}_${carrierItem.carrierCode || ''}_${carrierItem.svcCode || ''}`;
+                                            const exists = existingFleet._rawFleet.directScheduleList.some(c => 
+                                                String(c.fleetId) === String(carrierItem.fleetId) &&
+                                                c.motherVesselPolCode === carrierItem.motherVesselPolCode &&
+                                                (c.carrierCode || '') === (carrierItem.carrierCode || '') &&
+                                                (c.svcCode || '') === (carrierItem.svcCode || '')
+                                            );
+                                            if (!exists) {
+                                                existingFleet._rawFleet.directScheduleList.push(carrierItem);
+                                            }
+                                        }
+                                    }
+                                }
+                                // 重要：从合并后的directScheduleList中重新提取scheduleNotices（因为可能包含新的carrier对象）
+                                // 遍历合并后的directScheduleList，提取所有carrier对象的scheduleNotices
+                                const mergedDirectScheduleList = existingFleet._rawFleet.directScheduleList || [];
+                                for (const carrierItem of mergedDirectScheduleList) {
+                                    if (carrierItem && typeof carrierItem === 'object' && 
+                                        String(carrierItem.fleetId) === String(fleetId) &&
+                                        carrierItem.motherVesselPolCode === motherVesselPolCode) {
+                                        // 提取scheduleNotices
+                                        if (carrierItem.scheduleNotices && Array.isArray(carrierItem.scheduleNotices)) {
+                                            const filteredNotices = carrierItem.scheduleNotices.filter(item => {
+                                                if (typeof item === 'string' && item.startsWith('$')) {
+                                                    return false;
+                                                }
+                                                if (Array.isArray(item)) {
+                                                    return item.length > 0;
+                                                }
+                                                const isValid = item && 
+                                                               typeof item === 'object' && 
+                                                               item.vslName && 
+                                                               item.vslName !== 'BLANK SAILING' &&
+                                                               item.voyNo !== 'BLANK SAILING';
+                                                if (!isValid) return false;
+                                                if (item._isDirect === false) {
+                                                    return false;
+                                                }
+                                                return true;
+                                            });
+                                            const expandedNotices = filteredNotices.flatMap(item => {
+                                                if (Array.isArray(item)) {
+                                                    return item.filter(n => n && typeof n === 'object' && 
+                                                                      n._isDirect !== false);
+                                                }
+                                                return [item];
+                                            });
+                                            // 合并到existingFleet.scheduleNotices（避免重复）
+                                            for (const notice of expandedNotices) {
+                                                const key = `${notice.vslName || ''}_${notice.voyNo || ''}`;
+                                                const exists = existingFleet.scheduleNotices.some(n => 
+                                                    `${n.vslName || ''}_${n.voyNo || ''}` === key
+                                                );
+                                                if (!exists) {
+                                                    existingFleet.scheduleNotices.push(notice);
+                                                }
+                                            }
+                                        }
+                                        // 提取scheduleNoticeShare.notices
+                                        let carrierScheduleNoticeShareObj = carrierItem.scheduleNoticeShare;
+                                        if (carrierScheduleNoticeShareObj && typeof carrierScheduleNoticeShareObj === 'string' && carrierScheduleNoticeShareObj.startsWith('$')) {
+                                            const expanded = resolveReferences(carrierScheduleNoticeShareObj, labelIndex);
+                                            if (expanded && typeof expanded === 'object') {
+                                                carrierScheduleNoticeShareObj = expanded;
+                                            }
+                                        }
+                                        if (carrierScheduleNoticeShareObj && typeof carrierScheduleNoticeShareObj === 'object' &&
+                                            carrierScheduleNoticeShareObj.notices && Array.isArray(carrierScheduleNoticeShareObj.notices)) {
+                                            const expandedNotices = [];
+                                            for (const item of carrierScheduleNoticeShareObj.notices) {
+                                                if (typeof item === 'string' && item.startsWith('$')) {
+                                                    const expanded = resolveReferences(item, labelIndex);
+                                                    if (Array.isArray(expanded)) {
+                                                        expandedNotices.push(...expanded);
+                                                    } else if (expanded && typeof expanded === 'object') {
+                                                        expandedNotices.push(expanded);
+                                                    }
+                                                } else {
+                                                    expandedNotices.push(item);
+                                                }
+                                            }
+                                            const filteredNotices = expandedNotices.filter(item => {
+                                                if (typeof item === 'string' && item.startsWith('$')) {
+                                                    return false;
+                                                }
+                                                const isValid = item && 
+                                                               typeof item === 'object' && 
+                                                               !Array.isArray(item) && 
+                                                               item.vslName && 
+                                                               item.vslName !== 'BLANK SAILING' &&
+                                                               item.voyNo !== 'BLANK SAILING';
+                                                if (!isValid) return false;
+                                                if (item._isDirect === false) {
+                                                    return false;
+                                                }
+                                                return true;
+                                            });
+                                            // 合并到existingFleet.scheduleNotices（避免重复）
+                                            for (const notice of filteredNotices) {
+                                                const key = `${notice.vslName || ''}_${notice.voyNo || ''}`;
+                                                const exists = existingFleet.scheduleNotices.some(n => 
+                                                    `${n.vslName || ''}_${n.voyNo || ''}` === key
+                                                );
+                                                if (!exists) {
+                                                    existingFleet.scheduleNotices.push(notice);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (fleet.planSchedule && Array.isArray(fleet.planSchedule) && fleet.planSchedule.length > 0) {
+                                if (!existingFleet._rawFleet.planSchedule || existingFleet._rawFleet.planSchedule.length === 0) {
+                                    existingFleet._rawFleet.planSchedule = fleet.planSchedule;
+                                }
+                            }
+                        } else {
+                            // 创建新的fleet对象
+                            const fleetObj = {
+                                fleetId: String(fleetId), // 确保是字符串类型
+                                fleetIdPort: String(portId), // 港口ID：CNTAO
+                                lineId: String(lineId), // 航线ID：188（中间部分）
+                                motherVesselPolCode: String(motherVesselPolCode), // 港口代码：CNTAO
+                                podCode: fleet.podCode || '',
+                                weekday: String(weekday || ''), // 开航日（从主fleet对象的weekday字段提取）
+                                shipDays: String(shipDays || ''), // 航程（从主fleet对象的shipDays字段提取）
+                                wharfName: String(wharfName || ''), // 启运港码头（从主fleet对象的wharfName字段提取）
+                                fleetShowName: fleet.fleetShowName || '',
+                                sharedCabinCarriers: String(carriersStr || ''), // 共舱船公司（已格式化，从sharedCabinCarriers和carrier对象中提取）
+                                scheduleNotices: scheduleNotices, // 船期信息（从scheduleNotices提取）
+                                destPortWharfEnShortName: String(destPortWharfShort || ''), // 目的港码头简写
+                                destPortWharfEnFullName: String(destPortWharfFull || ''), // 目的港码头全称
+                                // 保存完整的fleet对象，以便后续处理
+                                _rawFleet: fleet,
+                                // 确保origin和dest字段也被设置（用于processVesselData）
+                                origin: '',
+                                dest: ''
+                            };
+                            fleets.push(fleetObj);
+                        }
+                    }
+                }
+                
+                // 重要：从vessels数组中提取vessel对象，并将它们分配到相应的fleet对象中
+                // 注意：此功能已暂时禁用，因为vessels数组中的vessel对象没有fleetId，匹配不够精确，可能导致误匹配
+                // 只使用fleet对象中已有的数据源（scheduleNotices、planSchedule、directScheduleList等）更可靠
+                // 如果需要启用此功能，请确保vessel对象有明确的fleetId和motherVesselPolCode字段
+                if (false && jsonData.vessels && Array.isArray(jsonData.vessels) && jsonData.vessels.length > 0) {
+                    // 为每个fleet对象创建一个vessel映射（用于快速查找）
+                    const fleetVesselMap = new Map(); // key: fleetId_motherVesselPolCode, value: Set<vesselKey>
+                    // 全局vessel匹配记录：记录每个vessel对象已经匹配到哪个fleet对象（避免重复匹配）
+                    const globalVesselMatchedFleet = new Map(); // key: vesselKey, value: fleetKey
+                    for (const fleet of fleets) {
+                        const fleetKey = `${fleet.fleetId}_${fleet.motherVesselPolCode}`;
+                        const vesselSet = new Set();
+                        // 收集该fleet对象中已有的vessel对象（基于船名+航次）
+                        if (fleet.scheduleNotices && Array.isArray(fleet.scheduleNotices)) {
+                            for (const notice of fleet.scheduleNotices) {
+                                if (notice && typeof notice === 'object' && notice.vslName && notice.voyNo) {
+                                    const vesselKey = `${notice.vslName}_${notice.voyNo}`;
+                                    vesselSet.add(vesselKey);
+                                    // 记录这个vessel对象已经属于这个fleet对象
+                                    globalVesselMatchedFleet.set(vesselKey, fleetKey);
+                                }
+                            }
+                        }
+                        fleetVesselMap.set(fleetKey, vesselSet);
+                    }
+                    
+                    // 遍历vessels数组，将vessel对象分配到相应的fleet对象中
+                    for (const vessel of jsonData.vessels) {
+                        // 跳过无效的vessel对象
+                        if (!vessel || typeof vessel !== 'object') continue;
+                        if (!vessel.vslName || !vessel.voyNo) continue;
+                        if (vessel.vslName === 'BLANK SAILING' || vessel.voyNo === 'BLANK SAILING') continue;
+                        
+                        // 重要：只处理明确标记为直达的vessel对象，或者没有标记的vessel对象（默认认为是直达）
+                        // 如果明确标记为转船（_isDirect === false），跳过
+                        if (vessel._isDirect === false) {
+                            continue;
+                        }
+                        
+                        const vesselKey = `${vessel.vslName}_${vessel.voyNo}`;
+                        
+                        // 尝试找到匹配的fleet对象
+                        // 策略1：如果vessel对象有fleetId和motherVesselPolCode，直接匹配（最高优先级）
+                        if (vessel.fleetId && vessel.motherVesselPolCode) {
+                            const fleetKey = `${vessel.fleetId}_${vessel.motherVesselPolCode}`;
+                            const existingFleet = fleets.find(f => 
+                                String(f.fleetId) === String(vessel.fleetId) && 
+                                f.motherVesselPolCode === vessel.motherVesselPolCode
+                            );
+                            if (existingFleet) {
+                                // 检查这个vessel对象是否已经匹配到其他fleet对象
+                                const existingMatchedFleet = globalVesselMatchedFleet.get(vesselKey);
+                                if (existingMatchedFleet && existingMatchedFleet !== fleetKey) {
+                                    // 已经匹配到其他fleet对象，跳过（避免重复匹配）
+                                    continue;
+                                }
+                                const vesselSet = fleetVesselMap.get(fleetKey) || new Set();
+                                if (!vesselSet.has(vesselKey)) {
+                                    // 这个vessel对象还没有在该fleet对象中，添加它
+                                    if (!existingFleet.scheduleNotices) {
+                                        existingFleet.scheduleNotices = [];
+                                    }
+                                    existingFleet.scheduleNotices.push(vessel);
+                                    vesselSet.add(vesselKey);
+                                    fleetVesselMap.set(fleetKey, vesselSet);
+                                    // 记录这个vessel对象已经匹配到这个fleet对象
+                                    globalVesselMatchedFleet.set(vesselKey, fleetKey);
+                                }
+                                continue;
+                            }
+                        }
+                        
+                        // 策略2：通过船名、航次等信息匹配（如果vessel对象没有fleetId）
+                        // 遍历所有fleet对象，查找是否有匹配的vessel对象（基于船名+航次）
+                        // 注意：这种方法可能不够精确，但可以补充一些遗漏的vessel对象
+                        let matched = false;
+                        for (const fleet of fleets) {
+                            const fleetKey = `${fleet.fleetId}_${fleet.motherVesselPolCode}`;
+                            const vesselSet = fleetVesselMap.get(fleetKey) || new Set();
+                            
+                            // 检查该fleet对象是否已经有这个vessel对象
+                            if (vesselSet.has(vesselKey)) {
+                                matched = true;
+                                break;
+                            }
+                            
+                            // 检查该fleet对象的scheduleNotices中是否有相同的船名+航次
+                            if (fleet.scheduleNotices && Array.isArray(fleet.scheduleNotices)) {
+                                const hasSameVessel = fleet.scheduleNotices.some(notice => 
+                                    notice && typeof notice === 'object' &&
+                                    notice.vslName === vessel.vslName &&
+                                    notice.voyNo === vessel.voyNo
+                                );
+                                if (hasSameVessel) {
+                                    matched = true;
+                                    vesselSet.add(vesselKey);
+                                    fleetVesselMap.set(fleetKey, vesselSet);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // 如果还没有匹配，尝试通过更智能的方式匹配（策略3：通过共舱船公司、日期等信息）
+                        // 注意：这种方法可能不够精确，但可以补充一些遗漏的vessel对象
+                        if (!matched) {
+                            // 尝试通过vessel对象的特征（如船名、航次、日期等）与fleet对象匹配
+                            // 策略3.1：从船名推断carrierCode（如ZIM DIAMOND -> ZIM, MSC LORETO -> MSC）
+                            // 常见的船公司前缀映射
+                            const carrierPrefixMap = {
+                                'ZIM': 'ZIM',
+                                'MSC': 'MSC',
+                                'CMA': 'CMA',
+                                'COSCO': 'COSCO',
+                                'EVER': 'EVER',
+                                'ONE': 'ONE',
+                                'HMM': 'HMM',
+                                'OOCL': 'OOCL',
+                                'YANG': 'YANG',
+                                'WAN': 'WAN',
+                                'SITC': 'SITC',
+                                'PIL': 'PIL',
+                                'HAPAG': 'HAPAG',
+                                'HAMBURG': 'HAMBURG',
+                                'MAERSK': 'MAERSK',
+                                'MADISON': 'MAERSK',
+                                'HYUNDAI': 'HYUNDAI',
+                                'PANDA': 'TAILWIND',
+                                'JADRANA': 'TAILWIND'
+                            };
+                            
+                            // 从船名推断carrierCode
+                            let inferredCarrierCode = '';
+                            if (vessel.vslName) {
+                                for (const [prefix, carrier] of Object.entries(carrierPrefixMap)) {
+                                    if (vessel.vslName.toUpperCase().startsWith(prefix)) {
+                                        inferredCarrierCode = carrier;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // 策略3.1：如果vessel对象有carrierCode或carrierShortName，或者从船名推断出carrierCode，尝试通过共舱船公司匹配
+                            // 重要：只匹配直达航线的fleet对象（_isDirect === true或undefined）
+                            // 关键改进：确保每个vessel对象只匹配到一个fleet对象（优先匹配第一个符合条件的fleet对象）
+                            const vesselCarrierCode = vessel.carrierCode || vessel.carrierShortName || inferredCarrierCode;
+                            if (vesselCarrierCode) {
+                                // 检查这个vessel对象是否已经匹配到其他fleet对象
+                                const existingMatchedFleet = globalVesselMatchedFleet.get(vesselKey);
+                                if (existingMatchedFleet) {
+                                    // 已经匹配到其他fleet对象，跳过（避免重复匹配）
+                                    matched = true;
+                                } else {
+                                    // 还没有匹配，尝试匹配第一个符合条件的fleet对象
+                                    for (const fleet of fleets) {
+                                        // 只处理直达航线的fleet对象
+                                        if (fleet._isDirect === false) {
+                                            continue;
+                                        }
+                                        // 检查该fleet对象的sharedCabinCarriers中是否包含vessel的carrierCode
+                                        let hasCarrier = false;
+                                        if (fleet.sharedCabinCarriers && typeof fleet.sharedCabinCarriers === 'string') {
+                                            hasCarrier = fleet.sharedCabinCarriers.includes(vesselCarrierCode);
+                                        } else if (fleet.sharedCabinCarriers && Array.isArray(fleet.sharedCabinCarriers)) {
+                                            hasCarrier = fleet.sharedCabinCarriers.some(carrier => 
+                                                carrier && typeof carrier === 'object' &&
+                                                (carrier.carrierCode === vesselCarrierCode || 
+                                                 carrier.carrierShortName === vesselCarrierCode)
+                                            );
+                                        } else if (fleet._rawFleet && fleet._rawFleet.sharedCabinCarriers) {
+                                            // 检查_rawFleet中的sharedCabinCarriers
+                                            const rawCarriers = fleet._rawFleet.sharedCabinCarriers;
+                                            if (Array.isArray(rawCarriers)) {
+                                                hasCarrier = rawCarriers.some(carrier => 
+                                                    carrier && typeof carrier === 'object' &&
+                                                    (carrier.carrierCode === vesselCarrierCode || 
+                                                     carrier.carrierShortName === vesselCarrierCode)
+                                                );
+                                            }
+                                        }
+                                        
+                                        if (hasCarrier) {
+                                            // 找到匹配的fleet对象，添加vessel对象（只匹配第一个符合条件的fleet对象）
+                                            const fleetKey = `${fleet.fleetId}_${fleet.motherVesselPolCode}`;
+                                            const vesselSet = fleetVesselMap.get(fleetKey) || new Set();
+                                            if (!vesselSet.has(vesselKey)) {
+                                                if (!fleet.scheduleNotices) {
+                                                    fleet.scheduleNotices = [];
+                                                }
+                                                fleet.scheduleNotices.push(vessel);
+                                                vesselSet.add(vesselKey);
+                                                fleetVesselMap.set(fleetKey, vesselSet);
+                                                // 记录这个vessel对象已经匹配到这个fleet对象
+                                                globalVesselMatchedFleet.set(vesselKey, fleetKey);
+                                                matched = true;
+                                                break; // 只匹配第一个符合条件的fleet对象，避免重复匹配
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 策略3.2：如果还没有匹配，尝试通过_rawFleet中的directScheduleList匹配
+                            // 检查vessel对象是否在某个fleet对象的directScheduleList的carrier对象的scheduleNotices中
+                            // 重要：只匹配直达航线的fleet对象
+                            // 关键改进：确保每个vessel对象只匹配到一个fleet对象
+                            if (!matched) {
+                                // 检查这个vessel对象是否已经匹配到其他fleet对象
+                                const existingMatchedFleet = globalVesselMatchedFleet.get(vesselKey);
+                                if (!existingMatchedFleet) {
+                                    // 还没有匹配，尝试匹配第一个符合条件的fleet对象
+                                    for (const fleet of fleets) {
+                                        // 只处理直达航线的fleet对象
+                                        if (fleet._isDirect === false) {
+                                            continue;
+                                        }
+                                        if (fleet._rawFleet && fleet._rawFleet.directScheduleList && 
+                                            Array.isArray(fleet._rawFleet.directScheduleList)) {
+                                            // 检查directScheduleList中的carrier对象是否有相同的vessel对象
+                                            const hasVesselInDirectScheduleList = fleet._rawFleet.directScheduleList.some(carrierItem => {
+                                                if (carrierItem && typeof carrierItem === 'object' &&
+                                                    carrierItem.scheduleNotices && Array.isArray(carrierItem.scheduleNotices)) {
+                                                    return carrierItem.scheduleNotices.some(notice =>
+                                                        notice && typeof notice === 'object' &&
+                                                        notice.vslName === vessel.vslName &&
+                                                        notice.voyNo === vessel.voyNo
+                                                    );
+                                                }
+                                                return false;
+                                            });
+                                            if (hasVesselInDirectScheduleList) {
+                                                // 找到匹配的fleet对象，添加vessel对象（只匹配第一个符合条件的fleet对象）
+                                                const fleetKey = `${fleet.fleetId}_${fleet.motherVesselPolCode}`;
+                                                const vesselSet = fleetVesselMap.get(fleetKey) || new Set();
+                                                if (!vesselSet.has(vesselKey)) {
+                                                    if (!fleet.scheduleNotices) {
+                                                        fleet.scheduleNotices = [];
+                                                    }
+                                                    fleet.scheduleNotices.push(vessel);
+                                                    vesselSet.add(vesselKey);
+                                                    fleetVesselMap.set(fleetKey, vesselSet);
+                                                    // 记录这个vessel对象已经匹配到这个fleet对象
+                                                    globalVesselMatchedFleet.set(vesselKey, fleetKey);
+                                                    matched = true;
+                                                    break; // 只匹配第一个符合条件的fleet对象，避免重复匹配
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -1620,7 +2287,7 @@
                 }
             }
         } catch (error) {
-            // JSON解析失败，返回空数组（不再使用旧的正则匹配策略）
+            // JSON解析失败，返回空数组（不再使用旧的正则匹配策略，避免提取不完整的数据）
             console.warn('解析展开的JSON失败:', error);
         }
         
@@ -1804,9 +2471,10 @@
 
         // 优化：只在需要时才搜索，减少搜索范围
         // 尝试从包含航线ID和港口ID的上下文中提取（缩小搜索范围，增强匹配精度）
-        // 使用更精确的模式，确保fleetId和fleetIdPort在同一fleet块中
+        // 使用更精确的模式，确保fleetId和motherVesselPolCode在同一fleet块中
+        // 注意：lineId实际上是fleetId，portId实际上是motherVesselPolCode（如"CNTAO"）
         const contextPattern = new RegExp(
-            `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,500}"fleetIdPort"\\s*:\\s*${portId}[\\s\\S]{0,10000}`,
+            `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,500}"motherVesselPolCode"\\s*:\\s*"${portId}"[\\s\\S]{0,10000}`,
             'i'
         );
         const contextMatch = decodedHtml.match(contextPattern);
@@ -1814,19 +2482,20 @@
         if (contextMatch) {
             let candidateContext = contextMatch[0];
             
-            // 验证：确保context中包含正确的fleetId和fleetIdPort
+            // 验证：确保context中包含正确的fleetId和motherVesselPolCode
+            // 注意：lineId实际上是fleetId，portId实际上是motherVesselPolCode（如"CNTAO"）
             const contextFleetIdMatch = candidateContext.match(/"fleetId"\s*:\s*(\d+)/i);
-            const contextFleetIdPortMatch = candidateContext.match(/"fleetIdPort"\s*:\s*(\d+)/i);
-            if (contextFleetIdMatch && contextFleetIdPortMatch) {
+            const contextMotherVesselPolCodeMatch = candidateContext.match(/"motherVesselPolCode"\s*:\s*"([^"]+)"/i);
+            if (contextFleetIdMatch && contextMotherVesselPolCodeMatch) {
                 const contextFleetId = contextFleetIdMatch[1];
-                const contextFleetIdPort = contextFleetIdPortMatch[1];
-                // 如果fleetId和fleetIdPort匹配，使用这个context
-                if (contextFleetId === lineId && contextFleetIdPort === portId) {
+                const contextMotherVesselPolCode = contextMotherVesselPolCodeMatch[1];
+                // 如果fleetId和motherVesselPolCode匹配，使用这个context
+                if (contextFleetId === lineId && contextMotherVesselPolCode === portId) {
                     context = candidateContext;
                 } else {
-                    // 如果不匹配，尝试查找正确的fleet块
+                    // 如果不匹配，尝试查找正确的fleet块（使用motherVesselPolCode）
                     const correctFleetPattern = new RegExp(
-                        `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,500}"fleetIdPort"\\s*:\\s*${portId}[\\s\\S]{0,10000}(?="fleetId"|$)`,
+                        `"fleetId"\\s*:\\s*${lineId}[\\s\\S]{0,500}"motherVesselPolCode"\\s*:\\s*"${portId}"[\\s\\S]{0,10000}(?="fleetId"|$)`,
                         'i'
                     );
                     const correctFleetMatch = decodedHtml.match(correctFleetPattern);
@@ -1835,11 +2504,35 @@
                     }
                 }
             } else {
+                // 如果没有找到motherVesselPolCode，直接使用candidateContext（可能包含fleetIdPort）
                 context = candidateContext;
             }
         }
         
         if (context) {
+            // 优先从fleet对象级别提取开航日、航程、启运港码头（这些字段通常在fleet对象中，而不是vessel对象中）
+            if (!result.weekday) {
+                const match = context.match(/"weekday"\s*:\s*"([^"]+)"/i) ||
+                             context.match(/"weekdayOfETDFormatter"\s*:\s*"([^"]+)"/i);
+                if (match && match[1]) {
+                    result.weekday = clean(match[1]);
+                }
+            }
+            
+            if (!result.shipdays) {
+                const match = context.match(/"shipDays"\s*:\s*(\d+)/i) ||
+                             context.match(/"shipdays"\s*:\s*(\d+)/i);
+                if (match && match[1]) {
+                    result.shipdays = clean(match[1]);
+                }
+            }
+            
+            if (!result.polWharf) {
+                const match = context.match(/"wharfName"\s*:\s*"([^"]+)"/i);
+                if (match && match[1]) {
+                    result.polWharf = normalizeWharfTokens(clean(match[1]));
+                }
+            }
             
             // 一次性匹配所有需要的字段，减少循环次数
             if (!result.vesselName) {
@@ -2425,15 +3118,15 @@
      * @returns {Array<Array>} 行数据数组
      */
     function processFleetData(fleet, odTop, carrierCache, decoded, html, visibleData) {
-        // 标准化JSON格式：lineId是"3_188"（前两部分），portId是"CNTAO"（最后一部分）
+        // 标准化JSON格式：lineId是"188"（中间部分），portId是"CNTAO"（最后一部分）
         let lineId = fleet.lineId || '';
         let portId = fleet.fleetIdPort || fleet.motherVesselPolCode || '';
         
-        // 如果lineId不存在，尝试从key字段提取（格式："3_188_CNTAO" -> "3_188"）
+        // 如果lineId不存在，尝试从key字段提取（格式："3_188_CNTAO" -> "188"）
         if (!lineId && fleet._rawFleet && fleet._rawFleet.key) {
             const keyMatch = /^(\d+)_(\d+)_([^_]+)$/.exec(fleet._rawFleet.key);
             if (keyMatch) {
-                lineId = `${keyMatch[1]}_${keyMatch[2]}`; // 前两部分
+                lineId = keyMatch[2]; // 中间部分（fleetId）
             }
         }
         
@@ -2514,6 +3207,7 @@
         // 标准化JSON格式：vessel数据优先从scheduleNotices数组中提取
         // 如果没有scheduleNotices，尝试从planSchedule中提取（某些情况下planSchedule可能包含有效数据）
         let vessels = [];
+        // 优先级1：从fleet.scheduleNotices提取（这是extractFleetAndVessels已经合并好的数据）
         if (fleet.scheduleNotices && Array.isArray(fleet.scheduleNotices) && fleet.scheduleNotices.length > 0) {
             vessels = fleet.scheduleNotices.filter(item => {
                 // 过滤掉引用（字符串类型，以$开头）
@@ -2531,43 +3225,117 @@
             });
         }
         
-        // 如果scheduleNotices为空，尝试从planSchedule中提取（包括_rawFleet中的planSchedule）
-        if (vessels.length === 0) {
-            const planSchedule = fleet.planSchedule || (fleet._rawFleet && fleet._rawFleet.planSchedule);
-            if (planSchedule && Array.isArray(planSchedule) && planSchedule.length > 0) {
-                vessels = planSchedule.filter(item => {
+        // 优先级2：如果scheduleNotices为空，尝试从_rawFleet中提取（可能包含更多数据源）
+        if (vessels.length === 0 && fleet._rawFleet) {
+            // 从_rawFleet.scheduleNotices提取
+            if (fleet._rawFleet.scheduleNotices && Array.isArray(fleet._rawFleet.scheduleNotices) && fleet._rawFleet.scheduleNotices.length > 0) {
+                const rawNotices = fleet._rawFleet.scheduleNotices.filter(item => {
                     if (typeof item === 'string' && item.startsWith('$')) {
                         return false;
                     }
-                    // 注意：不在这里过滤_isDirect，因为extractFleetAndVessels已经过滤过了
                     return item && 
                            typeof item === 'object' && 
                            !Array.isArray(item) && 
                            item.vslName && 
                            item.vslName !== 'BLANK SAILING' &&
-                           item.voyNo !== 'BLANK SAILING';
+                           item.voyNo !== 'BLANK SAILING' &&
+                           item._isDirect !== false; // 只过滤明确标记为转船的
                 });
+                vessels.push(...rawNotices);
             }
         }
         
-        // 如果还是没有vessels，尝试从scheduleNoticeShare.notices中提取
-        if (vessels.length === 0 && fleet._rawFleet) {
-            const scheduleNoticeShare = fleet._rawFleet.scheduleNoticeShare;
-            if (scheduleNoticeShare && typeof scheduleNoticeShare === 'object' &&
-                scheduleNoticeShare.notices && Array.isArray(scheduleNoticeShare.notices) && 
-                scheduleNoticeShare.notices.length > 0) {
-                vessels = scheduleNoticeShare.notices.filter(item => {
-                    if (typeof item === 'string' && item.startsWith('$')) {
-                        return false;
+        // 优先级3：从planSchedule中补充（可能包含更多船期）
+        const planSchedule = fleet.planSchedule || (fleet._rawFleet && fleet._rawFleet.planSchedule);
+        if (planSchedule && Array.isArray(planSchedule) && planSchedule.length > 0) {
+            const planScheduleVessels = planSchedule.filter(item => {
+                if (typeof item === 'string' && item.startsWith('$')) {
+                    return false;
+                }
+                // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                // 只有在明确标记为转船（_isDirect === false）时才过滤
+                if (item && typeof item === 'object' && !Array.isArray(item)) {
+                    if (item._isDirect === false) {
+                        return false; // 明确标记为转船，过滤
                     }
-                    // 注意：不在这里过滤_isDirect，因为extractFleetAndVessels已经过滤过了
-                    return item && 
-                           typeof item === 'object' && 
-                           !Array.isArray(item) && 
-                           item.vslName && 
+                    return item.vslName && 
                            item.vslName !== 'BLANK SAILING' &&
                            item.voyNo !== 'BLANK SAILING';
-                });
+                }
+                return false;
+            });
+            // 合并planSchedule中的船期（避免重复）
+            for (const vessel of planScheduleVessels) {
+                const key = `${vessel.vslName || ''}_${vessel.voyNo || ''}`;
+                const exists = vessels.some(v => 
+                    `${v.vslName || ''}_${v.voyNo || ''}` === key
+                );
+                if (!exists) {
+                    vessels.push(vessel);
+                }
+            }
+        }
+        
+        // 优先级4：从scheduleNoticeShare中补充（可能包含更多船期）
+        const scheduleNoticeShare = fleet.scheduleNoticeShare || (fleet._rawFleet && fleet._rawFleet.scheduleNoticeShare);
+        if (scheduleNoticeShare && typeof scheduleNoticeShare === 'object' &&
+            scheduleNoticeShare.notices && Array.isArray(scheduleNoticeShare.notices) && 
+            scheduleNoticeShare.notices.length > 0) {
+            const shareNotices = scheduleNoticeShare.notices.filter(item => {
+                if (typeof item === 'string' && item.startsWith('$')) {
+                    return false;
+                }
+                // 放宽条件：由于已经从directFleets中提取，理论上都是直达的
+                // 只有在明确标记为转船（_isDirect === false）时才过滤
+                if (item && typeof item === 'object' && !Array.isArray(item)) {
+                    if (item._isDirect === false) {
+                        return false; // 明确标记为转船，过滤
+                    }
+                    return item.vslName && 
+                           item.vslName !== 'BLANK SAILING' &&
+                           item.voyNo !== 'BLANK SAILING';
+                }
+                return false;
+            });
+            // 合并scheduleNoticeShare中的船期（避免重复）
+            for (const vessel of shareNotices) {
+                const key = `${vessel.vslName || ''}_${vessel.voyNo || ''}`;
+                const exists = vessels.some(v => 
+                    `${v.vslName || ''}_${v.voyNo || ''}` === key
+                );
+                if (!exists) {
+                    vessels.push(vessel);
+                }
+            }
+        }
+        
+        // 优先级5：从directScheduleList中的carrier对象中提取（最后尝试，因为可能包含重复数据）
+        if (vessels.length === 0 && fleet._rawFleet && fleet._rawFleet.directScheduleList && Array.isArray(fleet._rawFleet.directScheduleList)) {
+            for (const carrierItem of fleet._rawFleet.directScheduleList) {
+                if (carrierItem && typeof carrierItem === 'object' && !Array.isArray(carrierItem) &&
+                    carrierItem.scheduleNotices && Array.isArray(carrierItem.scheduleNotices)) {
+                    const carrierNotices = carrierItem.scheduleNotices.filter(item => {
+                        if (typeof item === 'string' && item.startsWith('$')) {
+                            return false;
+                        }
+                        return item && 
+                               typeof item === 'object' && 
+                               !Array.isArray(item) && 
+                               item.vslName && 
+                               item.vslName !== 'BLANK SAILING' &&
+                               item.voyNo !== 'BLANK SAILING' &&
+                               item._isDirect !== false; // 只过滤明确标记为转船的
+                    });
+                    for (const notice of carrierNotices) {
+                        const key = `${notice.vslName || ''}_${notice.voyNo || ''}`;
+                        const exists = vessels.some(v => 
+                            `${v.vslName || ''}_${v.voyNo || ''}` === key
+                        );
+                        if (!exists) {
+                            vessels.push(notice);
+                        }
+                    }
+                }
             }
         }
         
@@ -2773,11 +3541,13 @@
                     const voyageMatch = vesselSegment.match(/"voyNo"\s*:\s*"([^"]+)"|"voyageNo"\s*:\s*"([^"]+)"/);
                     const voyage = voyageMatch ? (voyageMatch[1] || voyageMatch[2]) : '';
                     
+                    // 放宽条件：只要有船名或航次，就提取数据（即使没有fleetId或fleetIdPort）
                     if (vesselName || voyage) {
                         const lineIdMatch = vesselSegment.match(/"fleetId"\s*:\s*"?(\d+)"?/);
                         const portIdMatch = vesselSegment.match(/"fleetIdPort"\s*:\s*"?(\d+)"?/);
-                        const lineId = lineIdMatch && lineIdMatch[1] !== '0' ? lineIdMatch[1] : '';
-                        const portId = portIdMatch && portIdMatch[1] !== '0' && portIdMatch[1] !== '1' ? portIdMatch[1] : '';
+                        // 放宽条件：不再过滤掉fleetIdPort为'0'或'1'的情况（可能包含有效数据）
+                        const lineId = lineIdMatch ? lineIdMatch[1] : '';
+                        const portId = portIdMatch ? portIdMatch[1] : '';
                         
                         rows.push([
                             clean(odTop.origin || ''),
@@ -2878,10 +3648,7 @@
         
         // 全局兜底：已禁用 - 不再使用兜底函数，避免解析转船数据
         // 只处理从directFleets中提取的直达航线数据
-        // if (rows.length === 0) {
-        //     const fallbackRows = extractFallbackVessels(mainText, odTop);
-        //     rows.push(...fallbackRows);
-        // }
+        // 注意：兜底函数可能提取到转船数据，且字段不完整，因此禁用
         
         // 注意：补充机制延迟到合并后统一处理，以提高性能
         

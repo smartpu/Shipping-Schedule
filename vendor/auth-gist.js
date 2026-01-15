@@ -701,6 +701,11 @@
             return 'monitor';
         }
         
+        // Forwarder 系列工具
+        if (pageNameLower.includes('forwarder-')) {
+            return 'forwarder';
+        }
+        
         // Admin 系列工具
         if (pageNameLower.includes('admin-')) {
             return 'admin';

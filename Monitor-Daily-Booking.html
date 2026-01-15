@@ -3442,6 +3442,51 @@
                 if (dom.manageSnapshotsBtn) dom.manageSnapshotsBtn.style.display = 'inline-block';
             };
 
+
+            // 等待 XLSX 库加载完成后再自动加载文件
+            if (typeof window.ensureXlsx === 'function') {
+                window.ensureXlsx().then(() => {
+                    // 使用 loadDefaultExcelFile 从 index.json 加载文件
+                    if (typeof window.loadDefaultExcelFile === 'function') {
+                        window.loadDefaultExcelFile('Monitor-Daily-Booking', async (file) => {
+                            // 模拟文件选择事件，触发文件处理逻辑
+                            if (dom.excelFile) {
+                                // 使用 DataTransfer API 设置文件
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                dom.excelFile.files = dataTransfer.files;
+                                
+                                // 触发 change 事件
+                                const changeEvent = new Event('change', { bubbles: true });
+                                dom.excelFile.dispatchEvent(changeEvent);
+                                
+                                if (typeof window.debugLog === 'function') {
+                                    window.debugLog(`[Monitor-Daily-Booking] 自动加载文件: ${file.name}`);
+                                }
+                            }
+                        });
+                    }
+                });
+            } else {
+                // 如果 ensureXlsx 不存在，等待一段时间后尝试加载
+                setTimeout(() => {
+                    if (typeof window.loadDefaultExcelFile === 'function') {
+                        window.loadDefaultExcelFile('Monitor-Daily-Booking', async (file) => {
+                            if (dom.excelFile) {
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                dom.excelFile.files = dataTransfer.files;
+                                const changeEvent = new Event('change', { bubbles: true });
+                                dom.excelFile.dispatchEvent(changeEvent);
+                                if (typeof window.debugLog === 'function') {
+                                    window.debugLog(`[Monitor-Daily-Booking] 自动加载文件: ${file.name}`);
+                                }
+                            }
+                        });
+                    }
+                }, 1000);
+            }
+
         })();
     </script>
 </body>

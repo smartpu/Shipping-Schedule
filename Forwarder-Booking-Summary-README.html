@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forwarder · 订舱汇总分析使用说明</title>
+    <link rel="stylesheet" href="vendor/theme-styles.css">
+    <script src="vendor/auth-gist.js"></script>
+</head>
+<body data-page="Forwarder-Booking-Summary-README.html">
+    <div class="dashboard-container">
+        <!-- 左侧导航栏占位容器（将由sidebar-loader.js动态加载） -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- 右侧内容 -->
+        <main class="dashboard-content">
+            <div class="container">
+                <!-- 顶部介绍卡片 -->
+                <div class="section-intro">
+                    <div class="section-intro-header">
+                        <div class="section-intro-content">
+                            <h2>Forwarder · 订舱汇总分析使用说明</h2>
+                            <p>基于订舱汇总数据，提供 Sales、Account、船名航次等多个维度的数据分析，支持按部门、周别、GPS、限额等不同维度进行深度分析</p>
+                        </div>
+                        <div class="section-intro-actions">
+                            <a href="dashboard.html?tab=forwarder" class="tool-link" aria-label="返回工具集首页">← 返回首页</a>
+                            <a href="Forwarder-Booking-Summary.html?from=forwarder" class="tool-link secondary" aria-label="打开工具">打开工具 →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容区域 -->
+                <div class="card-white mt-20">
+                    <div class="readme-content">
+                        <h2>工具简介</h2>
+                        <p><strong>Forwarder · 订舱汇总分析</strong> 是一款专业的订舱数据多维度分析工具，专门为指定货代集团公司设计。支持载入 Excel 文件，通过8个不同维度的分析模式，帮助用户从多个角度深入分析订舱情况，包括 Sales、Account、船名航次等维度的部门分布、周别趋势、GPS分析、限额管理等。工具主要特点：</p>
+                        <ul>
+                            <li><strong>Excel 数据导入</strong>：支持载入并解析 Excel 文件，自动识别列结构（需包含 Data 工作表）</li>
+                            <li><strong>8个分析维度</strong>：Sales + Dept、Sales + Week、Account + Dept、Account + Week、VSL/VOY + Dept、VSL/VOY + Week、VSL/VOY + GPS、VSL/VOY + Limit</li>
+                            <li><strong>多维度筛选</strong>：支持时间范围、Trade、Dept、POD、AREA、SQ/SC、SalesID等多个维度的筛选</li>
+                            <li><strong>详细BL资料</strong>：支持二级弹窗查看详细BL资料，包括BLNO、POL/POD、各柜型TEU、GPS、TON等完整信息</li>
+                            <li><strong>数据统计</strong>：实时显示总TEU、总TONS、平均GPS、TONS/TEU等关键指标</li>
+                            <li><strong>本地处理</strong>：所有数据仅在本地浏览器解析，不会上传至任何服务器</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>快速开始</h2>
+                        <ol>
+                            <li>在浏览器中打开工具页面（推荐 Chrome / Edge / Safari）</li>
+                            <li>点击"载入 Excel"按钮，选择包含 Data 工作表的 Excel 文件</li>
+                            <li>工具会自动解析数据并显示：
+                                <ul>
+                                    <li><strong>数据状态</strong>：显示已加载的记录数</li>
+                                    <li><strong>筛选器</strong>：自动填充各筛选器的选项</li>
+                                    <li><strong>数据摘要</strong>：显示总TEU、总TONS、平均GPS、TONS/TEU等关键指标</li>
+                                    <li><strong>分析结果</strong>：根据选择的维度显示相应的分析结果</li>
+                                </ul>
+                            </li>
+                            <li>选择分析维度，查看不同角度的数据</li>
+                            <li>使用筛选器调整分析范围</li>
+                            <li>点击表格行查看详细资料和BL信息</li>
+                        </ol>
+
+                        <hr>
+
+                        <h2>核心功能</h2>
+                        
+                        <h3>1. 分析维度</h3>
+                        <p>工具提供8个不同的分析维度，每个维度从不同角度展示数据：</p>
+                        <ul>
+                            <li><strong>Sales + Dept</strong>：按SalesID和部门（AMS/EMS/IAS）分析，显示各柜型分布</li>
+                            <li><strong>Sales + Week</strong>：按SalesID和周别分析，显示最近4周的订舱趋势</li>
+                            <li><strong>Account + Dept</strong>：按Account（SQ/SC NAME）和部门分析，显示各柜型分布</li>
+                            <li><strong>Account + Week</strong>：按Account和周别分析，显示最近4周的订舱趋势</li>
+                            <li><strong>VSL/VOY + Dept</strong>：按船名航次和部门分析，显示各Trade和POD的分布</li>
+                            <li><strong>VSL/VOY + Week</strong>：按船名航次和周别分析，显示各Trade和POD的时间分布</li>
+                            <li><strong>VSL/VOY + GPS</strong>：按船名航次和GPS分析，显示各Trade和POD的GPS情况，支持GPS区间筛选</li>
+                            <li><strong>VSL/VOY + Limit</strong>：按船名航次和限额分析，显示Allocation、L/F、Limit、Over等限额管理信息</li>
+                        </ul>
+
+                        <h3>2. 数据筛选</h3>
+                        <ul>
+                            <li><strong>时间范围选择</strong>：
+                                <ul>
+                                    <li>支持自定义开始和结束日期</li>
+                                    <li>提供快捷按钮：当周+未来3周、最近1个月、最近3个月</li>
+                                </ul>
+                            </li>
+                            <li><strong>Trade 筛选（AA列）</strong>：支持多选，可搜索筛选</li>
+                            <li><strong>Dept 筛选（AB列）</strong>：支持多选（AMS/EMS/IAS）</li>
+                            <li><strong>POD 筛选（K列）</strong>：支持多选，可搜索筛选</li>
+                            <li><strong>AREA 筛选（AK列）</strong>：支持多选，可搜索筛选</li>
+                            <li><strong>SQ/SC 筛选（C列）</strong>：支持多选，可搜索筛选</li>
+                            <li><strong>SQ/SC NAME 筛选（D列）</strong>：<strong style="color: #d32f2f;">已自动硬编码筛选，使用模糊匹配（包含匹配），仅显示指定的5个货代公司，不显示其他SQ/SC name</strong></li>
+                            <li><strong>SalesID 筛选（E列）</strong>：支持多选，可搜索筛选</li>
+                            <li><strong>EXP LINE 筛选（AC列）</strong>：支持多选，可搜索筛选</li>
+                        </ul>
+
+                        <h3>3. 详细资料查看</h3>
+                        <ul>
+                            <li><strong>一级详细资料</strong>：
+                                <ul>
+                                    <li>点击主表格的任意行，可查看该行的详细资料</li>
+                                    <li>不同维度显示不同的详细内容（如部门分布、周别趋势等）</li>
+                                </ul>
+                            </li>
+                            <li><strong>二级BL详细资料</strong>：
+                                <ul>
+                                    <li>在一级详细资料弹窗中，点击任意行可查看该行的详细BL资料</li>
+                                    <li>显示内容包括：BLNO、POL/POD、SalesID、SQ/SC、SQ/SC NAME、各柜型TEU（2SD、2RS、4SD、4SH、5SH、4RH、2FO、2FC、4FO、4FC）、TTL TEU、GPS、TON</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h3>4. 特殊功能</h3>
+                        <ul>
+                            <li><strong>VSL/VOY + GPS 维度</strong>：
+                                <ul>
+                                    <li>支持GPS区间筛选（低于平均GPS 90%、80%、70%等）</li>
+                                    <li>显示vs Port和vs Type列，对比当前GPS与平均GPS的差异</li>
+                                    <li>支持查看详细BL资料，按GPS升序排序</li>
+                                </ul>
+                            </li>
+                            <li><strong>VSL/VOY + Limit 维度</strong>：
+                                <ul>
+                                    <li>自动从Excel的年份表（如2025、2026等）读取Allocation和Limit数据</li>
+                                    <li>Allocation列可编辑，修改后会自动保存到浏览器本地存储</li>
+                                    <li>L/F（Load Factor）自动计算：TEU / Allocation × 100%</li>
+                                    <li>Over列显示超舱情况，超过15的会以橙色背景标识</li>
+                                    <li>支持目的港排除筛选</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>数据列说明</h2>
+                        <p>工具使用的Excel数据列映射如下：</p>
+                        <ul>
+                            <li><strong>A列</strong>：BLNO（提单号）</li>
+                            <li><strong>C列</strong>：SQ/SC</li>
+                            <li><strong>D列</strong>：SQ/SC NAME</li>
+                            <li><strong>E列</strong>：SalesID</li>
+                            <li><strong>G列</strong>：VESSEL（船名）</li>
+                            <li><strong>H列</strong>：VOYAGE（航次）</li>
+                            <li><strong>I列</strong>：POL（起运港）</li>
+                            <li><strong>K列</strong>：POD（目的港）</li>
+                            <li><strong>L列</strong>：DLY</li>
+                            <li><strong>N~W列</strong>：各柜型TEU（2SD、2RS、4SD、4SH、5SH、4RH、2FO、2FC、4FO、4FC）</li>
+                            <li><strong>X列</strong>：TTL TEU（总TEU）</li>
+                            <li><strong>Y列</strong>：TONS（吨数，需/1000）</li>
+                            <li><strong>Z列</strong>：GPS</li>
+                            <li><strong>AA列</strong>：Trade</li>
+                            <li><strong>AB列</strong>：Dept（AMS/EMS/IAS）</li>
+                            <li><strong>AC列</strong>：EXP LINE</li>
+                            <li><strong>AD列</strong>：SAIL DATE（开船日期）</li>
+                            <li><strong>AE列</strong>：WEEK（周别）</li>
+                            <li><strong>AK列</strong>：AREA</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>使用技巧</h2>
+                        <ul>
+                            <li><strong>快速切换维度</strong>：点击顶部的维度选择按钮，快速切换不同的分析维度</li>
+                            <li><strong>组合筛选</strong>：可以同时使用多个筛选器，实现精确的数据筛选</li>
+                            <li><strong>查看详细数据</strong>：点击表格行可以逐级查看详细资料，从汇总到明细</li>
+                            <li><strong>GPS分析</strong>：在VSL/VOY + GPS维度中，使用GPS区间筛选快速找出异常数据</li>
+                            <li><strong>限额管理</strong>：在VSL/VOY + Limit维度中，可以编辑Allocation值，系统会自动保存并重新计算L/F</li>
+                            <li><strong>数据持久化</strong>：修改的Allocation值会保存到浏览器本地存储，刷新页面后仍然保留</li>
+                        </ul>
+
+                        <hr>
+
+                        <h2>常见问题</h2>
+                        <h3>Q: 为什么数据没有显示？</h3>
+                        <p>A: 请确保已上传 Excel 文件并包含 Data 工作表。如果数据已加载但没有显示，请检查筛选条件是否过于严格导致没有匹配的数据。</p>
+
+                        <h3>Q: Allocation值如何修改？</h3>
+                        <p>A: 在VSL/VOY + Limit维度中，直接点击Allocation列的数值，可以编辑。修改后会自动保存到浏览器本地存储，并重新计算L/F。</p>
+
+                        <h3>Q: 如何查看详细BL资料？</h3>
+                        <p>A: 点击主表格的任意行，会弹出详细资料弹窗。在详细资料弹窗中，再次点击任意行，会弹出该行的详细BL资料。</p>
+
+                        <h3>Q: GPS区间筛选如何使用？</h3>
+                        <p>A: 在VSL/VOY + GPS维度的详细BL资料弹窗中，可以选择"低于平均GPS 90%"、"80%"、"70%"等多个选项，系统会筛选出符合条件的BL记录。</p>
+
+                        <h3>Q: 数据刷新后Allocation修改会丢失吗？</h3>
+                        <p>A: 不会。Allocation的修改会保存到浏览器本地存储，即使刷新页面或重新上传Excel文件，修改的值仍然会保留。</p>
+
+                        <h3>Q: 如何排除特定目的港？</h3>
+                        <p>A: 在VSL/VOY + Limit维度的详细资料弹窗中，可以使用目的港排除选项，勾选要排除的POD，表格会自动更新。</p>
+                    </div>
+                </div>
+
+                <!-- 使用声明 -->
+                <div class="card-white mt-20">
+                    <h2 class="usage-statement-title">Forwarder · 订舱汇总分析使用声明</h2>
+                    <p class="usage-statement-text">资料整合自用户 Excel 数据，解析结果仅供内部研判使用。</p>
+                    <p class="usage-statement-text">所有数据仅在本地浏览器解析，不会上传至任何服务器，请放心使用。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入导航栏公共组件 -->
+    <script src="vendor/common-utils.js"></script>
+    <script src="vendor/debug-utils.js"></script>
+    <script src="vendor/sidebar-loader.js"></script>
+    <script>
+        // 使用公共初始化函数
+        init001ToolPage('Forwarder-Booking-Summary-README.html', 'forwarder');
+    </script>
+</body>
+</html>
+

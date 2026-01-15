@@ -1,15 +1,19 @@
 {
   "files": {
     "001-01-manual-download": "Material-Port-Optimization.xlsx",
-    "365-01-manual-download": "Material-Port-Optimization.xlsx",
     "001-04-market-analysis": "001-03-market-analysis.xlsx",
+    "365-01-manual-download": "Material-Port-Optimization.xlsx",
     "365-04-market-watch": "365-03-market-watch.xlsx",
     "Market-Geo-Trades-Service": "Market-Geo-Trades-Service.xlsx",
     "Market-SCFI-Trends": "Market-SCFI-Trends.xlsx",
     "Market-Sailing-Schedule": {
       "001": "001-03-market-analysis.xlsx",
       "365": "365-03-market-watch.xlsx"
-    }
+    },
+    "Forwarder-Booking-Summary": "Monitor-Booking-Summary.xlsx",
+    "Monitor-Booking-Summary": "Monitor-Booking-Summary.xlsx",
+    "Monitor-Daily-Booking": "Monitor-Daily-Booking.xlsx",
+    "Monitor-Rate-Trends": "Monitor-Rate-Trends.xlsx"
   },
   "description": "Excel 文件路径配置。每个工具页面对应一个文件名，避免在源代码中暴露具体路径。"
 }

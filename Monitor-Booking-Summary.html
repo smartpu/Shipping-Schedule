@@ -482,8 +482,51 @@
             // 初始化日期范围（默认当周+未来3周）
             initDateRange();
 
+            // 等待 XLSX 库加载完成后再自动加载文件
+            if (typeof window.ensureXlsx === 'function') {
+                window.ensureXlsx().then(() => {
+                    // 使用 loadDefaultExcelFile 从 index.json 加载文件
+                    if (typeof window.loadDefaultExcelFile === 'function') {
+                        window.loadDefaultExcelFile('Monitor-Booking-Summary', async (file) => {
+                            // 模拟文件选择事件，触发文件处理逻辑
+                            const fileInput = document.getElementById('excelFile');
+                            if (fileInput) {
+                                // 使用 DataTransfer API 设置文件
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                fileInput.files = dataTransfer.files;
+                                
+                                // 触发 change 事件
+                                const changeEvent = new Event('change', { bubbles: true });
+                                fileInput.dispatchEvent(changeEvent);
+                                
+                                debugLog(`[Monitor-Booking-Summary] 自动加载文件: ${file.name}`);
+                            }
+                        });
+                    }
+                });
+            } else {
+                // 如果 ensureXlsx 不存在，等待一段时间后尝试加载
+                setTimeout(() => {
+                    if (typeof window.loadDefaultExcelFile === 'function') {
+                        window.loadDefaultExcelFile('Monitor-Booking-Summary', async (file) => {
+                            const fileInput = document.getElementById('excelFile');
+                            if (fileInput) {
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                fileInput.files = dataTransfer.files;
+                                const changeEvent = new Event('change', { bubbles: true });
+                                fileInput.dispatchEvent(changeEvent);
+                                debugLog(`[Monitor-Booking-Summary] 自动加载文件: ${file.name}`);
+                            }
+                        });
+                    }
+                }, 1000);
+            }
+
             debugLog('[Monitor-MSQ1D890] 应用初始化完成');
         }
+
 
         /**
          * 初始化文件上传

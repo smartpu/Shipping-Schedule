@@ -481,6 +481,34 @@
                 </div>
             </div>
             
+            <!-- Forwarder 系列工具 -->
+            <div id="forwarder" class="tab-content">
+                <div class="section-intro">
+                    <h2>Forwarder 系列工具</h2>
+                    <p>专门为指定货代集团公司设计的订舱数据分析工具集。提供订舱汇总分析功能，自动筛选指定货代公司的数据，支持多维度分析和详细BL资料查看。</p>
+                </div>
+                
+                <div class="tools-grid" role="list" aria-label="Forwarder系列工具列表">
+                    <div class="tool-card" role="listitem" aria-label="订舱汇总分析">
+                        <div class="tool-header">
+                            <div class="tool-icon orange" aria-hidden="true">📊</div>
+                            <div class="tool-title">
+                                <h3>订舱汇总分析</h3>
+                                <div class="tool-id">Forwarder-Booking-Summary</div>
+                            </div>
+                        </div>
+                        <div class="tool-description">
+                            订舱数据多维度分析工具，专门为指定货代集团公司设计。自动筛选 D 列（SQ/SC NAME）中指定的5个货代公司数据，支持 Sales、Account、船名航次等8个维度的深度分析，提供按部门、周别、GPS、限额等不同维度的数据分析。
+                        </div>
+                        <div class="tool-actions">
+                            <a href="Forwarder-Booking-Summary.html?from=forwarder" class="tool-link" aria-label="打开订舱汇总分析工具">打开工具 →</a>
+                            <a href="Forwarder-Booking-Summary-README.html" class="tool-link secondary" aria-label="查看订舱汇总分析工具使用说明">使用说明</a>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
             <!-- Admin 系列工具 -->
             <div id="admin" class="tab-content">
                 <div class="section-intro">
@@ -546,9 +574,10 @@
                 'tools365': '365',
                 'market': 'Market',
                 'monitor': 'Monitor',
+                'forwarder': 'Forwarder',
                 'admin': 'Admin'
             },
-            VALID_TABS: ['tools001', 'tools365', 'market', 'monitor', 'admin']
+            VALID_TABS: ['tools001', 'tools365', 'market', 'monitor', 'forwarder', 'admin']
         };
 
         /**
@@ -684,6 +713,7 @@
                         tools365: await window.hasPermission('tools365', true),
                         market: await window.hasPermission('market', true),
                         monitor: await window.hasPermission('monitor', true),
+                        forwarder: await window.hasPermission('forwarder', true),
                         admin: await window.hasPermission('admin', true)
                     };
                     

@@ -1936,7 +1936,50 @@
         };
       }
 
-      // 文件加载已改为手动选择，不再自动加载
+
+      // 等待 XLSX 库加载完成后再自动加载文件
+      if (typeof window.ensureXlsx === 'function') {
+        window.ensureXlsx().then(() => {
+          // 使用 loadDefaultExcelFile 从 index.json 加载文件
+          if (typeof window.loadDefaultExcelFile === 'function') {
+            window.loadDefaultExcelFile('Monitor-Rate-Trends', async (file) => {
+              // 模拟文件选择事件，触发文件处理逻辑
+              if (dom.fileInput) {
+                // 使用 DataTransfer API 设置文件
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                dom.fileInput.files = dataTransfer.files;
+                
+                // 触发 change 事件
+                const changeEvent = new Event('change', { bubbles: true });
+                dom.fileInput.dispatchEvent(changeEvent);
+                
+                if (typeof window.debugLog === 'function') {
+                  window.debugLog(`[Monitor-Rate-Trends] 自动加载文件: ${file.name}`);
+                }
+              }
+            });
+          }
+        });
+      } else {
+        // 如果 ensureXlsx 不存在，等待一段时间后尝试加载
+        setTimeout(() => {
+          if (typeof window.loadDefaultExcelFile === 'function') {
+            window.loadDefaultExcelFile('Monitor-Rate-Trends', async (file) => {
+              if (dom.fileInput) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                dom.fileInput.files = dataTransfer.files;
+                const changeEvent = new Event('change', { bubbles: true });
+                dom.fileInput.dispatchEvent(changeEvent);
+                if (typeof window.debugLog === 'function') {
+                  window.debugLog(`[Monitor-Rate-Trends] 自动加载文件: ${file.name}`);
+                }
+              }
+            });
+          }
+        }, 1000);
+      }
 
     </script>
   </body>

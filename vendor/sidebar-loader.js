@@ -55,6 +55,14 @@
                 { href: 'Monitor-Booking-Summary.html?from=monitor', icon: '📊', label: '订舱汇总分析' }
             ]
         },
+        forwarder: {
+            icon: '🚚',
+            label: 'Forwarder 系列工具',
+            submenuId: 'submenuForwarder',
+            items: [
+                { href: 'Forwarder-Booking-Summary.html?from=forwarder', icon: '📊', label: '订舱汇总分析' }
+            ]
+        },
         admin: {
             icon: '⚙️',
             label: 'Admin 系列工具',
@@ -101,6 +109,7 @@
                 tools365: true,
                 market: true,
                 monitor: true,
+                forwarder: true,
                 admin: providedPermission
             };
             
@@ -120,7 +129,7 @@
             // admin菜单需要权限检查，其他菜单在dashboard中默认展开
             const shouldExpand = sectionKey === 'admin' 
                 ? (isActive || (isDashboard && permissions.admin))
-                : (isActive || (isDashboard && ['tools365', 'market', 'monitor'].includes(sectionKey)));
+                : (isActive || (isDashboard && ['tools365', 'market', 'monitor', 'forwarder'].includes(sectionKey)));
             const isExpanded = shouldExpand && hasPermission; // 只有有权限时才展开
             // 修正主菜单链接路径
             let mainHref = isDashboard ? '#' : `dashboard.html?tab=${sectionKey}`;
@@ -316,7 +325,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const section = item.dataset.section;
-                const submenuId = NAV_CONFIG[section]?.submenuId || `submenu${section === 'tools001' ? '001' : section === 'tools365' ? '365' : section === 'market' ? 'Market' : section === 'monitor' ? 'Monitor' : 'Admin'}`;
+                const submenuId = NAV_CONFIG[section]?.submenuId || `submenu${section === 'tools001' ? '001' : section === 'tools365' ? '365' : section === 'market' ? 'Market' : section === 'monitor' ? 'Monitor' : section === 'forwarder' ? 'Forwarder' : 'Admin'}`;
                 const submenu = document.getElementById(submenuId);
                 
                 if (submenu) {
@@ -466,14 +475,16 @@
             else if (fromParam === 'tools365') currentSection = 'tools365';
             else if (fromParam === 'market') currentSection = 'market';
             else if (fromParam === 'monitor') currentSection = 'monitor';
+            else if (fromParam === 'forwarder') currentSection = 'forwarder';
             else if (fromParam === 'admin') currentSection = 'admin';
             else {
                 // 根据文件名判断
                 if (currentPage.includes('001-')) currentSection = 'tools001';
                 else if (currentPage.includes('365-')) currentSection = 'tools365';
                 else if (currentPage.includes('Market-')) currentSection = 'market';
-                else if (currentPage.includes('Monitor-')) currentSection = 'monitor';
-                else if (currentPage.includes('Admin-')) currentSection = 'admin';
+            else if (currentPage.includes('Monitor-')) currentSection = 'monitor';
+            else if (currentPage.includes('Forwarder-')) currentSection = 'forwarder';
+            else if (currentPage.includes('Admin-')) currentSection = 'admin';
                 else if (currentPage.includes('tests/')) currentSection = 'admin';
             }
         }
@@ -511,6 +522,7 @@
             tools365: true,
             market: true,
             monitor: false,
+            forwarder: false,
             admin: false
         };
         
@@ -586,6 +598,7 @@
                     tools365: await window.hasPermission('tools365', true),
                     market: await window.hasPermission('market', true),
                     monitor: await window.hasPermission('monitor', true),
+                    forwarder: await window.hasPermission('forwarder', true),
                     admin: await window.hasPermission('admin', true)
                 };
                 

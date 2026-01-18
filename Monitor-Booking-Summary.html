@@ -139,17 +139,31 @@
                         <div class="destination-filters">
                             <!-- 一行：8个筛选器 -->
                             <div class="filter-row" style="grid-template-columns: repeat(8, 1fr); gap: 15px;">
-                                <!-- Dept 筛选 -->
+                                <!-- SQ/SC Name 筛选（D列） -->
                                 <div class="filter-group">
-                                    <label for="deptFilter">Dept</label>
+                                    <label for="sqScNameFilter">SQ/SC Name</label>
                                     <small class="multi-hint">可多选（Ctrl/点击切换）</small>
-                                    <input type="text" id="deptSearch" class="filter-search" placeholder="搜索 Dept..." autocomplete="off">
-                                    <select id="deptFilter" multiple size="6" class="multi-select">
-                                        <option value="">全部 Dept</option>
+                                    <input type="text" id="sqScNameSearch" class="filter-search" placeholder="搜索 SQ/SC Name..." autocomplete="off">
+                                    <select id="sqScNameFilter" multiple size="6" class="multi-select">
+                                        <option value="">全部 SQ/SC Name</option>
                                     </select>
                                     <div class="filter-actions">
-                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="dept" data-action="select-all">全部选择</button>
-                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="dept" data-action="clear-all">清除选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="sqScName" data-action="select-all">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="sqScName" data-action="clear-all">清除选择</button>
+                                    </div>
+                                </div>
+
+                                <!-- Booking Party 筛选（F列） -->
+                                <div class="filter-group">
+                                    <label for="bookingPartyFilter">Booking Party</label>
+                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
+                                    <input type="text" id="bookingPartySearch" class="filter-search" placeholder="搜索 Booking Party..." autocomplete="off">
+                                    <select id="bookingPartyFilter" multiple size="6" class="multi-select">
+                                        <option value="">全部 Booking Party</option>
+                                    </select>
+                                    <div class="filter-actions">
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="bookingParty" data-action="select-all">全部选择</button>
+                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="bookingParty" data-action="clear-all">清除选择</button>
                                     </div>
                                 </div>
 
@@ -226,20 +240,6 @@
                                     <div class="filter-actions">
                                         <button type="button" class="filter-btn btn-sweep-blue" data-filter="commodity" data-action="select-all">全部选择</button>
                                         <button type="button" class="filter-btn btn-sweep-blue" data-filter="commodity" data-action="clear-all">清除选择</button>
-                                    </div>
-                                </div>
-
-                                <!-- AREA 筛选 -->
-                                <div class="filter-group">
-                                    <label for="areaFilter">AREA</label>
-                                    <small class="multi-hint">可多选（Ctrl/点击切换）</small>
-                                    <input type="text" id="areaSearch" class="filter-search" placeholder="搜索 AREA..." autocomplete="off">
-                                    <select id="areaFilter" multiple size="6" class="multi-select">
-                                        <option value="">全部 AREA</option>
-                                    </select>
-                                    <div class="filter-actions">
-                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="area" data-action="select-all">全部选择</button>
-                                        <button type="button" class="filter-btn btn-sweep-blue" data-filter="area" data-action="clear-all">清除选择</button>
                                     </div>
                                 </div>
 
@@ -440,7 +440,8 @@
             REEFER: 'AH', // AH列 REEFER
             SPECIAL: 'AI', // AI列 SPECIAL
             AREA: 'AK', // AK列 AREA
-            COMMODITY: 'M' // M列 COMMODITY
+            COMMODITY: 'M', // M列 COMMODITY
+            BOOKING_PARTY: 'F' // F列 Booking Party
         };
 
         /**
@@ -938,45 +939,45 @@
         function initFilterOptions() {
             if (rawData.length === 0) return;
 
-            // 获取所有唯一值
-            const deptSet = new Set();
+            // 获取所有唯一值（按顺序：SQ/SC Name, Booking Party, Trade, EXP LINE, TYPE, DRY/REEFER/SPECIAL, Commodity Item, DLY）
+            const sqScNameSet = new Set();
+            const bookingPartySet = new Set();
             const tradeSet = new Set();
             const expLineSet = new Set();
             const typeSet = new Set();
-            const areaSet = new Set();
             const dlySet = new Set();
 
             rawData.forEach(row => {
                 // 获取列值（需要根据实际Excel列名调整）
-                const dept = getColumnValue(row, COLUMN_MAP.DEPT);
+                const sqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME);
+                const bookingParty = getColumnValue(row, COLUMN_MAP.BOOKING_PARTY);
                 const trade = getColumnValue(row, COLUMN_MAP.TRADE);
                 const expLine = getColumnValue(row, COLUMN_MAP.EXP_LINE);
                 const type = getColumnValue(row, COLUMN_MAP.TYPE) || 'FAK'; // 空白标记为FAK
-                const area = getColumnValue(row, COLUMN_MAP.AREA);
                 const dly = getColumnValue(row, COLUMN_MAP.DLY);
 
-                if (dept) deptSet.add(dept);
+                if (sqScName) sqScNameSet.add(sqScName);
+                if (bookingParty) bookingPartySet.add(bookingParty);
                 if (trade) tradeSet.add(trade);
                 if (expLine) expLineSet.add(expLine);
                 if (type) typeSet.add(type);
-                if (area) areaSet.add(area);
                 if (dly) dlySet.add(dly);
             });
 
-            // 填充筛选器选项
-            populateFilter('deptFilter', Array.from(deptSet).sort());
+            // 填充筛选器选项（按顺序：SQ/SC Name, Booking Party, Trade, EXP LINE, TYPE, DRY/REEFER/SPECIAL, Commodity Item, DLY）
+            populateFilter('sqScNameFilter', Array.from(sqScNameSet).sort());
+            populateFilter('bookingPartyFilter', Array.from(bookingPartySet).sort());
             populateFilter('tradeFilter', Array.from(tradeSet).sort());
             populateFilter('expLineFilter', Array.from(expLineSet).sort());
             populateFilter('typeFilter', Array.from(typeSet).sort());
-            populateFilter('areaFilter', Array.from(areaSet).sort());
             populateFilter('dlyFilter', Array.from(dlySet).sort());
 
             // 默认全部选中"全部"选项
-            selectAllOption('deptFilter');
+            selectAllOption('sqScNameFilter');
+            selectAllOption('bookingPartyFilter');
             selectAllOption('tradeFilter');
             selectAllOption('expLineFilter');
             selectAllOption('typeFilter');
-            selectAllOption('areaFilter');
             selectAllOption('dlyFilter');
             selectAllOption('containerTypeFilter');
             selectAllOption('commodityFilter');
@@ -1110,15 +1111,15 @@
          * 初始化筛选器
          */
         function initFilters() {
-            // 绑定搜索功能
+            // 绑定搜索功能（按顺序：SQ/SC Name, Booking Party, Trade, EXP LINE, TYPE, DRY/REEFER/SPECIAL, Commodity Item, DLY）
             const searchInputs = [
-                { input: 'deptSearch', filter: 'deptFilter' },
+                { input: 'sqScNameSearch', filter: 'sqScNameFilter' },
+                { input: 'bookingPartySearch', filter: 'bookingPartyFilter' },
                 { input: 'tradeSearch', filter: 'tradeFilter' },
                 { input: 'expLineSearch', filter: 'expLineFilter' },
                 { input: 'typeSearch', filter: 'typeFilter' },
                 { input: 'containerTypeSearch', filter: 'containerTypeFilter' },
                 { input: 'commoditySearch', filter: 'commodityFilter' },
-                { input: 'areaSearch', filter: 'areaFilter' },
                 { input: 'dlySearch', filter: 'dlyFilter' }
             ];
 
@@ -1185,8 +1186,8 @@
 
             // 生成筛选器哈希值（用于缓存）
             function getFilterHash() {
-                const filterIds = ['deptFilter', 'tradeFilter', 'expLineFilter', 'typeFilter', 
-                                 'containerTypeFilter', 'commodityFilter', 'areaFilter', 'dlyFilter'];
+                const filterIds = ['sqScNameFilter', 'bookingPartyFilter', 'tradeFilter', 'expLineFilter', 'typeFilter', 
+                                 'containerTypeFilter', 'commodityFilter', 'dlyFilter'];
                 const startDate = document.getElementById('startDate')?.value || '';
                 const endDate = document.getElementById('endDate')?.value || '';
                 
@@ -1203,8 +1204,8 @@
             let lastFilterHash = '';
 
             // 绑定筛选器变化事件（使用防抖优化）
-            const filterIds = ['deptFilter', 'tradeFilter', 'expLineFilter', 'typeFilter', 
-                              'containerTypeFilter', 'commodityFilter', 'areaFilter', 'dlyFilter'];
+            const filterIds = ['sqScNameFilter', 'bookingPartyFilter', 'tradeFilter', 'expLineFilter', 'typeFilter', 
+                              'containerTypeFilter', 'commodityFilter', 'dlyFilter'];
             filterIds.forEach(filterId => {
                 const filter = document.getElementById(filterId);
                 if (filter) {
@@ -1244,8 +1245,11 @@
                     const sailDate = getColumnValue(row, COLUMN_MAP.SAIL_DATE);
                     if (!isDateInRange(sailDate)) return false;
 
-                    // Dept筛选
-                    if (!isFilterMatch(row, COLUMN_MAP.DEPT, 'deptFilter')) return false;
+                    // SQ/SC Name筛选（D列）
+                    if (!isFilterMatch(row, COLUMN_MAP.SQ_SC_NAME, 'sqScNameFilter')) return false;
+
+                    // Booking Party筛选（F列）
+                    if (!isFilterMatch(row, COLUMN_MAP.BOOKING_PARTY, 'bookingPartyFilter')) return false;
 
                     // Trade筛选
                     if (!isFilterMatch(row, COLUMN_MAP.TRADE, 'tradeFilter')) return false;
@@ -1262,9 +1266,6 @@
 
                     // Commodity Item筛选
                     if (!isCommodityMatch(row)) return false;
-
-                    // AREA筛选
-                    if (!isFilterMatch(row, COLUMN_MAP.AREA, 'areaFilter')) return false;
 
                     // DLY筛选
                     if (!isFilterMatch(row, COLUMN_MAP.DLY, 'dlyFilter')) return false;

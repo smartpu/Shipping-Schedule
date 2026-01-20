@@ -733,8 +733,9 @@
             }
             return null;
         }
-        const sixHours = 6 * 60 * 60 * 1000;
-        if (!force && wciData && Date.now() - wciData.timestamp < sixHours) {
+        // 减少缓存时间到1小时，优先显示最新数据
+        const oneHour = 1 * 60 * 60 * 1000;
+        if (!force && wciData && Date.now() - wciData.timestamp < oneHour) {
             renderWciStatus();
             return wciData;
         }
@@ -822,7 +823,7 @@
         }
         
         const normalized = text.replace(/\r/g, ' ').replace(/\n/g, ' ');
-        const result = { timestamp: Date.now(), worldIndex: null, worldIndexWoW: null, changePct: null, routes: [] };
+        const result = { timestamp: Date.now(), worldIndex: null, worldIndexWoW: null, worldIndexYoY: null, changePct: null, routes: [], dateColumns: [] };
         
         // 解析更新时间（从 Canva 卡片中提取）
         // 格式：最近更新时间: 2025/12/28 13:56:04
@@ -839,32 +840,101 @@
             }
         }
         
-        // 解析 Composite Index（从表格中）
-        // 格式：Composite Index / WCI-COMPOSITE / $1,957 / $2,182 / $2,213 / 1%
-        const compositeMatch = normalized.match(/Composite\s+Index[^$]*WCI-COMPOSITE[^$]*\$([\d,]+)[^$]*\$([\d,]+)[^$]*\$([\d,]+)[^%]*(\d+)%/i);
-        if (compositeMatch) {
-            // 三个价格值：第一个是 11 Dec，第二个是 18 Dec，第三个是 25 Dec（最新）
-            const price11Dec = parseFloat(compositeMatch[1].replace(/,/g, ''));
-            const price18Dec = parseFloat(compositeMatch[2].replace(/,/g, ''));
-            const price25Dec = parseFloat(compositeMatch[3].replace(/,/g, ''));
+        // 第一步：动态解析表格中的日期列（优先显示最新数据）
+        // 匹配日期格式：如 "25 Dec 2025", "8 Jan 2026", "15 Jan 2026"
+        const datePattern = /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/gi;
+        const dateMatches = [];
+        let dateMatch;
+        while ((dateMatch = datePattern.exec(normalized)) !== null) {
+            const dateStr = `${dateMatch[1]} ${dateMatch[2]} ${dateMatch[3]}`;
+            // 避免重复
+            if (!dateMatches.find(d => d.original === dateStr)) {
+                try {
+                    const dateObj = new Date(dateStr);
+                    if (!isNaN(dateObj.getTime())) {
+                        dateMatches.push({
+                            original: dateStr,
+                            date: dateObj,
+                            timestamp: dateObj.getTime()
+                        });
+                    }
+                } catch (e) {
+                    // 忽略日期解析错误
+                }
+            }
+        }
+        
+        // 按时间排序，最新的在前
+        dateMatches.sort((a, b) => b.timestamp - a.timestamp);
+        // 取前3个最新的日期（通常表格有3个日期列）
+        const dateColumns = dateMatches.slice(0, 3).map(d => d.original);
+        result.dateColumns = dateColumns;
+        
+        // 第二步：解析 Composite Index（从表格中）
+        // 格式：Composite Index / WCI-COMPOSITE / $price1 / $price2 / $price3 / weekly% / annual%
+        // 匹配所有价格列（动态数量）
+        const pricePattern = /\$([\d,]+)/g;
+        const compositeSection = normalized.match(/Composite\s+Index[^$]*WCI-COMPOSITE[^$]*((?:\$[\d,]+[^$]*)+)/i);
+        
+        if (compositeSection) {
+            const prices = [];
+            let priceMatch;
+            const priceSection = compositeSection[1];
+            pricePattern.lastIndex = 0; // 重置正则
+            while ((priceMatch = pricePattern.exec(priceSection)) !== null && prices.length < 5) {
+                const price = parseFloat(priceMatch[1].replace(/,/g, ''));
+                if (isFinite(price) && price > 0) {
+                    prices.push(price);
+                }
+            }
             
-            // 取最新的价格（25 Dec 2025，即第三个值）作为 worldIndex
-            if (isFinite(price25Dec) && price25Dec > 0) {
-                result.worldIndex = price25Dec;
-                // 保存所有三个日期的价格
-                result.price11Dec = isFinite(price11Dec) && price11Dec > 0 ? price11Dec : null;
-                result.price18Dec = isFinite(price18Dec) && price18Dec > 0 ? price18Dec : null;
+            // 取最新的价格（最后一个）作为 worldIndex
+            if (prices.length > 0) {
+                const latestPrice = prices[prices.length - 1];
+                result.worldIndex = latestPrice;
                 
-                // 解析 Weekly change
-                const changeValue = parseFloat(compositeMatch[4]);
-                if (isFinite(changeValue)) {
-                    // 检查是否有向上箭头或 "increased" 关键词
-                    const contextBefore = normalized.substring(0, normalized.indexOf(compositeMatch[0]));
-                    const contextAfter = normalized.substring(normalized.indexOf(compositeMatch[0]), normalized.indexOf(compositeMatch[0]) + 500);
-                    const isIncrease = contextAfter.includes('↑') || contextAfter.includes('increased') || 
-                                      contextAfter.toLowerCase().includes('up') || changeValue >= 0;
-                    result.worldIndexWoW = isIncrease ? changeValue : -changeValue;
-                    result.changePct = result.worldIndexWoW;
+                // 保存所有日期的价格
+                if (dateColumns.length > 0) {
+                    dateColumns.forEach((dateStr, index) => {
+                        if (prices[index] !== undefined) {
+                            const dateKey = `price${dateStr.replace(/\s+/g, '')}`;
+                            result[dateKey] = prices[index];
+                        }
+                    });
+                } else {
+                    // 如果没有解析到日期，使用旧的命名方式作为备用
+                    if (prices[0]) result.price11Dec = prices[0];
+                    if (prices[1]) result.price18Dec = prices[1];
+                    if (prices[2]) result.price25Dec = prices[2];
+                }
+                
+                // 解析 Weekly change 和 Annual change
+                const changeSection = normalized.substring(
+                    Math.max(0, normalized.indexOf(compositeSection[0]) - 200),
+                    normalized.indexOf(compositeSection[0]) + compositeSection[0].length + 800
+                );
+                
+                // Weekly change
+                const weeklyChangeMatch = changeSection.match(/Weekly\s+change[^%]*([+\-]?\d+(?:\.\d+)?)%/i) || 
+                                         changeSection.match(/([+\-]?\d+(?:\.\d+)?)%[^%]*Weekly/i);
+                if (weeklyChangeMatch) {
+                    const changeValue = parseFloat(weeklyChangeMatch[1]);
+                    if (isFinite(changeValue)) {
+                        const isIncrease = changeSection.includes('↑') || changeValue >= 0;
+                        result.worldIndexWoW = isIncrease ? Math.abs(changeValue) : -Math.abs(changeValue);
+                        result.changePct = result.worldIndexWoW;
+                    }
+                }
+                
+                // Annual change
+                const annualChangeMatch = changeSection.match(/Annual\s+change[^%]*([+\-]?\d+(?:\.\d+)?)%/i) ||
+                                         changeSection.match(/([+\-]?\d+(?:\.\d+)?)%[^%]*Annual/i);
+                if (annualChangeMatch) {
+                    const changeValue = parseFloat(annualChangeMatch[1]);
+                    if (isFinite(changeValue)) {
+                        const isIncrease = changeSection.includes('↑') || changeValue >= 0;
+                        result.worldIndexYoY = isIncrease ? Math.abs(changeValue) : -Math.abs(changeValue);
+                    }
                 }
             }
         }
@@ -889,69 +959,76 @@
                 return;
             }
             
-            // 匹配表格行：Route Name / Route Code / $price1 / $price2 / $price3 / change%
-            // 使用路由名称和代码的组合来匹配
             const routeNameEscaped = routeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const codeEscaped = code.replace(/-/g, '\\-');
             
-            // 尝试匹配：Route Name + Route Code + 三个价格 + Weekly change
-            const tableRowMatch = normalized.match(
-                new RegExp(`${routeNameEscaped}[^$]*${codeEscaped}[^$]*\\$([\\d,]+)[^$]*\\$([\\d,]+)[^$]*\\$([\\d,]+)[^%]*(\\d+)%`, 'i')
-            );
+            // 匹配表格行：Route Name / Route Code / $price1 / $price2 / $price3 / weekly% / annual%
+            const routeSection = normalized.match(new RegExp(`${routeNameEscaped}[^$]*${codeEscaped}[^$]*((?:\\$[\\d,]+[^$]*)+)`, 'i'));
             
-            if (tableRowMatch) {
-                // 三个价格值：第一个是 11 Dec，第二个是 18 Dec，第三个是 25 Dec（最新）
-                const price11Dec = parseFloat(tableRowMatch[1].replace(/,/g, ''));
-                const price18Dec = parseFloat(tableRowMatch[2].replace(/,/g, ''));
-                const price25Dec = parseFloat(tableRowMatch[3].replace(/,/g, ''));
-                
-                // 取最新的价格（25 Dec 2025，即第三个值）作为 rate
-                if (isFinite(price25Dec) && price25Dec > 0) {
-                    const changeValue = parseFloat(tableRowMatch[4]);
-                    const isIncrease = normalized.indexOf(tableRowMatch[0]) < normalized.indexOf(tableRowMatch[4])
-                        ? normalized.substring(normalized.indexOf(tableRowMatch[0]), normalized.indexOf(tableRowMatch[4])).includes('↑') ||
-                          normalized.substring(normalized.indexOf(tableRowMatch[0]), normalized.indexOf(tableRowMatch[4])).includes('increased')
-                        : changeValue >= 0;
-                    
-                    result.routes.push({
-                        code,
-                        route: label,
-                        rate: price25Dec, // 最新价格（25 Dec）
-                        wow: isFinite(changeValue) ? (isIncrease ? changeValue : -changeValue) : null,
-                        // 保存所有三个日期的价格用于表格显示
-                        price11Dec: isFinite(price11Dec) && price11Dec > 0 ? price11Dec : null,
-                        price18Dec: isFinite(price18Dec) && price18Dec > 0 ? price18Dec : null,
-                        price25Dec: price25Dec
-                    });
-                    return; // 已从表格解析，跳过其他方法
+            if (routeSection) {
+                const prices = [];
+                let priceMatch;
+                const priceSection = routeSection[1];
+                pricePattern.lastIndex = 0; // 重置正则
+                while ((priceMatch = pricePattern.exec(priceSection)) !== null && prices.length < 5) {
+                    const price = parseFloat(priceMatch[1].replace(/,/g, ''));
+                    if (isFinite(price) && price > 0) {
+                        prices.push(price);
+                    }
                 }
-            }
-            
-            // 备用方法：只匹配代码和最新价格
-            const codePriceMatch = normalized.match(new RegExp(`${codeEscaped}[^$]*25\\s+Dec\\s+2025[^$]*\\$([\\d,]+)`, 'i'));
-            if (codePriceMatch) {
-                const value = parseFloat(codePriceMatch[1].replace(/,/g, ''));
-                if (isFinite(value) && value > 0) {
-                    // 尝试解析 Weekly change
-                    const weeklyChangeMatch = normalized.match(new RegExp(`${codeEscaped}[^%]*Weekly\\s+change[^%]*(\\d+)%`, 'i'));
-                    let wowValue = null;
+                
+                if (prices.length > 0) {
+                    const latestPrice = prices[prices.length - 1];
+                    const routeData = {
+                        code,
+                        route: wciCodeMap[code] || label,
+                        rate: latestPrice
+                    };
+                    
+                    // 保存所有日期的价格
+                    if (dateColumns.length > 0) {
+                        dateColumns.forEach((dateStr, index) => {
+                            if (prices[index] !== undefined) {
+                                const dateKey = `price${dateStr.replace(/\s+/g, '')}`;
+                                routeData[dateKey] = prices[index];
+                            }
+                        });
+                    } else {
+                        // 备用命名
+                        if (prices[0]) routeData.price11Dec = prices[0];
+                        if (prices[1]) routeData.price18Dec = prices[1];
+                        if (prices[2]) routeData.price25Dec = prices[2];
+                    }
+                    
+                    // 解析 Weekly change 和 Annual change
+                    const changeSection = normalized.substring(
+                        Math.max(0, normalized.indexOf(routeSection[0]) - 200),
+                        normalized.indexOf(routeSection[0]) + routeSection[0].length + 800
+                    );
+                    
+                    // Weekly change
+                    const weeklyChangeMatch = changeSection.match(/Weekly\s+change[^%]*([+\-]?\d+(?:\.\d+)?)%/i) ||
+                                             changeSection.match(/([+\-]?\d+(?:\.\d+)?)%[^%]*Weekly/i);
                     if (weeklyChangeMatch) {
                         const changeValue = parseFloat(weeklyChangeMatch[1]);
                         if (isFinite(changeValue)) {
-                            const isIncrease = normalized.indexOf(codeEscaped) < normalized.indexOf(weeklyChangeMatch[0])
-                                ? normalized.substring(normalized.indexOf(codeEscaped), normalized.indexOf(weeklyChangeMatch[0])).includes('↑') ||
-                                  normalized.substring(normalized.indexOf(codeEscaped), normalized.indexOf(weeklyChangeMatch[0])).includes('increased')
-                                : changeValue >= 0;
-                            wowValue = isIncrease ? changeValue : -changeValue;
+                            const isIncrease = changeSection.includes('↑') || changeValue >= 0;
+                            routeData.wow = isIncrease ? Math.abs(changeValue) : -Math.abs(changeValue);
                         }
                     }
                     
-                    result.routes.push({
-                        code,
-                        route: label,
-                        rate: value,
-                        wow: wowValue
-                    });
+                    // Annual change
+                    const annualChangeMatch = changeSection.match(/Annual\s+change[^%]*([+\-]?\d+(?:\.\d+)?)%/i) ||
+                                           changeSection.match(/([+\-]?\d+(?:\.\d+)?)%[^%]*Annual/i);
+                    if (annualChangeMatch) {
+                        const changeValue = parseFloat(annualChangeMatch[1]);
+                        if (isFinite(changeValue)) {
+                            const isIncrease = changeSection.includes('↑') || changeValue >= 0;
+                            routeData.yoy = isIncrease ? Math.abs(changeValue) : -Math.abs(changeValue);
+                        }
+                    }
+                    
+                    result.routes.push(routeData);
                 }
             }
         });
@@ -1068,18 +1145,33 @@
             return `$${price.toLocaleString()}`;
         };
         
-        // 创建表格容器，设置合适的宽度和高度
-        let tableHtml = '<div class="wci-table-container" style="max-width: 900px; max-height: 450px; overflow-x: auto; overflow-y: auto; margin-top: 10px;">';
-        tableHtml += '<table class="wci-table" style="width: 100%; min-width: 800px; border-collapse: collapse; font-size: 12px;">';
+        // 获取日期列（优先显示最新数据）
+        const dateColumns = wciData.dateColumns && wciData.dateColumns.length > 0 
+            ? wciData.dateColumns 
+            : ['11 Dec 2025', '18 Dec 2025', '25 Dec 2025']; // 备用日期
         
-        // 表头
+        // 计算列宽（动态调整）
+        const baseColWidth = 18; // ROUTE列
+        const codeColWidth = 15; // Route code列
+        const dateColWidth = Math.max(12, Math.floor((100 - baseColWidth - codeColWidth - 20) / (dateColumns.length + 2))); // 日期列和变化列
+        const changeColWidth = dateColWidth;
+        
+        // 创建表格容器，设置合适的宽度和高度
+        let tableHtml = '<div class="wci-table-container" style="max-width: 1000px; max-height: 450px; overflow-x: auto; overflow-y: auto; margin-top: 10px;">';
+        tableHtml += '<table class="wci-table" style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 12px;">';
+        
+        // 表头（动态生成日期列）
         tableHtml += '<thead><tr style="background: #f5f5f5; font-weight: bold; position: sticky; top: 0; z-index: 10;">';
-        tableHtml += '<th style="padding: 6px 8px; text-align: left; border: 1px solid #ddd; width: 18%;">ROUTE</th>';
-        tableHtml += '<th style="padding: 6px 8px; text-align: left; border: 1px solid #ddd; width: 15%;">Route code</th>';
-        tableHtml += '<th style="padding: 6px 8px; text-align: right; border: 1px solid #ddd; width: 14%;">11 Dec 2025</th>';
-        tableHtml += '<th style="padding: 6px 8px; text-align: right; border: 1px solid #ddd; width: 14%;">18 Dec 2025</th>';
-        tableHtml += '<th style="padding: 6px 8px; text-align: right; border: 1px solid #ddd; width: 14%;">25 Dec 2025</th>';
-        tableHtml += '<th style="padding: 6px 8px; text-align: right; border: 1px solid #ddd; width: 15%;">Weekly change (%)</th>';
+        tableHtml += `<th style="padding: 6px 8px; text-align: left; border: 1px solid #ddd; width: ${baseColWidth}%;">ROUTE</th>`;
+        tableHtml += `<th style="padding: 6px 8px; text-align: left; border: 1px solid #ddd; width: ${codeColWidth}%;">Route code</th>`;
+        
+        // 动态生成日期列（优先显示最新数据）
+        dateColumns.forEach(dateStr => {
+            tableHtml += `<th style="padding: 6px 8px; text-align: right; border: 1px solid #ddd; width: ${dateColWidth}%;">${dateStr}</th>`;
+        });
+        
+        tableHtml += `<th style="padding: 6px 8px; text-align: right; border: 1px solid #ddd; width: ${changeColWidth}%;">Weekly change (%)</th>`;
+        tableHtml += `<th style="padding: 6px 8px; text-align: right; border: 1px solid #ddd; width: ${changeColWidth}%;">Annual change (%)</th>`;
         tableHtml += '</tr></thead><tbody>';
         
         // Composite Index 行
@@ -1091,19 +1183,35 @@
                 ? wciData.worldIndexWoW 
                 : (typeof wciData.changePct === 'number' ? wciData.changePct : null);
             
-            // 尝试从数据中获取历史价格（如果已解析）
-            const price11Dec = wciData.price11Dec || null;
-            const price18Dec = wciData.price18Dec || null;
-            const price25Dec = wciData.worldIndex;
+            const yoyText = typeof wciData.worldIndexYoY === 'number' ? formatPercent(wciData.worldIndexYoY) : '—';
+            const yoyValue = typeof wciData.worldIndexYoY === 'number' ? wciData.worldIndexYoY : null;
             
             tableHtml += '<tr style="background: #f9f9f9;">';
             tableHtml += '<td style="padding: 5px 8px; border: 1px solid #ddd; font-weight: bold; white-space: nowrap;">Composite Index</td>';
             tableHtml += '<td style="padding: 5px 8px; border: 1px solid #ddd; white-space: nowrap; font-size: 11px;">WCI-COMPOSITE</td>';
-            tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price11Dec)}</td>`;
-            tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price18Dec)}</td>`;
-            tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price25Dec)}</td>`;
+            
+            // 动态显示日期列的价格
+            dateColumns.forEach(dateStr => {
+                const dateKey = `price${dateStr.replace(/\s+/g, '')}`;
+                // 如果没有动态日期数据，尝试使用备用命名
+                let price = wciData[dateKey];
+                if (price === undefined || price === null) {
+                    // 备用：使用旧的命名方式
+                    if (dateStr.includes('11 Dec')) price = wciData.price11Dec;
+                    else if (dateStr.includes('18 Dec')) price = wciData.price18Dec;
+                    else if (dateStr.includes('25 Dec')) price = wciData.worldIndex;
+                }
+                tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price)}</td>`;
+            });
+            
+            // Weekly change
             tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap; color: ${wowValue !== null && wowValue > 0 ? '#28a745' : wowValue !== null && wowValue < 0 ? '#dc3545' : '#6c757d'};">
                 ${wowText !== '—' ? (wowValue > 0 ? '↑ ' : '') + wowText : '—'}
+            </td>`;
+            
+            // Annual change
+            tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap; color: ${yoyValue !== null && yoyValue > 0 ? '#28a745' : yoyValue !== null && yoyValue < 0 ? '#dc3545' : '#6c757d'};">
+                ${yoyText !== '—' ? (yoyValue > 0 ? '↑ ' : '') + yoyText : '—'}
             </td>`;
             tableHtml += '</tr>';
         }
@@ -1123,19 +1231,35 @@
         routeOrder.forEach(({ code, label }) => {
             const route = wciData.routes?.find(r => r.code === code);
             if (route) {
-                const price11Dec = route.price11Dec || null;
-                const price18Dec = route.price18Dec || null;
-                const price25Dec = route.rate || null;
                 const wowText = typeof route.wow === 'number' ? formatPercent(route.wow) : '—';
+                const yoyText = typeof route.yoy === 'number' ? formatPercent(route.yoy) : '—';
                 
                 tableHtml += '<tr>';
                 tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; white-space: nowrap;">${label}</td>`;
                 tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; white-space: nowrap; font-size: 11px;">${code}</td>`;
-                tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price11Dec)}</td>`;
-                tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price18Dec)}</td>`;
-                tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price25Dec)}</td>`;
+                
+                // 动态显示日期列的价格
+                dateColumns.forEach(dateStr => {
+                    const dateKey = `price${dateStr.replace(/\s+/g, '')}`;
+                    // 如果没有动态日期数据，尝试使用备用命名
+                    let price = route[dateKey];
+                    if (price === undefined || price === null) {
+                        // 备用：使用旧的命名方式
+                        if (dateStr.includes('11 Dec')) price = route.price11Dec;
+                        else if (dateStr.includes('18 Dec')) price = route.price18Dec;
+                        else if (dateStr.includes('25 Dec')) price = route.rate;
+                    }
+                    tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatPrice(price)}</td>`;
+                });
+                
+                // Weekly change
                 tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap; color: ${typeof route.wow === 'number' && route.wow > 0 ? '#28a745' : typeof route.wow === 'number' && route.wow < 0 ? '#dc3545' : '#6c757d'};">
                     ${wowText !== '—' ? (route.wow > 0 ? '↑ ' : '') + wowText : '—'}
+                </td>`;
+                
+                // Annual change
+                tableHtml += `<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; white-space: nowrap; color: ${typeof route.yoy === 'number' && route.yoy > 0 ? '#28a745' : typeof route.yoy === 'number' && route.yoy < 0 ? '#dc3545' : '#6c757d'};">
+                    ${yoyText !== '—' ? (route.yoy > 0 ? '↑ ' : '') + yoyText : '—'}
                 </td>`;
                 tableHtml += '</tr>';
             }

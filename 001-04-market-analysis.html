@@ -2556,10 +2556,29 @@
             FBX26: 'FBX26 欧洲 → 南美西海岸'
         };
 
+        // 优先显示最新数据：检查缓存数据是否太旧（超过1小时），如果太旧则自动刷新
         const cachedWci = loadCachedData(CACHE_KEYS.wci);
+        const oneHour = 1 * 60 * 60 * 1000;
         if (cachedWci) {
             wciData = cachedWci;
-            renderWciStatus();
+            if (typeof renderWciStatus === 'function') {
+                renderWciStatus();
+            }
+            // 如果缓存数据超过1小时，自动刷新以显示最新数据
+            if (Date.now() - cachedWci.timestamp > oneHour) {
+                if (typeof fetchWciData === 'function') {
+                    fetchWciData(true).catch(err => {
+                        if (window.debugError) window.debugError('自动刷新WCI数据失败:', err);
+                    });
+                }
+            }
+        } else {
+            // 如果没有缓存数据，立即加载
+            if (typeof fetchWciData === 'function') {
+                fetchWciData(true).catch(err => {
+                    if (window.debugError) window.debugError('加载WCI数据失败:', err);
+                });
+            }
         }
         const cachedFbx = loadCachedData(CACHE_KEYS.fbx);
         if (cachedFbx) {

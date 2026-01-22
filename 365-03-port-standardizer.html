@@ -836,7 +836,52 @@
                 URL.revokeObjectURL(url);
             }
 
-            // 事件监听：港口列表文件
+            /**
+             * 自动加载默认港口列表文件
+             */
+            async function loadDefaultPortList() {
+                try {
+                    // 从 index.json 读取文件路径配置
+                    let portListFileName = null;
+                    try {
+                        const configResponse = await fetch('data/index.json');
+                        if (configResponse.ok) {
+                            const config = await configResponse.json();
+                            if (config.portList && config.portList['365-03-port-standardizer']) {
+                                portListFileName = config.portList['365-03-port-standardizer'];
+                            }
+                        }
+                    } catch (e) {
+                        debugLog(`⚠️ 无法读取配置文件: ${e.message}`);
+                    }
+
+                    // 如果配置文件中没有找到，使用默认文件名
+                    if (!portListFileName) {
+                        portListFileName = 'Material-parsed_ports_list.txt';
+                    }
+
+                    const response = await fetch(`data/${portListFileName}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const text = await response.text();
+                    portListText = text;
+                    
+                    // 统计文件中的记录数
+                    const lines = text.split('\n').filter(l => l.trim());
+                    const recordCount = lines.length;
+                    
+                    debugLog(`✅ 已自动加载默认港口列表文件（${portListFileName}），共 ${recordCount} 条记录`);
+                } catch (error) {
+                    debugLog(`⚠️ 自动加载默认港口列表文件失败（将使用手动上传或降级方案）: ${error.message}`);
+                    // 静默失败，不影响手动上传功能
+                }
+            }
+
+            // 页面加载时自动加载默认港口列表
+            loadDefaultPortList();
+
+            // 事件监听：港口列表文件（手动上传，会覆盖自动加载的列表）
             portListFileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -845,7 +890,7 @@
                     const text = await file.text();
                     portListText = text;
                     
-                    debugLog(`港口列表文件已加载`);
+                    debugLog(`港口列表文件已加载（手动上传）`);
                 } catch (error) {
                     debugError('读取港口列表文件失败:', error);
                     showError(ErrorType.FILE_LOAD, 'FILE_READ_FAILED', { 

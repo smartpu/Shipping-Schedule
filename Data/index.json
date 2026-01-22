@@ -15,5 +15,10 @@
     "Monitor-Daily-Booking": "Monitor-Daily-Booking.xlsx",
     "Monitor-Rate-Trends": "Monitor-Rate-Trends.xlsx"
   },
-  "description": "Excel 文件路径配置。每个工具页面对应一个文件名，避免在源代码中暴露具体路径。"
+  "portList": {
+    "001-03-port-standardizer": "Material-parsed_ports_list.txt",
+    "365-03-port-standardizer": "Material-parsed_ports_list.txt",
+    "365-03-market-port-standardizer": "Material-parsed_ports_list.txt"
+  },
+  "description": "Excel 文件路径配置。每个工具页面对应一个文件名，避免在源代码中暴露具体路径。portList 配置港口标准化工具使用的港口列表文件。"
 }

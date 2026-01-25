@@ -5075,11 +5075,113 @@
                 // 计算L/F（TEU/Allocation，百分比）
                 const loadFactor = allocation > 0 ? ((item.teu / allocation) * 100).toFixed(2) : '0.00';
                 
+                // 检查该船（VSL/VOY）是否有客户占比超过15%且需要高亮显示
+                // 找到该 VSL/VOY 对应的所有原始数据行
+                const [etd, weekCode, trade, expLine, vslVoy] = key.split('|');
+                const vesselRows = filteredData.filter(row => {
+                    const rowEtd = getColumnValue(row, COLUMN_MAP.SAIL_DATE) || '未指定';
+                    const rowWeekValue = getColumnValue(row, COLUMN_MAP.WEEK);
+                    const rowWeekCode = rowWeekValue ? parseWeekValue(rowWeekValue) : '未指定';
+                    const rowTrade = getColumnValue(row, COLUMN_MAP.TRADE) || '未指定';
+                    const rowExpLine = getColumnValue(row, COLUMN_MAP.EXP_LINE) || '未指定';
+                    const rowVessel = getColumnValue(row, COLUMN_MAP.VESSEL) || '未指定';
+                    const rowVoyage = getColumnValue(row, COLUMN_MAP.VOYAGE) || '未指定';
+                    const rowVslVoy = `${rowVessel}/${rowVoyage}`;
+                    
+                    return String(rowEtd) === String(etd) && 
+                           rowWeekCode === weekCode &&
+                           String(rowTrade) === String(trade) && 
+                           String(rowExpLine) === String(expLine) && 
+                           rowVslVoy === vslVoy;
+                });
+                
+                // 按客户（SQ_SC_NAME）分组，计算每个客户的TEU和GPS
+                const customerDataMap = {};
+                let vesselTotalTeu = 0;
+                const allGpsValues = [];
+                
+                vesselRows.forEach(row => {
+                    const customer = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
+                    const teu = Number(getColumnValue(row, COLUMN_MAP.X) || 0);
+                    const gps = Number(getColumnValue(row, COLUMN_MAP.Z) || 0);
+                    
+                    if (!customerDataMap[customer]) {
+                        customerDataMap[customer] = {
+                            teu: 0,
+                            gps: []
+                        };
+                    }
+                    customerDataMap[customer].teu += teu;
+                    if (gps > 0) {
+                        customerDataMap[customer].gps.push(gps);
+                        allGpsValues.push(gps);
+                    }
+                    vesselTotalTeu += teu;
+                });
+                
+                // 计算所有客户的平均GPS
+                const avgGpsAll = allGpsValues.length > 0 
+                    ? allGpsValues.reduce((a, b) => a + b, 0) / allGpsValues.length 
+                    : 0;
+                
+                // 检查是否有客户需要高亮显示
+                // 条件1：客户占比 > 15%
+                // 条件2：如果有allocation，还需要检查 (客户TEU / allocation) > 15%
+                // 条件3：该客户的GPS明显偏低（低于平均GPS的80%）
+                let hasHighPercentageCustomer = false;
+                for (const [customer, customerData] of Object.entries(customerDataMap)) {
+                    if (vesselTotalTeu > 0) {
+                        const customerPercentage = (customerData.teu / vesselTotalTeu) * 100;
+                        
+                        // 条件1：客户占比必须超过15%
+                        if (customerPercentage > 15) {
+                            // 条件2：如果有allocation，检查相对于allocation的占比
+                            let shouldHighlight = true;
+                            if (allocation > 0) {
+                                const customerAllocationPercentage = (customerData.teu / allocation) * 100;
+                                // 如果相对于allocation不超过15%，不需要高亮
+                                if (customerAllocationPercentage <= 15) {
+                                    shouldHighlight = false;
+                                }
+                            }
+                            
+                            // 条件3：检查GPS是否偏低
+                            if (shouldHighlight) {
+                                // 如果所有客户都没有GPS数据，不进行GPS判断，只根据前两个条件判断
+                                if (avgGpsAll === 0) {
+                                    // 保持高亮（不进行GPS判断）
+                                } else if (customerData.gps.length > 0) {
+                                    // 该客户有GPS数据，计算平均GPS
+                                    const customerAvgGps = customerData.gps.reduce((a, b) => a + b, 0) / customerData.gps.length;
+                                    // 如果客户的GPS不低于平均GPS的90%，不需要高亮（GPS差不多）
+                                    if (customerAvgGps >= avgGpsAll * 0.9) {
+                                        shouldHighlight = false;
+                                    }
+                                } else {
+                                    // 该客户没有GPS数据，但其他客户有，认为GPS偏低，保持高亮
+                                }
+                            }
+                            
+                            if (shouldHighlight) {
+                                hasHighPercentageCustomer = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
                 // 为onclick准备key，需要转义单引号、反斜杠，但保留|字符用于split
                 const escapedKeyForOnclick = key.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 const escapedKeyForAttr = escapeHtml(key);
                 
-                htmlParts.push(`<tr style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" onclick="window.showVesselLimitDetail('${escapedKeyForOnclick}')">`);
+                // 如果有客户占比超过15%，橙色高亮整行
+                const rowBgColor = hasHighPercentageCustomer ? '#FFE5CC' : '';
+                const rowHoverBgColor = hasHighPercentageCustomer ? '#FFD4A3' : '#f0f7ff';
+                const rowStyle = hasHighPercentageCustomer 
+                    ? `border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s; background-color: ${rowBgColor};`
+                    : `border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;`;
+                
+                htmlParts.push(`<tr style="${rowStyle}" onmouseover="this.style.backgroundColor='${rowHoverBgColor}'" onmouseout="this.style.backgroundColor='${rowBgColor}'" onclick="window.showVesselLimitDetail('${escapedKeyForOnclick}')" title="${hasHighPercentageCustomer ? '该船有客户占比超过15%且GPS偏低，点击查看详情' : ''}">`);
                 htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.weekCode)}</td>`);
                 htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(etdDisplay)}">${escapeHtml(etdDisplay)}</td>`);
                 htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.expLine)}</td>`);
@@ -5254,6 +5356,10 @@
                 // 按EXP LINE、VSL/VOY、Trade、SQ/SC Name、SQ/SC、SalesID分组
                 const grouped = {};
                 
+                // 计算该船的总TEU（用于计算客户占比）
+                let vesselTotalTeu = 0;
+                const allCustomerGpsValues = [];
+                
                 filteredDetailData.forEach(row => {
                     const rowExpLine = getColumnValue(row, COLUMN_MAP.EXP_LINE) || '未指定';
                     const rowVessel = getColumnValue(row, COLUMN_MAP.VESSEL) || '未指定';
@@ -5275,15 +5381,39 @@
                             sqSc: rowSqSc,
                             salesId: rowSalesId,
                             teu: 0,
-                            tons: 0
+                            tons: 0,
+                            gps: []
                         };
                     }
                     
                     const teu = Number(getColumnValue(row, COLUMN_MAP.X) || 0);
                     const tons = Number(getColumnValue(row, COLUMN_MAP.Y) || 0) / 1000;
+                    const gps = Number(getColumnValue(row, COLUMN_MAP.Z) || 0);
                     grouped[detailKey].teu += teu;
                     grouped[detailKey].tons += tons;
+                    if (gps > 0) {
+                        grouped[detailKey].gps.push(gps);
+                        allCustomerGpsValues.push(gps);
+                    }
+                    vesselTotalTeu += teu;
                 });
+                
+                // 计算所有客户的平均GPS
+                const avgGpsAll = allCustomerGpsValues.length > 0 
+                    ? allCustomerGpsValues.reduce((a, b) => a + b, 0) / allCustomerGpsValues.length 
+                    : 0;
+                
+                // 获取allocation（用于检查客户相对于allocation的占比）
+                const tradeKey = String(trade || '').trim().toUpperCase();
+                const expLineKey = String(expLine || '').trim().toUpperCase();
+                const allocationKey = `${tradeKey}|${expLineKey}`;
+                let allocation = userAllocationData[allocationKey];
+                if (allocation === undefined || allocation === null) {
+                    allocation = allocationData[allocationKey];
+                    if (allocation === undefined || allocation === null) {
+                        allocation = 0;
+                    }
+                }
                 
                 // 计算每个item的Over值，用于排序
                 const itemsWithOver = Object.keys(grouped).map(detailKey => {
@@ -5339,6 +5469,7 @@
                 htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Limit TONS</th>');
                 htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Over TEU</th>');
                 htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">Over TONS</th>');
+                htmlParts.push('<th style="padding: 8px 12px; border: 1px solid white; text-align: right;">AVG GPS</th>');
                 htmlParts.push('</tr>');
                 htmlParts.push('</thead>');
                 htmlParts.push('<tbody>');
@@ -5346,11 +5477,60 @@
                 itemsWithOver.forEach(({ key, item, limit, limitTons, overTeu, overTons }) => {
                     const overBgColor = overTeu > 15 ? '#ff9800' : 'transparent'; // 超过15则橙色背景
                     
+                    // 计算该客户的平均GPS
+                    const customerAvgGps = item.gps && item.gps.length > 0
+                        ? (item.gps.reduce((a, b) => a + b, 0) / item.gps.length).toFixed(2)
+                        : '0.00';
+                    
+                    // 检查该客户是否需要高亮显示（与主表格相同的逻辑）
+                    let shouldHighlight = false;
+                    if (vesselTotalTeu > 0) {
+                        const customerPercentage = (item.teu / vesselTotalTeu) * 100;
+                        
+                        // 条件1：客户占比必须超过15%
+                        if (customerPercentage > 15) {
+                            shouldHighlight = true;
+                            
+                            // 条件2：如果有allocation，检查相对于allocation的占比
+                            if (allocation > 0) {
+                                const customerAllocationPercentage = (item.teu / allocation) * 100;
+                                // 如果相对于allocation不超过15%，不需要高亮
+                                if (customerAllocationPercentage <= 15) {
+                                    shouldHighlight = false;
+                                }
+                            }
+                            
+                            // 条件3：检查GPS是否偏低
+                            if (shouldHighlight) {
+                                // 如果所有客户都没有GPS数据，不进行GPS判断，只根据前两个条件判断
+                                if (avgGpsAll === 0) {
+                                    // 保持高亮（不进行GPS判断）
+                                } else if (item.gps && item.gps.length > 0) {
+                                    // 该客户有GPS数据，计算平均GPS
+                                    const customerAvgGpsNum = parseFloat(customerAvgGps);
+                                    // 如果客户的GPS不低于平均GPS的90%，不需要高亮（GPS差不多）
+                                    if (customerAvgGpsNum >= avgGpsAll * 0.9) {
+                                        shouldHighlight = false;
+                                    }
+                                } else {
+                                    // 该客户没有GPS数据，但其他客户有，认为GPS偏低，保持高亮
+                                }
+                            }
+                        }
+                    }
+                    
                     // 为onclick准备key，需要转义单引号、反斜杠，但保留|字符用于split
                     const blDetailKey = `${item.expLine}|${item.vslVoy}|${item.trade}|${item.sqScName}|${item.sqSc}|${item.salesId}`;
                     const escapedBlKeyForOnclick = blDetailKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                     
-                    htmlParts.push(`<tr style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" onclick="window.showVesselLimitBlDetail('${escapedBlKeyForOnclick}')">`);
+                    // 如果有客户占比超过15%且GPS偏低，橙色高亮整行
+                    const rowBgColor = shouldHighlight ? '#FFE5CC' : '';
+                    const rowHoverBgColor = shouldHighlight ? '#FFD4A3' : '#f0f7ff';
+                    const rowStyle = shouldHighlight 
+                        ? `cursor: pointer; transition: background-color 0.2s; background-color: ${rowBgColor};`
+                        : `cursor: pointer; transition: background-color 0.2s;`;
+                    
+                    htmlParts.push(`<tr style="${rowStyle}" onmouseover="this.style.backgroundColor='${rowHoverBgColor}'" onmouseout="this.style.backgroundColor='${rowBgColor}'" onclick="window.showVesselLimitBlDetail('${escapedBlKeyForOnclick}')" title="${shouldHighlight ? '该客户占比超过15%且GPS偏低' : ''}">`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.expLine)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.vslVoy)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.trade)}</td>`);
@@ -5363,6 +5543,7 @@
                     htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${limitTons.toFixed(2)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600; background-color: ${overBgColor};">${overTeu.toFixed(0)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600; background-color: ${overBgColor};">${overTons.toFixed(2)}</td>`);
+                    htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${customerAvgGps}</td>`);
                     htmlParts.push('</tr>');
                 });
                 

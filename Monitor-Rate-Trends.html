@@ -1304,25 +1304,28 @@
       }
 
       function formatTrendValue(entry) {
-        if (!entry || (!entry.values["2SD"] && !entry.values["4SH"])) return "—";
+        if (!entry || (!entry.values["2SD"] && !entry.values["4SH"])) {
+          // 即使没有数据，也返回两行占位符，保持格式一致
+          return "2SD —<br />4SH —";
+        }
+        // 确保始终返回两行：2SD 一行，4SH 一行
         const sd = entry.values["2SD"] != null ? formatNumber(entry.values["2SD"]) : "—";
         const sh = entry.values["4SH"] != null ? formatNumber(entry.values["4SH"]) : "—";
-        const range = entry.range ? `<small class="trend-range">${entry.range}</small>` : "";
-        return `
-          <div class="trend-value">
-            ${range}
-            <span>2SD ${sd}</span>
-            <span>4SH ${sh}</span>
-          </div>
-        `;
+        return `2SD ${sd}<br />4SH ${sh}`;
       }
 
       function formatTrendChange(current, previous) {
-        if (!current || !previous) return "—";
+        if (!current || !previous) {
+          // 即使没有数据，也返回两行占位符，保持格式一致
+          return "2SD —<br />4SH —";
+        }
+        // 确保始终返回两行：2SD 一行，4SH 一行
         const sdLine = buildChangeLine("2SD", current.values["2SD"], previous.values["2SD"]);
         const shLine = buildChangeLine("4SH", current.values["4SH"], previous.values["4SH"]);
-        if (!sdLine && !shLine) return "—";
-        return [sdLine, shLine].filter(Boolean).join("<br />");
+        // 如果某个值为空，使用占位符，确保始终是两行
+        const finalSdLine = sdLine || "2SD —";
+        const finalShLine = shLine || "4SH —";
+        return `${finalSdLine}<br />${finalShLine}`;
       }
 
       function buildChangeLine(label, current, previous) {

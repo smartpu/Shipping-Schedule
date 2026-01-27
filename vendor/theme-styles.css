@@ -8228,6 +8228,7 @@ body[data-page="Monitor-Rate-Trends.html"] .trend-table td {
     text-align: left;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     vertical-align: top;
+    line-height: 1.4;
 }
 
 body[data-page="Monitor-Rate-Trends.html"] .trend-table thead th {
@@ -8264,9 +8265,10 @@ body[data-page="Monitor-Rate-Trends.html"] .trend-range {
 }
 
 body[data-page="Monitor-Rate-Trends.html"] .trend-change {
-    display: block;
+    display: inline;
     font-size: 0.85rem;
-    margin-top: 4px;
+    margin: 0;
+    line-height: 1.4;
 }
 
 body[data-page="Monitor-Rate-Trends.html"] .trend-up {

@@ -951,7 +951,8 @@
             ].map(name => name.trim().toUpperCase());
 
             // 获取所有唯一值（只从符合5个指定公司的数据中提取）
-            const sqScNameSet = new Set();
+            // 使用 C列+D列 的组合作为唯一键，展示所有组合
+            const sqScNameCombinationSet = new Set(); // 存储组合键：sqSc|sqScName
             const bookingPartySet = new Set();
             const tradeSet = new Set();
             const expLineSet = new Set();
@@ -970,6 +971,7 @@
                 if (!matchesForwarder) return;
 
                 // 获取列值（需要根据实际Excel列名调整）
+                const sqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '';
                 const sqScNameOriginal = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME);
                 const bookingParty = getColumnValue(row, COLUMN_MAP.BOOKING_PARTY);
                 const trade = getColumnValue(row, COLUMN_MAP.TRADE);
@@ -977,7 +979,11 @@
                 const type = getColumnValue(row, COLUMN_MAP.TYPE) || 'FAK'; // 空白标记为FAK
                 const dly = getColumnValue(row, COLUMN_MAP.DLY);
 
-                if (sqScNameOriginal) sqScNameSet.add(sqScNameOriginal);
+                // 使用 C列+D列 的组合作为唯一键
+                if (sqScNameOriginal) {
+                    const combinationKey = `${sqSc}|${sqScNameOriginal}`;
+                    sqScNameCombinationSet.add(combinationKey);
+                }
                 
                 // Booking Party 也需要限制为5个指定公司（如果 Booking Party 也匹配这5个公司）
                 if (bookingParty) {
@@ -999,7 +1005,16 @@
             });
 
             // 填充筛选器选项（按顺序：SQ/SC Name, Booking Party, Trade, EXP LINE, TYPE, DRY/REEFER/SPECIAL, Commodity Item, DLY）
-            populateFilter('sqScNameFilter', Array.from(sqScNameSet).sort());
+            // SQ/SC Name 使用 C列+D列 的组合，展示所有组合
+            const sqScNameOptions = Array.from(sqScNameCombinationSet).sort().map(combinationKey => {
+                const [sqSc, sqScName] = combinationKey.split('|');
+                const displayText = sqSc ? `${sqSc}/${sqScName}` : sqScName;
+                return {
+                    value: combinationKey, // value 使用组合键：sqSc|sqScName
+                    text: displayText // 显示文本：sqSc/sqScName
+                };
+            });
+            populateFilterWithDisplay('sqScNameFilter', sqScNameOptions);
             populateFilter('bookingPartyFilter', Array.from(bookingPartySet).sort());
             populateFilter('tradeFilter', Array.from(tradeSet).sort());
             populateFilter('expLineFilter', Array.from(expLineSet).sort());
@@ -1036,6 +1051,31 @@
                 const option = document.createElement('option');
                 option.value = value;
                 option.textContent = value;
+                filter.appendChild(option);
+            });
+        }
+
+        /**
+         * 填充筛选器选项（支持自定义显示文本）
+         * @param {string} filterId - 筛选器ID
+         * @param {Array} options - 选项数组，每个选项包含 {value: string, text: string}
+         */
+        function populateFilterWithDisplay(filterId, options) {
+            const filter = document.getElementById(filterId);
+            if (!filter) return;
+
+            // 保留第一个"全部"选项
+            const firstOption = filter.querySelector('option[value=""]');
+            filter.innerHTML = '';
+            if (firstOption) {
+                filter.appendChild(firstOption);
+            }
+
+            // 添加选项
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.text;
                 filter.appendChild(option);
             });
         }
@@ -1298,8 +1338,8 @@
                     });
                     if (!matchesForwarder) return false;
 
-                    // SQ/SC Name筛选（D列）
-                    if (!isFilterMatch(row, COLUMN_MAP.SQ_SC_NAME, 'sqScNameFilter')) return false;
+                    // SQ/SC Name筛选（C列+D列组合）
+                    if (!isSqScNameCombinationMatch(row, 'sqScNameFilter')) return false;
 
                     // Booking Party筛选（F列）
                     if (!isFilterMatch(row, COLUMN_MAP.BOOKING_PARTY, 'bookingPartyFilter')) return false;
@@ -1417,6 +1457,31 @@
         function isFilterMatchValue(value, filterId) {
             const filterCache = getFilterSelectedValues(filterId);
             return isFilterMatchCached(value, filterCache);
+        }
+
+        /**
+         * 检查 SQ/SC Name 组合匹配（C列+D列）
+         * @param {Object} row - 数据行
+         * @param {string} filterId - 筛选器ID
+         * @returns {boolean} 是否匹配
+         */
+        function isSqScNameCombinationMatch(row, filterId) {
+            const filter = document.getElementById(filterId);
+            if (!filter) return true;
+
+            const selectedValues = Array.from(filter.selectedOptions).map(opt => opt.value);
+            if (selectedValues.length === 0) return false;
+            if (selectedValues.includes('')) return true; // 选择了"全部"
+
+            // 获取当前行的 C列 和 D列 值
+            const sqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '';
+            const sqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '';
+            
+            // 构建组合键：sqSc|sqScName
+            const combinationKey = `${sqSc}|${sqScName}`;
+            
+            // 检查组合键是否在选中的值中
+            return selectedValues.includes(combinationKey);
         }
 
         /**
@@ -2063,8 +2128,10 @@
                     const jsonStr = JSON.stringify(filterParams);
                     const escapedJsonForAttr = jsonStr.replace(/"/g, '&quot;');
                     
+                    // 格式化显示 SQ/SC Name：sqSc/sqScName
+                    const sqScNameDisplay = item.sqSc ? `${item.sqSc}/${item.sqScName}` : item.sqScName;
                     tableHtml += `<tr style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" data-filter-params="${escapedJsonForAttr}" onclick="window.showBlDetail(this.getAttribute(&quot;data-filter-params&quot;))">`;
-                    tableHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; width: 12%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.sqScName)}">${escapeHtml(item.sqScName)}</td>`;
+                    tableHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; width: 12%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sqScNameDisplay)}">${escapeHtml(sqScNameDisplay)}</td>`;
                     tableHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; width: ${otherColWidth}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.sqSc)}</td>`;
                     
                     // 每个周别的列
@@ -2233,8 +2300,10 @@
                 const jsonStr = JSON.stringify(filterParams);
                 const escapedJsonForAttr = jsonStr.replace(/"/g, '&quot;');
                 
+                // 格式化显示 SQ/SC Name：sqSc/sqScName
+                const sqScNameDisplay = item.sqSc ? `${item.sqSc}/${item.sqScName}` : item.sqScName;
                 tableHtml += `<tr style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" data-filter-params="${escapedJsonForAttr}" onclick="window.showBlDetail(this.getAttribute(&quot;data-filter-params&quot;))">`;
-                tableHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; width: 12%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.sqScName)}">${escapeHtml(item.sqScName)}</td>`;
+                tableHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; width: 12%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sqScNameDisplay)}">${escapeHtml(sqScNameDisplay)}</td>`;
                 tableHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; width: ${otherColWidth}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.sqSc)}</td>`;
                 tableHtml += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; width: ${otherColWidth};">${(item.containerTypes['2SD'] || 0).toFixed(0)}</td>`;
                 tableHtml += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; width: ${otherColWidth};">${(item.containerTypes['2RS'] || 0).toFixed(0)}</td>`;
@@ -2338,10 +2407,32 @@
         /**
          * 显示Account详情（SQ/SC NAME详情）
          */
-        function showAccountDetail(sqScName) {
+        function showAccountDetail(combinationKeyOrName) {
+            // 判断传入的是组合键（sqSc|sqScName）还是单独的 sqScName
+            let accountSqSc = '';
+            let accountSqScName = '';
+            
+            if (combinationKeyOrName.includes('|')) {
+                // 是组合键，解析它
+                const parts = combinationKeyOrName.split('|');
+                accountSqSc = parts[0] || '';
+                accountSqScName = parts[1] || '';
+            } else {
+                // 是单独的 sqScName（向后兼容）
+                accountSqScName = combinationKeyOrName;
+            }
+            
             const accountData = filteredData.filter(row => {
-                const name = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
-                return name === sqScName;
+                const rowSqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '';
+                const rowSqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
+                
+                // 如果提供了组合键，需要同时匹配 C列 和 D列
+                if (accountSqSc && accountSqScName) {
+                    return rowSqSc === accountSqSc && rowSqScName === accountSqScName;
+                } else {
+                    // 向后兼容：只匹配 D列
+                    return rowSqScName === accountSqScName;
+                }
             });
             
             if (accountData.length === 0) return;
@@ -2487,7 +2578,7 @@
                     
                     // 为onclick准备筛选参数（Account + Week模式）
                     const filterParams = {
-                        sqScName: sqScName,
+                        sqScName: accountSqScName,
                         salesId: item.salesId,
                         sqSc: item.sqSc
                     };
@@ -2601,10 +2692,20 @@
                 const accountTonsPerTeu = totalAccountTeu > 0 ? (totalAccountTons / totalAccountTeu).toFixed(4) : '0.0000';
                 
                 // 计算该SQ/SC NAME的总TEU（用于计算百分比）
+                // 如果提供了组合键，需要同时匹配 C列 和 D列
                 let allAccountTotalTeu = 0;
                 filteredData.forEach(row => {
-                    const name = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
-                    if (name === sqScName) {
+                    const rowSqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '';
+                    const rowSqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
+                    
+                    let matches = false;
+                    if (accountSqSc && accountSqScName) {
+                        matches = rowSqSc === accountSqSc && rowSqScName === accountSqScName;
+                    } else {
+                        matches = rowSqScName === accountSqScName;
+                    }
+                    
+                    if (matches) {
                         const teu = Number(getColumnValue(row, COLUMN_MAP.X) || 0);
                         allAccountTotalTeu += teu;
                     }
@@ -2647,7 +2748,7 @@
                 
                 // 为onclick准备筛选参数（Account + Dept模式）
                 const filterParams = {
-                    sqScName: sqScName,
+                    sqScName: accountSqScName,
                     salesId: item.salesId,
                     sqSc: item.sqSc
                 };
@@ -2730,8 +2831,15 @@
             
             const header = document.createElement('div');
             header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;';
+            // 获取 sqSc 用于格式化显示（如果还没有获取）
+            if (!accountSqSc) {
+                const firstRow = accountData[0];
+                accountSqSc = getColumnValue(firstRow, COLUMN_MAP.SQ_SC) || '';
+            }
+            const sqScNameDisplay = accountSqSc ? `${accountSqSc}/${accountSqScName}` : accountSqScName;
+            
             header.innerHTML = `
-                <h3 style="margin: 0; color: #333;">SQ/SC NAME: ${escapeHtml(sqScName)} 详情</h3>
+                <h3 style="margin: 0; color: #333;">SQ/SC NAME: ${escapeHtml(sqScNameDisplay)} 详情</h3>
                 <button id="closeDetailModalBtn" style="padding: 8px 16px; background: #3E62AD; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;">关闭</button>
             `;
             
@@ -3570,11 +3678,13 @@
                 const typeAvg = podTypeAvgGps[typeKey] || 0;
                 const vsType = typeAvg > 0 ? (gps - typeAvg).toFixed(2) : '-';
                 
+                // 格式化显示 SQ/SC Name：sqSc/sqScName
+                const sqScNameDisplay = sqSc ? `${sqSc}/${sqScName}` : sqScName;
                 blHtml += '<tr>';
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(blno)}</td>`;
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(salesId)}</td>`;
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(sqSc)}</td>`;
-                blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sqScName)}">${escapeHtml(sqScName)}</td>`;
+                blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sqScNameDisplay)}">${escapeHtml(sqScNameDisplay)}</td>`;
                 containerTypes.forEach(col => {
                     const teu = Number(getColumnValue(row, col) || 0);
                     blHtml += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${teu.toFixed(0)}</td>`;
@@ -3968,22 +4078,24 @@
          * 生成Account+Dept维度分析
          */
         function generateAccountDeptAnalysis() {
-            // 按SQ/SC NAME分组，按Dept分类
+            // 按C列+D列组合分组，按Dept分类
             const grouped = {};
             const deptList = ['AMS', 'EMS', 'IAS'];
             
-            // 计算每个SQ/SC NAME的总TEU（用于计算占比）
+            // 计算每个C列+D列组合的总TEU（用于计算占比）
             const accountTotalTeu = {};
             
             filteredData.forEach(row => {
+                const sqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '';
                 const sqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
+                const combinationKey = `${sqSc}|${sqScName}`;
                 const dept = getColumnValue(row, COLUMN_MAP.DEPT) || '';
                 const teu = Number(getColumnValue(row, COLUMN_MAP.X) || 0);
                 
-                if (!accountTotalTeu[sqScName]) {
-                    accountTotalTeu[sqScName] = 0;
+                if (!accountTotalTeu[combinationKey]) {
+                    accountTotalTeu[combinationKey] = 0;
                 }
-                accountTotalTeu[sqScName] += teu;
+                accountTotalTeu[combinationKey] += teu;
             });
             
             // 计算每个Dept的总TEU（用于计算占比）
@@ -3998,18 +4110,22 @@
             });
             
             filteredData.forEach(row => {
+                const sqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '';
                 const sqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
+                const combinationKey = `${sqSc}|${sqScName}`;
                 const dept = getColumnValue(row, COLUMN_MAP.DEPT) || '';
                 
-                if (!grouped[sqScName]) {
-                    grouped[sqScName] = {
+                if (!grouped[combinationKey]) {
+                    grouped[combinationKey] = {
                         sqScName,
+                        sqSc, // 保存 sqSc 用于显示
+                        combinationKey, // 保存组合键
                         depts: {}
                     };
                 }
                 
-                if (!grouped[sqScName].depts[dept]) {
-                    grouped[sqScName].depts[dept] = {
+                if (!grouped[combinationKey].depts[dept]) {
+                    grouped[combinationKey].depts[dept] = {
                         dept,
                         teu: 0,
                         tons: 0,
@@ -4022,12 +4138,12 @@
                 const tons = Number(getColumnValue(row, COLUMN_MAP.Y) || 0) / 1000;
                 const gps = Number(getColumnValue(row, COLUMN_MAP.Z) || 0);
                 
-                grouped[sqScName].depts[dept].teu += teu;
-                grouped[sqScName].depts[dept].tons += tons;
+                grouped[combinationKey].depts[dept].teu += teu;
+                grouped[combinationKey].depts[dept].tons += tons;
                 if (gps > 0) {
-                    grouped[sqScName].depts[dept].gps.push(gps);
+                    grouped[combinationKey].depts[dept].gps.push(gps);
                 }
-                grouped[sqScName].depts[dept].count++;
+                grouped[combinationKey].depts[dept].count++;
             });
             
             // 生成表格 - 每个Dept都有完整的列
@@ -4070,14 +4186,14 @@
             html += '</tr></thead><tbody>';
             
             // 按总TEU降序排序
-            const sortedAccountNames = Object.keys(grouped).sort((a, b) => {
+            const sortedAccountKeys = Object.keys(grouped).sort((a, b) => {
                 const aTotal = (grouped[a].depts['AMS']?.teu || 0) + (grouped[a].depts['EMS']?.teu || 0) + (grouped[a].depts['IAS']?.teu || 0);
                 const bTotal = (grouped[b].depts['AMS']?.teu || 0) + (grouped[b].depts['EMS']?.teu || 0) + (grouped[b].depts['IAS']?.teu || 0);
                 return bTotal - aTotal; // 降序
             });
             
-            sortedAccountNames.forEach(sqScName => {
-                const item = grouped[sqScName];
+            sortedAccountKeys.forEach(combinationKey => {
+                const item = grouped[combinationKey];
                 const amsData = item.depts['AMS'] || { teu: 0, tons: 0, gps: [], count: 0 };
                 const emsData = item.depts['EMS'] || { teu: 0, tons: 0, gps: [], count: 0 };
                 const iasData = item.depts['IAS'] || { teu: 0, tons: 0, gps: [], count: 0 };
@@ -4104,8 +4220,11 @@
                 const totalDeptTeu = deptTotalTeu['AMS'] + deptTotalTeu['EMS'] + deptTotalTeu['IAS'];
                 const totalPercentage = totalDeptTeu > 0 ? ((totalTeu / totalDeptTeu) * 100).toFixed(2) + '%' : '0.00%';
                 
-                html += `<tr class="account-row" data-account-name="${escapeHtml(sqScName)}" style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" onclick="showAccountDetail('${escapeHtml(sqScName)}')">`;
-                html += `<td style="padding: 10px; border: 1px solid #dee2e6; font-weight: 600;">${escapeHtml(sqScName)}</td>`;
+                // 格式化显示 SQ/SC Name：sqSc/sqScName
+                const sqScNameDisplay = item.sqSc ? `${item.sqSc}/${item.sqScName}` : item.sqScName;
+                // 使用组合键作为 data-account-name 和 onclick 参数
+                html += `<tr class="account-row" data-account-name="${escapeHtml(combinationKey)}" style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" onclick="showAccountDetail('${escapeHtml(combinationKey)}')">`;
+                html += `<td style="padding: 10px; border: 1px solid #dee2e6; font-weight: 600;">${escapeHtml(sqScNameDisplay)}</td>`;
                 
                 // AMS列
                 html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">${amsData.teu.toFixed(0)}</td>`;
@@ -4142,8 +4261,8 @@
             let totalEmsTeu = 0, totalEmsTons = 0, totalEmsGps = [];
             let totalIasTeu = 0, totalIasTons = 0, totalIasGps = [];
             
-            sortedAccountNames.forEach(sqScName => {
-                const item = grouped[sqScName];
+            sortedAccountKeys.forEach(combinationKey => {
+                const item = grouped[combinationKey];
                 const amsData = item.depts['AMS'] || { teu: 0, tons: 0, gps: [], count: 0 };
                 const emsData = item.depts['EMS'] || { teu: 0, tons: 0, gps: [], count: 0 };
                 const iasData = item.depts['IAS'] || { teu: 0, tons: 0, gps: [], count: 0 };
@@ -4249,7 +4368,7 @@
                 return '<p style="padding: 20px; text-align: center; color: #6c757d;">暂无周别数据</p>';
             }
             
-            // 按SQ/SC NAME分组，按周别分类
+            // 按C列+D列组合分组，按周别分类
             const grouped = {};
             
             // 计算每个周别的总TEU（用于计算占比）
@@ -4270,7 +4389,9 @@
             });
             
             filteredData.forEach(row => {
+                const sqSc = getColumnValue(row, COLUMN_MAP.SQ_SC) || '';
                 const sqScName = getColumnValue(row, COLUMN_MAP.SQ_SC_NAME) || '未指定';
+                const combinationKey = `${sqSc}|${sqScName}`;
                 const weekValue = getColumnValue(row, COLUMN_MAP.WEEK);
                 
                 if (!weekValue) return;
@@ -4279,15 +4400,17 @@
                 const weekCode = parseWeekValue(weekValue);
                 if (!weekCode || !finalWeekCodes.includes(weekCode)) return;
                 
-                if (!grouped[sqScName]) {
-                    grouped[sqScName] = {
+                if (!grouped[combinationKey]) {
+                    grouped[combinationKey] = {
                         sqScName,
+                        sqSc, // 保存 sqSc 用于显示
+                        combinationKey, // 保存组合键
                         weeks: {}
                     };
                 }
                 
-                if (!grouped[sqScName].weeks[weekCode]) {
-                    grouped[sqScName].weeks[weekCode] = {
+                if (!grouped[combinationKey].weeks[weekCode]) {
+                    grouped[combinationKey].weeks[weekCode] = {
                         weekCode,
                         teu: 0,
                         tons: 0,
@@ -4300,12 +4423,12 @@
                 const tons = Number(getColumnValue(row, COLUMN_MAP.Y) || 0) / 1000;
                 const gps = Number(getColumnValue(row, COLUMN_MAP.Z) || 0);
                 
-                grouped[sqScName].weeks[weekCode].teu += teu;
-                grouped[sqScName].weeks[weekCode].tons += tons;
+                grouped[combinationKey].weeks[weekCode].teu += teu;
+                grouped[combinationKey].weeks[weekCode].tons += tons;
                 if (gps > 0) {
-                    grouped[sqScName].weeks[weekCode].gps.push(gps);
+                    grouped[combinationKey].weeks[weekCode].gps.push(gps);
                 }
-                grouped[sqScName].weeks[weekCode].count++;
+                grouped[combinationKey].weeks[weekCode].count++;
             });
             
             // 生成表格 - 每个周别都有完整的列（参考Account+Dept的结构）
@@ -4335,7 +4458,7 @@
             html += '</tr></thead><tbody>';
             
             // 按总TEU降序排序
-            const sortedSqScNames = Object.keys(grouped).sort((a, b) => {
+            const sortedCombinationKeys = Object.keys(grouped).sort((a, b) => {
                 let aTotal = 0;
                 let bTotal = 0;
                 Object.values(grouped[a].weeks).forEach(weekData => {
@@ -4347,11 +4470,13 @@
                 return bTotal - aTotal; // 降序
             });
             
-            sortedSqScNames.forEach(sqScName => {
-                const item = grouped[sqScName];
+            sortedCombinationKeys.forEach(combinationKey => {
+                const item = grouped[combinationKey];
                 
-                html += `<tr class="account-row" data-account-name="${escapeHtml(sqScName)}" style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" onclick="showAccountDetail('${escapeHtml(sqScName)}')">`;
-                html += `<td style="padding: 10px; border: 1px solid #dee2e6; font-weight: 600;">${escapeHtml(sqScName)}</td>`;
+                // 格式化显示 SQ/SC Name：sqSc/sqScName
+                const sqScNameDisplay = item.sqSc ? `${item.sqSc}/${item.sqScName}` : item.sqScName;
+                html += `<tr class="account-row" data-account-name="${escapeHtml(combinationKey)}" style="border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f7ff'" onmouseout="this.style.backgroundColor=''" onclick="showAccountDetail('${escapeHtml(combinationKey)}')">`;
+                html += `<td style="padding: 10px; border: 1px solid #dee2e6; font-weight: 600;">${escapeHtml(sqScNameDisplay)}</td>`;
                 
                 // 每个周别的列
                 finalWeekCodes.forEach(weekCode => {
@@ -4376,8 +4501,8 @@
                 totalWeekData[weekCode] = { teu: 0, tons: 0, gps: [] };
             });
             
-            sortedSqScNames.forEach(sqScName => {
-                const item = grouped[sqScName];
+            sortedCombinationKeys.forEach(combinationKey => {
+                const item = grouped[combinationKey];
                 finalWeekCodes.forEach(weekCode => {
                     const weekData = item.weeks[weekCode] || { teu: 0, tons: 0, gps: [], count: 0 };
                     totalWeekData[weekCode].teu += weekData.teu;
@@ -5425,7 +5550,9 @@
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.expLine)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.vslVoy)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.trade)}</td>`);
-                    htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.sqScName)}">${escapeHtml(item.sqScName)}</td>`);
+                    // 格式化显示 SQ/SC Name：sqSc/sqScName
+                    const sqScNameDisplay = item.sqSc ? `${item.sqSc}/${item.sqScName}` : item.sqScName;
+                    htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sqScNameDisplay)}">${escapeHtml(sqScNameDisplay)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.sqSc)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.salesId)}</td>`);
                     htmlParts.push(`<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6; font-weight: 600;">${item.teu.toFixed(0)}</td>`);
@@ -5604,6 +5731,9 @@
                 const gps = Number(getColumnValue(row, COLUMN_MAP.Z) || 0);
                 const tons = Number(getColumnValue(row, COLUMN_MAP.Y) || 0) / 1000; // TON (Y列/1000)
                 
+                // 格式化显示 SQ/SC Name：sqSc/sqScName
+                const sqScNameDisplay = rowSqSc ? `${rowSqSc}/${rowSqScName}` : rowSqScName;
+                
                 let totalTeu = 0;
                 const containerTeus = {};
                 
@@ -5619,7 +5749,7 @@
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; white-space: normal; word-wrap: break-word;">${escapeHtml(polPod)}</td>`;
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(rowSalesId)}</td>`;
                 blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(rowSqSc)}</td>`;
-                blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(rowSqScName)}">${escapeHtml(rowSqScName)}</td>`;
+                blHtml += `<td style="padding: 10px; border: 1px solid #dee2e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sqScNameDisplay)}">${escapeHtml(sqScNameDisplay)}</td>`;
                 
                 containerTypes.forEach(col => {
                     const typeName = containerTypeMap[col];
@@ -5720,10 +5850,12 @@
             blContent.addEventListener('click', (e) => e.stopPropagation());
             
             // 标题栏
+            // 格式化显示 SQ/SC Name：sqSc/sqScName
+            const sqScNameDisplay = sqSc ? `${sqSc}/${sqScName}` : sqScName;
             const blHeader = document.createElement('div');
             blHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;';
             blHeader.innerHTML = `
-                <h3 style="margin: 0; color: #333;">超舱客户详细BL资料 - ${escapeHtml(sqScName)} (${blDetailData.length} 条记录)</h3>
+                <h3 style="margin: 0; color: #333;">超舱客户详细BL资料 - ${escapeHtml(sqScNameDisplay)} (${blDetailData.length} 条记录)</h3>
                 <button class="btn-sweep-blue" onclick="this.closest('#vesselLimitBlDetailModal').remove()" style="padding: 8px 16px; background: #3E62AD; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; position: relative; overflow: hidden;">关闭</button>
             `;
             
